@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Pannello — slayer_beard</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" type="image/png" href="../img/favicon.png">
+
+  <!-- Un solo font caricato: il pannello e' uno strumento, non una vetrina.
+       Il resto del testo usa i font di sistema, che sono gia' li' e non costano niente. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+  <link rel="stylesheet" href="pannello.css">
+  <!-- campi.css arriva DOPO: contiene solo i widget nuovi (testo ricco,
+       colore, font, interruttore) e deve poter correggere pannello.css. -->
+  <link rel="stylesheet" href="campi.css">
+</head>
+<body data-vista="avvio">
+
+  <!-- =====================================================================
+       ICONE — sprite inline: nessuna richiesta in piu', nessuna libreria.
+       Ogni <use> eredita currentColor.
+       ===================================================================== -->
+  <svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">
+    <symbol id="i-salva" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4 4h11l5 5v11H4V4Z"/><path fill="none" stroke="currentColor" stroke-width="1.8" d="M8 4v5h7M8 20v-6h8v6"/></symbol>
+    <symbol id="i-pubblica" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="m12 3 3.4 3.4a9 9 0 0 1 2.6 6.4V21H6v-8.2a9 9 0 0 1 2.6-6.4L12 3Z"/><circle cx="12" cy="11" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-occhio" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M1.8 12S5.6 5.5 12 5.5 22.2 12 22.2 12 18.4 18.5 12 18.5 1.8 12 1.8 12Z"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-immagine" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="10" r="1.6" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="m4 17 5-5 4 4 3-2.5 4 3.5"/></symbol>
+    <symbol id="i-backup" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3.2 3.6v4.2h4.2M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-cestino" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 6.5h16M9.5 6.5V4h5v2.5M6.5 6.5 7.5 20h9l1-13.5M10 10v6M14 10v6"/></symbol>
+    <symbol id="i-su" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 14.5 12 8.5l6 6"/></symbol>
+    <symbol id="i-giu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9.5 12 15.5l6-6"/></symbol>
+    <symbol id="i-piu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-copia" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" d="M15.5 5.5H6.5a2 2 0 0 0-2 2v9"/></symbol>
+    <symbol id="i-ricarica" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M20.8 3.6v4.2h-4.2"/></symbol>
+    <symbol id="i-chiudi" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-esci" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M14 4.5H5.5v15H14M11 12h9.5m0 0-3.2-3.2M20.5 12l-3.2 3.2"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-esterno" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M14 4.5h5.5V10M19.5 4.5 11 13M17 14v5.5H4.5V7H10"/></symbol>
+    <symbol id="i-ok" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.5 5 5 10-11"/></symbol>
+    <symbol id="i-attenzione" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 3.5 21.5 20h-19L12 3.5Z"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M12 9.5v4.5"/><circle cx="12" cy="17" r="1.1" fill="currentColor"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M12 11v5.5"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor"/></symbol>
+    <symbol id="i-espandi" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9.5 4.5H4.5V9.5M14.5 19.5h5v-5M19.5 4.5 14 10M4.5 19.5 10 14"/></symbol>
+    <symbol id="i-freccia" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5.5 7 6.5-7 6.5"/></symbol>
+    <symbol id="i-cerca" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="m15.4 15.4 4.6 4.6"/></symbol>
+    <symbol id="i-etichetta" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3.5 11.2V4h7.2l9.3 9.3-7.2 7.2-9.3-9.3Z"/><circle cx="7.6" cy="7.6" r="1.5" fill="currentColor"/></symbol>
+  </svg>
+
+  <!-- =====================================================================
+       AVVIO — resta finche' non si sa se la sessione e' aperta.
+       ===================================================================== -->
+  <div id="avvio" class="avvio">
+    <div class="avvio__barra" aria-hidden="true"><span></span></div>
+    <p class="avvio__testo" id="avvio-testo" role="status">Sto contattando il server&hellip;</p>
+    <div class="avvio__azioni" id="avvio-azioni" hidden>
+      <button type="button" class="btn btn--primario" id="avvio-riprova">Riprova</button>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       ACCESSO — due modi nello stesso form: entrare e creare la password.
+       Li distingue data-modo sulla sezione, non due pezzi di HTML gemelli.
+       ===================================================================== -->
+  <main id="accesso" class="accesso" data-modo="entra" hidden>
+    <div class="accesso__scheda">
+      <div class="accesso__marchio">
+        <img src="../img/avatar.png" alt="" width="44" height="44">
+        <div>
+          <p class="occhiello">Pannello di modifica</p>
+          <h1 class="accesso__titolo">slayer_beard</h1>
+        </div>
+      </div>
+
+      <p class="accesso__intro" data-solo="entra">
+        Da qui si cambiano i testi, i link, gli orari e le immagini del sito.
+        Serve la password del pannello.
+      </p>
+      <p class="accesso__intro" data-solo="crea">
+        Il server non ha ancora una password. Scegline una adesso: servir&agrave;
+        ogni volta che apri questo pannello. Non si recupera, si pu&ograve; solo
+        cambiare dal computer dove gira il sito.
+      </p>
+      <p class="accesso__ripresa" id="accesso-ripresa" hidden>
+        La sessione &egrave; scaduta. Le modifiche che avevi in corso sono ancora qui:
+        rientra e le ritrovi come le hai lasciate.
+      </p>
+
+      <form id="form-accesso" novalidate>
+        <div class="campo">
+          <label class="campo__etichetta" for="campo-password">Password</label>
+          <div class="accesso__riga">
+            <input type="password" id="campo-password" name="password" class="campo__input"
+                   autocomplete="current-password" spellcheck="false" required
+                   aria-describedby="accesso-errore">
+            <button type="button" class="btn btn--fantasma" id="mostra-password" aria-pressed="false">Mostra</button>
+          </div>
+        </div>
+
+        <div class="campo" id="riga-conferma" hidden>
+          <label class="campo__etichetta" for="campo-conferma">Ripeti la password</label>
+          <input type="password" id="campo-conferma" name="conferma" class="campo__input"
+                 autocomplete="new-password" spellcheck="false">
+          <p class="campo__aiuto">Almeno 8 caratteri. Scrivila anche da qualche parte al sicuro.</p>
+        </div>
+
+        <p class="accesso__errore" id="accesso-errore" role="alert" hidden></p>
+
+        <button type="submit" class="btn btn--primario btn--blocco" id="btn-accedi">
+          <span data-solo="entra">Entra nel pannello</span>
+          <span data-solo="crea">Crea la password ed entra</span>
+        </button>
+      </form>
+
+      <p class="accesso__nota" data-solo="entra">
+        Password persa? Dal computer dove gira il sito:
+        <code>node server/imposta-password.js</code>
+      </p>
+    </div>
+  </main>
+
+  <!-- =====================================================================
+       PANNELLO
+       ===================================================================== -->
+  <div id="app" class="app" hidden>
+
+    <header class="barra">
+      <button type="button" class="barra__menu" id="btn-menu" aria-expanded="false" aria-controls="colonna">
+        <svg class="ico" aria-hidden="true"><use href="#i-menu"></use></svg>
+        <span class="sr-only">Apri l&rsquo;elenco delle sezioni</span>
+      </button>
+
+      <a class="barra__marchio" href="/" target="_blank" rel="noopener"
+         title="Apri il sito pubblicato in una nuova scheda">
+        <img src="../img/avatar.png" alt="" width="26" height="26">
+        <span>slayer_beard</span>
+      </a>
+
+      <p class="stato" id="stato-lavoro" data-stato="pulito" role="status">
+        <span class="stato__spia" aria-hidden="true"></span>
+        <span class="stato__testo">Tutto salvato</span>
+      </p>
+
+      <p class="barra__pubblicazione" id="ultima-pubblicazione"></p>
+
+      <div class="barra__comandi">
+        <button type="button" class="cmd" id="btn-salva"
+                title="Scrive la bozza sul server (Ctrl+S). Il sito che vede il pubblico resta com'era.">
+          <svg class="ico" aria-hidden="true"><use href="#i-salva"></use></svg>
+          <span class="cmd__testo">
+            <span class="cmd__titolo">Salva</span>
+            <span class="cmd__nota">bozza &middot; il sito non cambia</span>
+          </span>
+        </button>
+
+        <button type="button" class="cmd cmd--pubblica" id="btn-pubblica"
+                title="Rigenera index.html, js/dati.js e css/tema.css dalla bozza salvata: da quel momento il pubblico vede queste modifiche.">
+          <svg class="ico" aria-hidden="true"><use href="#i-pubblica"></use></svg>
+          <span class="cmd__testo">
+            <span class="cmd__titolo">Pubblica</span>
+            <span class="cmd__nota">riscrive il sito</span>
+          </span>
+        </button>
+
+        <button type="button" class="barra__tondo" id="btn-anteprima" aria-pressed="false" aria-controls="anteprima">
+          <svg class="ico" aria-hidden="true"><use href="#i-occhio"></use></svg>
+          <span class="sr-only">Mostra o nascondi l&rsquo;anteprima</span>
+        </button>
+
+        <button type="button" class="barra__tondo" id="btn-esci">
+          <svg class="ico" aria-hidden="true"><use href="#i-esci"></use></svg>
+          <span class="sr-only">Esci dal pannello</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="guscio">
+
+      <aside class="colonna" id="colonna">
+
+        <!-- La ricerca sta in cima perche' con quaranta e passa campi e'
+             il modo piu' corto per arrivare a quello che si cerca.
+             Combobox: l'elenco dei risultati e' una listbox, la voce in
+             evidenza si segue con aria-activedescendant. -->
+        <div class="ricerca" role="search">
+          <label class="sr-only" for="campo-ricerca">Cerca un campo per nome</label>
+          <div class="ricerca__riga">
+            <svg class="ico ricerca__ico" aria-hidden="true"><use href="#i-cerca"></use></svg>
+            <input type="search" id="campo-ricerca" class="ricerca__input"
+                   placeholder="Cerca un campo&hellip;" autocomplete="off" spellcheck="false"
+                   role="combobox" aria-expanded="false" aria-controls="ricerca-risultati"
+                   aria-autocomplete="list" aria-describedby="ricerca-aiuto">
+            <button type="button" class="ricerca__pulisci" id="ricerca-pulisci" hidden>
+              <svg class="ico" aria-hidden="true"><use href="#i-chiudi"></use></svg>
+              <span class="sr-only">Svuota la ricerca</span>
+            </button>
+          </div>
+          <p class="ricerca__aiuto" id="ricerca-aiuto">Scorciatoia: <kbd>Ctrl</kbd>+<kbd>K</kbd></p>
+          <ul class="ricerca__risultati" id="ricerca-risultati" role="listbox"
+              aria-label="Campi trovati" hidden></ul>
+        </div>
+
+        <p class="colonna__titolo" id="titolo-sezioni">Sezioni del sito</p>
+        <nav class="colonna__nav" id="elenco-gruppi" aria-labelledby="titolo-sezioni"></nav>
+
+        <p class="colonna__titolo" id="titolo-strumenti">Strumenti</p>
+        <nav class="colonna__nav" aria-labelledby="titolo-strumenti">
+          <button type="button" class="voce-nav" data-vista="media">
+            <svg class="ico" aria-hidden="true"><use href="#i-immagine"></use></svg>
+            <span class="voce-nav__testo">Immagini</span>
+          </button>
+          <button type="button" class="voce-nav" data-vista="backup">
+            <svg class="ico" aria-hidden="true"><use href="#i-backup"></use></svg>
+            <span class="voce-nav__testo">Copie di sicurezza</span>
+          </button>
+        </nav>
+
+        <!-- I quattro passi, sempre sotto gli occhi: il passo che tocca
+             adesso si accende da solo (pannello.js), cosi' la differenza
+             fra «salvato» e «pubblicato» non va spiegata ogni volta. -->
+        <p class="colonna__titolo" id="titolo-percorso">Come si lavora</p>
+        <ol class="percorso" id="percorso" aria-labelledby="titolo-percorso">
+          <li class="percorso__passo" data-passo="modifica">
+            <span class="percorso__num">1</span>
+            <span class="percorso__testo">Modifica i campi</span>
+          </li>
+          <li class="percorso__passo" data-passo="guarda">
+            <span class="percorso__num">2</span>
+            <span class="percorso__testo">Guarda l&rsquo;anteprima
+              <em>si aggiorna mentre scrivi</em>
+            </span>
+          </li>
+          <li class="percorso__passo" data-passo="salva">
+            <span class="percorso__num">3</span>
+            <span class="percorso__testo">Salva la bozza
+              <em>il sito non cambia</em>
+            </span>
+          </li>
+          <li class="percorso__passo" data-passo="pubblica">
+            <span class="percorso__num">4</span>
+            <span class="percorso__testo">Pubblica
+              <em>riscrive il sito: index.html, js/dati.js, css/tema.css</em>
+            </span>
+          </li>
+        </ol>
+
+        <div class="colonna__pie">
+          <button type="button" class="colonna__opzione" id="btn-nomi-tecnici" aria-pressed="false">
+            <svg class="ico ico--mini" aria-hidden="true"><use href="#i-etichetta"></use></svg>
+            <span>Mostra i nomi tecnici dei campi</span>
+          </button>
+          <p>
+            <a href="/" target="_blank" rel="noopener">Apri il sito pubblicato
+              <svg class="ico ico--mini" aria-hidden="true"><use href="#i-esterno"></use></svg>
+            </a>
+          </p>
+        </div>
+      </aside>
+
+      <div class="colonna__velo" id="velo-colonna" hidden></div>
+
+      <main class="lavoro" id="lavoro" tabindex="-1">
+        <div class="lavoro__testa">
+          <h1 class="lavoro__titolo" id="titolo-vista">Contenuti</h1>
+          <p class="lavoro__nota" id="nota-vista"></p>
+        </div>
+
+        <div class="riepilogo" id="riepilogo-errori" role="alert" hidden></div>
+
+        <div class="lavoro__corpo" id="corpo-vista"></div>
+      </main>
+
+      <section class="anteprima" id="anteprima" aria-label="Anteprima del sito" hidden>
+        <header class="anteprima__testa">
+          <h2 class="anteprima__titolo">Anteprima</h2>
+          <div class="anteprima__comandi">
+            <label class="anteprima__auto" for="anteprima-auto"
+                   title="Rigenera l&rsquo;anteprima poco dopo che hai smesso di scrivere">
+              <input type="checkbox" id="anteprima-auto" checked>
+              <span>Automatica</span>
+            </label>
+            <button type="button" class="btn btn--minimo" id="btn-ricarica-anteprima">
+              <svg class="ico" aria-hidden="true"><use href="#i-ricarica"></use></svg>
+              <span>Aggiorna</span>
+            </button>
+            <button type="button" class="btn btn--minimo" id="btn-espandi-anteprima" aria-pressed="false">
+              <svg class="ico" aria-hidden="true"><use href="#i-espandi"></use></svg>
+              <span>A tutta pagina</span>
+            </button>
+            <a class="btn btn--minimo" href="/api/anteprima" target="_blank" rel="noopener"
+               title="Apre la bozza gi&agrave; salvata sul server, in una scheda a parte">
+              <svg class="ico" aria-hidden="true"><use href="#i-esterno"></use></svg>
+              <span>Scheda nuova</span>
+            </a>
+            <button type="button" class="btn btn--minimo btn--solo-icona" id="btn-chiudi-anteprima">
+              <svg class="ico" aria-hidden="true"><use href="#i-chiudi"></use></svg>
+              <span class="sr-only">Chiudi l&rsquo;anteprima</span>
+            </button>
+          </div>
+          <p class="anteprima__nota" id="anteprima-nota" role="status">
+            Mostra le modifiche in corso, anche quelle non salvate.
+          </p>
+          <p class="anteprima__errore" id="anteprima-errore" role="alert" hidden></p>
+        </header>
+        <div class="anteprima__telaio">
+          <iframe id="iframe-anteprima" title="Anteprima del sito con le modifiche in corso" src="about:blank"></iframe>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- I dialoghi nascono e muoiono in avvisi.js: cosi' se ne possono
+       impilare due (scelta immagine -> conferma di cancellazione). -->
+  <div id="avvisi" class="avvisi" role="region" aria-label="Avvisi" aria-live="polite"></div>
+
+  <script type="module" src="pannello.js"></script>
+</body>
+</html>

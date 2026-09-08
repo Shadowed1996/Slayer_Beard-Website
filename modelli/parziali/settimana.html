@@ -1,0 +1,23 @@
+<section id="settimana" class="settimana" aria-labelledby="settimana-titolo">
+  <div class="sezione__testa settimana__testa">
+    <p class="sezione__occhiello">{{settimana.occhiello}}</p>
+    <h2 id="settimana-titolo" class="sezione__titolo">{{settimana.titolo}}</h2>
+    <p class="sezione__testo">{{{settimana.testo}}}</p>
+  </div>
+
+  <!-- Sette voci sempre, anche i giorni di riposo: il nastro è una settimana intera, non un elenco di dirette. -->
+  <ol id="nastro" class="nastro" aria-label="{{sito.orariTesto}}">
+    {{#ogni settimana}}
+    <li class="nastro__giorno{{#se diretta}} is-diretta{{/se}}" data-giorno="{{indice}}">
+      <span class="nastro__abbr">{{abbr}}</span>
+      <b class="nastro__ora">{{ora}}</b>
+      <span class="nastro__tag">{{tag}}</span>
+    </li>
+    {{/ogni}}
+  </ol>
+
+  <div class="settimana__piede">
+    <p class="settimana__nota">{{{settimana.nota}}}</p>
+    <a class="btn btn--vuoto" href="{{sito.urlCanale}}" target="_blank" rel="noopener">{{settimana.cta}}</a>
+  </div>
+</section>

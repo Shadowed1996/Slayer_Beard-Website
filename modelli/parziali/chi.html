@@ -1,0 +1,50 @@
+<section id="chi" class="chi" aria-labelledby="chi-titolo">
+  <div class="chi__griglia">
+    <div class="chi__corpo">
+      <p class="sezione__occhiello">{{chi.occhiello}}</p>
+      <h2 id="chi-titolo" class="sezione__titolo">{{chi.titolo}}</h2>
+
+      <p class="chi__apertura">{{{chi.apertura}}}</p>
+      <p>{{{chi.corpo1}}}</p>
+      <blockquote class="chi__citazione">{{{chi.citazione}}}</blockquote>
+      <p>{{{chi.corpo2}}}</p>
+
+      <ul class="chi__tag">
+        <li class="tag">{{chi.tag1}}</li>
+        <li class="tag">{{chi.tag2}}</li>
+        <li class="tag">{{chi.tag3}}</li>
+        <li class="tag">{{chi.tag4}}</li>
+        <li class="tag">{{chi.tag5}}</li>
+        <li class="tag">{{chi.tag6}}</li>
+      </ul>
+
+      <a class="btn btn--pieno" href="{{sito.urlCanale}}" target="_blank" rel="noopener">{{chi.cta}}</a>
+    </div>
+
+    <aside class="chi__margine">
+      <div class="nota">
+        <h3 class="nota__titolo">{{chi.nota1Titolo}}</h3>
+        <p class="nota__testo">{{{chi.nota1Testo}}}</p>
+      </div>
+      <div class="nota">
+        <h3 class="nota__titolo">{{chi.nota2Titolo}}</h3>
+        <p class="nota__testo">{{{chi.nota2Testo}}}</p>
+      </div>
+      <div class="nota">
+        <h3 class="nota__titolo">{{chi.nota3Titolo}}</h3>
+        <p class="nota__testo">{{{chi.nota3Testo}}}</p>
+      </div>
+
+      <ul class="chi__dati">
+        <li><b>{{chi.dato1Valore}}</b><span>{{chi.dato1Etichetta}}</span></li>
+        <li><b>{{chi.dato2Valore}}</b><span>{{chi.dato2Etichetta}}</span></li>
+        <li><b>{{chi.dato3Valore}}</b><span>{{chi.dato3Etichetta}}</span></li>
+      </ul>
+    </aside>
+
+    <figure class="chi__ritratto">
+      <img src="{{config.immagini.avatar}}" alt="{{chi.ritrattoAlt}}">
+      <figcaption>{{marchio.nome}} — {{marchio.ruolo}}</figcaption>
+    </figure>
+  </div>
+</section>

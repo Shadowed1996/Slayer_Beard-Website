@@ -1,0 +1,903 @@
+/* =============================================================================
+   base.css — slayer_beard · «REGIA»
+   Reset, impianto della pagina, tipografia, primitive riusabili, binario di
+   navigazione e piede. Tutto quello che sta qui è STRUTTURALE: vale per tutte
+   le sezioni e non appartiene a nessuna.
+
+   Indice
+     1. Reset
+     2. Impianto della pagina (binario + contenuto + dock)
+     3. Tipografia
+     4. Primitive:  .salta  .btn (+ .is-fatto)  .tag  .spia  .sezione__*
+     5. Binario di navigazione: rail a sinistra / dock in basso
+     6. Piede
+     7. Movimento ridotto
+
+   Nessun colore esadecimale: tutto passa da tokens.css.
+   La soglia fra rail e dock è 1100px, dichiarata due volte (max/min) invece di
+   sovrascrivere a catena: sono due layout diversi, non uno l'adattamento
+   dell'altro, e tenerli separati evita di dover azzerare mezza dozzina di
+   proprietà a ogni cambio di forma.
+   ============================================================================= */
+
+
+/* =============================================================================
+   1. RESET
+   ============================================================================= */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Le àncore non devono finire sotto il bordo alto né dietro al dock. */
+  scroll-padding-block-start: var(--passo-3);
+  scroll-padding-block-end: calc(var(--dock-h) + var(--passo-4));
+  scrollbar-width: thin;
+  scrollbar-color: var(--linea-forte) transparent;
+}
+
+/* Lo scorrimento morbido è un'animazione: si accende solo se l'utente non ha
+   chiesto di ridurre il movimento. Così non serve spegnerlo dopo. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+body,
+h1, h2, h3, h4,
+p, figure, blockquote,
+dl, dd, ol, ul { margin: 0; }
+
+/* Gli elenchi con una classe sono strutture (nastro, listino, social, tag):
+   il pallino di default è rumore. Un <ul> senza classe resta un elenco vero. */
+ol[class],
+ul[class] {
+  list-style: none;
+  padding: 0;
+}
+
+img, svg, video, canvas, iframe {
+  display: block;
+  max-inline-size: 100%;
+}
+
+img, video { block-size: auto; }
+
+input, button, textarea, select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Il focus si vede SEMPRE, su qualsiasi elemento, e non si toglie mai.
+   outline-offset stacca l'anello dal bordo dell'elemento; l'outline segue da
+   sé il border-radius, quindi non serve ridichiararlo. */
+:focus-visible {
+  outline: 2px solid var(--ciano);
+  outline-offset: 3px;
+}
+
+::selection {
+  background-color: var(--viola);
+  color: var(--testo);
+}
+
+/* Il `hidden` di JavaScript deve vincere sulle classi, e da solo non lo fa:
+   `[hidden]` ha la stessa specificità di una classe (0,1,0) e questa riga sta
+   PRIMA di `.btn` (§4), quindi a parità vinceva l’ultima arrivata e un bottone
+   nascosto da JavaScript restava in pagina. È il bug per cui «Collegati con
+   Twitch» continuava a vedersi anche dopo il login.
+
+   Il doppio attributo porta la specificità a (0,2,0) senza ricorrere a
+   !important: così css/pollo.css può ancora fare la sua eccezione — stessa
+   specificità, ma arriva dopo — e far sfumare il fumetto con l’opacità
+   invece di spegnerlo di colpo. */
+[hidden][hidden] { display: none; }
+
+
+/* =============================================================================
+   2. IMPIANTO DELLA PAGINA
+   Il binario è fisso e non occupa spazio nel flusso: lo spazio glielo lascia
+   il contenuto con un padding, non con un margine negativo. Sotto i 1100px il
+   binario diventa un dock galleggiante in basso e lo spazio si sposta in fondo.
+   ============================================================================= */
+
+body {
+  min-block-size: 100vh;
+  min-block-size: 100svh;
+  background: var(--grad-pagina);
+  color: var(--testo-medio);
+  font-family: var(--font-testo);
+  font-size: var(--t-corpo);
+  font-weight: 400;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Spazio per il dock galleggiante (solo sotto i 1100px, vedi oltre). */
+  padding-block-end: calc(var(--dock-h) + var(--passo-4) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Qui c'era .contenitore, un vincolo di larghezza riusabile che non ha mai
+   riusato nessuno: le sezioni non hanno un contenitore nel markup e si vincolano
+   da sé — inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2))
+   con padding-inline: var(--margine) — perché la stessa regola porta anche il
+   loro padding verticale. Una primitiva che nessuno usa è peggio di nessuna
+   primitiva: la si legge nell'indice, la si crede in uso, e intanto la formula
+   vera vive in tre fogli diversi. La formula sta documentata su --margine, in
+   tokens.css, che è dove qualcuno la va a cercare. */
+
+/* Le sezioni sono bersagli di àncora: un filo d'aria sopra quando ci si arriva. */
+section[id] { scroll-margin-block-start: var(--passo-3); }
+
+@media (min-width: 1100px) {
+  body { padding-block-end: 0; }
+
+  /* Il contenuto scala a destra della larghezza esatta del binario. Il piede sta
+     FUORI da main, quindi il binario se lo deve scansare da sé, e ci aggiunge il
+     margine perché il suo padding fa da margine laterale come nelle sezioni. */
+  main { padding-inline-start: var(--binario-w); }
+  .piede { padding-inline-start: calc(var(--binario-w) + var(--margine)); }
+}
+
+
+/* =============================================================================
+   3. TIPOGRAFIA
+   Tre famiglie con tre ruoli netti: Space Grotesk titola, Manrope racconta,
+   JetBrains Mono etichetta. Le etichette in monospazio sono maiuscole e molto
+   spaziate: è la cifra visiva del sito, non un vezzo, e va tenuta uguale
+   ovunque compaia (occhielli, bottoni, tag, voci del binario, numeri).
+   ============================================================================= */
+
+h1, h2, h3 {
+  font-family: var(--font-titolo);
+  font-weight: 700;
+  color: var(--testo);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  /* balance evita il titolo con l'ultima parola orfana su una riga da sola. */
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--t-h1); }
+h2 { font-size: var(--t-h2); line-height: 1.12; }
+h3 {
+  font-size: var(--t-h3);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+
+p { text-wrap: pretty; }
+
+/* Le parole lunghe (URL, nomi di emote) non devono mai allargare il layout:
+   è la causa più comune di scroll orizzontale a 320px. */
+p, li, dd, dt, blockquote, figcaption { overflow-wrap: break-word; }
+
+strong, b {
+  font-weight: 600;
+  color: var(--testo);
+}
+
+em, i { font-style: italic; }
+
+small { font-size: var(--t-piccolo); }
+
+code, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-size: 0.94em;
+  font-variant-ligatures: none;
+}
+
+code {
+  padding: 0.15em 0.45em;
+  border: 1px solid var(--linea);
+  border-radius: var(--raggio-s);
+  background-color: var(--pannello);
+  color: var(--testo);
+}
+
+/* I numeri della strumentazione devono incolonnarsi: cifre a larghezza fissa
+   e zero tagliato dove il font lo prevede. */
+time, output {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-feature-settings: 'tnum' 1, 'zero' 1;
+}
+
+a:not([class]) {
+  color: var(--viola-chiaro);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+  transition: color var(--durata) var(--curva);
+}
+
+a:not([class]):hover { color: var(--ciano); }
+
+
+/* =============================================================================
+   4. PRIMITIVE
+   Sono le classi che ogni sezione può dare per scontate.
+   ============================================================================= */
+
+/* --- Skip link -------------------------------------------------------------
+   Fuori dallo schermo con una traslazione, non con display:none: deve restare
+   raggiungibile con il Tab. Fisso e sopra a tutto, così si vede anche a metà
+   pagina. */
+.salta {
+  position: fixed;
+  z-index: var(--z-salta);
+  inset-block-start: var(--passo-2);
+  inset-inline-start: var(--passo-2);
+  padding: var(--passo) var(--passo-2);
+  border: 1px solid var(--linea-viva);
+  border-radius: var(--raggio-s);
+  background-color: var(--fondo-2);
+  box-shadow: var(--ombra);
+  color: var(--testo);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+  transform: translateY(calc(-100% - var(--passo-6)));
+  transition: transform var(--durata) var(--curva);
+}
+
+.salta:focus { transform: none; }
+
+/* --- Bottoni ---------------------------------------------------------------
+   Etichetta in monospazio maiuscolo: un bottone qui è un comando di regia.
+   Altezza minima 44px perché resti un bersaglio comodo anche col dito. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--passo);
+  min-block-size: 44px;
+  padding-inline: var(--passo-3);
+  border: 1px solid transparent;
+  border-radius: var(--raggio-pill);
+  font-family: var(--font-mono);
+  font-size: var(--t-piccolo);
+  font-weight: 500;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--durata) var(--curva),
+    border-color     var(--durata) var(--curva),
+    color            var(--durata) var(--curva),
+    box-shadow       var(--durata) var(--curva),
+    translate        var(--durata-lampo) var(--curva);
+}
+
+.btn svg {
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  flex: none;
+}
+
+.btn:hover { translate: 0 -1px; }
+.btn:active { translate: 0 1px; }
+
+/* Pieno: il gradiente del marchio. --testo su --viola sta a 4.7:1, sopra la
+   soglia AA; sul lato scuro del gradiente sale a 11.7:1. */
+.btn--pieno {
+  background-image: linear-gradient(118deg, var(--viola-cupo) 0%, var(--viola) 100%);
+  border-color: var(--linea-viva);
+  color: var(--testo);
+}
+
+.btn--pieno:hover { box-shadow: var(--bagliore-viola); }
+
+/* Vuoto: il bordo È il comando, quindi usa --linea-comando (3.9:1) e non la
+   linea decorativa, che a 1.4:1 non delimiterebbe niente. */
+.btn--vuoto {
+  background-color: transparent;
+  border-color: var(--linea-comando);
+  color: var(--testo);
+}
+
+.btn--vuoto:hover {
+  border-color: var(--ciano);
+  background-color: var(--pannello-2);
+  color: var(--testo);
+}
+
+/* Riuscito. js/sito.js mette .is-fatto sul bottone «Copia l'email» per due
+   secondi, insieme al testo che cambia in «Copiata»: il testo dice cos'è
+   successo, questo è il colore che glielo conferma a colpo d'occhio. È l'unico
+   posto in cui serve --ok, ed è il motivo per cui il token esiste.
+   Bordo e testo, niente riempimento: il bottone deve restare lo stesso oggetto,
+   non diventarne un altro per due secondi. La regola sta DOPO .btn--vuoto:hover
+   perché a parità di specificità deve vincere lei: il puntatore, dopo un clic,
+   è quasi sempre ancora sopra al bottone. */
+.btn.is-fatto {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+/* --- Tag ------------------------------------------------------------------- */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--passo) * 0.75);
+  padding: 6px var(--passo-2);
+  border: 1px solid var(--linea);
+  border-radius: var(--raggio-pill);
+  background-color: var(--pannello);
+  color: var(--testo-medio);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+/* --- Spia LED --------------------------------------------------------------
+   Un pallino con un alone. Il colore sta su `color`, non su `background`: il
+   pallino e l'alone leggono entrambi currentColor, quindi un modificatore che
+   cambia una riga sola ricolora tutto. --spia-d è il diametro: le sezioni
+   possono ingrandirla (#spia-grande nel quadro comandi) senza riscriverla. */
+.spia {
+  --spia-d: 10px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  inline-size: var(--spia-d);
+  block-size: var(--spia-d);
+  border-radius: 50%;
+  background-color: currentColor;
+  color: var(--testo-tenue);
+  box-shadow: 0 0 calc(var(--spia-d) * 0.9) currentColor;
+  transition: color var(--durata) var(--curva), box-shadow var(--durata) var(--curva);
+}
+
+.spia::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--spia-d) * -0.55);
+  border-radius: 50%;
+  background-color: currentColor;
+  opacity: 0.2;
+}
+
+.spia.is-live { color: var(--live); }
+.spia.is-live::after { animation: spia-pulsa 2.2s var(--curva) infinite; }
+
+/* Spenta: niente alone e niente bagliore, altrimenti «fuori onda» sembra acceso. */
+.spia.is-offline {
+  color: var(--testo-tenue);
+  box-shadow: none;
+}
+.spia.is-offline::after { opacity: 0.1; }
+
+.spia.is-verifica { color: var(--allerta); }
+.spia.is-verifica::after { animation: spia-respira 1.8s ease-in-out infinite; }
+
+@keyframes spia-pulsa {
+  0%        { opacity: 0.34; transform: scale(0.65); }
+  70%, 100% { opacity: 0;    transform: scale(1.55); }
+}
+
+@keyframes spia-respira {
+  0%, 100% { opacity: 0.1; }
+  50%      { opacity: 0.32; }
+}
+
+/* --- Testata di sezione ----------------------------------------------------
+   Occhiello + titolo + testo. La lineetta ciano davanti all'occhiello è il
+   segno che ricorre in tutta la strumentazione: la sezione «si accende». */
+.sezione__testa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--passo-2);
+  max-inline-size: 62ch;
+  margin-block-end: var(--passo-6);
+}
+
+.sezione__occhiello {
+  display: flex;
+  align-items: center;
+  gap: var(--passo);
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+.sezione__occhiello::before {
+  content: "";
+  flex: none;
+  inline-size: var(--passo-3);
+  block-size: 1px;
+  background-color: var(--ciano);
+}
+
+.sezione__titolo { font-size: var(--t-h2); }
+
+.sezione__testo {
+  max-inline-size: 58ch;
+  color: var(--testo-medio);
+}
+
+
+/* =============================================================================
+   5. BINARIO DI NAVIGAZIONE
+   Un solo elemento, due forme.
+   Sotto i 1100px: dock galleggiante in basso, centrato, in vetro smerigliato.
+   Da 1100px in su: colonna fissa a sinistra, larga --binario-w, altezza piena.
+   ============================================================================= */
+
+.binario {
+  position: fixed;
+  z-index: var(--z-binario);
+  display: flex;
+}
+
+.binario__marchio {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.binario__avatar {
+  border-radius: 50%;
+  border: 1px solid var(--linea-forte);
+  object-fit: cover;
+}
+
+.binario__voce {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--testo-tenue);
+  transition: color var(--durata) var(--curva), background-color var(--durata) var(--curva);
+}
+
+.binario__voce:hover { color: var(--testo); }
+
+/* Il pallino a riposo è un cerchietto vuoto: si riempie di ciano quando la
+   voce è quella della sezione a schermo. */
+.binario__punto {
+  flex: none;
+  inline-size: 8px;
+  block-size: 8px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background-color: transparent;
+  transition:
+    background-color var(--durata) var(--curva),
+    border-color     var(--durata) var(--curva),
+    box-shadow       var(--durata) var(--curva);
+}
+
+.binario__voce.is-attiva { color: var(--testo); }
+
+.binario__voce.is-attiva .binario__punto {
+  background-color: var(--ciano);
+  border-color: var(--ciano);
+  box-shadow: var(--bagliore-ciano);
+}
+
+.binario__testo {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.binario__stato { display: flex; align-items: center; }
+
+.binario__stato-testo {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  color: var(--testo-tenue);
+}
+
+
+/* --- Sotto i 1100px: DOCK --------------------------------------------------
+   Larghezza fit-content centrata fra i due lati, con un tetto che tiene conto
+   del margine: il dock resta dentro anche a 320px e le SEI voci stanno in riga
+   senza andare a capo. Le etichette scendono con la finestra (clamp su vw) e
+   hanno una spaziatura ridotta: qui la leggibilità viene prima dello stile.
+
+   SEI VOCI A 320px — i conti, perché non sono ovvi
+   Larghezza utile: 320 meno 16 di margine del dock, meno 2 di bordo, meno 12 di
+   padding = 290. Se ne prendono 28 l'avatar, 15 la spia con il suo divisorio e
+   12 i due gap fra i tre blocchi: alla navigazione ne restano 235. Le sei
+   etichette in monospazio da 8px sono 43 caratteri, cioè circa 210px. Ci stanno,
+   ma solo togliendo sotto i 400px i gap e i rientri interni delle voci: è quello
+   che fa il blocco in fondo a questa sezione. Il menu a panino è vietato dal
+   contratto e con sei voci non resta margine per nient'altro.
+   --------------------------------------------------------------------------- */
+@media (max-width: 1099.98px) {
+
+  .binario {
+    inset-block-end: calc(var(--passo-2) + env(safe-area-inset-bottom, 0px));
+    inset-inline: 0;
+    margin-inline: auto;
+    inline-size: fit-content;
+    max-inline-size: calc(100% - var(--passo-2));
+    block-size: var(--dock-h);
+    align-items: center;
+    gap: var(--passo);
+    padding-inline: var(--passo);
+    border: 1px solid var(--linea-comando);
+    border-radius: var(--raggio-pill);
+    box-shadow: var(--ombra);
+    /* Fondo opaco: è il ripiego se il vetro smerigliato non è disponibile. */
+    background-color: var(--fondo-2);
+  }
+
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .binario {
+      background-color: var(--pannello-2);
+      -webkit-backdrop-filter: blur(var(--sfocatura)) saturate(140%);
+      backdrop-filter: blur(var(--sfocatura)) saturate(140%);
+    }
+  }
+
+  /* Nel DOM lo stato viene dopo la navigazione; sul dock la spia va accanto
+     al marchio, così i due formano un blocco solo a sinistra. */
+  .binario__marchio { order: 1; }
+  .binario__stato   { order: 2; }
+  .binario__nav     { order: 3; }
+
+  .binario__marchio { gap: var(--passo); }
+
+  .binario__avatar {
+    inline-size: 34px;
+    block-size: 34px;
+  }
+
+  /* Il nome esteso non ci sta e l'avatar basta a identificare il canale. */
+  .binario__nome { display: none; }
+
+  .binario__stato {
+    --spia-d: 8px;
+    flex: none;
+    padding-inline-end: var(--passo);
+    border-inline-end: 1px solid var(--linea);
+  }
+
+  /* Sul dock resta solo il LED: il testo dello stato è già nel quadro comandi. */
+  .binario__stato-testo { display: none; }
+
+  .binario__nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+
+  .binario__voce {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    flex-direction: column;
+    gap: 5px;
+    padding: 5px 1px;
+    border-radius: var(--raggio-s);
+  }
+
+  .binario__punto {
+    inline-size: 7px;
+    block-size: 7px;
+  }
+
+  .binario__testo {
+    max-inline-size: 100%;
+    overflow: hidden;
+    font-size: clamp(8px, 2.3vw, 10px);
+    letter-spacing: 0.01em;
+  }
+
+  /* Il dock è già navigazione: i social starebbero stretti e ridondanti. */
+  .binario__social { display: none; }
+}
+
+/* Sotto i 400px le sei voci hanno bisogno di ogni pixel: spariscono i gap fra
+   una voce e l'altra, i rientri interni e la spaziatura delle lettere. Quello
+   che resta a separarle è lo spazio che la distribuzione flessibile avanza —
+   una ventina di pixel divisi in sei — più il pallino sopra all'etichetta.
+   Si sacrifica la spaziatura, non l'etichetta: senza le parole restano sei
+   pallini identici, e un pallino non dice dove porta. */
+@media (max-width: 399.98px) {
+  .binario {
+    gap: 6px;
+    padding-inline: 6px;
+  }
+
+  .binario__stato { padding-inline-end: 6px; }
+  .binario__nav { gap: 0; }
+  .binario__voce { padding-inline: 0; }
+  .binario__testo { letter-spacing: 0; }
+}
+
+/* Schermi sotto i 380px: si recuperano una decina di pixel dall'avatar. */
+@media (max-width: 379.98px) {
+  .binario__avatar {
+    inline-size: 28px;
+    block-size: 28px;
+  }
+}
+
+
+/* --- Da 1100px in su: RAIL -------------------------------------------------
+   Colonna fissa, fondo trasparente e una sola riga a destra: il contenuto non
+   ci passa mai sotto (ha il suo padding), quindi non serve un pannello.
+   --------------------------------------------------------------------------- */
+@media (min-width: 1100px) {
+
+  .binario {
+    inset-block: 0;
+    inset-inline-start: 0;
+    inline-size: var(--binario-w);
+    flex-direction: column;
+    align-items: center;
+    gap: var(--passo-2);
+    padding-block: var(--passo-3);
+    border-inline-end: 1px solid var(--linea);
+    background-color: transparent;
+  }
+
+  .binario__marchio {
+    flex-direction: column;
+    gap: var(--passo-2);
+  }
+
+  .binario__avatar {
+    inline-size: 40px;
+    block-size: 40px;
+  }
+
+  /* Il nome corre in verticale lungo il binario: occupa la colonna stretta
+     senza sfondarla e dà al rail la sua identità. */
+  .binario__nome {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    color: var(--testo-tenue);
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    letter-spacing: var(--spazio-etichetta);
+    white-space: nowrap;
+    transition: color var(--durata) var(--curva);
+  }
+
+  .binario__marchio:hover .binario__nome { color: var(--testo); }
+
+  /* margin auto in blocco: le voci restano al centro dell'altezza qualunque
+     cosa ci sia sopra e sotto. */
+  .binario__nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--passo-2);
+    margin-block: auto;
+  }
+
+  .binario__voce {
+    position: relative;
+    inline-size: 44px;
+    block-size: 44px;
+    border-radius: 50%;
+  }
+
+  .binario__punto {
+    inline-size: 9px;
+    block-size: 9px;
+  }
+
+  /* L'etichetta è una targhetta che esce dal binario al passaggio del mouse o
+     al focus. pointer-events: none perché non deve mai rubare un clic al
+     contenuto che le sta sotto. */
+  .binario__testo {
+    position: absolute;
+    inset-inline-start: calc(100% + var(--passo));
+    inset-block-start: 50%;
+    padding: 7px var(--passo-2);
+    border: 1px solid var(--linea);
+    border-radius: var(--raggio-pill);
+    background-color: var(--fondo-2);
+    box-shadow: var(--ombra-morbida);
+    color: var(--testo);
+    font-size: var(--t-micro);
+    letter-spacing: var(--spazio-etichetta);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(calc(var(--passo) * -1), -50%);
+    transition: opacity var(--durata) var(--curva), transform var(--durata) var(--curva);
+  }
+
+  .binario__voce:hover .binario__testo,
+  .binario__voce:focus-visible .binario__testo,
+  .binario__voce.is-attiva .binario__testo {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+
+  .binario__stato {
+    flex-direction: column;
+    gap: var(--passo);
+    padding-block-end: var(--passo);
+  }
+
+  .binario__stato-testo {
+    max-inline-size: var(--binario-w);
+    padding-inline: 6px;
+    font-size: 10px;
+    line-height: 1.25;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+
+  .binario__social {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .binario__social-voce {
+    display: grid;
+    place-items: center;
+    inline-size: 34px;
+    block-size: 34px;
+    border-radius: 50%;
+    color: var(--testo-tenue);
+    transition: color var(--durata) var(--curva), background-color var(--durata) var(--curva);
+  }
+
+  .binario__social-voce:hover {
+    color: var(--ciano);
+    background-color: var(--pannello-2);
+  }
+
+  .binario__social-voce svg {
+    inline-size: 17px;
+    block-size: 17px;
+    fill: currentColor;
+  }
+}
+
+/* Finestre basse: il nome verticale è la prima cosa che sacrifico, perché è
+   l'unico pezzo del binario che cresce in altezza senza essere indispensabile.
+   Con sei voci il rail è 44px più alto di prima, quindi la soglia serve davvero:
+   sei voci da 44 con 16 di gap fanno 344px, più marchio, spia e social. */
+@media (min-width: 1100px) and (max-height: 720px) {
+  .binario__nome { display: none; }
+  .binario__nav { gap: var(--passo); }
+}
+
+/* Ancora più basse: qualcosa deve uscire, e sono i social, che la sezione dei
+   saluti ripete già per intero con nome e handle. Le voci scendono a 40px:
+   restano un bersaglio comodo per il puntatore, e su una finestra alta 640px
+   il dito non c'è. */
+@media (min-width: 1100px) and (max-height: 640px) {
+  .binario__social { display: none; }
+
+  .binario__voce {
+    inline-size: 40px;
+    block-size: 40px;
+  }
+}
+
+
+/* =============================================================================
+   6. PIEDE
+   Sobrio: una riga sottile che chiude, testo piccolo e niente altro.
+
+   ALLINEAMENTO — il piede è l'unico blocco fuori da main
+   Tutte le sezioni si vincolano così:
+     inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2))
+     margin-inline: auto  +  padding-inline: var(--margine)
+   cioè si centrano in una colonna larga --max-larghezza. Il piede prima aveva
+   solo il padding: su una finestra da 1920px il suo testo partiva a 144px e
+   quello delle sezioni a 324px — 180px di scarto, che crescono con la finestra
+   e si vedono benissimo anche senza saper dire cosa sono.
+
+   La riga da 1px però deve continuare a correre da bordo a bordo: è lei che
+   chiude la pagina. Quindi non si vincola il piede, si vincola il suo
+   CONTENUTO, con una griglia a colonna unica centrata. I conti tornano esatti
+   in tutti e due i regimi, ed è il motivo per cui la colonna è
+   min(100%, --max-larghezza) e non min(100%, --max-larghezza + 2 * --margine):
+   il 100% qui è già al netto del padding.
+     · finestra larga (1920px, binario 88, margine 56): il piede ha 1720px di
+       contenuto, la colonna ne prende 1360, ne avanzano 360 divisi in due →
+       il testo parte a 88 + 56 + 180 = 324px, come le sezioni;
+     · finestra stretta (900px, niente binario, margine 36): il contenuto è
+       828px, la colonna li prende tutti, non avanza niente → il testo parte a
+       36px, come le sezioni.
+
+   Attenzione a non centrare i figli con margin-inline: auto invece che con la
+   griglia: .piede__disclaimer ha un max-inline-size, e si centrerebbe dentro
+   la colonna invece di restare allineato a sinistra con le altre due righe.
+   ============================================================================= */
+
+.piede {
+  display: grid;
+  grid-template-columns: min(100%, var(--max-larghezza));
+  justify-content: center;
+  margin-block-start: var(--passo-8);
+  padding-block: var(--passo-6);
+  padding-inline: var(--margine);
+  border-block-start: 1px solid var(--linea);
+  color: var(--testo-tenue);
+  font-size: var(--t-piccolo);
+}
+
+.piede > * + * { margin-block-start: var(--passo); }
+
+.piede__copy { color: var(--testo-medio); }
+
+.piede__disclaimer { max-inline-size: 68ch; }
+
+/* L'ultima riga è di un altro registro — maiuscolo in monospazio, la firma di
+   chi ha fatto il sito, non un'informazione legale: si stacca dalle due righe
+   sopra invece di accodarsi a otto pixel come fossero la stessa cosa. La
+   regola sta DOPO .piede > * + * perché a parità di specificità vince lei. */
+.piede__nota {
+  margin-block-start: var(--passo-3);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.45;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+
+/* =============================================================================
+   7. MOVIMENTO RIDOTTO
+   Il meccanismo principale sono i token: ogni transizione del progetto usa
+   var(--durata*), quindi portarli a 1ms spegne il movimento di tutti i fogli
+   in tre righe, senza ricorrere a !important (§12 lo vieta).
+   Le animazioni con @keyframes non passano dai token e vanno fermate a mano:
+   qui sotto ci sono quelle di base.css.
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  :root {
+    --durata-lampo: 1ms;
+    --durata: 1ms;
+    --durata-lunga: 1ms;
+  }
+
+  .spia::after,
+  .spia.is-live::after,
+  .spia.is-verifica::after { animation: none; }
+
+  /* Anche uno scatto di un pixel è movimento. */
+  .btn:hover,
+  .btn:active { translate: none; }
+
+  /* Rete di sicurezza per tutto quello che non passa dai token. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms;
+    animation-iteration-count: 1;
+    transition-duration: 1ms;
+  }
+}

@@ -1,0 +1,45 @@
+<!-- Sei voci (CONTRATTO-2 §2): «Diretta» si è aggiunta fra la regia e la
+     settimana, nell'ordine in cui le sezioni compaiono in pagina. Nessun menu a
+     panino: sotto i 1100px questo stesso elemento diventa il dock in basso, e
+     css/base.css lo stringe finché le sei etichette ci stanno anche a 320px.
+     Gli id #binario, #spia e #spia-testo sono contratto con il JS. -->
+<aside id="binario" class="binario">
+  <a class="binario__marchio" href="#regia">
+    <!-- L'avatar è decorativo: il nome accanto dice già dove porta il link. -->
+    <img class="binario__avatar" src="{{config.immagini.avatar}}" alt="" aria-hidden="true">
+    <span class="binario__nome">{{marchio.nome}}</span>
+  </a>
+
+  <nav class="binario__nav" aria-label="Sezioni">
+    <a class="binario__voce" href="#regia">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">{{nav.regia}}</span>
+    </a>
+    <a class="binario__voce" href="#diretta">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">{{nav.diretta}}</span>
+    </a>
+    <a class="binario__voce" href="#settimana">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">{{nav.settimana}}</span>
+    </a>
+    <a class="binario__voce" href="#chi">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">{{nav.chi}}</span>
+    </a>
+    <a class="binario__voce" href="#supporto">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">{{nav.supporto}}</span>
+    </a>
+    <a class="binario__voce" href="#saluti">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">{{nav.saluti}}</span>
+    </a>
+  </nav>
+
+  <p class="binario__stato">
+    <span id="spia" class="spia" aria-hidden="true"></span><span id="spia-testo" class="binario__stato-testo">{{deck.statoVerifica}}</span>
+  </p>
+
+  <ul class="binario__social">
+    {{#ogni social}}
+    <li>
+      <a class="binario__social-voce" href="{{url}}" title="{{nome}}" aria-label="{{nome}}" target="_blank" rel="noopener">{{{svg}}}</a>
+    </li>
+    {{/ogni}}
+  </ul>
+</aside>

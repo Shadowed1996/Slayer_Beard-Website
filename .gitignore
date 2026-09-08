@@ -1,0 +1,16 @@
+# dipendenze
+node_modules/
+
+# configurazione locale e segreti
+.env
+.env.local
+server/dati/auth.json
+
+# log e file temporanei
+*.log
+npm-debug.log*
+
+# sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini

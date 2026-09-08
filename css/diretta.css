@@ -1,0 +1,516 @@
+/* =============================================================================
+   diretta.css — slayer_beard · la sezione della diretta
+   Blocchi: .diretta, .diretta__testa, .diretta__scena, .diretta__nota e tutto
+   il TELAIO del monitor (.monitor, .monitor__telaio, .monitor__barra,
+   .monitor__schermo, .monitor__lato, .monitor__piede, .monitor__video,
+   .monitor__chat).
+
+   PERCHÉ QUESTO FILE ESISTE
+   Il player stava nella colonna destra della copertina, larga il 66% di una
+   griglia già stretta: era piccolo. Il committente ha chiesto una sezione tutta
+   sua (CONTRATTO-2 §2.2), e con lei il telaio si è spostato da regia.css a qui.
+   In regia.css non resta una riga di .monitor*.
+
+   MISURE — l'unico vincolo che conta
+   La scena arriva fino a --max-larghezza, il video è 16/9 pieno e la chat, da
+   1000px in su, è una colonna DENTRO al telaio: non è più un blocco impilato
+   sotto al video. La colonna della chat non supera mai un quarto del telaio,
+   così il video non scende sotto i tre quarti della larghezza; sopra i 1360px
+   si ferma a 340px, che è la misura oltre la quale la chat di Twitch smette di
+   guadagnarci qualcosa.
+
+   CONFINE CON L'AGENTE 3 (css/player.css)
+   Qui c'è solo il telaio. Il contenuto dell'iframe e della chat (.player__*,
+   .chat__*) è di player.css. Le due scatole vuote — .monitor__video e
+   .monitor__chat — ricevono da qui SOLO la misura, altrimenti collassano a zero
+   prima che il JS ci scriva dentro.
+
+   CONFINE CON L'AGENTE 2 (css/pollo.css)
+   .diretta__scena è il contesto di posizionamento del pollo: dichiara
+   --pollo-larghezza e gli riserva la corsia a destra. Tutto il resto — dove sta
+   il pollo, quanto è grande, come si muove — è di pollo.css. Qui .pollo compare
+   una volta sola, dentro un :has() sulla scena, e serve a SMETTERE di riservare
+   la corsia quando il pollo è spento: nessuna dichiarazione ricade su di lui.
+
+   Nessun esadecimale: i valori arrivano da tokens.css (riscritti da tema.css).
+   ============================================================================= */
+
+
+/* =============================================================================
+   1. IMPIANTO DELLA SEZIONE
+   Stessa formula delle altre sezioni: il vincolo di larghezza è quello del
+   contenuto, il margine laterale si somma. Così i bordi di tutta la pagina
+   restano su una linea sola.
+   ============================================================================= */
+
+.diretta {
+  inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2));
+  margin-inline: auto;
+  padding-inline: var(--margine);
+  padding-block: clamp(var(--passo-6), 7vh, var(--passo-12));
+}
+
+
+/* =============================================================================
+   2. TESTATA
+   Non usa .sezione__testa: da 900px in su si apre su due colonne — occhiello e
+   titolo a sinistra, testo di presentazione a destra allineato in basso — come
+   fa la testata della settimana. Una testata impilata sopra un player largo
+   1100px sembrerebbe l'inizio di un volantino.
+   ============================================================================= */
+
+.diretta__testa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--passo-2);
+  max-inline-size: 62ch;
+  margin-block-end: var(--passo-4);
+}
+
+@media (min-width: 900px) {
+  .diretta__testa {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+    column-gap: var(--passo-6);
+    align-items: end;
+    max-inline-size: none;
+    margin-block-end: var(--passo-6);
+  }
+
+  .diretta__testa .sezione__occhiello { grid-column: 1; grid-row: 1; }
+  .diretta__testa .sezione__titolo    { grid-column: 1; grid-row: 2; }
+
+  .diretta__testa .sezione__testo {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: end;
+    max-inline-size: none;
+  }
+}
+
+
+/* =============================================================================
+   3. LA SCENA
+   È il riquadro dentro cui stanno il monitor e il pollo. Da qui il pollo prende
+   il contesto di posizionamento e la sua corsia; il resto lo fa css/pollo.css.
+
+   isolation: isolate serve all'alone del monitor, che è un pseudo-elemento a
+   z-index negativo: senza un contesto di impilamento qui finirebbe dietro allo
+   sfondo della pagina invece che dietro al telaio.
+   ============================================================================= */
+
+.diretta__scena {
+  /* Larghezza della corsia del pollo. La dichiara la scena e non pollo.css
+     perché è la scena a doverla sottrarre al telaio: è l'unico modo di essere
+     certi che il pollo non finisca mai sopra il video o sopra i comandi. */
+  --pollo-larghezza: clamp(112px, 11vw, 176px);
+
+  position: relative;
+  isolation: isolate;
+}
+
+/* Sotto i 1100px il pollo non ha una corsia: si arrangia sopra o sotto al
+   telaio (lo decide pollo.css) e il monitor si prende tutta la larghezza, che
+   è quella che scarseggia. Da 1100px in su lo spazio c'è e glielo si riserva
+   davvero, invece di lasciarlo sovrapporre. */
+@media (min-width: 1100px) {
+  .diretta__scena {
+    padding-inline-end: calc(var(--pollo-larghezza) + var(--passo-3));
+  }
+
+  /* Pollo spento, corsia inutile: il telaio se la riprende. Non è pignoleria,
+     sono i 200px che mancano alla colonna della chat fra i 1100 e i 1250px,
+     dove il telaio è già stretto fra il binario e la corsia.
+
+     Due casi, due selettori, e servono tutti e due:
+     · il pollo c'è ma è spento — js/pollo.js mette `hidden` su #pollo quando il
+       visitatore lo chiude e quando la scelta è ricordata in localStorage;
+     · il pollo non c'è proprio — chi amministra lo spegne dal pannello e il
+       modello non stampa nemmeno il parziale.
+     Il figlio DIRETTO è obbligatorio: il fumetto nasce hidden anche a pollo
+     acceso, e un :has() discendente spegnerebbe la corsia quasi sempre.
+
+     Le regole stanno su .diretta__scena: qui non si stila .pollo, si smette solo
+     di sottrargli spazio. Dove :has() non è supportato l'elenco di selettori è
+     invalido per intero e la regola cade: resta la corsia vuota, che è spazio
+     sprecato e non un guasto. */
+  .diretta__scena:has(> .pollo[hidden]),
+  .diretta__scena:not(:has(> .pollo)) {
+    padding-inline-end: 0;
+  }
+}
+
+
+/* =============================================================================
+   4. MONITOR — il telaio
+   Barra con i tre punti e il badge, schermo 16/9, lato per la chat, piede con i
+   comandi. Bordo da 1px, due segni d'angolo in ciano, un alone viola dietro.
+   Rispetto a quando stava in copertina è tutto un po' più grande: le squadrette
+   passano da 16 a 20px e il piede da 40 a 44px di comando, perché adesso il
+   monitor è il protagonista della sezione e non un riquadro in una colonna.
+   ============================================================================= */
+
+.monitor {
+  position: relative;
+  min-inline-size: 0;
+}
+
+/* Alone: sta dietro al telaio e non è un box-shadow perché deve sbordare in
+   modo ovale e morbido, non seguire gli angoli del riquadro. Il contesto glielo
+   dà .diretta__scena con isolation: isolate. */
+.monitor::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -5% -4% -9%;
+  border-radius: 50%;
+  background-image: radial-gradient(
+    62% 62% at 50% 46%,
+    color-mix(in srgb, var(--viola) 30%, transparent),
+    color-mix(in srgb, var(--viola) 0%, transparent) 72%
+  );
+  filter: blur(48px);
+  pointer-events: none;
+}
+
+.monitor__telaio {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid var(--linea-forte);
+  border-radius: var(--raggio-g);
+  background-color: var(--pannello);
+  background-image: var(--grad-pannello);
+  box-shadow: var(--ombra);
+  /* Tiene l'iframe di Twitch dentro gli angoli arrotondati. */
+  overflow: hidden;
+}
+
+/* Segni d'angolo: due squadrette in diagonale, sopra la barra e sopra il piede
+   (mai sopra il video). Sono decorative, quindi non intercettano il puntatore. */
+.monitor__telaio::before,
+.monitor__telaio::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inline-size: 20px;
+  block-size: 20px;
+  border: 1px solid color-mix(in srgb, var(--ciano) 55%, transparent);
+  pointer-events: none;
+}
+
+.monitor__telaio::before {
+  inset-block-start: 9px;
+  inset-inline-start: 9px;
+  border-inline-end-width: 0;
+  border-block-end-width: 0;
+  border-start-start-radius: 6px;
+}
+
+.monitor__telaio::after {
+  inset-block-end: 9px;
+  inset-inline-end: 9px;
+  border-inline-start-width: 0;
+  border-block-start-width: 0;
+  border-end-end-radius: 6px;
+}
+
+
+/* =============================================================================
+   5. BARRA SUPERIORE
+   ============================================================================= */
+
+.monitor__barra {
+  display: flex;
+  align-items: center;
+  gap: var(--passo-2);
+  padding: calc(var(--passo) * 1.25) var(--passo-2);
+  border-block-end: 1px solid var(--linea);
+  background-color: color-mix(in srgb, var(--fondo-2) 72%, transparent);
+}
+
+.monitor__punti {
+  display: flex;
+  flex: none;
+  gap: 5px;
+  /* Rientrati per non finire sotto la squadretta dell'angolo, che con il suo
+     inset arriva a 29px dal bordo. */
+  margin-inline-start: var(--passo-2);
+  color: var(--testo-tenue);
+  opacity: 0.65;
+}
+
+.monitor__punti svg {
+  inline-size: 13px;
+  block-size: 13px;
+}
+
+.monitor__titolo {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  color: var(--testo-medio);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+  /* Il JS ci scrive il titolo della diretta, che può essere lunghissimo: taglia
+     invece di far crescere la barra. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* base.css ha [hidden] { display: none } e viene caricato prima: senza il
+   :not([hidden]) questa regola riaccenderebbe il badge anche da spento. */
+.monitor__badge:not([hidden]) { display: inline-flex; }
+
+.monitor__badge {
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 3px var(--passo);
+  border: 1px solid color-mix(in srgb, var(--live) 55%, transparent);
+  border-radius: var(--raggio-pill);
+  background-color: color-mix(in srgb, var(--live) 15%, transparent);
+  color: var(--live);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+.monitor__badge::before {
+  content: "";
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: monitor-batte 2.2s var(--curva) infinite;
+}
+
+@keyframes monitor-batte {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+
+/* =============================================================================
+   6. SCHERMO
+   16/9 pieno, sempre: è la misura che il committente ha chiesto di far crescere
+   e non va sacrificata a nient'altro. La larghezza gliela dà il telaio, che con
+   la chat aperta si stringe al massimo di un quarto.
+   ============================================================================= */
+
+.monitor__schermo {
+  position: relative;
+  min-inline-size: 0;
+  aspect-ratio: 16 / 9;
+  background-color: var(--fondo);
+  /* Un filo di luce dal centro: quando il player non è ancora partito lo schermo
+     non sembra un buco nero. */
+  background-image: radial-gradient(
+    80% 80% at 50% 42%,
+    color-mix(in srgb, var(--viola-cupo) 30%, transparent),
+    color-mix(in srgb, var(--viola-cupo) 0%, transparent) 74%
+  );
+  overflow: hidden;
+}
+
+/* Solo la scatola. Il contenuto è dell'agente 3 (player.css): senza queste due
+   righe il div resta vuoto e alto zero prima che il JS ci metta l'iframe. */
+.monitor__video {
+  position: absolute;
+  inset: 0;
+}
+
+
+/* =============================================================================
+   7. LATO DELLA CHAT
+   Chiusa: [hidden], sparisce. Aperta: sotto lo schermo fino a 1000px, colonna
+   dentro al telaio da 1000px in su.
+
+   Il :has() serve perché la griglia del telaio deve cambiare forma in base a un
+   attributo di un figlio; se il browser non lo conosce la regola cade e la chat
+   resta impilata sotto, che funziona lo stesso.
+   ============================================================================= */
+
+.monitor__lato:not([hidden]) { display: block; }
+
+.monitor__lato {
+  min-inline-size: 0;
+  border-block-start: 1px solid var(--linea);
+}
+
+/* Come .monitor__video: qui c'è solo la misura, dentro ci scrive l'agente 3.
+   Impilata sotto al video la chat ha bisogno di un'altezza sua, e la lega alla
+   finestra: su un telefono in verticale 460px di chat sarebbero mezza pagina. */
+.monitor__chat {
+  block-size: 100%;
+  min-block-size: clamp(280px, 46vh, 460px);
+}
+
+@media (min-width: 1000px) {
+  .monitor__telaio:has(.monitor__lato:not([hidden])) {
+    /* Un quarto del telaio e non un pixel di più: è la regola che tiene il video
+       sopra i tre quarti (CONTRATTO-2 §2.2). Il tetto a 340px vale dai telai
+       molto larghi in su, dove il quarto sarebbe spazio sprecato per una chat
+       che resta una colonna di righe corte. */
+    grid-template-columns: minmax(0, 1fr) min(25%, 340px);
+  }
+
+  .monitor__telaio:has(.monitor__lato:not([hidden])) .monitor__barra,
+  .monitor__telaio:has(.monitor__lato:not([hidden])) .monitor__piede {
+    grid-column: 1 / -1;
+  }
+
+  .monitor__telaio:has(.monitor__lato:not([hidden])) .monitor__lato {
+    border-block-start: 0;
+    border-inline-start: 1px solid var(--linea);
+  }
+
+  /* Di fianco al video l'altezza è quella dello schermo: il minimo servirebbe
+     solo a far crescere la riga oltre il video. */
+  .monitor__telaio:has(.monitor__lato:not([hidden])) .monitor__chat {
+    min-block-size: 0;
+  }
+}
+
+
+/* =============================================================================
+   8. PIEDE
+   Comando della chat, nota e link al canale. Su una riga sola finché ci stanno,
+   a capo quando non ci stanno più: il piede di un monitor largo 1100px e quello
+   di un monitor largo 288px sono lo stesso pezzo, non due layout.
+   ============================================================================= */
+
+.monitor__piede {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--passo-2);
+  padding: var(--passo-2) var(--passo-3);
+  border-block-start: 1px solid var(--linea);
+}
+
+/* Il bottone della chat non ha classe nel markup (è #chat-toggle e basta): si
+   veste qui, con la stessa grammatica di .btn--vuoto. Adesso che il monitor è
+   la sezione, il comando può avere i suoi 44px di bersaglio: in copertina stava
+   a 40 per non competere con le CTA del quadro, che qui non ci sono. */
+.monitor__piede > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--passo);
+  flex: none;
+  min-block-size: 44px;
+  padding-inline: var(--passo-3);
+  border: 1px solid var(--linea-comando);
+  border-radius: var(--raggio-pill);
+  background-color: transparent;
+  color: var(--testo);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition:
+    border-color     var(--durata) var(--curva),
+    background-color var(--durata) var(--curva),
+    color            var(--durata) var(--curva);
+}
+
+.monitor__piede > button svg {
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  flex: none;
+}
+
+.monitor__piede > button:hover {
+  border-color: var(--ciano);
+  background-color: var(--pannello-2);
+}
+
+/* Chat aperta: il comando resta acceso. Lo stato lo dichiara già il JS con
+   aria-expanded, quindi non serve una classe in più. */
+.monitor__piede > button[aria-expanded="true"] {
+  border-color: var(--ciano);
+  color: var(--ciano);
+}
+
+.monitor__nota {
+  flex: 1 1 16ch;
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--testo-tenue);
+  font-size: var(--t-micro);
+  line-height: 1.45;
+}
+
+.monitor__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--passo);
+  flex: none;
+  color: var(--viola-chiaro);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+  transition: color var(--durata) var(--curva);
+}
+
+.monitor__link svg {
+  inline-size: 1.05em;
+  block-size: 1.05em;
+  flex: none;
+}
+
+.monitor__link:hover { color: var(--ciano); }
+
+
+/* =============================================================================
+   9. NOTA SOTTO AL PLAYER
+   Cosa fare se la diretta non parte. Va letta solo da chi ha un problema:
+   piccola, tenue, e con la stessa lineetta ciano degli occhielli per dire che
+   appartiene ancora alla strumentazione.
+   ============================================================================= */
+
+.diretta__nota {
+  display: flex;
+  align-items: baseline;
+  gap: var(--passo-2);
+  margin-block-start: var(--passo-3);
+  max-inline-size: 78ch;
+  color: var(--testo-tenue);
+  font-size: var(--t-piccolo);
+}
+
+.diretta__nota::before {
+  content: "";
+  flex: none;
+  inline-size: var(--passo-3);
+  block-size: 1px;
+  /* Allineata alla prima riga di testo e non alla linea di base, che su una
+     nota di due righe la lascerebbe a mezz'aria. */
+  transform: translateY(-0.35em);
+  background-color: color-mix(in srgb, var(--ciano) 70%, transparent);
+}
+
+
+/* =============================================================================
+   10. MOVIMENTO RIDOTTO
+   I token di durata li azzera già base.css. Qui si ferma la sola animazione con
+   @keyframes dichiarata in questo foglio.
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .monitor__badge::before { animation: none; }
+}

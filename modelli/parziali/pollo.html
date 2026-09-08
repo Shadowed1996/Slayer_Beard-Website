@@ -1,0 +1,22 @@
+<!-- Il pollo. Ultimo figlio di .diretta__scena (l'agente 1 lo include lì): la
+     scena è position: relative e gli riserva lo spazio con --pollo-larghezza.
+
+     Il fumetto nasce hidden e aria-hidden: i messaggi della chat NON vanno
+     annunciati dallo screen reader, sarebbe uno spam continuo. L'unica cosa
+     esposta è il bottone, con la sua etichetta.
+
+     L'immagine è decorativa due volte (alt vuoto + aria-hidden): il bottone che
+     la contiene ha già un nome accessibile, ripeterlo dentro sarebbe rumore.
+     Il fondo viola di mascot.png non è trasparente: lo sfuma css/pollo.css con
+     una maschera, qui non serve nessun accorgimento. -->
+<div id="pollo" class="pollo" data-stato="riposo">
+  <div id="pollo-fumetto" class="pollo__fumetto" aria-hidden="true" hidden><span class="pollo__testo"></span></div>
+
+  <button id="pollo-bottone" class="pollo__bottone" type="button" aria-label="{{pollo.etichetta}}">
+    <img class="pollo__img" src="{{config.immagini.mascotte}}" alt="" aria-hidden="true">
+  </button>
+
+  <!-- La croce è disegnata dal CSS con due barrette: il DOM resta quello del
+       contratto e non serve un'icona in più da caricare. -->
+  <button id="pollo-chiudi" class="pollo__chiudi" type="button" aria-label="{{pollo.nascondi}}"></button>
+</div>

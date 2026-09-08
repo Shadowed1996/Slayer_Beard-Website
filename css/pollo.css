@@ -1,0 +1,395 @@
+/* =============================================================================
+   pollo.css — slayer_beard · la mascotte accanto alla chat
+   Blocchi: .pollo, .pollo__fumetto, .pollo__testo, .pollo__bottone, .pollo__img,
+   .pollo__chiudi. Questo foglio possiede TUTTO ciò che comincia per .pollo,
+   posizionamento compreso: nessun altro file scrive su queste classi.
+
+   DOV'È IL POLLO
+   Ultimo figlio di .diretta__scena, che è position: relative e — da 1100px in
+   su — gli riserva una colonna a destra con padding-inline-end:
+   var(--pollo-larghezza). Da lì in su il pollo è assoluto DENTRO quella
+   colonna: sta accanto al telaio, non sopra. Sotto i 1100px la colonna non
+   c'è, il pollo torna nel flusso e si appoggia sotto al telaio, allineato a
+   destra. In nessuno dei due casi può finire sopra al video o sopra ai comandi
+   del piede, che è il vincolo del CONTRATTO-2 §2.3.
+
+   PERCHÉ IL FUMETTO È ASSOLUTO
+   Entra ed esce di continuo: se stesse nel flusso, ogni frase spingerebbe il
+   pollo (e sotto i 1100px anche la nota della sezione) di qualche pixel. Da
+   assoluto non sposta niente. Per la stessa ragione l'attributo `hidden` non
+   lo toglie dal layout ma lo rende trasparente: serve a poterlo far sfumare
+   invece di farlo sparire di scatto. È aria-hidden dal markup, quindi resta
+   invisibile allo screen reader in entrambi gli stati.
+
+   LA MASCHERA — non è decorazione, è necessaria
+   Il fondo viola di img/mascot.png NON è trasparente. Senza maschera comparirebbe
+   un rettangolo viola pieno accanto al monitor. Un radiale morbido tiene opaco
+   il corpo del pollo e sfuma il perimetro: quel poco di viola che resta legge
+   come un alone, non come un ritaglio. Stessa tecnica di regia.css §6.
+
+   COLORI
+   Nessun esadecimale: solo token di tokens.css e color-mix(). I neri con alpha
+   dentro le maschere e le ombre non sono colori del tema, sono canali alpha.
+   ============================================================================= */
+
+
+/* =============================================================================
+   1. IMPIANTO — sotto i 1100px il pollo sta nel flusso, dopo il telaio
+   `margin-inline-start: auto` lo manda a destra senza sapere niente di come
+   l'agente 1 ha fatto la scena. `grid-column: 1 / -1` è innocuo se la scena è
+   un blocco e serve se è una griglia: il pollo prende una riga tutta sua
+   invece di stringere il monitor.
+   ============================================================================= */
+
+.pollo {
+  position: relative;
+  z-index: var(--z-contenuto);
+  grid-column: 1 / -1;
+  inline-size: clamp(88px, 19vw, 124px);
+  margin-block-start: var(--passo-2);
+  /* Lo scostamento di destra è il bilancio della parallasse: js/pollo.js
+     sposta il pollo di 12px al massimo e non deve poter sconfinare oltre il
+     bordo della scena. */
+  margin-inline: auto 12px;
+}
+
+/* Il fumetto sta a SINISTRA del pollo, mai sopra: sopra c'è il piede del
+   monitor, e questo fumetto ha il fondo opaco, quindi coprirebbe «Guarda su
+   Twitch». Due vincoli lo tengono lì:
+
+   · è ancorato alla testa del pollo (inset-block-start: 0) e cresce verso il
+     basso, dove non c'è niente da coprire;
+   · non è mai più alto del pollo stesso (max-block-size: 100%).
+
+   Il caso peggiore è reale, non teorico: con «Mostra il testo dei messaggi»
+   acceso, una frase più un messaggio troncato a 80 caratteri fanno sei o sette
+   righe a 320px. Quelle che avanzano si troncano (vedi .pollo__testo). */
+.pollo__fumetto {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 100%;
+  inline-size: min(15rem, 52vw);
+  max-block-size: 100%;
+  margin-inline-end: var(--passo);
+  padding: var(--passo) var(--passo-2);
+  border: 1px solid var(--linea-forte);
+  border-radius: var(--raggio);
+  background-color: var(--pannello-2);
+  background-image: var(--grad-pannello);
+  box-shadow: var(--ombra-morbida);
+  color: var(--testo);
+  font-family: var(--font-testo);
+  font-size: var(--t-micro);
+  line-height: 1.45;
+  /* Un nome lunghissimo della chat non deve allargare il fumetto oltre il suo
+     spazio: si spezza, anche a costo di tagliare la parola. */
+  overflow-wrap: anywhere;
+  transition:
+    opacity var(--durata) var(--curva),
+    translate var(--durata) var(--curva);
+}
+
+/* La punta del fumetto: un quadratino ruotato con due soli lati di bordo, così
+   sembra la continuazione della cornice e non un triangolo appiccicato. */
+.pollo__fumetto::after {
+  content: "";
+  position: absolute;
+  inset-block-start: var(--passo-2);
+  inset-inline-end: -5px;
+  inline-size: 9px;
+  block-size: 9px;
+  border-block-start: 1px solid var(--linea-forte);
+  border-inline-end: 1px solid var(--linea-forte);
+  background-color: var(--pannello-2);
+  rotate: 45deg;
+}
+
+/* base.css porta [hidden] a display: none; qui serve il contrario, perché il
+   fumetto deve poter sfumare. Sparisce con opacity, non con display, e non
+   intercetta più il puntatore. */
+.pollo__fumetto[hidden] {
+  display: block;
+  opacity: 0;
+  translate: var(--passo) 0;
+  pointer-events: none;
+}
+
+/* Quello che non entra nel tetto del fumetto si tronca con i puntini, invece
+   di sfondarlo o di nascondersi in una barra di scorrimento: un fumetto che si
+   chiude da solo dopo qualche secondo, la barra non la userebbe nessuno.
+   Cinque righe sono quante ne stanno a 320px dentro l'altezza del pollo.
+
+   Il taglio sta QUI e non sul fumetto: un overflow: hidden sul fumetto
+   ritaglierebbe anche la punta, che sporge di 5px oltre il suo bordo. */
+.pollo__testo {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+  /* Rete di sicurezza per i motori che non conoscessero line-clamp: cinque
+     righe da 1.45em sono lo stesso tetto, detto in altezza. */
+  max-block-size: calc(1.45em * 5);
+}
+
+
+/* =============================================================================
+   2. IL BOTTONE E L'IMMAGINE
+   Il bottone è grande quanto il pollo: la mascotte È il comando, non c'è una
+   zona cliccabile nascosta da qualche parte.
+   ============================================================================= */
+
+.pollo__bottone {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  border-radius: var(--raggio);
+  transition: translate var(--durata) var(--curva);
+}
+
+.pollo__bottone:hover { translate: 0 -3px; }
+.pollo__bottone:active { translate: 0 -1px; }
+
+.pollo__img {
+  inline-size: 100%;
+  block-size: auto;
+  /* Le proporzioni vere di img/mascot.png (337×421): dichiararle qui evita che
+     la riga salti fra il layout e il caricamento dell'immagine. */
+  aspect-ratio: 337 / 421;
+  -webkit-mask-image: radial-gradient(78% 72% at 50% 46%, rgba(0, 0, 0, 1) 58%, rgba(0, 0, 0, 0) 100%);
+  mask-image: radial-gradient(78% 72% at 50% 46%, rgba(0, 0, 0, 1) 58%, rgba(0, 0, 0, 0) 100%);
+  /* drop-shadow lavora sulla sagoma già mascherata: l'alone segue il pollo e
+     non il rettangolo dell'immagine. */
+  filter: drop-shadow(0 8px 20px color-mix(in srgb, var(--viola) 45%, transparent));
+  transform-origin: 50% 92%;
+}
+
+/* La cresta che si accende quando il canale è in onda. È un alone ciano dietro
+   la testa, non un ritaglio della cresta vera: l'immagine è una sola e non si
+   può illuminarne un pezzo. `is-onda` è indipendente da data-stato apposta,
+   altrimenti la cresta si spegnerebbe ogni volta che il pollo parla. */
+.pollo__bottone::after {
+  content: "";
+  position: absolute;
+  inset-block-start: -8%;
+  inset-inline-start: 50%;
+  inline-size: 66%;
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background-image: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--ciano) 75%, transparent),
+    rgba(0, 0, 0, 0) 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  /* L'alone deve schiarire quello che ha sotto, non coprirlo. */
+  mix-blend-mode: screen;
+  transition: opacity var(--durata-lunga) var(--curva);
+}
+
+.pollo.is-onda .pollo__bottone::after { opacity: 0.55; }
+
+
+/* =============================================================================
+   3. IL BOTTONE «NASCONDI»
+   Piccolo ma non minuscolo: 28px sono il minimo perché resti premibile col
+   dito. Sta all'angolo alto del pollo, dove non copre né la testa né il
+   fumetto. La croce è disegnata con due barrette, così il markup resta quello
+   del contratto e non serve caricare un'icona.
+   ============================================================================= */
+
+.pollo__chiudi {
+  position: absolute;
+  /* Ancorato dentro il riquadro del pollo, senza scostamenti negativi verso
+     l'esterno: da 1100px in su il pollo è già a filo del bordo della scena e
+     qualunque sporgenza orizzontale rischierebbe una barra di scorrimento. */
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: 28px;
+  block-size: 28px;
+  border: 1px solid var(--linea-comando);
+  border-radius: 50%;
+  background-color: var(--velo);
+  color: var(--testo-medio);
+  transition:
+    color var(--durata) var(--curva),
+    border-color var(--durata) var(--curva);
+}
+
+.pollo__chiudi:hover {
+  color: var(--testo);
+  border-color: var(--linea-viva);
+}
+
+.pollo__chiudi::before,
+.pollo__chiudi::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  inline-size: 11px;
+  block-size: 1px;
+  background-color: currentColor;
+}
+
+.pollo__chiudi::before { translate: -50% -50%; rotate: 45deg; }
+.pollo__chiudi::after  { translate: -50% -50%; rotate: -45deg; }
+
+
+/* =============================================================================
+   4. STATI — data-stato lo scrive js/pollo.js
+   Movimenti piccoli e lenti: la mascotte deve sembrare viva, non agitata.
+   Tutte le animazioni girano su .pollo__img e usano `rotate`/`translate`
+   (proprietà singole) e non `transform`, perché la parallasse del mouse scrive
+   `translate` sulla radice .pollo: due elementi diversi, nessuna collisione.
+   ============================================================================= */
+
+/* Riposo: dondolio lento, come chi aspetta. */
+.pollo[data-stato="riposo"] .pollo__img {
+  animation: pollo-dondola 5.2s var(--curva) infinite;
+}
+
+/* In onda: stesso dondolio, più sveglio. */
+.pollo[data-stato="live"] .pollo__img {
+  animation: pollo-dondola 3.2s var(--curva) infinite;
+}
+
+/* Qualcuno sta scrivendo: il pollo annuisce, come chi ascolta. */
+.pollo[data-stato="scrive"] .pollo__img {
+  animation: pollo-annuisce 1.5s ease-in-out infinite;
+}
+
+/* Sta parlando: piccolo saltello a tempo con la frase nel fumetto. */
+.pollo[data-stato="parla"] .pollo__img {
+  animation: pollo-parla 0.62s ease-in-out infinite;
+}
+
+/* Contento: la beccata. Dura una battuta e riprende, con una pausa in mezzo
+   perché beccare senza sosta sembrerebbe un tic. */
+.pollo[data-stato="contento"] .pollo__img {
+  animation: pollo-becca 1.1s var(--curva) infinite;
+}
+
+.pollo.is-onda .pollo__bottone::after {
+  animation: pollo-cresta 2.6s ease-in-out infinite;
+}
+
+@keyframes pollo-dondola {
+  0%, 100% { rotate: -2.4deg; }
+  50%      { rotate: 2.4deg; }
+}
+
+@keyframes pollo-annuisce {
+  0%, 100% { rotate: 0deg;   translate: 0 0; }
+  45%      { rotate: 6deg;   translate: 0 3px; }
+  70%      { rotate: 1deg;   translate: 0 0; }
+}
+
+@keyframes pollo-parla {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 -4px; }
+}
+
+@keyframes pollo-becca {
+  0%, 55%, 100% { rotate: 0deg;  translate: 0 0; }
+  18%           { rotate: 11deg; translate: 0 5px; }
+  34%           { rotate: -3deg; translate: 0 -2px; }
+}
+
+@keyframes pollo-cresta {
+  0%, 100% { opacity: 0.30; }
+  50%      { opacity: 0.85; }
+}
+
+
+/* =============================================================================
+   5. DA 1100px IN SU — il pollo entra nella colonna riservata
+   `--pollo-larghezza` la dichiara .diretta__scena (agente 1) ed è anche lo
+   spazio che la scena si toglie con padding-inline-end. Il pollo prende quella
+   misura meno il bilancio della parallasse, così non può sconfinare sul telaio
+   nemmeno spostato al massimo; il valore di ripiego serve solo nel caso in cui
+   il foglio della sezione non venisse caricato.
+   ============================================================================= */
+
+@media (min-width: 1100px) {
+
+  .pollo {
+    position: absolute;
+    /* I 12px su tutti i lati sono il bilancio della parallasse: il pollo si
+       sposta al massimo di 12px orizzontali e 7 verticali, e anche spostato
+       al massimo deve restare dentro la colonna riservata, senza sfiorare il
+       telaio a sinistra né sbordare dalla scena in basso. */
+    inset-block-end: 12px;
+    inset-inline-end: 12px;
+    inline-size: calc(var(--pollo-larghezza, 168px) - 24px);
+    max-inline-size: 240px;
+    margin: 0;
+  }
+
+  /* Nella colonna il fumetto va SOPRA il pollo, mai al suo fianco: al fianco
+     finirebbe sopra al video. I -12px riprendono il bilancio della parallasse
+     tolto al pollo, così il fumetto è largo esattamente quanto la corsia
+     riservata — non un pixel di più — e resta comunque staccato dal telaio,
+     che la scena tiene a distanza con un altro --passo-3. */
+  .pollo__fumetto {
+    /* inset-block-start torna ad auto: lasciandolo a 0 insieme a un
+       inset-block-end del 100% il riquadro sarebbe sovravincolato e alto zero. */
+    inset-block-start: auto;
+    inset-block-end: 100%;
+    inset-inline: -12px;
+    inline-size: auto;
+    /* Qui sopra il pollo non c'è niente da coprire — la corsia è di fianco al
+       telaio, non davanti — ma un tetto serve lo stesso perché una frase molto
+       lunga non arrivi a scavalcare la testata della sezione. */
+    max-block-size: 12rem;
+    margin-inline-end: 0;
+    margin-block-end: var(--passo);
+  }
+
+  /* Corsia stretta e alta: qui di righe ce ne stanno il doppio. */
+  .pollo__testo {
+    -webkit-line-clamp: 9;
+    line-clamp: 9;
+    max-block-size: calc(1.45em * 9);
+  }
+
+  .pollo__fumetto[hidden] { translate: 0 var(--passo); }
+
+  /* La punta si sposta sotto, verso la testa del pollo. */
+  .pollo__fumetto::after {
+    inset-block-start: auto;
+    inset-block-end: -5px;
+    inset-inline-end: auto;
+    inset-inline-start: var(--passo-3);
+    border-block-start: 0;
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--linea-forte);
+    border-inline-start: 1px solid var(--linea-forte);
+  }
+}
+
+
+/* =============================================================================
+   6. MOVIMENTO RIDOTTO
+   Si ferma tutto: dondolio, beccata, alone della cresta, scatto del bottone.
+   Il pollo continua a cambiare frase e stato, semplicemente sta fermo.
+   base.css azzera già i token di durata, qui si spengono le @keyframes di
+   questo foglio, che dai token non passano.
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  .pollo__img,
+  .pollo__bottone::after {
+    animation: none;
+  }
+
+  .pollo__bottone:hover,
+  .pollo__bottone:active {
+    translate: none;
+  }
+
+  .pollo__fumetto[hidden] { translate: none; }
+}

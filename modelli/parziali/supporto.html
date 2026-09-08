@@ -1,0 +1,24 @@
+<section id="supporto" class="supporto" aria-labelledby="supporto-titolo">
+  <div class="sezione__testa">
+    <p class="sezione__occhiello">{{supporto.occhiello}}</p>
+    <h2 id="supporto-titolo" class="sezione__titolo">{{supporto.titolo}}</h2>
+    <p class="sezione__testo">{{{supporto.testo}}}</p>
+  </div>
+
+  <!-- Le voci senza URL sono già state tolte dalla generazione: qui non arriva niente di rotto. -->
+  <ol id="listino" class="listino">
+    {{#ogni supporto}}
+    <li class="listino__riga">
+      <span class="listino__icona">{{{svg}}}</span>
+      <div class="listino__corpo">
+        <h3 class="listino__titolo">{{titolo}}</h3>
+        <p class="listino__testo">{{{testo}}}</p>
+      </div>
+      <span class="listino__tag">{{tag}}</span>
+      <a class="listino__azione" href="{{url}}" target="_blank" rel="noopener">{{cta}}</a>
+    </li>
+    {{/ogni}}
+  </ol>
+
+  <p class="supporto__chiusura">{{{supporto.chiusura}}}</p>
+</section>

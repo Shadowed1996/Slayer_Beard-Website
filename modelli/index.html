@@ -1,0 +1,60 @@
+<!doctype html>
+<!-- Generato il {{sito.generatoIl}} da modelli/index.html + contenuti/contenuti.json.
+     Non si modifica a mano: si riscrive a ogni pubblicazione (CONTRATTO §6). -->
+<html lang="it">
+<head>
+{{> parziali/testa}}
+
+<!-- Ordine obbligatorio (CONTRATTO §3, CONTRATTO-2 §11): tokens.css definisce i valori di
+     partenza, tema.css — generato dal pannello — li riscrive, tutti gli altri li consumano. -->
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/tema.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/regia.css">
+<link rel="stylesheet" href="css/diretta.css">
+<link rel="stylesheet" href="css/sezioni.css">
+<link rel="stylesheet" href="css/player.css">
+<link rel="stylesheet" href="css/pollo.css">
+<link rel="stylesheet" href="css/account.css">
+<link rel="stylesheet" href="css/lurk.css">
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+
+{{> parziali/binario}}
+
+<main id="contenuto">
+{{> parziali/regia}}
+{{> parziali/diretta}}
+{{> parziali/settimana}}
+{{> parziali/chi}}
+{{> parziali/supporto}}
+{{> parziali/saluti}}
+</main>
+
+{{> parziali/piede}}
+
+<!-- ritorno.js prima di tutto e SENZA defer, ed è l'unico punto in cui l'ordine è una
+     questione di sostanza e non di dipendenze: quando questa pagina è la finestrella
+     che torna dal login di Twitch, quel file consegna il token a chi l'ha aperta e la
+     chiude. Deve farlo mentre il documento si sta ancora analizzando, cioè prima che
+     player.js — differito, quindi più tardi — monti un secondo player di Twitch dentro
+     la finestrella: sarebbe una seconda sessione video della stessa persona, che il
+     CONTRATTO-3 §3.4 vieta. In una visita normale esce alla seconda riga e non fa niente.
+
+     Poi dati.js: tutti gli altri leggono window.DATI. L'SDK di Twitch non è differito
+     perché player.js, differito, se lo aspetta già valutato. La coda finale è una catena di
+     iscrizioni e l'ordine non è decorativo (CONTRATTO-3 §5.3): account.js pubblica
+     window.Account, canale.js e lurk.js ci si iscrivono, lurk.js si iscrive anche a
+     window.Player, e pollo.js si iscrive a window.Lurk — che quindi deve già esistere. -->
+<script src="js/ritorno.js"></script>
+<script src="js/dati.js"></script>
+<script src="https://embed.twitch.tv/embed/v1.js"></script>
+<script src="js/player.js" defer></script>
+<script src="js/sito.js" defer></script>
+<script src="js/account.js" defer></script>
+<script src="js/canale.js" defer></script>
+<script src="js/lurk.js" defer></script>
+<script src="js/pollo.js" defer></script>
+</body>
+</html>

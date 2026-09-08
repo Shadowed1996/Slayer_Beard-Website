@@ -1,0 +1,53 @@
+<!-- Copertina. Il monitor non sta più qui: è la sezione #diretta (CONTRATTO-2 §2.1).
+     Gli id #titolo, #spia-grande, #stato-testo, #conto e #ultima sono contratto con
+     js/player.js e js/sito.js: non si rinominano e non si tolgono. -->
+<section id="regia" class="regia" aria-labelledby="titolo">
+  <div class="regia__sfondo" aria-hidden="true">
+    <img src="{{config.immagini.banner}}" alt="">
+  </div>
+
+  <div class="regia__griglia">
+    <div class="quadro">
+      <p class="quadro__occhiello">{{deck.occhiello}}</p>
+      <h1 id="titolo" class="quadro__titolo">{{deck.titolo}}</h1>
+      <!-- Tripla graffa: è un campo di tipo «ricco» (CONTRATTO-2 §7.1). La
+           sanificazione è già avvenuta in generazione, qui il valore arriva
+           sicuro; con la doppia graffa i <br> e i grassetti del pannello si
+           leggerebbero come testo. -->
+      <p class="quadro__sottotitolo">{{{deck.sottotitolo}}}</p>
+
+      <div class="quadro__stato" role="group" aria-label="{{deck.etichettaStato}}">
+        <p class="stato__riga">
+          <span id="spia-grande" class="spia" aria-hidden="true"></span><span id="stato-testo">{{deck.statoVerifica}}</span>
+        </p>
+        <dl class="stato__dati">
+          <dt>{{deck.etichettaProssima}}</dt>
+          <!-- Senza JS resta il testo degli orari; sito.js ci scrive il conto alla rovescia e il datetime esatto. -->
+          <dd><time id="conto" class="conto" datetime="{{config.orari.ora}}">{{sito.orariTesto}}</time></dd>
+          <dt>{{deck.etichettaUltima}}</dt>
+          <dd id="ultima">{{config.ultimaDiretta}}</dd>
+        </dl>
+      </div>
+
+      <div class="quadro__azioni">
+        <a class="btn btn--pieno" href="{{sito.urlCanale}}" target="_blank" rel="noopener">{{deck.ctaPrimaria}}</a>
+        <!-- Il secondo comando porta al player, che adesso ha una sezione sua. -->
+        <a class="btn btn--vuoto" href="#diretta">{{deck.ctaSecondaria}}</a>
+      </div>
+    </div>
+
+    <!-- I quattro numeri sono fuori dal quadro: sono la fascia di strumenti che
+         chiude la copertina a tutta larghezza (CONTRATTO-2 §2.1). -->
+    <ul class="quadro__dati">
+      <li class="dato"><b class="dato__valore">{{deck.dato1Valore}}</b><span class="dato__etichetta">{{deck.dato1Etichetta}}</span></li>
+      <li class="dato"><b class="dato__valore">{{deck.dato2Valore}}</b><span class="dato__etichetta">{{deck.dato2Etichetta}}</span></li>
+      <li class="dato"><b class="dato__valore">{{deck.dato3Valore}}</b><span class="dato__etichetta">{{deck.dato3Etichetta}}</span></li>
+      <li class="dato"><b class="dato__valore">{{deck.dato4Valore}}</b><span class="dato__etichetta">{{deck.dato4Etichetta}}</span></li>
+    </ul>
+  </div>
+
+  <a class="regia__scorri" href="#diretta">
+    <span>{{deck.scorri}}</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v15"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg>
+  </a>
+</section>

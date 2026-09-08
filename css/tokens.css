@@ -1,0 +1,219 @@
+/* =============================================================================
+   tokens.css — slayer_beard · «REGIA»
+   Caricato per primo. È l'UNICO file del progetto che contiene colori
+   esadecimali: tutti gli altri fogli consumano queste variabili con var().
+
+   COME SI RICOLORA IL SITO TOCCANDO SOLO QUESTO FILE
+   1. Le tinte guida sono quattro: --viola (marchio), --ciano (tutto ciò che è
+      «acceso»), --magenta (accento raro) e --live (in onda). Cambia quelle e
+      cambia il sito intero, perché gradienti, aloni e spie ne derivano.
+   2. Il buio è fatto da --fondo (nero della pagina) e dalle due superfici
+      --pannello / --pannello-2, che sono vetri: hanno alpha, quindi lasciano
+      passare il bagliore sottostante. Non invertirne luminosità e opacità,
+      i pannelli sparirebbero nel fondo.
+   3. --grad-pagina è TUTTO lo sfondo del body. Aggiungere o togliere aloni si
+      fa solo lì: base.css non scrive altro che background: var(--grad-pagina).
+   4. Toccando i tre livelli di testo rifai la verifica di contrasto. Le soglie
+      WCAG AA sono 4.5:1 per il testo normale e 3:1 per testo grande, icone e
+      bordi che identificano un comando. I rapporti annotati qui sotto sono
+      misurati sia sul fondo pieno sia sul punto PIÙ CHIARO della pagina — il
+      picco dell'alone viola della copertina, composito rgb(36,26,75) — che è
+      il caso peggiore: se il testo regge lì, regge ovunque.
+
+   DA DOVE VIENE LA PALETTE — campionata dagli asset reali in img/
+   · viola corpo della mascotte ... mascot.png / avatar.png → #8b2fff
+   · ciano della cresta ........... mascot.png              → #22e0ff
+   · viola profondo del banner .... banner.png              → #4b1391
+   · magenta del lettering ........ Cattura.PNG             → #ff2fa0
+   · fondo notturno ............... banner.png              → grafite in tinta 260deg
+   ============================================================================= */
+
+:root {
+
+  /* ---------------------------------------------------------------------------
+     SUPERFICI
+     I due fondi sono opachi e formano la base. I due pannelli sono vetri:
+     colore con alpha, così ogni pannello prende la luce dell'alone su cui si
+     trova e non serve dipingerlo a mano sezione per sezione.
+     --------------------------------------------------------------------------- */
+  --fondo:      #07070c;                 /* nero della pagina, sotto ai gradienti */
+  --fondo-2:    #0b0a15;                 /* fondo opaco per fasce e incassi */
+  --pannello:   rgba(22, 19, 38, 0.72);  /* vetro standard: card, quadro, righe */
+  --pannello-2: rgba(35, 30, 58, 0.78);  /* vetro sollevato: hover, riga attiva */
+  --velo:       rgba(7, 7, 12, 0.78);    /* velo opaco sopra media e avvisi */
+
+  /* ---------------------------------------------------------------------------
+     LINEE
+     Il sito è disegnato a righe da 1px: bianco con alpha bassissima, così la
+     linea prende la tinta di quello che ha sotto invece di sembrare grigia.
+     --linea-viva è l'unica colorata: bordo di ciò che è selezionato o acceso.
+     --------------------------------------------------------------------------- */
+  --linea:       rgba(255, 255, 255, 0.07);   /* divisori e bordi a riposo */
+  --linea-forte: rgba(255, 255, 255, 0.15);   /* bordo di pannelli e superfici */
+  --linea-viva:  rgba(139, 47, 255, 0.55);    /* bordo acceso: hover, is-attiva */
+
+  /* AGGIUNTO. --linea e --linea-forte sono decorative: sul fondo stanno a
+     1.4:1, sotto la soglia. Il bordo che DELIMITA un comando (il bottone
+     vuoto, il dock, i campi) deve stare a 3:1 per la WCAG 1.4.11, e questa
+     alpha è la più bassa che ci arriva: composita a rgb(91) sul fondo, 3.9:1. */
+  --linea-comando: rgba(255, 255, 255, 0.34);
+
+  /* ---------------------------------------------------------------------------
+     TESTO — tre livelli, contrasto verificato (fondo pieno · picco dell'alone)
+     --------------------------------------------------------------------------- */
+  --testo:       #f2f0f8;   /* titoli e testo forte ... 17.8:1 · 14.0:1 — AA e AAA */
+  --testo-medio: #c3bdd6;   /* corpo, paragrafi ....... 11.1:1 ·  8.7:1 — AA e AAA */
+  --testo-tenue: #9a93b0;   /* etichette, note, meta ..  6.9:1 ·  5.4:1 — AA e AAA */
+
+  /* ---------------------------------------------------------------------------
+     MARCHIO
+     --viola è la tinta identitaria ma sul fondo sta a 3.8:1: va bene per
+     riempimenti, bordi e testo grande, NON per il corpo del testo. Per scrivere
+     in viola c'è --viola-chiaro. --twitch si usa solo dove si va su Twitch.
+     --------------------------------------------------------------------------- */
+  --viola:        #8b2fff;  /* tinta guida: CTA piene, aloni, giorni in diretta
+                               (3.8:1 · 3.0:1 — solo riempimenti, bordi, icone) */
+  --viola-cupo:   #4b1391;  /* coda dei gradienti e degli aloni, fondi tinti
+                               (bianco sopra: 11.7:1) */
+  --viola-chiaro: #c5a4ff;  /* viola LEGGIBILE: testo e icone  9.7:1 · 7.7:1 — AAA */
+  --twitch:       #9146ff;  /* viola ufficiale Twitch (bianco sopra: 4.6:1 — AA) */
+  --ciano:        #22e0ff;  /* «acceso»: focus, voce attiva  12.6:1 · 10.0:1 — AAA */
+  --magenta:      #ff2fa0;  /* accento col contagocce ......  5.9:1 ·  4.7:1 — AA */
+
+  /* ---------------------------------------------------------------------------
+     STATI
+     --------------------------------------------------------------------------- */
+  --live:    #ff3d5e;  /* in onda: spia, badge del monitor  5.8:1 ·  4.6:1 — AA */
+  --ok:      #35e0a1;  /* riuscito: email copiata .......  11.8:1 ·  9.3:1 — AAA */
+  --allerta: #ffc65c;  /* verifica in corso, dato assente  12.9:1 · 10.2:1 — AAA */
+
+  /* ---------------------------------------------------------------------------
+     COMPOSIZIONI
+     --------------------------------------------------------------------------- */
+
+  /* Sfondo COMPLETO del body: base.css fa solo background: var(--grad-pagina).
+     Quattro aloni molto larghi e molto tenui — la nebulosa del banner senza
+     farne il protagonista — e sotto il nero pieno. Sono ancorati alla finestra
+     (attachment fixed) perché altrimenti, su una pagina lunga, le percentuali
+     verrebbero calcolate sull'altezza del documento e gli aloni finirebbero
+     schiacciati tutti in cima. Le code sono rgba(..., 0) e non «transparent»:
+     transparent interpola passando per il nero e lascia un alone sporco. */
+  --grad-pagina:
+    radial-gradient(1200px 780px at  50% -12%, rgba(139,  47, 255, 0.220), rgba(139,  47, 255, 0) 70%) 0 0 / 100% 100% no-repeat fixed,
+    radial-gradient( 900px 640px at 104%  10%, rgba( 34, 224, 255, 0.055), rgba( 34, 224, 255, 0) 66%) 0 0 / 100% 100% no-repeat fixed,
+    radial-gradient( 980px 800px at -10%  58%, rgba(255,  47, 160, 0.050), rgba(255,  47, 160, 0) 68%) 0 0 / 100% 100% no-repeat fixed,
+    radial-gradient( 820px 560px at  30% 108%, rgba( 75,  19, 145, 0.280), rgba( 75,  19, 145, 0) 72%) 0 0 / 100% 100% no-repeat fixed,
+    #07070c;
+
+  /* Riempimento del titolo grande (background-clip: text). Solo toni chiari:
+     ogni stop resta sopra 7:1 sul fondo, così il titolo è leggibile davvero e
+     non solo decorativo. */
+  --grad-titolo: linear-gradient(98deg, #f2f0f8 0%, #c5a4ff 48%, #22e0ff 100%);
+
+  /* Vetro dei pannelli: un riflesso in alto che si spegne subito e un'ombra
+     interna in basso. Va messo SOPRA a --pannello, non al posto suo. */
+  --grad-pannello:
+    linear-gradient(168deg, rgba(197, 164, 255, 0.10) 0%, rgba(197, 164, 255, 0.02) 38%, rgba(0, 0, 0, 0.12) 100%);
+
+  /* ---------------------------------------------------------------------------
+     BAGLIORI — valori pronti per box-shadow o filter: drop-shadow()
+     --------------------------------------------------------------------------- */
+  --bagliore-viola: 0 0 24px rgba(139,  47, 255, 0.45);
+  --bagliore-ciano: 0 0 20px rgba( 34, 224, 255, 0.40);
+
+  /* ---------------------------------------------------------------------------
+     FORMA
+     --------------------------------------------------------------------------- */
+  --raggio:       14px;   /* card, pannelli, bottoni squadrati */
+  --raggio-s:      8px;   /* tag, spie, elementi piccoli */
+  --raggio-g:     22px;   /* AGGIUNTO: telaio del monitor e blocchi grandi */
+  --raggio-pill: 999px;   /* bottoni, dock, etichette */
+  --ombra:         0 28px 70px -28px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.40);
+  --ombra-morbida: 0 12px 32px -18px rgba(0, 0, 0, 0.70);
+
+  /* ---------------------------------------------------------------------------
+     TIPOGRAFIA
+     I tre font arrivano da Google Fonts nel modello, con display=swap. I
+     fallback sono font di sistema con metriche vicine, così lo scambio non
+     sposta il layout in modo vistoso.
+     --------------------------------------------------------------------------- */
+  --font-titolo: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-testo:  'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:   'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, 'SFMono-Regular', monospace;
+
+  /* ---------------------------------------------------------------------------
+     MISURE
+     --------------------------------------------------------------------------- */
+  --binario-w:      88px;   /* larghezza del binario laterale (da 1100px in su) */
+  --dock-h:         64px;   /* altezza del dock galleggiante (sotto i 1100px) */
+  --max-larghezza: 1360px;  /* vincolo di larghezza del contenuto */
+  --passo:           8px;   /* unità di spaziatura: tutto è un suo multiplo */
+
+
+  /* ===========================================================================
+     DA QUI IN GIÙ: token AGGIUNTI da B, non previsti dal §4 del contratto.
+     Nessuno di quelli obbligatori è stato rinominato. Servono a non far
+     ricomparire gli stessi numeri magici sparsi in cinque fogli diversi.
+     =========================================================================== */
+
+  /* --- Spaziatura, tutta derivata da --passo --------------------------------- */
+  --passo-2:  calc(var(--passo) *  2);   /*  16px */
+  --passo-3:  calc(var(--passo) *  3);   /*  24px */
+  --passo-4:  calc(var(--passo) *  4);   /*  32px */
+  --passo-6:  calc(var(--passo) *  6);   /*  48px */
+  --passo-8:  calc(var(--passo) *  8);   /*  64px */
+  --passo-12: calc(var(--passo) * 12);   /*  96px */
+
+  /* Margine laterale della pagina: cresce con la finestra e non è mai zero.
+     Lo usano tutte le sezioni, che si vincolano con la stessa formula —
+     inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2))
+     più padding-inline: var(--margine) — così i bordi della copertina, della
+     diretta e delle quattro sezioni restano tutti su una linea sola. Il piede
+     usa lo stesso margine ma non il vincolo: la sua riga da 1px chiude la
+     pagina da un lato all'altro, ed è voluto. */
+  --margine: clamp(16px, 4vw, 56px);
+
+  /* --- Scala tipografica fluida ----------------------------------------------
+     clamp(minimo, base + crescita, massimo): a 320px si legge il minimo, a
+     2560px il massimo, in mezzo cresce da sola senza breakpoint dedicati. */
+  --t-h1:      clamp(2.5rem,   1.60rem + 3.60vw, 4.5000rem);
+  --t-h2:      clamp(1.8rem,   1.35rem + 1.80vw, 2.7500rem);
+  --t-h3:      clamp(1.125rem, 1.02rem + 0.40vw, 1.3750rem);
+  --t-corpo:   clamp(1rem,     0.96rem + 0.18vw, 1.0625rem);
+  --t-piccolo: 0.875rem;
+  --t-micro:   0.75rem;
+
+  /* Le etichette in monospazio sono la cifra visiva del sito: maiuscole e
+     spaziate. La spaziatura sta qui perché deve essere identica ovunque. */
+  --spazio-etichetta: 0.18em;
+
+  /* --- Durate e curve --------------------------------------------------------
+     TUTTE le transizioni del progetto devono passare da questi token: base.css
+     li porta a 1ms dentro @media (prefers-reduced-motion: reduce), e così una
+     riga sola spegne il movimento di ogni foglio senza ricorrere a !important
+     (vietato dal §12 del contratto). */
+  --durata-lampo: 120ms;   /* stati di premuta, spie */
+  --durata:       220ms;   /* hover, comparsa delle etichette */
+  --durata-lunga: 420ms;   /* entrate e cambi di stato ampi */
+  --curva:        cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* --- Sfocatura del vetro ---------------------------------------------------
+     Un solo valore per binario, dock e pannelli sospesi: se il vetro va
+     ritoccato si tocca qui e cambia dappertutto. */
+  --sfocatura: 14px;
+
+  /* --- Piani (z-index) -------------------------------------------------------
+     Pochi livelli dichiarati, per non ritrovarsi con z-index: 99999. Ci sono
+     solo i piani che qualcuno usa davvero: un token di impilamento che non usa
+     nessuno è un invito a inventarne di nuovi accanto.
+
+     Il focus NON è qui e non ha un token suo: lo disegna base.css con un
+     outline, che segue da sé il border-radius e non ha bisogno di essere
+     ricomposto foglio per foglio. Dove il contenitore ritaglia si sposta
+     l'anello all'interno con outline-offset negativo, non si cambia disegno. */
+  --z-sfondo:    0;   /* decorazioni dentro le sezioni */
+  --z-contenuto: 1;   /* contenuto normale, sopra le decorazioni */
+  --z-binario:  60;   /* binario laterale e dock */
+  --z-velo:     80;   /* veli e avvisi sopra il player */
+  --z-salta:   100;   /* skip link: sopra a tutto, sempre */
+}

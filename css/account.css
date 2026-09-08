@@ -1,0 +1,97 @@
+/* =============================================================================
+   account.css — il profilo del sito
+
+   La tessera di chi si è collegato con Twitch: immagine del profilo, nome per
+   esteso, «scollega e revoca». Sta in cima alla sezione «diretta», sopra al
+   monitor, e non dentro il pannello del lurk: dire CHI sei è una cosa, dire al
+   sito cosa fare col video è un'altra. Mescolarle in un'unica fila di bottoni
+   le rendeva illeggibili tutte e due.
+
+   Il foglio è caricato dopo base.css e prima di lurk.css: qui dentro non c'è
+   nessun valore esadecimale, solo token di css/tokens.css riscritti da
+   css/tema.css.
+   ============================================================================= */
+
+/* Il contenitore di tutto il blocco. Arriva pieno dal modello (la nota e la
+   riga di stato ci sono già), quindi non gli serve il trucco dell':empty che
+   usa il riquadro qui sotto: quello che può restare vuoto è la tessera. */
+.account {
+  margin-block-start: var(--passo-3);
+}
+
+/* La fila: avatar, nome, bottoni. Va a capo da sola sui telefoni invece di
+   spingere il testo fuori dallo schermo. */
+.account__tessera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--passo-2);
+}
+
+/* Vuota — niente JavaScript, oppure profilo spento dal pannello — non deve
+   lasciare un buco fra il testo della sezione e il monitor. */
+.account__tessera:empty { display: none; }
+
+/* Il nome dell'account collegato: si legge, non si clicca. */
+.account__chi {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--testo-medio);
+}
+
+/* L'immagine del profilo, accanto al nome: è quello che fa sembrare il proprio
+   profilo presente sul sito invece di una riga di testo. Arriva da
+   static-cdn.jtvnw.net, l'unico dominio esterno dell'img-src.
+
+   Misura fissa in tutt'e due i versi: l'immagine di Twitch è quadrata, ma se
+   un giorno non lo fosse `object-fit` la taglia invece di deformarla, e la
+   tessera non cambia altezza mentre l'immagine arriva. */
+.account__avatar {
+  inline-size: 28px;
+  block-size: 28px;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--linea);
+  /* Prima che l'immagine arrivi resta un cerchio, non un buco. */
+  background-color: var(--pannello);
+}
+
+/* A cosa serve collegarsi. È la risposta alla domanda «e perché dovrei?», e
+   si legge PRIMA di premere: appena qualcuno si collega sparisce, perché a
+   quel punto ha già risposto da sé. */
+.account__nota {
+  margin: var(--passo) 0 0;
+  max-inline-size: 62ch;
+  font-size: var(--t-micro);
+  line-height: 1.6;
+  color: var(--testo-tenue);
+}
+
+/* Gli esiti del collegamento: revoca riuscita, token scaduto, finestra chiusa
+   a metà. Vuota sparisce, così non lascia una riga bianca sotto alla tessera
+   per tutto il tempo in cui non c'è niente da dire. */
+.account__stato {
+  margin: var(--passo) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.6;
+  color: var(--testo-medio);
+}
+
+.account__stato:empty { display: none; }
+
+/* La riga che spiega perché il collegamento con Twitch non c'è. La scrive
+   js/account.js e SOLO quando il sito gira in locale: è un messaggio per chi
+   amministra, mentre prova, e sul sito pubblicato non compare a nessuno.
+   Si vede che è un avviso di servizio e non contenuto del sito: piccola, in
+   monospazio, con la riga di allerta a sinistra. */
+.account__diagnosi {
+  margin: var(--passo-2) 0 0;
+  padding-inline-start: var(--passo-2);
+  border-inline-start: 2px solid var(--allerta);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.6;
+  color: var(--testo-medio);
+}

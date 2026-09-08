@@ -1,0 +1,37 @@
+<section id="saluti" class="saluti" aria-labelledby="saluti-titolo">
+  <div class="saluti__griglia">
+    <div class="saluti__social">
+      <p class="sezione__occhiello">{{saluti.occhiello}}</p>
+      <h2 id="saluti-titolo" class="sezione__titolo">{{saluti.titolo}}</h2>
+      <p class="sezione__testo">{{{saluti.testo}}}</p>
+
+      <ul id="social" class="social">
+        {{#ogni social}}
+        <li>
+          <a class="social__voce" href="{{url}}" target="_blank" rel="noopener">{{{svg}}}<span class="social__nome">{{nome}}</span><span class="social__handle">{{handle}}</span></a>
+        </li>
+        {{/ogni}}
+      </ul>
+    </div>
+
+    <div class="contatti">
+      <h3 class="contatti__titolo">{{saluti.contattiTitolo}}</h3>
+      <p class="contatti__testo">{{{saluti.contattiTesto}}}</p>
+      <p><code id="email" class="contatti__email">{{config.email}}</code></p>
+
+      <div class="contatti__azioni">
+        <!-- aria-live sul bottone: sito.js ne cambia il testo in "copiato" e va annunciato. -->
+        <button id="copia-email" class="btn btn--vuoto" type="button" aria-live="polite">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 5.5V4.5A1.5 1.5 0 0 0 13.5 3h-9A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15h1"/></svg>
+          {{saluti.copiaBtn}}
+        </button>
+        <a id="scrivi-email" class="btn btn--pieno" href="{{sito.mailto}}">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>
+          {{saluti.scriviBtn}}
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <p class="saluti__chiusura">{{{saluti.chiusura}}}</p>
+</section>

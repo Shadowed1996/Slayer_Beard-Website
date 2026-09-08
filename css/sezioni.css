@@ -1,0 +1,741 @@
+/* =============================================================================
+   sezioni.css — slayer_beard · le quattro sezioni sotto la copertina
+   Blocchi: .settimana/.nastro, .chi, .supporto/.listino, .saluti/.social/.contatti.
+
+   L'IDEA
+   Ogni sezione ha una forma sua, altrimenti il sito torna a essere un volantino
+   di card impilate. Qui dentro non c'è una sola card:
+     · la settimana è un NASTRO di sette strisce verticali divise da linee da 1px;
+     · «chi sono» è una PAGINA EDITORIALE — colonna di lettura, margine sticky,
+       citazione grande;
+     · il supporto è un LISTINO a righe;
+     · i saluti sono una SCHERMATA DI FINE DIRETTA, social e contatti affiancati.
+
+   Il ritmo comune sono le righe da 1px: dividono, non incorniciano. Dove serve
+   una tinta che non è un token la si ricava con color-mix() — in questo file
+   non c'è nessun colore esadecimale.
+   ============================================================================= */
+
+
+/* =============================================================================
+   1. IMPIANTO COMUNE
+   Le sezioni non hanno un contenitore nel markup: il vincolo di larghezza e i
+   margini laterali se li mettono da sé. La formula è identica qui, in regia.css
+   e in diretta.css — colonna larga --max-larghezza, centrata, con il margine
+   laterale che si SOMMA invece di sottrarsi — ed è documentata su --margine in
+   tokens.css. Il piede ci arriva per un'altra strada, una griglia a colonna
+   unica (base.css §6), perché la sua riga di chiusura deve restare a tutta
+   larghezza: il bordo del suo testo però cade esattamente su questo.
+   ============================================================================= */
+
+.settimana,
+.chi,
+.supporto,
+.saluti {
+  inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2));
+  margin-inline: auto;
+  padding-inline: var(--margine);
+  padding-block: clamp(var(--passo-8), 8vh, var(--passo-12));
+}
+
+/* Occhiello, titolo e testo che stanno fuori da .sezione__testa (in «chi sono»
+   e nei saluti) non ereditano le sue distanze: gliele si dà qui. */
+.chi__corpo > .sezione__occhiello,
+.saluti__social > .sezione__occhiello { margin: 0; }
+
+.chi__corpo > .sezione__titolo,
+.saluti__social > .sezione__titolo { margin-block: var(--passo-2) var(--passo-3); }
+
+.saluti__social > .sezione__testo { margin: 0; max-inline-size: 52ch; }
+
+
+/* =============================================================================
+   2. SETTIMANA — il nastro
+   Sette strisce verticali attaccate, non sette card. Le linee da 1px fra una
+   colonna e l'altra sono l'unica cosa che le separa: staccarle con del gap
+   farebbe ricomparire la griglia di card che il contratto vieta.
+   ============================================================================= */
+
+/* Da 900px la testata si apre su due colonne: titolo a sinistra, testo di
+   spiegazione a destra, allineato in basso. Sostituisce il display:flex che
+   .sezione__testa ha in base.css. */
+@media (min-width: 900px) {
+  .settimana__testa {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+    column-gap: var(--passo-6);
+    align-items: end;
+    max-inline-size: none;
+  }
+
+  .settimana__testa .sezione__occhiello { grid-column: 1; grid-row: 1; }
+  .settimana__testa .sezione__titolo    { grid-column: 1; grid-row: 2; }
+
+  .settimana__testa .sezione__testo {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: end;
+    max-inline-size: none;
+  }
+}
+
+.nastro {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-block: 1px solid var(--linea);
+}
+
+.nastro__giorno {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--passo) * 1.25);
+  min-block-size: 128px;
+  padding: var(--passo-3) var(--passo);
+  text-align: center;
+}
+
+/* Divisori interni soltanto: il nastro non ha un bordo esterno verticale,
+   così sembra un unico pezzo e non sette scatole affiancate. */
+.nastro__giorno + .nastro__giorno {
+  border-inline-start: 1px solid var(--linea);
+}
+
+.nastro__abbr {
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+.nastro__ora {
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: clamp(0.95rem, 0.86rem + 0.4vw, 1.3rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums slashed-zero;
+  line-height: 1;
+}
+
+/* Nei giorni di riposo il generatore lascia l'ora vuota: senza un segno al suo
+   posto le sette colonne si disallineerebbero in verticale. */
+.nastro__ora:empty::before {
+  content: "—";
+  opacity: 0.55;
+}
+
+.nastro__tag {
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+/* --- Giorno di diretta ------------------------------------------------------ */
+
+.nastro__giorno.is-diretta {
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--ciano) 8%, transparent),
+    color-mix(in srgb, var(--ciano) 0%, transparent) 72%
+  );
+}
+
+.is-diretta .nastro__ora  { color: var(--testo); }
+.is-diretta .nastro__tag  { color: var(--ciano); }
+.is-diretta .nastro__abbr { color: var(--testo-medio); }
+
+/* --- Oggi (lo marca sito.js) ------------------------------------------------
+   Marcatore in cima alla colonna: una barra piena, il colore raro della palette
+   e l'abbreviazione accesa. Si vede anche se il giorno è di riposo, che è il
+   caso in cui serve di più. --------------------------------------------------- */
+
+.nastro__giorno.is-oggi::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 3px;
+  background-color: var(--magenta);
+}
+
+.is-oggi .nastro__abbr { color: var(--magenta); }
+
+/* --- Prossima diretta (la marca sito.js) ------------------------------------
+   Contorno acceso disegnato con un'ombra interna e non con un bordo: un bordo
+   vero sposterebbe di un pixel il contenuto della colonna rispetto alle altre.
+   Nemmeno un outline, che si confonderebbe con il focus da tastiera. */
+.nastro__giorno.is-prossima {
+  box-shadow: inset 0 0 0 1px var(--linea-viva);
+  background-color: color-mix(in srgb, var(--viola) 9%, transparent);
+}
+
+.is-prossima .nastro__tag { color: var(--viola-chiaro); }
+
+/* --- Sotto i 780px: il nastro scorre ----------------------------------------
+   Sette colonne leggibili non ci stanno, e comprimerle le rende inutili. Il
+   nastro diventa scorrevole con aggancio: circa tre giorni e mezzo per volta,
+   così il taglio a metà della quarta colonna dice da solo che c'è altro a
+   destra. Il max() è la rete di sicurezza a 320px, dove 100%/3.5 scenderebbe
+   sotto la larghezza di «21:00». --------------------------------------------- */
+
+@media (max-width: 779.98px) {
+  .nastro {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--linea-forte) transparent;
+  }
+
+  .nastro__giorno {
+    flex: 0 0 max(88px, calc(100% / 3.5));
+    min-inline-size: 0;
+    scroll-snap-align: start;
+  }
+
+  /* Barra sottile e in tinta: il gesto resta possibile, l'ingombro no. */
+  .nastro::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .nastro::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  .nastro::-webkit-scrollbar-thumb {
+    border-radius: var(--raggio-pill);
+    background-color: var(--linea-forte);
+  }
+}
+
+/* --- Piede della sezione ---------------------------------------------------- */
+
+.settimana__piede {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--passo-3);
+  margin-block-start: var(--passo-4);
+}
+
+.settimana__nota {
+  flex: 1 1 30ch;
+  min-inline-size: 0;
+  max-inline-size: 68ch;
+  margin: 0;
+  color: var(--testo-tenue);
+  font-size: var(--t-piccolo);
+  line-height: 1.55;
+}
+
+
+/* =============================================================================
+   3. CHI SONO — impaginazione editoriale
+   Colonna di lettura larga a sinistra, margine stretto e appeso a destra,
+   ritratto in fondo al pezzo come una firma. Nessun riquadro: quello che tiene
+   insieme la pagina sono le linee da 1px del margine.
+   ============================================================================= */
+
+.chi__griglia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--passo-6);
+}
+
+@media (min-width: 1100px) {
+  .chi__griglia {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 18rem);
+    grid-template-areas:
+      "corpo    margine"
+      "ritratto margine";
+    column-gap: var(--passo-8);
+    row-gap: var(--passo-6);
+    align-items: start;
+  }
+
+  .chi__corpo    { grid-area: corpo; }
+  .chi__ritratto { grid-area: ritratto; }
+
+  .chi__margine {
+    grid-area: margine;
+    /* align-self: start è quello che dà a sticky lo spazio in cui scorrere
+       dentro l'area di griglia: senza, il margine si stira su tutta la riga e
+       resta fermo. */
+    align-self: start;
+    position: sticky;
+    inset-block-start: var(--passo-4);
+  }
+}
+
+/* --- La colonna di lettura -------------------------------------------------- */
+
+.chi__corpo {
+  /* Sopra le ~62 battute per riga l'occhio perde il capo riga: è il limite di
+     leggibilità, non un vezzo grafico. */
+  max-inline-size: 62ch;
+}
+
+.chi__corpo p {
+  margin-block: 0 var(--passo-3);
+  color: var(--testo-medio);
+}
+
+/* L'apertura è l'occhio del pezzo: più grande del corpo e in tinta piena. */
+.chi__apertura {
+  font-size: clamp(1.08rem, 1rem + 0.38vw, 1.3rem);
+  line-height: 1.55;
+}
+
+.chi__corpo .chi__apertura { color: var(--testo); }
+
+/* Citazione senza virgolette decorative: una barra ciano e un salto di scala
+   bastano a dire che qui la voce cambia. */
+.chi__citazione {
+  margin-block: var(--passo-4);
+  margin-inline: 0;
+  padding-inline-start: var(--passo-3);
+  border-inline-start: 2px solid var(--ciano);
+  color: var(--testo);
+  font-family: var(--font-titolo);
+  font-size: clamp(1.3rem, 1.08rem + 1vw, 1.85rem);
+  font-weight: 500;
+  line-height: 1.28;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.chi__tag {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--passo);
+  margin-block: var(--passo-4);
+}
+
+.chi__corpo .btn { margin-block-start: var(--passo);}
+
+/* --- Il margine ------------------------------------------------------------- */
+
+.chi__margine {
+  display: grid;
+  gap: var(--passo-3);
+  align-content: start;
+}
+
+/* Sotto i 1100px il margine sta sotto l'articolo: da 640px le note si mettono
+   in fila su due colonne invece di allungare la pagina. */
+@media (min-width: 640px) and (max-width: 1099.98px) {
+  .chi__margine { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.nota {
+  padding-block-start: var(--passo-2);
+  border-block-start: 1px solid var(--linea);
+}
+
+.nota__titolo {
+  margin: 0 0 calc(var(--passo) * 0.5);
+  color: var(--ciano);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+.nota__testo {
+  margin: 0;
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+  line-height: 1.55;
+}
+
+/* I tre numeri: valore sopra, etichetta sotto. In colonna stretta l'etichetta
+   («Spettatori medi per diretta») non starebbe mai su una riga sola accanto al
+   numero, quindi qui si impila invece di affiancare. */
+.chi__dati {
+  border-block-start: 1px solid var(--linea);
+}
+
+.chi__dati li {
+  padding-block: calc(var(--passo) * 1.25);
+  border-block-end: 1px solid var(--linea);
+}
+
+.chi__dati b {
+  display: block;
+  color: var(--testo);
+  font-family: var(--font-mono);
+  font-size: clamp(1.2rem, 1.08rem + 0.5vw, 1.5rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums slashed-zero;
+  line-height: 1;
+}
+
+.chi__dati span {
+  display: block;
+  margin-block-start: calc(var(--passo) * 0.5);
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+/* --- Ritratto ---------------------------------------------------------------
+   In fondo al pezzo e in orizzontale, come la firma di un articolo. L'avatar è
+   un primo piano molto ravvicinato: tondo e piccolo è l'unico taglio in cui
+   funziona. ------------------------------------------------------------------ */
+
+.chi__ritratto {
+  display: flex;
+  align-items: center;
+  gap: var(--passo-2);
+  margin: 0;
+  padding-block-start: var(--passo-3);
+  border-block-start: 1px solid var(--linea);
+}
+
+.chi__ritratto img {
+  flex: none;
+  inline-size: 84px;
+  block-size: 84px;
+  border-radius: 50%;
+  border: 1px solid var(--linea-forte);
+  object-fit: cover;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--viola) 16%, transparent);
+}
+
+.chi__ritratto figcaption {
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+
+/* =============================================================================
+   4. SUPPORTO — il listino
+   Righe divise da linee da 1px. Una card per voce farebbe sembrare cinque
+   offerte quello che è un elenco di modi per dare una mano, e il primo — che è
+   gratis — non deve pesare come gli altri.
+
+   Impostato prima per lo schermo stretto (due livelli) e poi allargato a quattro
+   colonne da 720px: il caso difficile è quello piccolo, conviene scriverlo per
+   primo invece di smontarlo dopo.
+   ============================================================================= */
+
+.listino {
+  border-block-start: 1px solid var(--linea);
+}
+
+.listino__riga {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--passo-2);
+  /* Il rientro negativo fa sì che l'accensione al passaggio del mouse sbordi
+     appena oltre il testo senza spostare le linee, che restano allineate al
+     bordo della sezione. Resta dentro --margine anche a 320px. */
+  margin-inline: calc(var(--passo) * -1);
+  padding: var(--passo-3) var(--passo);
+  border-block-end: 1px solid var(--linea);
+  transition: background-color var(--durata) var(--curva);
+}
+
+/* :focus-within e non solo :hover: chi arriva col Tab deve vedere la riga
+   accendersi come chi ci passa sopra col mouse. */
+.listino__riga:hover,
+.listino__riga:focus-within {
+  background-color: var(--pannello);
+}
+
+.listino__icona {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: 44px;
+  block-size: 44px;
+  border: 1px solid var(--linea-forte);
+  border-radius: var(--raggio-s);
+  background-color: var(--pannello);
+  color: var(--viola-chiaro);
+  transition:
+    border-color var(--durata) var(--curva),
+    color        var(--durata) var(--curva);
+}
+
+.listino__icona svg {
+  inline-size: 20px;
+  block-size: 20px;
+}
+
+.listino__riga:hover .listino__icona,
+.listino__riga:focus-within .listino__icona {
+  border-color: var(--linea-viva);
+  color: var(--ciano);
+}
+
+.listino__corpo {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+}
+
+.listino__titolo {
+  margin: 0 0 calc(var(--passo) * 0.5);
+  color: var(--testo);
+}
+
+.listino__testo {
+  margin: 0;
+  max-inline-size: 62ch;
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+  line-height: 1.55;
+}
+
+.listino__tag {
+  flex: none;
+  padding: 4px var(--passo);
+  border: 1px solid var(--linea);
+  border-radius: var(--raggio-s);
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+  white-space: nowrap;
+}
+
+.listino__azione {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  /* Sul livello basso spinge sé stesso a destra: tag a sinistra, azione a
+     destra, senza aggiungere un contenitore che nel markup non c'è. */
+  margin-inline-start: auto;
+  min-block-size: 40px;
+  padding-inline: var(--passo-2);
+  border: 1px solid var(--linea-comando);
+  border-radius: var(--raggio-pill);
+  color: var(--testo);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  transition:
+    border-color     var(--durata) var(--curva),
+    background-color var(--durata) var(--curva),
+    color            var(--durata) var(--curva);
+}
+
+.listino__azione:hover {
+  border-color: var(--ciano);
+  background-color: var(--pannello-2);
+}
+
+/* Da 720px la riga si distende: icona, testo, tag e azione su una linea sola. */
+@media (min-width: 720px) {
+  .listino__riga {
+    flex-wrap: nowrap;
+    gap: var(--passo-3);
+  }
+
+  .listino__corpo { flex: 1 1 auto; }
+  .listino__azione { margin-inline-start: 0; }
+}
+
+.supporto__chiusura {
+  margin-block-start: var(--passo-4);
+  max-inline-size: 68ch;
+  color: var(--testo-tenue);
+  font-size: var(--t-piccolo);
+  line-height: 1.6;
+}
+
+
+/* =============================================================================
+   5. SALUTI — la schermata di fine diretta
+   Due colonne divise da una linea: dove trovarmi a sinistra, come scrivermi a
+   destra. In fondo una riga sola, centrata e in tono minore: è il congedo, non
+   un'altra chiamata all'azione.
+   ============================================================================= */
+
+.saluti__griglia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--passo-6);
+}
+
+@media (min-width: 1000px) {
+  .saluti__griglia {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+    gap: 0;
+    align-items: start;
+  }
+
+  .saluti__social { padding-inline-end: clamp(var(--passo-4), 3vw, var(--passo-8)); }
+
+  .contatti {
+    padding-inline-start: clamp(var(--passo-4), 3vw, var(--passo-8));
+    border-inline-start: 1px solid var(--linea);
+  }
+}
+
+/* --- Social: righe, non griglia di card ------------------------------------- */
+
+.social {
+  margin-block-start: var(--passo-4);
+  border-block-start: 1px solid var(--linea);
+}
+
+.social li {
+  border-block-end: 1px solid var(--linea);
+}
+
+.social__voce {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--passo) var(--passo-2);
+  margin-inline: calc(var(--passo) * -1);
+  padding: calc(var(--passo) * 1.5) var(--passo);
+  color: var(--testo-medio);
+  text-decoration: none;
+  transition:
+    background-color var(--durata) var(--curva),
+    color            var(--durata) var(--curva);
+}
+
+.social__voce svg {
+  flex: none;
+  inline-size: 20px;
+  block-size: 20px;
+  color: var(--viola-chiaro);
+  transition: color var(--durata) var(--curva);
+}
+
+.social__nome {
+  color: var(--testo);
+  font-weight: 600;
+}
+
+/* L'handle va a fine riga; il margine automatico lo tiene a destra e, quando
+   la riga è troppo stretta, lo manda a capo invece di comprimere il nome. */
+.social__handle {
+  margin-inline-start: auto;
+  min-inline-size: 0;
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.01em;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+.social__voce:hover {
+  background-color: var(--pannello);
+  color: var(--testo);
+}
+
+.social__voce:hover svg,
+.social__voce:hover .social__handle {
+  color: var(--ciano);
+}
+
+/* --- Contatti --------------------------------------------------------------- */
+
+.contatti__titolo {
+  margin: 0 0 var(--passo);
+  color: var(--testo);
+}
+
+.contatti__testo {
+  margin: 0 0 var(--passo-3);
+  max-inline-size: 46ch;
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+  line-height: 1.6;
+}
+
+/* L'indirizzo è un dato da copiare, non un pezzo di prosa: riquadro e
+   monospazio lo dichiarano. `anywhere` perché a 320px un indirizzo lungo è la
+   causa più facile di scroll orizzontale. */
+.contatti__email {
+  display: inline-block;
+  padding: var(--passo) var(--passo-2);
+  border: 1px solid var(--linea-forte);
+  border-radius: var(--raggio-s);
+  background-color: var(--pannello);
+  color: var(--testo);
+  font-size: var(--t-piccolo);
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.contatti__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--passo-2);
+  margin-block-start: var(--passo-3);
+}
+
+/* --- Il congedo -------------------------------------------------------------
+   Una riga sola con due filetti ai lati, come la sigla che scorre quando la
+   diretta finisce. In tono minore: non deve competere con niente. */
+
+.saluti__chiusura {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--passo-2);
+  margin-block-start: var(--passo-8);
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.4;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+.saluti__chiusura::before,
+.saluti__chiusura::after {
+  content: "";
+  flex: 0 1 auto;
+  inline-size: min(72px, 10vw);
+  block-size: 1px;
+  background-color: var(--linea-forte);
+}
+
+
+/* =============================================================================
+   6. MOVIMENTO RIDOTTO
+   In questo foglio non ci sono @keyframes: il movimento è tutto nelle
+   transizioni, che base.css spegne azzerando i token --durata*. Resta lo
+   scorrimento del nastro, che è un gesto dell'utente e non un'animazione: si
+   toglie solo l'aggancio, perché lo scatto automatico è comunque movimento non
+   richiesto.
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .nastro { scroll-snap-type: none; }
+}

@@ -1,0 +1,339 @@
+/* =====================================================================
+   campi.css — i widget nuovi del pannello, e nient'altro.
+
+   Qui dentro stanno SOLO le classi che nascono con i tipi di campo
+   aggiunti dal CONTRATTO-2 §5: testo ricco, colore, font, interruttore,
+   piu' la barra delle combinazioni pronte. Niente di pannello.css viene
+   ridefinito: quel foglio ha un altro proprietario, e le sue variabili
+   (--p-*) qui si usano e basta. Si carica dopo, cosi' l'ordine e' chiaro
+   anche a chi legge il sorgente della pagina.
+
+   Struttura:
+     1. editor di testo ricco   (.ricco__*)
+     2. colore                  (.colore__*)
+     3. font                    (.font__*)
+     4. interruttore            (.interruttore__*)
+     5. barra delle combinazioni (.tema-barra, .preset*)
+     6. schermi stretti e prefers-reduced-motion
+   ===================================================================== */
+
+/* --------------------------------------------------------------- 1. */
+.ricco {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  overflow: hidden;
+}
+.campo.is-errato .ricco { border-color: var(--p-errore); }
+
+.ricco__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 5px 6px;
+  background: var(--p-pannello-2);
+  border-bottom: 1px solid var(--p-linea);
+}
+.ricco__gruppo { display: flex; align-items: center; gap: 3px; }
+/* Il bottone del codice se ne va a destra: non e' una formattazione,
+   e' un cambio di modalita'. La distanza dice che fa un'altra cosa. */
+.ricco__gruppo--fine { margin-left: auto; }
+
+.ricco__cmd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: var(--p-raggio-s);
+  background: transparent;
+  color: var(--p-testo-medio);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+.ricco__cmd:hover:not(:disabled) { background: var(--p-pannello-3); color: var(--p-testo); }
+.ricco__cmd:disabled { opacity: .38; cursor: not-allowed; }
+.ricco__cmd:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 1px; }
+
+/* Acceso = la formattazione e' gia' sotto il cursore. Il colore da solo
+   non basterebbe: c'e' anche il bordo, per chi i colori non li distingue. */
+.ricco__cmd.is-attivo,
+.ricco__cmd[aria-pressed="true"] {
+  background: rgba(34, 224, 255, .13);
+  border-color: var(--p-ciano);
+  color: var(--p-ciano);
+}
+
+.ricco__glifo { font-size: 13.5px; line-height: 1; }
+.ricco__cmd--g .ricco__glifo { font-weight: 800; font-size: 15px; }
+.ricco__cmd--c .ricco__glifo { font-style: italic; font-family: Georgia, 'Times New Roman', serif; font-size: 15px; }
+.ricco__cmd--s .ricco__glifo { text-decoration: underline; font-size: 15px; }
+.ricco__cmd--largo .ricco__glifo { font-size: 12.5px; letter-spacing: .02em; }
+.ricco__cmd--codice .ricco__glifo { font-family: var(--p-mono); font-size: 12px; }
+
+.ricco__area {
+  min-height: 104px;
+  padding: 10px 12px;
+  color: var(--p-testo);
+  font-size: 14.5px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.ricco__area:focus { outline: 2px solid var(--p-viola); outline-offset: -2px; }
+/* Il campo vuoto dice cosa farci: un rettangolo nero non lo dice. */
+.ricco__area:empty::before {
+  content: 'Scrivi qui. Invio va a capo.';
+  color: var(--p-testo-tenue);
+}
+.ricco__area a { color: var(--p-ciano); }
+.ricco__area code { font-family: var(--p-mono); font-size: .92em; }
+.ricco__area mark { background: rgba(255, 176, 32, .28); color: var(--p-testo); padding: 0 2px; border-radius: 3px; }
+.ricco__area span.evidenza { color: var(--p-magenta); }
+.ricco__area span.tenue { color: var(--p-testo-tenue); }
+.ricco__area span.mono { font-family: var(--p-mono); font-size: .92em; }
+
+.ricco__sorgente {
+  border: 0;
+  border-radius: 0;
+  background: var(--p-fondo-2);
+  font-family: var(--p-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 120px;
+  resize: vertical;
+}
+.ricco__sorgente:focus { outline: 2px solid var(--p-viola); outline-offset: -2px; }
+
+.ricco__link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--p-pannello-2);
+  border-bottom: 1px solid var(--p-linea);
+}
+.ricco__link-riga { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ricco__link-input { flex: 1 1 200px; min-width: 0; font-family: var(--p-mono); font-size: 13px; }
+.ricco__link-errore { font-size: 12.5px; color: var(--p-errore); }
+
+.ricco__nota,
+.ricco__avviso {
+  padding: 7px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-top: 1px solid var(--p-linea);
+}
+.ricco__nota { color: var(--p-testo-tenue); font-family: var(--p-mono); overflow-wrap: anywhere; }
+.ricco__avviso { color: var(--p-allerta); background: rgba(255, 176, 32, .08); }
+
+/* In modalita' codice il campo cambia faccia: si vede a colpo d'occhio
+   che quello che si sta toccando non e' piu' il testo, e' il sorgente. */
+.campo.is-codice .ricco { border-color: var(--p-linea-viva); }
+
+/* --------------------------------------------------------------- 2. */
+.colore { display: flex; flex-direction: column; gap: 8px; }
+.colore__comandi { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.colore__pozzo {
+  width: 52px;
+  height: 38px;
+  flex: none;
+  padding: 3px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  cursor: pointer;
+}
+.colore__pozzo:hover { border-color: var(--p-linea-viva); }
+.colore__pozzo::-webkit-color-swatch-wrapper { padding: 0; }
+.colore__pozzo::-webkit-color-swatch { border: 0; border-radius: 4px; }
+.colore__pozzo::-moz-color-swatch { border: 0; border-radius: 4px; }
+
+.colore__esa {
+  width: auto;
+  min-width: 128px;
+  max-width: 160px;
+  font-family: var(--p-mono);
+  text-transform: lowercase;
+}
+
+/* La coppia vera, non un campione isolato: il colore scelto sul fondo su
+   cui finira' davvero. E' l'unica anteprima che dice qualcosa. */
+.colore__esempio {
+  padding: 10px 12px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.colore__contrasto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--p-testo-medio);
+}
+.colore__livello {
+  flex: none;
+  padding: 2px 7px;
+  border: 1px solid var(--p-ok);
+  border-radius: var(--p-raggio-s);
+  color: var(--p-ok);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+/* Sotto 4,5:1 il pannello smette di essere gentile: bordo, colore e
+   parola cambiano insieme, cosi' l'avviso arriva anche a chi non
+   distingue il verde dal rosso. */
+.colore__contrasto[data-grave="1"] .colore__livello {
+  border-color: var(--p-errore);
+  color: var(--p-errore);
+  background: rgba(255, 92, 120, .1);
+}
+.colore__contrasto[data-grave="1"] .colore__verdetto { color: var(--p-errore); }
+
+/* --------------------------------------------------------------- 3. */
+.font { display: flex; flex-direction: column; gap: 8px; }
+.font__scelta { max-width: 380px; }
+.font__anteprima {
+  padding: 12px 14px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  color: var(--p-testo);
+  font-size: 21px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.font__ripiego { font-size: 12px; color: var(--p-testo-tenue); font-family: var(--p-mono); overflow-wrap: anywhere; }
+
+/* --------------------------------------------------------------- 4. */
+.interruttore__riga { display: flex; align-items: center; gap: 10px; }
+
+.interruttore {
+  position: relative;
+  width: 48px;
+  height: 27px;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 999px;
+  background: var(--p-pannello);
+  cursor: pointer;
+  transition: background-color .14s ease, border-color .14s ease;
+}
+.interruttore:hover { border-color: var(--p-linea-viva); }
+.interruttore:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 2px; }
+.interruttore[aria-checked="true"] { background: rgba(34, 224, 255, .16); border-color: var(--p-ciano); }
+
+.interruttore__pista { position: absolute; inset: 0; display: block; }
+.interruttore__pallina {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 19px;
+  height: 19px;
+  margin-top: -9.5px;
+  border-radius: 50%;
+  background: var(--p-linea-viva);
+  transition: transform .14s ease, background-color .14s ease;
+}
+.interruttore[aria-checked="true"] .interruttore__pallina {
+  transform: translateX(21px);
+  background: var(--p-ciano);
+}
+
+.interruttore__stato {
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.campo[data-acceso="1"] .interruttore__stato { color: var(--p-ciano); }
+
+/* --------------------------------------------------------------- 5. */
+.tema-barra {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio);
+  background: var(--p-pannello);
+}
+.tema-barra__testa { display: flex; flex-direction: column; gap: 4px; }
+.tema-barra__nota { font-size: 13px; color: var(--p-testo-medio); }
+.tema-barra__azioni { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.preset__griglia {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 8px;
+}
+.preset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello-2);
+  color: var(--p-testo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.preset:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.preset:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 2px; }
+.preset__nome { font-size: 13.5px; font-weight: 600; }
+.preset__campioni { display: flex; gap: 4px; }
+.preset__campione {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  /* Il contorno chiaro serve ai campioni scuri su fondo scuro: senza,
+     il nero del tema notte sparirebbe dentro il bottone. */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35);
+}
+.preset__vuoto { font-size: 13px; color: var(--p-testo-tenue); }
+
+/* --------------------------------------------------------------- 6. */
+@media (max-width: 560px) {
+  .ricco__barra { gap: 3px 6px; }
+  .ricco__cmd { min-width: 28px; height: 28px; padding: 0 5px; }
+  .ricco__cmd--largo .ricco__glifo { font-size: 11.5px; }
+  .colore__esa { max-width: none; flex: 1 1 120px; }
+  .font__anteprima { font-size: 18px; }
+  .preset__griglia { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+  .tema-barra { padding: 11px; }
+}
+
+/* Da 360px in giu' l'anteprima del font e l'esempio del colore restano
+   leggibili solo se possono andare a capo dove capita: sono testi di
+   prova, non contenuti da preservare. */
+@media (max-width: 380px) {
+  .ricco__gruppo--fine { margin-left: 0; }
+  .font__anteprima, .colore__esempio { overflow-wrap: anywhere; hyphens: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ricco__cmd,
+  .interruttore,
+  .interruttore__pallina,
+  .preset {
+    transition: none;
+  }
+  .preset:hover { transform: none; }
+}

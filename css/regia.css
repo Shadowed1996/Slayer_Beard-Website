@@ -1,0 +1,483 @@
+/* =============================================================================
+   regia.css — slayer_beard · la copertina
+   Blocchi: .regia, .regia__sfondo, .regia__griglia, .quadro (+ .stato__*),
+   .quadro__dati / .dato, .regia__scorri.
+
+   COSA È CAMBIATO
+   Il monitor se n'è andato nella sezione #diretta (CONTRATTO-2 §2.1). Senza di
+   lui la vecchia griglia 34/66 lasciava una colonna destra vuota, quindi la
+   copertina è ridisegnata da capo per reggere a tutta larghezza — e ridisegnata
+   come CONSOLLE, non come hero centrato: il §0.1 del contratto originale vieta
+   quel ritmo, ed è la prima cosa che tornerebbe mettendo tutto in mezzo.
+
+   L'IMPIANTO, dall'alto
+     · una riga di intestazione: l'occhiello in monospazio e una linea da 1px
+       che corre fino al bordo destro. È il segno che «apre» la consolle e
+       riempie la larghezza senza aggiungere niente da leggere;
+     · il quadro comandi, in due colonne asimmetriche: a sinistra il titolo
+       grande, il sottotitolo e i due comandi; a destra, stretta, la sola
+       strumentazione che cambia (spia, conto alla rovescia, ultima diretta);
+     · la fascia dei quattro numeri, larga quanto la pagina, divisa da linee da
+       1px. È lei a tenere in piedi il lato destro adesso che il monitor non c'è
+       più, e a chiudere la copertina con una riga orizzontale di strumenti.
+
+   Il fondale è più presente di prima: era il monitor a dare peso alla parte
+   alta, e senza di lui un banner al 22% lasciava la pagina vuota. Sale di
+   opacità, e il contrasto del testo si difende con uno scrim che scurisce la
+   sola metà in cui si legge, non tutta l'immagine.
+
+   COLORI
+   Nessun esadecimale: i valori arrivano da tokens.css (riscritti da tema.css).
+   Le tinte intermedie escono da color-mix() sui token, così ricolorare il sito
+   resta un lavoro che si fa in un file solo.
+   ============================================================================= */
+
+
+/* =============================================================================
+   1. IMPIANTO DELLA COPERTINA
+   La sezione è a tutta larghezza — le serve per il fondale — e il vincolo di
+   --max-larghezza sta sulla griglia interna. Da 1100px in su main ha già il
+   padding del binario: il fondale parte dopo il binario e non ci finisce sotto.
+   ============================================================================= */
+
+.regia {
+  position: relative;
+  /* isolation invece di uno z-index alto: fondale e aloni restano confinati qui
+     dentro e non litigano con binario, dock e skip link. */
+  isolation: isolate;
+  padding-block: clamp(var(--passo-6), 9vh, var(--passo-12)) var(--passo-8);
+  /* Rete di sicurezza: qualunque cosa sbordi dal fondale viene tagliata invece
+     di aprire una barra orizzontale. */
+  overflow-x: clip;
+}
+
+
+/* =============================================================================
+   2. FONDALE — il banner
+   Il banner è già pieno di roba (skyline, nebulosa, lettering, la mascotte):
+   tenerlo a piena forza vorrebbe dire competere con il testo. Resta attenuato,
+   ma meno di prima, e ci si stampa sopra la trama a griglia da 1px che è il
+   segno della sala regia.
+
+   Il contrasto si difende con uno SCRIM orizzontale (::before) e non abbassando
+   ancora l'immagine: il testo sta tutto nella metà sinistra, quindi si scurisce
+   quella e si lascia respirare la destra, dove c'è solo il pannello di stato,
+   che ha già un fondo suo.
+   ============================================================================= */
+
+.regia__sfondo {
+  position: absolute;
+  z-index: var(--z-sfondo);
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: min(100%, 880px);
+  overflow: hidden;
+  pointer-events: none;
+  /* Sfuma verso il basso e verso i lati: senza maschera il banner finirebbe con
+     un taglio netto in mezzo alla pagina. Un solo strato radiale con origine in
+     alto al centro fa entrambe le cose: due strati richiederebbero
+     mask-composite: intersect, e dove non è supportato si sommerebbero invece
+     di intersecarsi, riportando il taglio netto. Le code sono rgba(...,0) e non
+     «transparent» per non passare per il nero durante l'interpolazione. */
+  -webkit-mask-image: radial-gradient(125% 100% at 50% 0%, rgba(0, 0, 0, 1) 38%, rgba(0, 0, 0, 0.5) 68%, rgba(0, 0, 0, 0) 100%);
+  mask-image: radial-gradient(125% 100% at 50% 0%, rgba(0, 0, 0, 1) 38%, rgba(0, 0, 0, 0.5) 68%, rgba(0, 0, 0, 0) 100%);
+}
+
+.regia__sfondo img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  /* Si inquadra il lato destro: a sinistra il banner ha il lettering e il pollo,
+     ed è esattamente la metà dove va il titolo. */
+  object-position: 74% 32%;
+  opacity: 0.34;
+  filter: saturate(0.8) contrast(0.94) blur(1.5px);
+}
+
+/* Scrim. È un pseudo-elemento posizionato, quindi si dipinge sopra all'<img>,
+   che nel flusso non lo è. Va da opaco a sinistra a niente all'82%: la colonna
+   del testo resta su fondo pieno, e il contrasto verificato in tokens.css vale
+   anche con il banner più acceso. */
+.regia__sfondo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    to right,
+    var(--fondo) 0%,
+    color-mix(in srgb, var(--fondo) 72%, transparent) 34%,
+    color-mix(in srgb, var(--fondo) 0%, transparent) 82%
+  );
+}
+
+/* Trama a griglia: due righe da 1px ripetute. Sta dentro l'elemento già
+   mascherato, quindi si spegne insieme al banner. */
+.regia__sfondo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(to right,  var(--linea) 0 1px, rgba(0, 0, 0, 0) 1px 72px),
+    repeating-linear-gradient(to bottom, var(--linea) 0 1px, rgba(0, 0, 0, 0) 1px 72px);
+  opacity: 0.75;
+}
+
+
+/* =============================================================================
+   3. IMPAGINATO
+   Una colonna sola: il quadro comandi e, sotto, la fascia dei numeri. La
+   composizione a due colonne è dentro al quadro (§4), non qui: così la fascia
+   può essere larga quanto la pagina senza dover attraversare una griglia.
+   ============================================================================= */
+
+.regia__griglia {
+  position: relative;
+  z-index: var(--z-contenuto);
+  inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2));
+  margin-inline: auto;
+  padding-inline: var(--margine);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(var(--passo-4), 6vh, var(--passo-8));
+}
+
+
+/* =============================================================================
+   4. QUADRO COMANDI
+   Sotto i 900px è una colonna sola, nell'ordine del DOM. Da 900px in su si apre
+   in due colonne asimmetriche: il titolo prende lo spazio che gli serve, la
+   strumentazione sta in una fascia stretta a destra.
+   ============================================================================= */
+
+@media (min-width: 900px) {
+  .quadro {
+    display: grid;
+    /* La colonna destra ha una misura sua e non una frazione: dentro ci sono
+       una spia e due righe di dati, e un pannello di numeri che si allarga con
+       la finestra diventa una fascia vuota con tre righe corte in mezzo. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 21rem);
+    column-gap: clamp(var(--passo-4), 3.5vw, var(--passo-8));
+  }
+
+  /* L'intestazione attraversa tutte e due le colonne: la sua linea da 1px deve
+     arrivare al bordo destro della pagina, è quella che dà la larghezza. */
+  .quadro__occhiello   { grid-column: 1 / -1; grid-row: 1; }
+  .quadro__titolo      { grid-column: 1; grid-row: 2; }
+  .quadro__sottotitolo { grid-column: 1; grid-row: 3; }
+  .quadro__azioni      { grid-column: 1; grid-row: 4; }
+
+  /* Lo stato occupa in verticale le tre righe di sinistra e si appoggia in alto.
+     La colonna sinistra è sempre la più alta delle due — titolo grande,
+     sottotitolo su più righe, comandi — quindi le righe non devono mai crescere
+     per fare posto a questo pannello, che è la sola cosa che allontanerebbe fra
+     loro i blocchi di sinistra. */
+  .quadro__stato {
+    grid-column: 2;
+    grid-row: 2 / 5;
+    align-self: start;
+  }
+}
+
+/* --- Intestazione ----------------------------------------------------------- */
+
+.quadro__occhiello {
+  display: flex;
+  align-items: center;
+  gap: var(--passo-2);
+  margin: 0;
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+/* Lo stesso segno ciano delle testate di sezione: la copertina è una sezione
+   come le altre, solo più grande. */
+.quadro__occhiello::before {
+  content: "";
+  flex: none;
+  inline-size: var(--passo-3);
+  block-size: 1px;
+  background-color: var(--ciano);
+}
+
+/* La riga che chiude l'intestazione fino al bordo. Non è decorazione gratuita:
+   è quello che dice «la consolle è larga così», adesso che a destra non c'è più
+   il monitor a segnare il limite. Sfuma perché una linea piena da un lato
+   all'altro peserebbe più del titolo. */
+.quadro__occhiello::after {
+  content: "";
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  block-size: 1px;
+  background-image: linear-gradient(
+    to right,
+    var(--linea-forte),
+    color-mix(in srgb, var(--linea-forte) 0%, transparent)
+  );
+}
+
+.quadro__titolo {
+  margin-block: var(--passo-3) 0;
+  /* Curva propria e non --t-h1: il titolo è una parola sola e senza il monitor
+     accanto può crescere parecchio. Il minimo resta basso perché a 320px dodici
+     caratteri devono comunque stare dentro i margini. */
+  font-size: clamp(2.25rem, 1.15rem + 5vw, 5.25rem);
+  line-height: 0.96;
+  letter-spacing: -0.035em;
+  /* Il trattino basso di «slayer_beard» scende sotto la linea di base: senza
+     questo filo di spazio background-clip lo taglia a metà. */
+  padding-block-end: 0.08em;
+  /* Il titolo lo scrive chi amministra: se sceglie una parola più lunga si
+     spezza, invece di aprire una barra orizzontale. */
+  overflow-wrap: break-word;
+}
+
+/* Il gradiente sul testo solo dove il ritaglio esiste davvero: altrimenti
+   color: transparent lascerebbe un titolo invisibile. */
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .quadro__titolo {
+    background-image: var(--grad-titolo);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.quadro__sottotitolo {
+  margin-block: var(--passo-3) 0;
+  max-inline-size: 52ch;
+  color: var(--testo-medio);
+  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.15rem);
+}
+
+/* --- Pannello di stato ------------------------------------------------------
+   Vetro con il riflesso di --grad-pannello: è l'unico blocco «scatolato» della
+   copertina, e serve che si stacchi perché contiene l'informazione che cambia.
+   La squadretta ciano in alto a sinistra è la stessa del telaio del monitor: i
+   due pezzi di strumentazione ora stanno in sezioni diverse, e questo è il filo
+   che li tiene imparentati.
+   --------------------------------------------------------------------------- */
+
+.quadro__stato {
+  position: relative;
+  margin-block-start: var(--passo-4);
+  padding: var(--passo-3);
+  border: 1px solid var(--linea-forte);
+  border-radius: var(--raggio);
+  background-color: var(--pannello);
+  background-image: var(--grad-pannello);
+}
+
+/* La distanza dal sottotitolo serve solo quando il pannello sta sotto. Da 900px
+   in su è la colonna di destra e parte dall'altezza del titolo: l'azzeramento
+   sta qui e non nel blocco dell'impianto perché la regola con il margine viene
+   dopo di quello, e a parità di specificità vincerebbe lei. */
+@media (min-width: 900px) {
+  .quadro__stato { margin-block-start: 0; }
+}
+
+.quadro__stato::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 6px;
+  inset-inline-start: 6px;
+  inline-size: 14px;
+  block-size: 14px;
+  border: 1px solid color-mix(in srgb, var(--ciano) 55%, transparent);
+  border-inline-end-width: 0;
+  border-block-end-width: 0;
+  border-start-start-radius: 5px;
+  pointer-events: none;
+}
+
+.stato__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--passo);
+  margin: 0;
+  padding-block-end: var(--passo-2);
+  border-block-end: 1px solid var(--linea);
+  color: var(--testo);
+  font-family: var(--font-mono);
+  font-size: var(--t-piccolo);
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+/* La spia della consolle è più grossa di quella del binario: base.css ha
+   previsto --spia-d apposta, qui si cambia solo il diametro. */
+#spia-grande { --spia-d: 13px; }
+
+.stato__dati {
+  margin: 0;
+  padding-block-start: var(--passo-2);
+}
+
+.stato__dati dt {
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+.stato__dati dd {
+  margin: 0;
+  margin-block-start: calc(var(--passo) * 0.5);
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+}
+
+/* Divisorio fra le due voci: si aggancia al secondo dt, così non serve una
+   classe in più nel markup. */
+.stato__dati dd + dt {
+  margin-block-start: var(--passo-2);
+  padding-block-start: var(--passo-2);
+  border-block-start: 1px solid var(--linea);
+}
+
+/* Il conto alla rovescia cambia ogni secondo: cifre a larghezza fissa,
+   altrimenti la riga si allarga e si stringe a ogni tic. Ciano perché è il dato
+   «acceso» della copertina. Senza JS qui resta il testo degli orari, che va a
+   capo: da qui line-height comoda e nessun nowrap. */
+.conto {
+  display: block;
+  color: var(--ciano);
+  font-family: var(--font-mono);
+  font-size: clamp(1.05rem, 0.95rem + 0.45vw, 1.3rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+
+#ultima { color: var(--testo); }
+
+.quadro__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--passo-2);
+  margin-block-start: var(--passo-4);
+}
+
+
+/* =============================================================================
+   5. FASCIA DEI QUATTRO NUMERI
+   Prima erano quattro righe incolonnate dentro al quadro, perché la colonna era
+   stretta. Adesso la larghezza c'è: diventano quattro celle affiancate, divise
+   da linee da 1px e chiuse fra due righe orizzontali — una fila di strumenti,
+   non quattro card. Il vetro appena accennato serve a staccarle dal fondale,
+   che a quell'altezza è ancora leggermente acceso.
+   ============================================================================= */
+
+.quadro__dati {
+  display: grid;
+  /* Due colonne fino a 760px: a 320px quattro celle darebbero 72px l'una e le
+     etichette si spezzerebbero a metà parola. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-block: 1px solid var(--linea);
+  background-color: color-mix(in srgb, var(--pannello) 55%, transparent);
+}
+
+.dato {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--passo) * 0.75);
+  padding: var(--passo-3) var(--passo-2);
+  /* Divisorio a sinistra su tutte le celle; le due regole qui sotto lo tolgono
+     a quelle che aprono una riga, altrimenti resterebbe una linea appiccicata
+     al bordo della fascia. */
+  border-inline-start: 1px solid var(--linea);
+}
+
+.dato:nth-child(odd) { border-inline-start: 0; }
+
+/* Su due colonne la seconda riga ha bisogno del suo divisorio orizzontale. */
+.dato:nth-child(n + 3) { border-block-start: 1px solid var(--linea); }
+
+@media (min-width: 760px) {
+  .quadro__dati { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  /* Una riga sola: torna il divisorio fra la seconda e la terza cella e sparisce
+     quello orizzontale. */
+  .dato:nth-child(odd) { border-inline-start: 1px solid var(--linea); }
+  .dato:first-child { border-inline-start: 0; }
+  .dato:nth-child(n + 3) { border-block-start: 0; }
+
+  .dato { padding: var(--passo-4) var(--passo-3); }
+}
+
+.dato__valore {
+  color: var(--testo);
+  font-family: var(--font-mono);
+  font-size: clamp(1.35rem, 1.05rem + 1.1vw, 2.1rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.dato__etichetta {
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+
+/* =============================================================================
+   6. INDICATORE DI SCORRIMENTO
+   Piccolo, centrato, con un movimento di quattro pixel. Non è un invito
+   luminoso: è la nota a piè di consolle che dice che sotto c'è la diretta.
+   ============================================================================= */
+
+.regia__scorri {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  inline-size: fit-content;
+  margin: var(--passo-6) auto 0;
+  padding: var(--passo);
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.2;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+  transition: color var(--durata) var(--curva);
+}
+
+.regia__scorri:hover { color: var(--ciano); }
+
+.regia__scorri svg {
+  inline-size: 18px;
+  block-size: 18px;
+  animation: scorri-giu 2.6s var(--curva) infinite;
+}
+
+@keyframes scorri-giu {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(4px); }
+}
+
+
+/* =============================================================================
+   7. MOVIMENTO RIDOTTO
+   I token di durata li azzera già base.css. Qui si ferma la sola animazione con
+   @keyframes dichiarata in questo foglio.
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .regia__scorri svg { animation: none; }
+}

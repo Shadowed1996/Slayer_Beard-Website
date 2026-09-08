@@ -1,0 +1,340 @@
+{
+  "versione": 1,
+  "aggiornatoIl": "2026-09-06T18:45:24.356Z",
+  "testi": {
+    "meta.titolo": "slayer_beard — canale Twitch ufficiale",
+    "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
+    "meta.ogDescrizione": "Quattro dirette a settimana alle 21:00, ITA ed ENG. Qui trovi il player, la settimana e i social.",
+    "meta.ogImmagineAlt": "La mascotte di slayer_beard, un pollo viola con la cresta ciano, sopra una nebulosa e uno skyline notturno.",
+    "marchio.nome": "slayer_beard",
+    "marchio.ruolo": "Twitch Affiliate · dal 2013",
+    "nav.regia": "Regia",
+    "nav.diretta": "Diretta",
+    "nav.settimana": "Settimana",
+    "nav.chi": "Chi sono",
+    "nav.supporto": "Supporto",
+    "nav.saluti": "Saluti",
+    "nav.vaiAlCanale": "Guarda su Twitch",
+    "deck.occhiello": "Canale Twitch · ITA / ENG",
+    "deck.titolo": "slayer_beard",
+    "deck.sottotitolo": "Porto giochi di vario genere in modo particolare, a volte con integrazioni ed effetti speciali. Quattro sere a settimana, sempre alle 21:00.",
+    "deck.ctaPrimaria": "Guarda su Twitch",
+    "deck.ctaSecondaria": "Guarda la diretta",
+    "deck.statoLive": "In onda adesso",
+    "deck.statoOffline": "Fuori onda",
+    "deck.statoVerifica": "Controllo il canale",
+    "deck.etichettaProssima": "Prossima diretta",
+    "deck.etichettaUltima": "Ultima diretta",
+    "deck.etichettaStato": "Stato del canale",
+    "deck.chatApri": "Mostra la chat",
+    "deck.chatChiudi": "Nascondi la chat",
+    "deck.notaPlayer": "Il player è incorporato da Twitch: se il browser blocca i cookie di terze parti può non partire.",
+    "deck.dato1Valore": "3.619",
+    "deck.dato1Etichetta": "Follower",
+    "deck.dato2Valore": "4",
+    "deck.dato2Etichetta": "Dirette a settimana",
+    "deck.dato3Valore": "~25",
+    "deck.dato3Etichetta": "Spettatori medi",
+    "deck.dato4Valore": "2013",
+    "deck.dato4Etichetta": "Su Twitch dal",
+    "deck.scorri": "Scendi",
+    "diretta.occhiello": "In onda",
+    "diretta.titolo": "La diretta",
+    "diretta.testo": "Il canale è qui dentro, alla larghezza giusta. Se sto trasmettendo il player parte da solo; la chat si apre con il bottone sotto allo schermo.",
+    "diretta.nota": "Se lo schermo resta nero è quasi sempre il browser: cookie di terze parti bloccati, oppure un'estensione che ferma gli iframe. In quel caso il canale si apre lo stesso su Twitch.",
+    "lurk.titolo": "Modalità lurk",
+    "lurk.spiegazione": "Se resti su questa pagina, ogni tanto controllo che il video stia ancora girando e lo faccio ripartire se il browser lo ferma. <b>Twitch conta uno spettatore finché il video va</b>, anche mutato e anche se la scheda è dietro: non conto io, conta il tuo player.",
+    "lurk.notaAccount": "Se il tuo browser blocca i cookie di terze parti, da qui risulti come spettatore anonimo: conti per il canale, ma <b>non prendi punti canale né streak</b>. Da questa pagina non posso saperlo. Se ci tieni alla tua streak, guarda direttamente su Twitch.",
+    "lurk.notaMobile": "Sul telefono il browser mette in pausa il video appena esci da questa scheda, e da qui non posso rimediare. La modalità lurk vale finché resti su questa pagina.",
+    "lurk.accendi": "Attiva la modalità lurk",
+    "lurk.spegni": "Disattiva",
+    "lurk.audio": "Togli il muto (aiuta a non far sospendere la scheda)",
+    "lurk.schermo": "Tieni acceso lo schermo",
+    "lurk.ripresa": "L'avevi lasciata accesa: la riattivo?",
+    "lurk.statoSpento": "Spenta.",
+    "lurk.statoVivo": "Attiva: il video sta andando.",
+    "lurk.statoFermo": "Il video si è fermato.",
+    "lurk.statoRiparto": "Rimetto in moto il video...",
+    "lurk.statoBloccato": "Il browser ha bloccato la riproduzione: tocca il player per farlo partire.",
+    "lurk.statoAttesa": "Il canale è fuori onda: non c'è niente da tenere vivo.",
+    "lurk.statoResa": "Non ci riesco più. Ricarica la pagina.",
+    "lurk.statoNiente": "Da qui non posso: non ho i comandi del player.",
+    "lurk.ciSei": "Ci sei ancora? Senza risposta spengo la modalità lurk.",
+    "lurk.ciSono": "Sono qui",
+    "lurk.conto": "Viva da {durata}",
+    "lurk.contoRiavvii": "Viva da {durata} · {riavvii} riavvii",
+    "lurk.entra": "Collegati con Twitch",
+    "lurk.esci": "Scollega e revoca",
+    "lurk.collegato": "Collegato come {nome}",
+    "lurk.preavviso": "Attivando il lurk dirò in chat: «{frase}»",
+    "lurk.manda": "Dillo in chat",
+    "lurk.inviato": "Fatto: il messaggio è in chat.",
+    "pollo.etichetta": "Apri la chat del canale",
+    "pollo.nascondi": "Nascondi il pollo",
+    "settimana.occhiello": "Calendario",
+    "settimana.titolo": "La settimana",
+    "settimana.testo": "Quattro sere a settimana, sempre alle 21:00. Le altre le passo a fare altro.",
+    "settimana.nota": "Tutti gli orari sono nel fuso italiano (Europe/Rome). Il programma può cambiare: se salta una serata o ne aggiungo una, il canale Twitch resta il riferimento aggiornato.",
+    "settimana.etichettaOggi": "Oggi",
+    "settimana.etichettaRiposo": "Riposo",
+    "settimana.etichettaProssima": "Prossima",
+    "settimana.etichettaDiretta": "Diretta",
+    "settimana.cta": "Vai al canale",
+    "chi.occhiello": "Chi sono",
+    "chi.titolo": "Dietro il pollo viola",
+    "chi.apertura": "Ciao a tutti, sono slayer_beard! Porto giochi di vario genere in modo particolare, a volte con integrazioni ed effetti speciali.",
+    "chi.corpo1": "Il canale è su Twitch dal 2013 e va avanti quattro sere a settimana. Non è un posto enorme, ed è esattamente il punto: ci si riconosce, si chiacchiera, e nessun messaggio resta indietro.",
+    "chi.corpo2": "Niente scaletta rigida. Horror quando c'è da spaventarsi in compagnia, co-op quando c'è qualcuno con cui giocare, e ogni tanto qualche effetto speciale di troppo. In chat il posto si chiama pollaio da così tanto tempo che la mascotte ha finito per farci il verso. Se passi, salutami: rispondo.",
+    "chi.citazione": "Siamo una ventina a serata: ci si riconosce, e la chat si legge tutta.",
+    "chi.nota1Titolo": "Lingua",
+    "chi.nota1Testo": "Italiano e inglese, spesso nella stessa frase.",
+    "chi.nota2Titolo": "Generi",
+    "chi.nota2Testo": "Horror, co-op e vario. Decide la serata, non il calendario.",
+    "chi.nota3Titolo": "Emote",
+    "chi.nota3Testo": "Tutte le emote del canale iniziano per slayer156.",
+    "chi.tag1": "Giochi di vario genere",
+    "chi.tag2": "Horror",
+    "chi.tag3": "Co-op",
+    "chi.tag4": "Integrazioni ed effetti speciali",
+    "chi.tag5": "Ita / Eng",
+    "chi.tag6": "Twitch Affiliate",
+    "chi.cta": "Apri il canale su Twitch",
+    "chi.dato1Valore": "3.619",
+    "chi.dato1Etichetta": "Follower sul canale",
+    "chi.dato2Valore": "90",
+    "chi.dato2Etichetta": "Abbonati attivi",
+    "chi.dato3Valore": "~25",
+    "chi.dato3Etichetta": "Spettatori medi per diretta",
+    "chi.ritrattoAlt": "Avatar del canale slayer_beard.",
+    "supporto.occhiello": "Supporto",
+    "supporto.titolo": "Come dare una mano",
+    "supporto.testo": "Seguire è gratis ed è già tanto: il tasto Segui su Twitch non costa niente e mi aiuta davvero. Tutto quello che trovi qui sotto è facoltativo, guardare la diretta non richiede nessuna di queste cose.",
+    "supporto.chiusura": "Nessuno di questi passaggi è richiesto. Il canale è aperto, resta aperto, e la chat è la stessa per tutti.",
+    "saluti.occhiello": "Altrove",
+    "saluti.titolo": "Dove mi trovi",
+    "saluti.testo": "Stesso nome ovunque: slayer_beard. Non ci sono profili doppi, se ne trovi un altro non sono io.",
+    "saluti.contattiTitolo": "Scrivimi",
+    "saluti.contattiTesto": "Per collaborazioni, proposte o segnalazioni, scrivi a questo indirizzo. Leggo tutto, rispondo quando riesco.",
+    "saluti.copiaBtn": "Copia l'email",
+    "saluti.copiaFatto": "Copiata",
+    "saluti.scriviBtn": "Scrivi una mail",
+    "saluti.chiusura": "Grazie per essere passato. Ci si vede in diretta.",
+    "footer.copy": "slayer_beard",
+    "footer.disclaimer": "Sito personale, non affiliato a Twitch. Twitch è un marchio di Twitch Interactive, Inc. I nomi e i loghi dei social appartengono ai rispettivi proprietari.",
+    "footer.nota": "Fatto in casa, senza framework."
+  },
+  "config": {
+    "twitch": {
+      "canale": "slayer_beard",
+      "idUtente": "47738247",
+      "domini": []
+    },
+    "sitoUrl": "",
+    "email": "slayerbeard@gmail.com",
+    "ultimaDiretta": "Little Nightmares 3 w/ @Mobscene93",
+    "orari": {
+      "giorni": [
+        1,
+        3,
+        5,
+        0
+      ],
+      "ora": "21:00",
+      "fuso": "Europe/Rome",
+      "durataOre": 4
+    },
+    "dati": {
+      "follower": 3619,
+      "abbonati": 90,
+      "spettatoriMedi": 25,
+      "dal": 2013,
+      "lingua": "ITA / ENG",
+      "ruolo": "Twitch Affiliate",
+      "prefissoEmote": "slayer156"
+    },
+    "immagini": {
+      "avatar": "img/avatar.png",
+      "banner": "img/banner.png",
+      "mascotte": "img/mascot.png",
+      "og": "img/og.png",
+      "favicon": "img/favicon.png"
+    },
+    "tema": {
+      "colori": {
+        "viola": "#8b2fff",
+        "violaCupo": "#4b1391",
+        "violaChiaro": "#c5a4ff",
+        "ciano": "#22e0ff",
+        "magenta": "#ff2fa0",
+        "live": "#ff3d5e",
+        "ok": "#35e0a1",
+        "allerta": "#ffc65c",
+        "fondo": "#07070c",
+        "testo": "#f2f0f8",
+        "testoMedio": "#c3bdd6",
+        "testoTenue": "#9a93b0"
+      },
+      "font": {
+        "titolo": "Space Grotesk",
+        "testo": "Manrope",
+        "mono": "JetBrains Mono"
+      },
+      "forma": {
+        "raggio": 14,
+        "maxLarghezza": 1360,
+        "passo": 8
+      },
+      "sfondo": {
+        "aloni": 100
+      }
+    },
+    "lurk": {
+      "attivo": true,
+      "tieniSchermoAcceso": false,
+      "oreMax": 3,
+      "messaggioAttivo": true,
+      "clientId": "",
+      "urlRitorno": "http://localhost:4173/",
+      "frasi": [
+        "Hey! Lurko dal sito.",
+        "Sono in lurk dal sito, buona diretta!",
+        "Lurko dal pollaio: ci sono ma sto zitto.",
+        "In lurk dal sito. Coccodè."
+      ]
+    },
+    "pollo": {
+      "attivo": true,
+      "chatVera": true,
+      "mostraMessaggi": false,
+      "frasi": {
+        "riposo": [
+          "Il pollaio è aperto.",
+          "Becco qualcosa e aspetto.",
+          "Tutto tranquillo, per ora.",
+          "Coccodè."
+        ],
+        "click": [
+          "Coccodè. Ti apro la chat.",
+          "Il pollaio è di qua.",
+          "Chat aperta: scrivi pure.",
+          "Beccato. Ecco la chat."
+        ],
+        "chat": [
+          "{nome} ha scritto in chat!",
+          "{nome} si è fatto sentire.",
+          "C'è {nome} nel pollaio.",
+          "Coccodè, parla {nome}.",
+          "Qualcuno ha scritto nel pollaio.",
+          "Si muove la chat. Coccodè."
+        ],
+        "scrive": [
+          "Ti ascolto...",
+          "Sto leggendo.",
+          "Dimmi pure, sono qui.",
+          "Orecchie dritte."
+        ],
+        "live": [
+          "Siamo in onda!",
+          "Luce accesa, si comincia.",
+          "In onda: il pollaio si riempie."
+        ],
+        "lurk": [
+          "Restiamo accesi, ci penso io.",
+          "Tengo la diretta viva. Coccodè.",
+          "Vai pure, il pollaio resta aperto.",
+          "Sorveglio io lo schermo."
+        ],
+        "offline": [
+          "Fuori onda. Il pollaio dorme.",
+          "Zzz.",
+          "Niente diretta adesso: la settimana è qui sotto.",
+          "Luce spenta. Si riparte la prossima serata."
+        ]
+      }
+    },
+    "social": [
+      {
+        "chiave": "twitch",
+        "nome": "Twitch",
+        "handle": "twitch.tv/slayer_beard",
+        "url": "https://www.twitch.tv/slayer_beard",
+        "icona": "twitch"
+      },
+      {
+        "chiave": "instagram",
+        "nome": "Instagram",
+        "handle": "@slayer_beard",
+        "url": "https://www.instagram.com/slayer_beard/",
+        "icona": "instagram"
+      },
+      {
+        "chiave": "tiktok",
+        "nome": "TikTok",
+        "handle": "@slayer_beard",
+        "url": "https://www.tiktok.com/@slayer_beard",
+        "icona": "tiktok"
+      },
+      {
+        "chiave": "youtube",
+        "nome": "YouTube",
+        "handle": "slayer_beard",
+        "url": "",
+        "icona": "youtube"
+      },
+      {
+        "chiave": "youtubeVod",
+        "nome": "YouTube VOD",
+        "handle": "slayer_beard VOD",
+        "url": "",
+        "icona": "youtube"
+      }
+    ],
+    "supporto": [
+      {
+        "chiave": "abbonamento",
+        "icona": "star",
+        "titolo": "Abbonamento",
+        "testo": "Vale un mese e si può fermare quando vuoi. Sblocca le emote slayer156 e toglie la pubblicità. Al momento siamo in 90.",
+        "tag": "Da 4,99 €",
+        "cta": "Abbonati su Twitch",
+        "url": "https://www.twitch.tv/subs/slayer_beard"
+      },
+      {
+        "chiave": "prime",
+        "icona": "crown",
+        "titolo": "Abbonamento Prime",
+        "testo": "Se hai Amazon Prime, ogni mese hai un abbonamento incluso da usare dove vuoi. Non costa niente in più: se non lo usi, scade e basta.",
+        "tag": "Incluso",
+        "cta": "Attiva il Prime",
+        "url": "https://gaming.amazon.com/"
+      },
+      {
+        "chiave": "bits",
+        "icona": "gem",
+        "titolo": "Bits",
+        "testo": "Piccole mance durante la diretta: compaiono in chat e le leggo ad alta voce. Anche zero va benissimo.",
+        "tag": "Quanto vuoi",
+        "cta": "Manda dei Bits",
+        "url": "https://www.twitch.tv/slayer_beard"
+      },
+      {
+        "chiave": "segui",
+        "icona": "heart",
+        "titolo": "Segui il canale",
+        "testo": "Il modo che aiuta di più e non costa niente: ti avvisa quando accendo e mi fa salire nelle liste di Twitch.",
+        "tag": "Gratis",
+        "cta": "Segui su Twitch",
+        "url": "https://www.twitch.tv/slayer_beard"
+      },
+      {
+        "chiave": "donazione",
+        "icona": "coffee",
+        "titolo": "Donazione",
+        "testo": "Una tantum, senza abbonarsi. Nessun vantaggio in cambio: è solo un grazie.",
+        "tag": "Facoltativa",
+        "cta": "Fai una donazione",
+        "url": ""
+      }
+    ]
+  }
+}

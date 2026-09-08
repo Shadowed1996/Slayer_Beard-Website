@@ -1,0 +1,78 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Content-Security-Policy (CONTRATTO-3 §4.5). Introdotta insieme alla modalità lurk, che può
+     tenere in pagina un token di scrittura in chat: quel token vale su TUTTI i canali di Twitch,
+     quindi una singola iniezione di script varrebbe un account rubato per ogni visitatore.
+
+     `script-src` è la riga che conta ed è stretta: nessun 'unsafe-inline', nessun 'unsafe-eval'.
+     Si può permettere perché la pagina non ha script inline — il solo <script> incorporato è il
+     JSON-LD qui sotto, che ha type="application/ld+json", non è eseguibile e non ricade sotto
+     script-src.
+
+     `style-src` invece porta 'unsafe-inline', ed è una rinuncia consapevole: l'SDK di Twitch
+     scrive attributi style sull'iframe che costruisce, e senza questo il player si romperebbe.
+     Costa poco: un foglio di stile iniettato non può leggere un token, e la difesa che serve
+     contro il furto è quella sugli script.
+
+     `img-src` ha un dominio esterno solo, static-cdn.jtvnw.net: è dove Twitch tiene le
+     immagini di profilo, e serve alla tessera dell'account — l'avatar di chi si è collegato,
+     accanto al suo nome. È un host di sole immagini: non può eseguire niente, e nessun'altra
+     cosa della pagina viene da lì.
+
+     `frame-ancestors` NON c'è: in un <meta> viene ignorato per specifica, e va messo come
+     intestazione HTTP dall'hosting. Stessa cosa per report-uri. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' https://embed.twitch.tv;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data: https://static-cdn.jtvnw.net;
+  frame-src https://player.twitch.tv https://www.twitch.tv https://embed.twitch.tv;
+  connect-src 'self' https://api.twitch.tv https://id.twitch.tv wss://irc-ws.chat.twitch.tv;
+  base-uri 'self';
+  form-action 'none';
+  object-src 'none'">
+
+<title>{{meta.titolo}}</title>
+<meta name="description" content="{{meta.descrizione}}">
+<meta name="author" content="{{marchio.nome}}">
+<!-- Canonico: assoluto se il sito ha un indirizzo pubblico (campo «Indirizzo pubblico del sito»),
+     altrimenti "./", che si risolve sull'indirizzo da cui la pagina viene servita. -->
+{{#se config.sitoUrl}}<link rel="canonical" href="{{config.sitoUrl}}">{{/se}}{{^se config.sitoUrl}}<link rel="canonical" href="./">{{/se}}
+
+<link rel="icon" href="{{config.immagini.favicon}}" type="image/png">
+<link rel="apple-touch-icon" href="{{config.immagini.favicon}}">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{marchio.nome}}">
+<meta property="og:title" content="{{meta.titolo}}">
+<meta property="og:description" content="{{meta.ogDescrizione}}">
+{{#se config.sitoUrl}}<meta property="og:url" content="{{config.sitoUrl}}">{{/se}}{{^se config.sitoUrl}}<meta property="og:url" content="./">{{/se}}
+<meta property="og:locale" content="it_IT">
+<meta property="og:image" content="{{config.immagini.og}}">
+<meta property="og:image:alt" content="{{meta.ogImmagineAlt}}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{meta.titolo}}">
+<meta name="twitter:description" content="{{meta.ogDescrizione}}">
+<meta name="twitter:image" content="{{config.immagini.og}}">
+<meta name="twitter:image:alt" content="{{meta.ogImmagineAlt}}">
+
+<!-- I font sono scelti dal pannello (gruppo «Aspetto»): l'indirizzo lo compone la generazione
+     dalle famiglie scelte e dai pesi del catalogo. Se sono tutti font di sistema, sito.fontUrl
+     resta vuoto e qui non si stampa niente — nessuna richiesta a Google. -->
+{{#se sito.fontUrl}}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{sito.fontUrl}}">{{/se}}
+
+<!-- La scheda strutturata è costruita in server/lib/costruisci.js e serializzata con
+     jsonSicuro(). Qui ci vuole la tripla graffa: dentro uno <script> il contenuto è raw text,
+     nessuno decodifica le entità HTML, e con la doppia graffa un apostrofo in un testo
+     finirebbe indicizzato da Google come &#39;. L'escape giusto è quello JSON, non quello
+     HTML — e passando da JavaScript sameAs si deduplica e i campi vuoti spariscono. -->
+<script type="application/ld+json">
+{{{sito.jsonLd}}}
+</script>

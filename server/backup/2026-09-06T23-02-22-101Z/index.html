@@ -1,0 +1,597 @@
+<!doctype html>
+<!-- Generato il 2026-09-06T22:51:12.809Z da modelli/index.html + contenuti/contenuti.json.
+     Non si modifica a mano: si riscrive a ogni pubblicazione (CONTRATTO §6). -->
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Content-Security-Policy (CONTRATTO-3 §4.5). Introdotta insieme alla modalità lurk, che può
+     tenere in pagina un token di scrittura in chat: quel token vale su TUTTI i canali di Twitch,
+     quindi una singola iniezione di script varrebbe un account rubato per ogni visitatore.
+
+     `script-src` è la riga che conta ed è stretta: nessun 'unsafe-inline', nessun 'unsafe-eval'.
+     Si può permettere perché la pagina non ha script inline — il solo <script> incorporato è il
+     JSON-LD qui sotto, che ha type="application/ld+json", non è eseguibile e non ricade sotto
+     script-src.
+
+     `style-src` invece porta 'unsafe-inline', ed è una rinuncia consapevole: l'SDK di Twitch
+     scrive attributi style sull'iframe che costruisce, e senza questo il player si romperebbe.
+     Costa poco: un foglio di stile iniettato non può leggere un token, e la difesa che serve
+     contro il furto è quella sugli script.
+
+     `frame-ancestors` NON c'è: in un <meta> viene ignorato per specifica, e va messo come
+     intestazione HTTP dall'hosting. Stessa cosa per report-uri. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' https://embed.twitch.tv;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data:;
+  frame-src https://player.twitch.tv https://www.twitch.tv https://embed.twitch.tv;
+  connect-src 'self' https://api.twitch.tv https://id.twitch.tv wss://irc-ws.chat.twitch.tv;
+  base-uri 'self';
+  form-action 'none';
+  object-src 'none'">
+
+<title>slayer_beard — canale Twitch ufficiale</title>
+<meta name="description" content="Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.">
+<meta name="author" content="slayer_beard">
+<!-- Canonico: assoluto se il sito ha un indirizzo pubblico (campo «Indirizzo pubblico del sito»),
+     altrimenti "./", che si risolve sull'indirizzo da cui la pagina viene servita. -->
+<link rel="canonical" href="./">
+
+<link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="img/favicon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="slayer_beard">
+<meta property="og:title" content="slayer_beard — canale Twitch ufficiale">
+<meta property="og:description" content="Quattro dirette a settimana alle 21:00, ITA ed ENG. Qui trovi il player, la settimana e i social.">
+<meta property="og:url" content="./">
+<meta property="og:locale" content="it_IT">
+<meta property="og:image" content="img/og.png">
+<meta property="og:image:alt" content="La mascotte di slayer_beard, un pollo viola con la cresta ciano, sopra una nebulosa e uno skyline notturno.">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="slayer_beard — canale Twitch ufficiale">
+<meta name="twitter:description" content="Quattro dirette a settimana alle 21:00, ITA ed ENG. Qui trovi il player, la settimana e i social.">
+<meta name="twitter:image" content="img/og.png">
+<meta name="twitter:image:alt" content="La mascotte di slayer_beard, un pollo viola con la cresta ciano, sopra una nebulosa e uno skyline notturno.">
+
+<!-- I font sono scelti dal pannello (gruppo «Aspetto»): l'indirizzo lo compone la generazione
+     dalle famiglie scelte e dai pesi del catalogo. Se sono tutti font di sistema, sito.fontUrl
+     resta vuoto e qui non si stampa niente — nessuna richiesta a Google. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;family=Manrope:wght@400;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+<!-- La scheda strutturata è costruita in server/lib/costruisci.js e serializzata con
+     jsonSicuro(). Qui ci vuole la tripla graffa: dentro uno <script> il contenuto è raw text,
+     nessuno decodifica le entità HTML, e con la doppia graffa un apostrofo in un testo
+     finirebbe indicizzato da Google come &#39;. L'escape giusto è quello JSON, non quello
+     HTML — e passando da JavaScript sameAs si deduplica e i campi vuoti spariscono. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "slayer_beard",
+  "jobTitle": "Twitch Affiliate · dal 2013",
+  "description": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
+  "url": "https://www.twitch.tv/slayer_beard",
+  "image": "img/avatar.png",
+  "email": "slayerbeard@gmail.com",
+  "sameAs": [
+    "https://www.twitch.tv/slayer_beard",
+    "https://www.instagram.com/slayer_beard/",
+    "https://www.tiktok.com/@slayer_beard"
+  ]
+}
+</script>
+
+
+<!-- Ordine obbligatorio (CONTRATTO §3, CONTRATTO-2 §11): tokens.css definisce i valori di
+     partenza, tema.css — generato dal pannello — li riscrive, tutti gli altri li consumano. -->
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/tema.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/regia.css">
+<link rel="stylesheet" href="css/diretta.css">
+<link rel="stylesheet" href="css/sezioni.css">
+<link rel="stylesheet" href="css/player.css">
+<link rel="stylesheet" href="css/pollo.css">
+<link rel="stylesheet" href="css/lurk.css">
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+
+<!-- Sei voci (CONTRATTO-2 §2): «Diretta» si è aggiunta fra la regia e la
+     settimana, nell'ordine in cui le sezioni compaiono in pagina. Nessun menu a
+     panino: sotto i 1100px questo stesso elemento diventa il dock in basso, e
+     css/base.css lo stringe finché le sei etichette ci stanno anche a 320px.
+     Gli id #binario, #spia e #spia-testo sono contratto con il JS. -->
+<aside id="binario" class="binario">
+  <a class="binario__marchio" href="#regia">
+    <!-- L'avatar è decorativo: il nome accanto dice già dove porta il link. -->
+    <img class="binario__avatar" src="img/avatar.png" alt="" aria-hidden="true">
+    <span class="binario__nome">slayer_beard</span>
+  </a>
+
+  <nav class="binario__nav" aria-label="Sezioni">
+    <a class="binario__voce" href="#regia">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">Regia</span>
+    </a>
+    <a class="binario__voce" href="#diretta">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">Diretta</span>
+    </a>
+    <a class="binario__voce" href="#settimana">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">Settimana</span>
+    </a>
+    <a class="binario__voce" href="#chi">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">Chi sono</span>
+    </a>
+    <a class="binario__voce" href="#supporto">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">Supporto</span>
+    </a>
+    <a class="binario__voce" href="#saluti">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo">Saluti</span>
+    </a>
+  </nav>
+
+  <p class="binario__stato">
+    <span id="spia" class="spia" aria-hidden="true"></span><span id="spia-testo" class="binario__stato-testo">Controllo il canale</span>
+  </p>
+
+  <ul class="binario__social">
+    
+    <li>
+      <a class="binario__social-voce" href="https://www.twitch.tv/slayer_beard" title="Twitch" aria-label="Twitch" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 3h16v11l-4.5 4.5H12L8.5 22v-3.5H4z"/><path d="M11 8v4"/><path d="M15 8v4"/></svg></a>
+    </li>
+    
+    <li>
+      <a class="binario__social-voce" href="https://www.instagram.com/slayer_beard/" title="Instagram" aria-label="Instagram" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M16.75 7.25h.01"/></svg></a>
+    </li>
+    
+    <li>
+      <a class="binario__social-voce" href="https://www.tiktok.com/@slayer_beard" title="TikTok" aria-label="TikTok" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9.5" cy="14.5" r="4.5"/><path d="M14 14.5V3"/><path d="M14 3c.2 2.7 2.3 4.8 5 5"/></svg></a>
+    </li>
+    
+  </ul>
+</aside>
+
+
+<main id="contenuto">
+<!-- Copertina. Il monitor non sta più qui: è la sezione #diretta (CONTRATTO-2 §2.1).
+     Gli id #titolo, #spia-grande, #stato-testo, #conto e #ultima sono contratto con
+     js/player.js e js/sito.js: non si rinominano e non si tolgono. -->
+<section id="regia" class="regia" aria-labelledby="titolo">
+  <div class="regia__sfondo" aria-hidden="true">
+    <img src="img/banner.png" alt="">
+  </div>
+
+  <div class="regia__griglia">
+    <div class="quadro">
+      <p class="quadro__occhiello">Canale Twitch · ITA / ENG</p>
+      <h1 id="titolo" class="quadro__titolo">slayer_beard</h1>
+      <!-- Tripla graffa: è un campo di tipo «ricco» (CONTRATTO-2 §7.1). La
+           sanificazione è già avvenuta in generazione, qui il valore arriva
+           sicuro; con la doppia graffa i <br> e i grassetti del pannello si
+           leggerebbero come testo. -->
+      <p class="quadro__sottotitolo">Porto giochi di vario genere in modo particolare, a volte con integrazioni ed effetti speciali. Quattro sere a settimana, sempre alle 21:00.</p>
+
+      <div class="quadro__stato" role="group" aria-label="Stato del canale">
+        <p class="stato__riga">
+          <span id="spia-grande" class="spia" aria-hidden="true"></span><span id="stato-testo">Controllo il canale</span>
+        </p>
+        <dl class="stato__dati">
+          <dt>Prossima diretta</dt>
+          <!-- Senza JS resta il testo degli orari; sito.js ci scrive il conto alla rovescia e il datetime esatto. -->
+          <dd><time id="conto" class="conto" datetime="21:00">Lunedì, mercoledì, venerdì e domenica alle 21:00</time></dd>
+          <dt>Ultima diretta</dt>
+          <dd id="ultima">Little Nightmares 3 w/ @Mobscene93</dd>
+        </dl>
+      </div>
+
+      <div class="quadro__azioni">
+        <a class="btn btn--pieno" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener">Guarda su Twitch</a>
+        <!-- Il secondo comando porta al player, che adesso ha una sezione sua. -->
+        <a class="btn btn--vuoto" href="#diretta">Guarda la diretta</a>
+      </div>
+    </div>
+
+    <!-- I quattro numeri sono fuori dal quadro: sono la fascia di strumenti che
+         chiude la copertina a tutta larghezza (CONTRATTO-2 §2.1). -->
+    <ul class="quadro__dati">
+      <li class="dato"><b class="dato__valore">3.619</b><span class="dato__etichetta">Follower</span></li>
+      <li class="dato"><b class="dato__valore">4</b><span class="dato__etichetta">Dirette a settimana</span></li>
+      <li class="dato"><b class="dato__valore">~25</b><span class="dato__etichetta">Spettatori medi</span></li>
+      <li class="dato"><b class="dato__valore">2013</b><span class="dato__etichetta">Su Twitch dal</span></li>
+    </ul>
+  </div>
+
+  <a class="regia__scorri" href="#diretta">
+    <span>Scendi</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v15"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg>
+  </a>
+</section>
+
+<!-- La sezione del player (CONTRATTO-2 §2.2). Il monitor è arrivato qui dalla
+     copertina perché era piccolo: adesso è il protagonista di una sezione sua.
+     Gli id #twitch-embed, #twitch-chat, #monitor-lato, #chat-toggle,
+     #monitor-badge, #monitor-titolo e #apri-twitch sono contratto con
+     js/player.js: non si rinominano e non si tolgono. -->
+<section id="diretta" class="diretta" aria-labelledby="diretta-titolo">
+  <div class="diretta__testa">
+    <p class="sezione__occhiello">In onda</p>
+    <h2 id="diretta-titolo" class="sezione__titolo">La diretta</h2>
+    <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
+    <p class="sezione__testo">Il canale è qui dentro, alla larghezza giusta. Se sto trasmettendo il player parte da solo; la chat si apre con il bottone sotto allo schermo.</p>
+
+    <!-- La barra dell'account Twitch. Sta qui in cima, staccata dai comandi
+         del lurk, perché sono due cose diverse: questa dice CHI sei, quella
+         sotto al monitor dice cosa fa il sito col video. Mescolarle in
+         un'unica fila di bottoni le rendeva illeggibili tutte e due.
+         Vuota per contratto: la riempie js/lurk.js, e solo se
+         l'amministratore ha configurato un Client ID. -->
+    <div id="lurk-account" class="lurk-account"></div>
+  </div>
+
+  <!-- La scena è il contesto di posizionamento del pollo: css/diretta.css la
+       dichiara relative e le riserva la corsia, css/pollo.css ci mette dentro
+       la mascotte. Il pollo è l'ultimo figlio, dopo il monitor. -->
+  <div class="diretta__scena">
+    <div class="monitor">
+      <div class="monitor__telaio">
+        <div class="monitor__barra">
+          <span class="monitor__punti" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+          </span>
+          <span id="monitor-titolo" class="monitor__titolo">slayer_beard</span>
+          <span id="monitor-badge" class="monitor__badge" hidden>LIVE</span>
+        </div>
+
+        <div class="monitor__schermo">
+          <!-- Vuoto per contratto: lo riempie js/player.js. -->
+          <div id="twitch-embed" class="monitor__video"></div>
+        </div>
+
+        <div id="monitor-lato" class="monitor__lato" hidden>
+          <!-- Vuoto per contratto: lo riempie js/player.js. -->
+          <div id="twitch-chat" class="monitor__chat"></div>
+        </div>
+
+        <div class="monitor__piede">
+          <button id="chat-toggle" type="button" aria-expanded="false" aria-controls="twitch-chat">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.6L3 21l1.9-5.8A8.5 8.5 0 1 1 21 11.5z"/></svg>
+            Mostra la chat
+          </button>
+          <p class="monitor__nota">Il player è incorporato da Twitch: se il browser blocca i cookie di terze parti può non partire.</p>
+          <a id="apri-twitch" class="monitor__link" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener">
+            Guarda su Twitch
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4h6v6"/><path d="M20 4 10.5 13.5"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Il pollo spento dal pannello non deve nemmeno essere stampato: js/pollo.js
+         lo nasconde a runtime, ma senza JavaScript resterebbero in pagina due
+         bottoni raggiungibili col Tab e annunciati come comandi — «Apri la chat
+         del canale» e «Nascondi il pollo» — che non rispondono a niente.
+         Gli altri due modi di nasconderlo (la × e la scelta ricordata) sono
+         azioni del visitatore: lì il JavaScript c'è per forza. -->
+    <!-- Il pollo. Ultimo figlio di .diretta__scena (l'agente 1 lo include lì): la
+     scena è position: relative e gli riserva lo spazio con --pollo-larghezza.
+
+     Il fumetto nasce hidden e aria-hidden: i messaggi della chat NON vanno
+     annunciati dallo screen reader, sarebbe uno spam continuo. L'unica cosa
+     esposta è il bottone, con la sua etichetta.
+
+     L'immagine è decorativa due volte (alt vuoto + aria-hidden): il bottone che
+     la contiene ha già un nome accessibile, ripeterlo dentro sarebbe rumore.
+     Il fondo viola di mascot.png non è trasparente: lo sfuma css/pollo.css con
+     una maschera, qui non serve nessun accorgimento. -->
+<div id="pollo" class="pollo" data-stato="riposo">
+  <div id="pollo-fumetto" class="pollo__fumetto" aria-hidden="true" hidden><span class="pollo__testo"></span></div>
+
+  <button id="pollo-bottone" class="pollo__bottone" type="button" aria-label="Apri la chat del canale">
+    <img class="pollo__img" src="img/mascot.png" alt="" aria-hidden="true">
+  </button>
+
+  <!-- La croce è disegnata dal CSS con due barrette: il DOM resta quello del
+       contratto e non serve un'icona in più da caricare. -->
+  <button id="pollo-chiudi" class="pollo__chiudi" type="button" aria-label="Nascondi il pollo"></button>
+</div>
+
+  </div>
+
+  <!-- La modalità lurk (CONTRATTO-3 §2). Sta FUORI da .diretta__scena: la scena
+       è il contesto di posizionamento del pollo e gli riserva la corsia, e un
+       pannello largo là dentro obbligherebbe a rinegoziare diretta.css e
+       pollo.css. Spenta dal pannello non si stampa affatto, per lo stesso
+       motivo del pollo qui sopra: senza JavaScript resterebbero bottoni
+       raggiungibili col Tab che non rispondono a niente. -->
+  <!-- La modalità lurk (CONTRATTO-3 §2). Sta SOTTO al monitor, fuori da
+     .diretta__scena: la scena è il contesto di posizionamento del pollo e gli
+     riserva la corsia, e un pannello largo là dentro obbligherebbe a
+     rinegoziare css/diretta.css e css/pollo.css.
+
+     Non deve MAI coprire il player: Twitch disabilita l'autoplay negli embed
+     occlusi, e un embed senza autoplay non conta nessuno spettatore — cioè
+     l'esatto contrario di quello che questo pannello serve a fare. -->
+<section id="lurk" class="lurk" aria-labelledby="lurk-titolo">
+  <h3 id="lurk-titolo" class="lurk__titolo">Modalità lurk</h3>
+
+  <!-- Tripla graffa: campi «ricco», già sanificati in generazione (CONTRATTO-2 §7). -->
+  <p class="lurk__spiegazione">Se resti su questa pagina, ogni tanto controllo che il video stia ancora girando e lo faccio ripartire se il browser lo ferma. <b>Twitch conta uno spettatore finché il video va</b>, anche mutato e anche se la scheda è dietro: non conto io, conta il tuo player.</p>
+
+  <!-- Vuoto per contratto, come #twitch-embed: lo riempie js/lurk.js.
+       Senza JavaScript qui non deve restare nessun bottone raggiungibile col
+       Tab, perché non risponderebbe a niente. -->
+  <div id="lurk-comandi" class="lurk__comandi"></div>
+
+  <!-- role="status" + aria-live: gli stati sono pochi e cambiano di rado,
+       quindi annunciarli è utile. -->
+  <p id="lurk-stato" class="lurk__stato" role="status" aria-live="polite"></p>
+
+  <!-- SENZA aria-live, e non è una dimenticanza: qui dentro c'è un contatore
+       che cambia ogni secondo, e annunciarlo farebbe parlare un lettore di
+       schermo in continuazione. Stesso motivo per cui il fumetto del pollo è
+       aria-hidden (CONTRATTO-2 §2.3). -->
+  <p id="lurk-conto" class="lurk__conto"></p>
+
+  <p class="lurk__account">Se il tuo browser blocca i cookie di terze parti, da qui risulti come spettatore anonimo: conti per il canale, ma <b>non prendi punti canale né streak</b>. Da questa pagina non posso saperlo. Se ci tieni alla tua streak, guarda direttamente su Twitch.</p>
+  <p class="lurk__mobile">Sul telefono il browser mette in pausa il video appena esci da questa scheda, e da qui non posso rimediare. La modalità lurk vale finché resti su questa pagina.</p>
+</section>
+
+
+  <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
+  <p class="diretta__nota">Se lo schermo resta nero è quasi sempre il browser: cookie di terze parti bloccati, oppure un&#39;estensione che ferma gli iframe. In quel caso il canale si apre lo stesso su Twitch.</p>
+</section>
+
+<section id="settimana" class="settimana" aria-labelledby="settimana-titolo">
+  <div class="sezione__testa settimana__testa">
+    <p class="sezione__occhiello">Calendario</p>
+    <h2 id="settimana-titolo" class="sezione__titolo">La settimana</h2>
+    <p class="sezione__testo">Quattro sere a settimana, sempre alle 21:00. Le altre le passo a fare altro.</p>
+  </div>
+
+  <!-- Sette voci sempre, anche i giorni di riposo: il nastro è una settimana intera, non un elenco di dirette. -->
+  <ol id="nastro" class="nastro" aria-label="Lunedì, mercoledì, venerdì e domenica alle 21:00">
+    
+    <li class="nastro__giorno is-diretta" data-giorno="1">
+      <span class="nastro__abbr">LUN</span>
+      <b class="nastro__ora">21:00</b>
+      <span class="nastro__tag">Diretta</span>
+    </li>
+    
+    <li class="nastro__giorno" data-giorno="2">
+      <span class="nastro__abbr">MAR</span>
+      <b class="nastro__ora"></b>
+      <span class="nastro__tag">Riposo</span>
+    </li>
+    
+    <li class="nastro__giorno is-diretta" data-giorno="3">
+      <span class="nastro__abbr">MER</span>
+      <b class="nastro__ora">21:00</b>
+      <span class="nastro__tag">Diretta</span>
+    </li>
+    
+    <li class="nastro__giorno" data-giorno="4">
+      <span class="nastro__abbr">GIO</span>
+      <b class="nastro__ora"></b>
+      <span class="nastro__tag">Riposo</span>
+    </li>
+    
+    <li class="nastro__giorno is-diretta" data-giorno="5">
+      <span class="nastro__abbr">VEN</span>
+      <b class="nastro__ora">21:00</b>
+      <span class="nastro__tag">Diretta</span>
+    </li>
+    
+    <li class="nastro__giorno" data-giorno="6">
+      <span class="nastro__abbr">SAB</span>
+      <b class="nastro__ora"></b>
+      <span class="nastro__tag">Riposo</span>
+    </li>
+    
+    <li class="nastro__giorno is-diretta" data-giorno="0">
+      <span class="nastro__abbr">DOM</span>
+      <b class="nastro__ora">21:00</b>
+      <span class="nastro__tag">Diretta</span>
+    </li>
+    
+  </ol>
+
+  <div class="settimana__piede">
+    <p class="settimana__nota">Tutti gli orari sono nel fuso italiano (Europe/Rome). Il programma può cambiare: se salta una serata o ne aggiungo una, il canale Twitch resta il riferimento aggiornato.</p>
+    <a class="btn btn--vuoto" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener">Vai al canale</a>
+  </div>
+</section>
+
+<section id="chi" class="chi" aria-labelledby="chi-titolo">
+  <div class="chi__griglia">
+    <div class="chi__corpo">
+      <p class="sezione__occhiello">Chi sono</p>
+      <h2 id="chi-titolo" class="sezione__titolo">Dietro il pollo viola</h2>
+
+      <p class="chi__apertura">Ciao a tutti, sono slayer_beard! Porto giochi di vario genere in modo particolare, a volte con integrazioni ed effetti speciali.</p>
+      <p>Il canale è su Twitch dal 2013 e va avanti quattro sere a settimana. Non è un posto enorme, ed è esattamente il punto: ci si riconosce, si chiacchiera, e nessun messaggio resta indietro.</p>
+      <blockquote class="chi__citazione">Siamo una ventina a serata: ci si riconosce, e la chat si legge tutta.</blockquote>
+      <p>Niente scaletta rigida. Horror quando c&#39;è da spaventarsi in compagnia, co-op quando c&#39;è qualcuno con cui giocare, e ogni tanto qualche effetto speciale di troppo. In chat il posto si chiama pollaio da così tanto tempo che la mascotte ha finito per farci il verso. Se passi, salutami: rispondo.</p>
+
+      <ul class="chi__tag">
+        <li class="tag">Giochi di vario genere</li>
+        <li class="tag">Horror</li>
+        <li class="tag">Co-op</li>
+        <li class="tag">Integrazioni ed effetti speciali</li>
+        <li class="tag">Ita / Eng</li>
+        <li class="tag">Twitch Affiliate</li>
+      </ul>
+
+      <a class="btn btn--pieno" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener">Apri il canale su Twitch</a>
+    </div>
+
+    <aside class="chi__margine">
+      <div class="nota">
+        <h3 class="nota__titolo">Lingua</h3>
+        <p class="nota__testo">Italiano e inglese, spesso nella stessa frase.</p>
+      </div>
+      <div class="nota">
+        <h3 class="nota__titolo">Generi</h3>
+        <p class="nota__testo">Horror, co-op e vario. Decide la serata, non il calendario.</p>
+      </div>
+      <div class="nota">
+        <h3 class="nota__titolo">Emote</h3>
+        <p class="nota__testo">Tutte le emote del canale iniziano per slayer156.</p>
+      </div>
+
+      <ul class="chi__dati">
+        <li><b>3.619</b><span>Follower sul canale</span></li>
+        <li><b>90</b><span>Abbonati attivi</span></li>
+        <li><b>~25</b><span>Spettatori medi per diretta</span></li>
+      </ul>
+    </aside>
+
+    <figure class="chi__ritratto">
+      <img src="img/avatar.png" alt="Avatar del canale slayer_beard.">
+      <figcaption>slayer_beard — Twitch Affiliate · dal 2013</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="supporto" class="supporto" aria-labelledby="supporto-titolo">
+  <div class="sezione__testa">
+    <p class="sezione__occhiello">Supporto</p>
+    <h2 id="supporto-titolo" class="sezione__titolo">Come dare una mano</h2>
+    <p class="sezione__testo">Seguire è gratis ed è già tanto: il tasto Segui su Twitch non costa niente e mi aiuta davvero. Tutto quello che trovi qui sotto è facoltativo, guardare la diretta non richiede nessuna di queste cose.</p>
+  </div>
+
+  <!-- Le voci senza URL sono già state tolte dalla generazione: qui non arriva niente di rotto. -->
+  <ol id="listino" class="listino">
+    
+    <li class="listino__riga">
+      <span class="listino__icona"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3.2 2.75 5.6 6.15.9-4.45 4.35 1.05 6.15L12 17.3l-5.5 2.9 1.05-6.15L3.1 9.7l6.15-.9z"/></svg></span>
+      <div class="listino__corpo">
+        <h3 class="listino__titolo">Abbonamento</h3>
+        <p class="listino__testo">Vale un mese e si può fermare quando vuoi. Sblocca le emote slayer156 e toglie la pubblicità. Al momento siamo in 90.</p>
+      </div>
+      <span class="listino__tag">Da 4,99 €</span>
+      <a class="listino__azione" href="https://www.twitch.tv/subs/slayer_beard" target="_blank" rel="noopener">Abbonati su Twitch</a>
+    </li>
+    
+    <li class="listino__riga">
+      <span class="listino__icona"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 8 3.6 2.6L12 4l5.4 6.6L21 8l-1.8 10H4.8z"/><path d="M4.8 21h14.4"/></svg></span>
+      <div class="listino__corpo">
+        <h3 class="listino__titolo">Abbonamento Prime</h3>
+        <p class="listino__testo">Se hai Amazon Prime, ogni mese hai un abbonamento incluso da usare dove vuoi. Non costa niente in più: se non lo usi, scade e basta.</p>
+      </div>
+      <span class="listino__tag">Incluso</span>
+      <a class="listino__azione" href="https://gaming.amazon.com/" target="_blank" rel="noopener">Attiva il Prime</a>
+    </li>
+    
+    <li class="listino__riga">
+      <span class="listino__icona"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/><path d="m12 21-3-12 3-6 3 6z"/></svg></span>
+      <div class="listino__corpo">
+        <h3 class="listino__titolo">Bits</h3>
+        <p class="listino__testo">Piccole mance durante la diretta: compaiono in chat e le leggo ad alta voce. Anche zero va benissimo.</p>
+      </div>
+      <span class="listino__tag">Quanto vuoi</span>
+      <a class="listino__azione" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener">Manda dei Bits</a>
+    </li>
+    
+    <li class="listino__riga">
+      <span class="listino__icona"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.8 6a5.4 5.4 0 0 0-7.7 0L12 7.1 10.9 6A5.4 5.4 0 0 0 3.2 13.6L12 21.5l8.8-7.9A5.4 5.4 0 0 0 20.8 6z"/></svg></span>
+      <div class="listino__corpo">
+        <h3 class="listino__titolo">Segui il canale</h3>
+        <p class="listino__testo">Il modo che aiuta di più e non costa niente: ti avvisa quando accendo e mi fa salire nelle liste di Twitch.</p>
+      </div>
+      <span class="listino__tag">Gratis</span>
+      <a class="listino__azione" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener">Segui su Twitch</a>
+    </li>
+    
+  </ol>
+
+  <p class="supporto__chiusura">Nessuno di questi passaggi è richiesto. Il canale è aperto, resta aperto, e la chat è la stessa per tutti.</p>
+</section>
+
+<section id="saluti" class="saluti" aria-labelledby="saluti-titolo">
+  <div class="saluti__griglia">
+    <div class="saluti__social">
+      <p class="sezione__occhiello">Altrove</p>
+      <h2 id="saluti-titolo" class="sezione__titolo">Dove mi trovi</h2>
+      <p class="sezione__testo">Stesso nome ovunque: slayer_beard. Non ci sono profili doppi, se ne trovi un altro non sono io.</p>
+
+      <ul id="social" class="social">
+        
+        <li>
+          <a class="social__voce" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 3h16v11l-4.5 4.5H12L8.5 22v-3.5H4z"/><path d="M11 8v4"/><path d="M15 8v4"/></svg><span class="social__nome">Twitch</span><span class="social__handle">twitch.tv/slayer_beard</span></a>
+        </li>
+        
+        <li>
+          <a class="social__voce" href="https://www.instagram.com/slayer_beard/" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M16.75 7.25h.01"/></svg><span class="social__nome">Instagram</span><span class="social__handle">@slayer_beard</span></a>
+        </li>
+        
+        <li>
+          <a class="social__voce" href="https://www.tiktok.com/@slayer_beard" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9.5" cy="14.5" r="4.5"/><path d="M14 14.5V3"/><path d="M14 3c.2 2.7 2.3 4.8 5 5"/></svg><span class="social__nome">TikTok</span><span class="social__handle">@slayer_beard</span></a>
+        </li>
+        
+      </ul>
+    </div>
+
+    <div class="contatti">
+      <h3 class="contatti__titolo">Scrivimi</h3>
+      <p class="contatti__testo">Per collaborazioni, proposte o segnalazioni, scrivi a questo indirizzo. Leggo tutto, rispondo quando riesco.</p>
+      <p><code id="email" class="contatti__email">slayerbeard@gmail.com</code></p>
+
+      <div class="contatti__azioni">
+        <!-- aria-live sul bottone: sito.js ne cambia il testo in "copiato" e va annunciato. -->
+        <button id="copia-email" class="btn btn--vuoto" type="button" aria-live="polite">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 5.5V4.5A1.5 1.5 0 0 0 13.5 3h-9A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15h1"/></svg>
+          Copia l&#39;email
+        </button>
+        <a id="scrivi-email" class="btn btn--pieno" href="mailto:slayerbeard@gmail.com">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>
+          Scrivi una mail
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <p class="saluti__chiusura">Grazie per essere passato. Ci si vede in diretta.</p>
+</section>
+
+</main>
+
+<footer class="piede">
+  <p class="piede__copy">© 2026 slayer_beard</p>
+  <p class="piede__disclaimer">Sito personale, non affiliato a Twitch. Twitch è un marchio di Twitch Interactive, Inc. I nomi e i loghi dei social appartengono ai rispettivi proprietari.</p>
+  <p class="piede__nota">Fatto in casa, senza framework.</p>
+</footer>
+
+
+<!-- ritorno.js prima di tutto e SENZA defer, ed è l'unico punto in cui l'ordine è una
+     questione di sostanza e non di dipendenze: quando questa pagina è la finestrella
+     che torna dal login di Twitch, quel file consegna il token a chi l'ha aperta e la
+     chiude. Deve farlo mentre il documento si sta ancora analizzando, cioè prima che
+     player.js — differito, quindi più tardi — monti un secondo player di Twitch dentro
+     la finestrella: sarebbe una seconda sessione video della stessa persona, che il
+     CONTRATTO-3 §3.4 vieta. In una visita normale esce alla seconda riga e non fa niente.
+
+     Poi dati.js: tutti gli altri leggono window.DATI. L'SDK di Twitch non è differito
+     perché player.js, differito, se lo aspetta già valutato. La coda finale è una catena di
+     iscrizioni e l'ordine non è decorativo (CONTRATTO-3 §5.3): lurk.js si iscrive a
+     window.Player, e pollo.js si iscrive a window.Lurk — che quindi deve già esistere. -->
+<script src="js/ritorno.js"></script>
+<script src="js/dati.js"></script>
+<script src="https://embed.twitch.tv/embed/v1.js"></script>
+<script src="js/player.js" defer></script>
+<script src="js/sito.js" defer></script>
+<script src="js/lurk.js" defer></script>
+<script src="js/pollo.js" defer></script>
+</body>
+</html>

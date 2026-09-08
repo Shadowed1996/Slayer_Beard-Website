@@ -1,0 +1,32 @@
+<!-- La modalità lurk (CONTRATTO-3 §2). Sta SOTTO al monitor, fuori da
+     .diretta__scena: la scena è il contesto di posizionamento del pollo e gli
+     riserva la corsia, e un pannello largo là dentro obbligherebbe a
+     rinegoziare css/diretta.css e css/pollo.css.
+
+     Non deve MAI coprire il player: Twitch disabilita l'autoplay negli embed
+     occlusi, e un embed senza autoplay non conta nessuno spettatore — cioè
+     l'esatto contrario di quello che questo pannello serve a fare. -->
+<section id="lurk" class="lurk" aria-labelledby="lurk-titolo">
+  <h3 id="lurk-titolo" class="lurk__titolo">{{lurk.titolo}}</h3>
+
+  <!-- Tripla graffa: campi «ricco», già sanificati in generazione (CONTRATTO-2 §7). -->
+  <p class="lurk__spiegazione">{{{lurk.spiegazione}}}</p>
+
+  <!-- Vuoto per contratto, come #twitch-embed: lo riempie js/lurk.js.
+       Senza JavaScript qui non deve restare nessun bottone raggiungibile col
+       Tab, perché non risponderebbe a niente. -->
+  <div id="lurk-comandi" class="lurk__comandi"></div>
+
+  <!-- role="status" + aria-live: gli stati sono pochi e cambiano di rado,
+       quindi annunciarli è utile. -->
+  <p id="lurk-stato" class="lurk__stato" role="status" aria-live="polite"></p>
+
+  <!-- SENZA aria-live, e non è una dimenticanza: qui dentro c'è un contatore
+       che cambia ogni secondo, e annunciarlo farebbe parlare un lettore di
+       schermo in continuazione. Stesso motivo per cui il fumetto del pollo è
+       aria-hidden (CONTRATTO-2 §2.3). -->
+  <p id="lurk-conto" class="lurk__conto"></p>
+
+  <p class="lurk__account">{{{lurk.notaAccount}}}</p>
+  <p class="lurk__mobile">{{{lurk.notaMobile}}}</p>
+</section>

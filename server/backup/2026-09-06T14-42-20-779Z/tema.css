@@ -1,0 +1,89 @@
+/* =============================================================================
+   tema.css — FILE GENERATO. Non si modifica a mano.
+
+   Lo riscrivono `node server/genera.js` e il tasto Pubblica del pannello, a
+   partire da config.tema in contenuti/contenuti.json e da server/lib/tema.js.
+   Qualunque modifica fatta qui dentro sparisce alla generazione successiva:
+   si cambia il tema dal pannello, non il file generato.
+
+   Caricato subito DOPO css/tokens.css, che resta il valore di partenza: qui
+   ci sono solo i token che il tema riscrive. --twitch non c e, ed e voluto:
+   e il viola ufficiale di Twitch, marchio altrui, e resta quello di tokens.css.
+
+   Polarita: SCURA — luminanza del fondo 0.002, quindi linee, vetri e veli sono bianchi con alpha.
+   Aloni: 100%.  Font: Space Grotesk / Manrope / JetBrains Mono.
+   ============================================================================= */
+
+:root {
+
+  /* --- MARCHIO E STATI — gli unici colori scelti a mano ------------------- */
+  --viola: #8b2fff;
+  --viola-cupo: #4b1391;
+  --viola-chiaro: #c5a4ff;
+  --ciano: #22e0ff;
+  --magenta: #ff2fa0;
+  --live: #ff3d5e;
+  --ok: #35e0a1;
+  --allerta: #ffc65c;
+
+  /* --- TESTO -------------------------------------------------------------- */
+  --testo: #f2f0f8;
+  --testo-medio: #c3bdd6;
+  --testo-tenue: #9a93b0;
+
+  /* --- SUPERFICI -----------------------------------------------------------
+     I due fondi sono opachi, i due pannelli sono vetri: hanno alpha, quindi
+     lasciano passare l alone che si trovano sotto. Derivano tutti dal fondo,
+     tinto col colore guida e spostato di poco verso l inchiostro. */
+  --fondo: #07070c;
+  --fondo-2: #0e0b16;
+  --pannello: rgba(24, 15, 38, 0.72);
+  --pannello-2: rgba(36, 24, 54, 0.78);
+  --velo: rgba(7, 7, 12, 0.78);
+
+  /* --- LINEE ---------------------------------------------------------------
+     Inchiostro con alpha, non un grigio: cosi la linea prende la tinta di
+     quello che ha sotto. --linea-comando e l alpha piu bassa che porta il
+     bordo di un comando a 3:1 (WCAG 1.4.11); --linea-viva e l unica tinta. */
+  --linea: rgba(255, 255, 255, 0.07);
+  --linea-forte: rgba(255, 255, 255, 0.15);
+  --linea-comando: rgba(255, 255, 255, 0.34);
+  --linea-viva: rgba(139, 47, 255, 0.55);
+
+  /* --- COMPOSIZIONI -------------------------------------------------------- */
+  --grad-pagina:
+    radial-gradient(1200px 780px at  50% -12%, rgba(139, 47, 255, 0.22), rgba(139, 47, 255, 0) 70%) 0 0 / 100% 100% no-repeat fixed,
+    radial-gradient( 900px 640px at 104%  10%, rgba(34, 224, 255, 0.055), rgba(34, 224, 255, 0) 66%) 0 0 / 100% 100% no-repeat fixed,
+    radial-gradient( 980px 800px at -10%  58%, rgba(255, 47, 160, 0.05), rgba(255, 47, 160, 0) 68%) 0 0 / 100% 100% no-repeat fixed,
+    radial-gradient( 820px 560px at  30% 108%, rgba(75, 19, 145, 0.28), rgba(75, 19, 145, 0) 72%) 0 0 / 100% 100% no-repeat fixed,
+    #07070c;
+
+  /* Riempimento del titolo grande (background-clip: text): solo tinte
+     leggibili sul fondo, cosi il titolo si legge e non e solo decorativo. */
+  --grad-titolo: linear-gradient(98deg, #f2f0f8 0%, #c5a4ff 48%, #22e0ff 100%);
+
+  /* Vetro dei pannelli: riflesso in alto che si spegne subito, incavo in
+     basso. Va SOPRA a --pannello, non al posto suo. */
+  --grad-pannello: linear-gradient(168deg, rgba(197, 164, 255, 0.1) 0%, rgba(197, 164, 255, 0.02) 38%, rgba(0, 0, 0, 0.12) 100%);
+
+  /* --- BAGLIORI — pronti per box-shadow o filter: drop-shadow() ------------ */
+  --bagliore-viola: 0 0 24px rgba(139, 47, 255, 0.45);
+  --bagliore-ciano: 0 0 20px rgba(34, 224, 255, 0.4);
+
+  /* --- FORMA ---------------------------------------------------------------
+     Un raggio solo, e gli altri due ne discendono: 0.57x per gli elementi
+     piccoli e 1.57x per il telaio del monitor. Le proporzioni restano quelle
+     anche quando il raggio cambia. */
+  --raggio: 14px;
+  --raggio-s: 8px;
+  --raggio-g: 22px;
+
+  /* --- TIPOGRAFIA — famiglia scelta, poi il ripiego di sistema ------------- */
+  --font-titolo: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-testo: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, 'SFMono-Regular', monospace;
+
+  /* --- MISURE --------------------------------------------------------------- */
+  --max-larghezza: 1360px;
+  --passo: 8px;
+}
