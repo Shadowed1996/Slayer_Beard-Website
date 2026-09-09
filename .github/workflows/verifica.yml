@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Scarica il repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Prepara Node.js
         uses: actions/setup-node@v4
