@@ -1,0 +1,23 @@
+# Convenzioni di scrittura dei file, applicate dall'editor.
+# Rispecchiano quello che i file del progetto già fanno: 2 spazi, LF, UTF-8.
+# Vedi CONTRIBUTING.md, sezione «Stile del codice».
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Nel Markdown due spazi in coda a una riga sono un a capo voluto.
+[*.md]
+trim_trailing_whitespace = false
+
+# I file batch di Windows vogliono le loro fini riga.
+[*.cmd]
+end_of_line = crlf
+
+[Makefile]
+indent_style = tab

@@ -1,0 +1,12 @@
+# Il progetto non ha un gestore di pacchetti: nessun package.json, nessuna
+# dipendenza esterna, solo i moduli interni di Node.js (CONTRATTO §0).
+# Resta quindi il solo ecosistema delle GitHub Actions usate dai workflow.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"

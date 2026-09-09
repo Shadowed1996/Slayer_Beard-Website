@@ -1,0 +1,84 @@
+name: Richiesta di funzionalità
+description: Proponi un'aggiunta o un miglioramento al sito, al pannello o alla documentazione.
+title: "[Funzionalità]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Il progetto è proprietario e i contributi esterni non sono aperti
+        (vedi [`CONTRIBUTING.md`](https://github.com/Shadowed1996/Slayer_Beard-Website/blob/main/CONTRIBUTING.md)), ma le proposte
+        sono benvenute: si discutono **qui**, prima di scrivere codice.
+
+        Tieni presenti i vincoli che non si negoziano: niente npm, niente
+        dipendenze, niente framework, niente CDN oltre Google Fonts ed
+        `embed.twitch.tv`, tutto in italiano.
+
+  - type: textarea
+    id: problema
+    attributes:
+      label: Il problema da risolvere
+      description: Parti da cosa non funziona oggi, non dalla soluzione. Se è un fastidio ricorrente, dì quanto spesso capita.
+      placeholder: Ogni volta che cambio gli orari devo ricordarmi di...
+    validations:
+      required: true
+
+  - type: textarea
+    id: soluzione
+    attributes:
+      label: Soluzione proposta
+      description: Cosa dovrebbe succedere, dal punto di vista di chi usa il sito o il pannello.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: parte
+    attributes:
+      label: Quale parte riguarda
+      options:
+        - Sito pubblicato (contenuti, sezioni, aspetto)
+        - Player, chat o pollo
+        - Modalità lurk e collegamento con Twitch
+        - Pannello di amministrazione
+        - Server, generazione o schema dei campi
+        - Documentazione
+        - Altro
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternative
+    attributes:
+      label: Alternative valutate
+      description: Altre strade considerate, e perché sono state scartate. Anche «si può già fare a mano, ma...» è una risposta utile.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priorita
+    attributes:
+      label: Priorità
+      options:
+        - Bassa — sarebbe comodo
+        - Media — fa risparmiare tempo tutte le settimane
+        - Alta — oggi qualcosa non si può fare affatto
+    validations:
+      required: true
+
+  - type: textarea
+    id: contesto
+    attributes:
+      label: Contesto aggiuntivo
+      description: Schermate, riferimenti, esempi di come lo risolvono altri siti.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: verifiche
+    attributes:
+      label: Verifiche fatte
+      options:
+        - label: Ho controllato che non esista già una richiesta simile
+          required: true
+        - label: Ho verificato che non sia già ottenibile dal pannello o modificando `contenuti/contenuti.json`
+          required: false

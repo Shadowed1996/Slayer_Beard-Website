@@ -1,0 +1,54 @@
+LICENZA D'USO PROPRIETARIA — TUTTI I DIRITTI RISERVATI
+
+Copyright (c) 2026 Filippo — GitHub @Shadowed1996
+
+Il presente progetto — il sito del canale Twitch slayer_beard, il pannello di
+amministrazione e il generatore che li accompagna — comprensivo del codice
+sorgente, della documentazione, dei modelli, dei fogli di stile, della grafica
+e di ogni file associato (di seguito "il Software"), è di proprietà esclusiva
+del titolare del copyright sopra indicato.
+
+NON È CONSENTITO, senza esplicito permesso scritto del titolare:
+  - copiare, riprodurre o distribuire il Software, in tutto o in parte;
+  - modificare, adattare, tradurre o creare opere derivate;
+  - decompilare, disassemblare o effettuare reverse engineering;
+  - sublicenziare, vendere, noleggiare o cedere il Software a terzi;
+  - rimuovere o alterare le note di copyright e le presenti condizioni;
+  - presentare il Software, o parti di esso, come proprio lavoro originale.
+
+È CONSENTITO al solo destinatario espressamente autorizzato dal titolare:
+  - utilizzare ed eseguire il Software per le finalità concordate;
+  - conservarne copie di sicurezza a fini di continuità operativa.
+
+COMPONENTI DI TERZE PARTI
+Il Software può includere componenti di terze parti distribuiti con licenze
+proprie, indicate nei rispettivi file. Tali licenze prevalgono, limitatamente
+ai componenti a cui si riferiscono, sulle condizioni qui esposte.
+
+In particolare non sono coperti dalla presente licenza, e restano dei
+rispettivi titolari:
+  - i marchi, il logo e il colore istituzionale di Twitch, richiamati dal
+    sito solo per identificare il canale;
+  - il player e la chat incorporati, forniti da Twitch tramite embed.twitch.tv
+    e soggetti alle condizioni d'uso e alle Community Guidelines di Twitch;
+  - i caratteri tipografici serviti da Google Fonts, distribuiti con le
+    proprie licenze aperte;
+  - le immagini del canale presenti in "img/" e la cattura "Cattura.PNG",
+    che ritraggono materiale grafico del canale slayer_beard.
+
+ESCLUSIONE DI GARANZIA
+IL SOFTWARE È FORNITO "COSÌ COM'È", SENZA GARANZIE DI ALCUN TIPO, ESPRESSE O
+IMPLICITE, COMPRESE, A TITOLO ESEMPLIFICATIVO, LE GARANZIE DI COMMERCIABILITÀ,
+IDONEITÀ A UNO SCOPO PARTICOLARE E NON VIOLAZIONE DI DIRITTI ALTRUI.
+
+LIMITAZIONE DI RESPONSABILITÀ
+IN NESSUN CASO IL TITOLARE DEL COPYRIGHT POTRÀ ESSERE RITENUTO RESPONSABILE
+PER QUALSIASI RIVENDICAZIONE, DANNO DIRETTO O INDIRETTO, PERDITA DI DATI O
+DI PROFITTO DERIVANTE DALL'USO O DALL'IMPOSSIBILITÀ DI USO DEL SOFTWARE.
+
+LEGGE APPLICABILE
+Il presente accordo è regolato dalla legge italiana. Per ogni controversia
+è competente in via esclusiva il foro del luogo di residenza del titolare.
+
+Per richieste di licenza, autorizzazioni o collaborazioni:
+https://github.com/Shadowed1996

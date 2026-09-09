@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Segnalazione di sicurezza
+    url: https://github.com/Shadowed1996/Slayer_Beard-Website/security/advisories/new
+    about: I problemi di sicurezza non si aprono come issue pubbliche. Usa una segnalazione privata.
+  - name: Guida del pannello
+    url: https://github.com/Shadowed1996/Slayer_Beard-Website/blob/main/docs/PANNELLO.md
+    about: Prima di aprire una issue, controlla se la risposta è già nella guida per chi aggiorna il sito.
+  - name: Il canale su Twitch
+    url: https://www.twitch.tv/slayer_beard
+    about: Per il canale, le dirette e la community.
+  - name: Contatta l'autore
+    url: https://github.com/Shadowed1996
+    about: Per tutto ciò che non è un difetto o una proposta.

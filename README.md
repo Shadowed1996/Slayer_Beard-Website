@@ -1,5 +1,10 @@
 # slayer_beard — sito ufficiale
 
+![Stato](https://img.shields.io/badge/stato-in%20sviluppo-yellow)
+![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A5%2018-339933)
+![Dipendenze](https://img.shields.io/badge/dipendenze-nessuna-informational)
+![Licenza](https://img.shields.io/badge/licenza-proprietaria-lightgrey)
+
 Sito del canale Twitch [slayer_beard](https://www.twitch.tv/slayer_beard), con dietro un piccolo
 CMS per modificarne ogni testo, numero, link, immagine, colore e carattere senza aprire un editor
 di codice.
@@ -106,7 +111,10 @@ sito/
 │                           davvero gli spettatori, e cosa consente il regolamento
 ├─ CONTRATTO.md          le regole con cui è stato costruito
 ├─ CONTRATTO-2.md        l'addendum della seconda fase: diretta, pollo, tema, testo ricco
-└─ CONTRATTO-3.md        l'addendum della terza fase: la modalità lurk
+├─ CONTRATTO-3.md        l'addendum della terza fase: la modalità lurk
+├─ RIPRENDI-DOMANI.md    appunto di lavoro: cosa era rimasto in sospeso, e dove
+└─ Cattura.PNG           cattura della pagina del canale su Twitch — banner, riquadro
+                         fuori onda, handle social. Non è un'anteprima di questo sito.
 ```
 
 Le sezioni della pagina, nell'ordine: **regia** (la copertina), **diretta** (il player, grande,
@@ -400,3 +408,72 @@ rovescia, l'evidenziazione della sezione corrente e il pollo. I contenuti, gli o
 sono già nell'HTML generato.
 
 Browser: versioni correnti di Chrome, Edge, Firefox e Safari.
+
+---
+
+## Documentazione
+
+Il progetto è documentato più di quanto sembri, e questo README è solo la porta
+d'ingresso: qui sotto c'è cosa leggere e quando.
+
+| Documento | A cosa serve |
+|---|---|
+| [`docs/PANNELLO.md`](docs/PANNELLO.md) | **La guida per chi aggiorna il sito.** Come si entra nel pannello, la differenza fra *Salva* e *Pubblica*, gruppo per gruppo cosa fa ogni campo, le immagini, i colori, i backup e il ripristino. Non serve saper programmare: è il documento da dare in mano a chi deve cambiare un orario. |
+| [`docs/PRESENZA-TWITCH.md`](docs/PRESENZA-TWITCH.md) | **Lo studio da leggere prima di toccare la modalità lurk.** Come Twitch conta davvero gli spettatori, perché la chat non entra nel conteggio, cosa succede ai cookie di terze parti, e cosa il regolamento di Twitch consente e cosa no. Da qui discende ogni scelta di `js/lurk.js`, spegnimento automatico compreso. |
+| [`CONTRATTO.md`](CONTRATTO.md) | Le regole con cui il sito è stato costruito: niente npm, niente framework, niente CDN, tutto in italiano. Vale ancora, tranne i tre punti superati dall'addendum. |
+| [`CONTRATTO-2.md`](CONTRATTO-2.md) | L'addendum della seconda fase: la sezione «diretta», il pollo, il tema modificabile e il testo ricco. |
+| [`CONTRATTO-3.md`](CONTRATTO-3.md) | L'addendum della terza fase: la modalità lurk e il collegamento con Twitch. |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Come si lavora al codice: flusso di lavoro, convenzione dei commit, stile, checklist prima di una pull request. |
+| [`SECURITY.md`](SECURITY.md) | Come segnalare una vulnerabilità, i punti sensibili noti e i casi fuori ambito. |
+| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Il codice di condotta della comunità. |
+| [`CHANGELOG.md`](CHANGELOG.md) | Il registro delle modifiche, versione per versione. |
+
+C'è poi [`RIPRENDI-DOMANI.md`](RIPRENDI-DOMANI.md), che **non è documentazione
+ufficiale**: è l'appunto di un lavoro interrotto a metà — cosa era stato chiuso,
+cosa restava aperto e dove riprendere. Va letto come tale, e invecchia in fretta.
+È lì che sta anche la ragione per cui `node server/autotest.js` oggi segnala
+**12 prove fallite su 117**: il collaudo è indietro rispetto al sito, i
+fallimenti sono conseguenze volute delle modifiche arrivate dopo, e il suo
+rifacimento è fra le cose da fare.
+
+---
+
+## Terze parti
+
+Il sito non ha dipendenze da installare, ma a pagina aperta parla con tre
+soggetti esterni, e vale la pena sapere quali:
+
+- **Twitch** — il player e la chat sono incorporati da `embed.twitch.tv`, con
+  l'SDK servito da Twitch stessa. Marchio, logo e colore istituzionale sono di
+  Twitch Interactive, Inc.; il loro uso qui identifica il canale e nient'altro.
+  Il player, la chat e il collegamento facoltativo con l'account sono soggetti
+  alle condizioni d'uso e alle Community Guidelines di Twitch.
+- **Google Fonts** — i caratteri scelti dal pannello vengono serviti da
+  `fonts.googleapis.com`, con le rispettive licenze aperte. Se si scelgono solo
+  caratteri di sistema quell'indirizzo resta vuoto e la pagina non contatta
+  nessuno.
+- **`static-cdn.jtvnw.net`** — l'unico dominio esterno ammesso in `img-src`
+  oltre al sito stesso: serve le immagini di profilo di Twitch, e solo quelle.
+
+Le immagini in `img/` e la cattura `Cattura.PNG` ritraggono materiale grafico
+del canale slayer_beard e non sono coperte dalla licenza di questo progetto.
+
+---
+
+## Licenza
+
+Progetto **proprietario, tutti i diritti riservati**. Copia, redistribuzione,
+modifica e opere derivate non sono consentite senza permesso scritto del
+titolare. Il testo completo è in [`LICENSE`](LICENSE).
+
+Le componenti di terze parti elencate qui sopra restano soggette alle proprie
+licenze.
+
+---
+
+## Autore
+
+Filippo — [@Shadowed1996](https://github.com/Shadowed1996)
+
+Per richieste di licenza, autorizzazioni o collaborazioni, e per tutto ciò che
+non è un difetto o una proposta, il contatto è il profilo GitHub.

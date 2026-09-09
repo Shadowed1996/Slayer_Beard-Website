@@ -1,0 +1,106 @@
+# Registro delle modifiche
+
+Tutte le modifiche degne di nota a questo progetto vengono annotate qui.
+
+Il formato segue [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/)
+e il progetto adotta il [Versionamento Semantico](https://semver.org/lang/it/).
+
+La storia di questo repository comincia con un **commit iniziale unico**, che
+contiene il sito già arrivato alla terza fase di costruzione: le voci della
+versione `1.0.0` descrivono quindi ciò che quel commit ha portato, raggruppato
+per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
+[`CONTRATTO-2.md`](CONTRATTO-2.md) e [`CONTRATTO-3.md`](CONTRATTO-3.md).
+
+## [Non rilasciato]
+
+### Aggiunto
+
+- `LICENSE`: licenza d'uso proprietaria, tutti i diritti riservati.
+- `SECURITY.md` con la politica di sicurezza, i punti sensibili noti e i casi
+  fuori ambito.
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` e questo `CHANGELOG.md`.
+- Template per le issue (segnalazione di bug, richiesta di funzionalità) e per
+  le pull request, più `CODEOWNERS`.
+- Workflow di verifica non bloccante (`.github/workflows/verifica.yml`) e
+  configurazione di Dependabot per gli aggiornamenti delle GitHub Actions.
+- `.editorconfig` e `.gitattributes` allineati alle convenzioni del progetto.
+
+### Modificato
+
+- `README.md`: aggiunti i badge, l'indice della documentazione, le sezioni
+  Licenza e Autore. Il resto del documento è rimasto invariato.
+- `.gitignore` esteso con le cartelle degli editor e altri file temporanei.
+
+## [1.0.0] — 2026-09-08
+
+Commit iniziale: `Commit iniziale: sito Slayer Beard`.
+
+### Aggiunto
+
+#### Il sito (prima fase — `CONTRATTO.md`)
+
+- Sito statico a pagina unica del canale Twitch **slayer_beard**, con sei
+  sezioni: regia, diretta, settimana, chi sono, supporto, saluti, e il binario
+  di navigazione laterale che diventa dock sotto i 1100 px.
+- Generazione da modelli: `modelli/index.html` con i segnaposto `{{…}}`,
+  `modelli/parziali/` per le sezioni e `modelli/icone/` per le icone SVG.
+- `contenuti/contenuti.json` come unica fonte dei testi e della
+  configurazione, e `contenuti/schema.js` che descrive ogni campo.
+- Generatore `node server/genera.js`, che produce `index.html`, `js/dati.js` e
+  `css/tema.css`, con copia di sicurezza in `server/backup/` prima di ogni
+  scrittura.
+- Server di amministrazione locale (`node server/server.js`, porta `4173` o
+  `SB_PORTA`) con opzione `--guarda` per rigenerare a ogni modifica, avviabile
+  anche da `server/avvia.cmd` e `server/avvia.sh`.
+- Pannello di amministrazione in `pannello/`, costruito automaticamente a
+  partire dallo schema dei campi.
+- Accesso al pannello con password unica, hash `scrypt` in
+  `server/dati/auth.json`, sessioni in memoria e freno ai tentativi
+  (`node server/imposta-password.js`).
+- Collaudo del backend senza dipendenze: `node server/autotest.js`.
+- Player e chat di Twitch, stato in onda / fuori onda, conto alla rovescia per
+  la prossima diretta.
+- Accessibilità: contrasti WCAG AA, navigazione da tastiera, skip link,
+  landmark ARIA, rispetto di `prefers-reduced-motion`; la pagina resta
+  leggibile anche senza JavaScript.
+- Documentazione: `docs/PANNELLO.md`, guida per chi aggiorna il sito.
+
+#### Diretta, pollo, tema e testo ricco (seconda fase — `CONTRATTO-2.md`)
+
+- Sezione «diretta» con il player grande, la chat affiancata e la mascotte.
+- Il pollo: mascotte interattiva che legge la chat del canale in sola lettura
+  via WebSocket anonimo, reagisce allo stato del canale e mostra frasi
+  configurabili dal pannello; disattivabile su tre livelli.
+- Tema modificabile dal pannello (gruppo «Aspetto»): dodici colori, tre
+  caratteri e le misure di base diventano `css/tema.css`, con i token derivati
+  calcolati da `server/lib/tema.js` e la polarità che si ribalta da sola sui
+  fondi chiari.
+- Campi di tipo `ricco`: sottoinsieme di HTML consentito, ripulito in
+  generazione da `server/lib/testoricco.js`.
+- Caricamento delle immagini dal pannello in `contenuti/media/`, anteprima dal
+  vivo delle modifiche non ancora salvate e ripristino dei backup con un clic.
+- Controlli d'insieme (`server/lib/controlli.js`): avvertimenti sul documento
+  intero, mai errori bloccanti.
+
+#### La modalità lurk (terza fase — `CONTRATTO-3.md`)
+
+- Modalità lurk sotto al player: sorveglia la sessione video e la fa
+  ripartire quando il browser la ferma, con tentativi a intervalli crescenti e
+  un tetto per caricamento di pagina.
+- Spegnimento automatico dopo le ore impostate, con richiesta di conferma:
+  scelta deliberata per restare dentro le Community Guidelines di Twitch.
+- Collegamento facoltativo con Twitch tramite *implicit grant* in una
+  finestrella (`js/ritorno.js`), con il token in `sessionStorage`, la tessera
+  del profilo e la revoca vera allo scollegamento.
+- Messaggio di lurk in chat, spento di serie, con tetto di tre messaggi per
+  caricamento di pagina e non più di uno al minuto.
+- Documentazione: `docs/PRESENZA-TWITCH.md`, lo studio su come Twitch conta
+  davvero gli spettatori, da cui discende il disegno di tutta questa parte.
+
+### Note
+
+- `RIPRENDI-DOMANI.md` annota il lavoro sospeso il 7 settembre 2026: tre punti
+  chiusi e uno ancora aperto lato server. Non è documentazione di rilascio.
+
+[Non rilasciato]: https://github.com/Shadowed1996/Slayer_Beard-Website/compare/main...HEAD
+[1.0.0]: https://github.com/Shadowed1996/Slayer_Beard-Website/releases/tag/v1.0.0

@@ -1,0 +1,106 @@
+name: Segnalazione di bug
+description: Qualcosa non funziona come dovrebbe nel sito, nel pannello o nella generazione.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per la segnalazione. Prima di aprirla, due controlli veloci:
+
+        - se il problema riguarda la **sicurezza**, non usare le issue: segui [`SECURITY.md`](https://github.com/Shadowed1996/Slayer_Beard-Website/blob/main/SECURITY.md);
+        - se il player non parte, verifica di **non** aver aperto `index.html` con doppio clic (`file://`): Twitch pretende un dominio valido, serve un server.
+
+  - type: textarea
+    id: descrizione
+    attributes:
+      label: Cosa succede
+      description: Descrivi il problema in poche righe, senza interpretazioni.
+      placeholder: Aprendo la sezione «diretta» il player resta nero e in console compare...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: parte
+    attributes:
+      label: Quale parte riguarda
+      options:
+        - Sito pubblicato (index.html, css, js)
+        - Player o chat di Twitch
+        - Il pollo (mascotte e chat)
+        - Modalità lurk o collegamento con Twitch
+        - Pannello di amministrazione
+        - Server o generazione (server/genera.js, server/server.js)
+        - Contenuti e schema dei campi
+        - Documentazione
+        - Non so
+    validations:
+      required: true
+
+  - type: textarea
+    id: riproduzione
+    attributes:
+      label: Passi per riprodurre
+      description: Nell'ordine, con i valori usati davvero.
+      placeholder: |
+        1. Avvio `node server/server.js`
+        2. Apro http://localhost:4173
+        3. Scendo alla sezione «diretta»
+        4. Il player mostra...
+    validations:
+      required: true
+
+  - type: textarea
+    id: atteso
+    attributes:
+      label: Comportamento atteso
+      description: Cosa ti aspettavi che succedesse.
+    validations:
+      required: true
+
+  - type: input
+    id: ambiente-so
+    attributes:
+      label: Sistema operativo
+      placeholder: Windows 11 · macOS 15 · Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: input
+    id: ambiente-browser
+    attributes:
+      label: Browser e versione
+      description: Solo se il problema si vede nel sito o nel pannello.
+      placeholder: Chrome 141 · Firefox 133 · Safari 18
+    validations:
+      required: false
+
+  - type: input
+    id: ambiente-node
+    attributes:
+      label: Versione di Node.js
+      description: Il risultato di `node --version`. Serve solo per i problemi di server o generazione.
+      placeholder: v20.11.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log, errori o schermate
+      description: Console del browser, output del terminale, richieste di rete. Verranno formattati come codice.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: verifiche
+    attributes:
+      label: Verifiche fatte
+      options:
+        - label: Ho controllato che non esista già una issue sullo stesso problema
+          required: true
+        - label: Ho provato il sito da un server (non con `file://`)
+          required: false
+        - label: Ho lanciato `node server/autotest.js` e ho riportato l'esito sopra
+          required: false

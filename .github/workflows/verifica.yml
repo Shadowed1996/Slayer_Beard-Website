@@ -1,0 +1,194 @@
+# Verifica informativa del repository.
+#
+# Non blocca niente e non deve bloccare niente: ogni passo ha
+# continue-on-error, e il riepilogo finale racconta cosa ha trovato.
+# Serve ad accorgersi di un JSON rotto o di un file mancante prima di
+# pubblicare, non a fare da guardiano.
+name: Verifica
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifica:
+    name: Verifica del repository
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+
+      - name: Prepara Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verifica i file standard
+        id: standard
+        continue-on-error: true
+        run: |
+          mancanti=0
+          {
+            echo "## File standard"
+            echo ""
+            echo "| File | Esito |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for f in README.md LICENSE SECURITY.md CONTRIBUTING.md CODE_OF_CONDUCT.md \
+                   CHANGELOG.md .editorconfig .gitattributes .gitignore \
+                   .github/CODEOWNERS .github/PULL_REQUEST_TEMPLATE.md \
+                   .github/dependabot.yml \
+                   .github/ISSUE_TEMPLATE/config.yml \
+                   .github/ISSUE_TEMPLATE/bug_report.yml \
+                   .github/ISSUE_TEMPLATE/richiesta_funzionalita.yml; do
+            if [ -f "$f" ]; then
+              echo "| \`$f\` | presente |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| \`$f\` | **MANCANTE** |" >> "$GITHUB_STEP_SUMMARY"
+              mancanti=$((mancanti + 1))
+            fi
+          done
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$mancanti" -eq 0 ]; then
+            echo "Tutti i file standard sono al loro posto." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "File standard mancanti: **$mancanti**." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Convalida i file JSON
+        id: json
+        continue-on-error: true
+        run: |
+          {
+            echo ""
+            echo "## File JSON"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          totale=0
+          rotti=0
+          while IFS= read -r f; do
+            totale=$((totale + 1))
+            if ! jq empty "$f" 2>/tmp/jq-errore; then
+              rotti=$((rotti + 1))
+              {
+                echo "- \`$f\` — **non valido**"
+                echo '  ```'
+                sed 's/^/  /' /tmp/jq-errore
+                echo '  ```'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done < <(git ls-files '*.json')
+          echo "Controllati **$totale** file JSON, non validi: **$rotti**." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$rotti" -eq 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Nessun problema di sintassi." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Controlla la sintassi dei moduli del server
+        id: sintassi
+        continue-on-error: true
+        run: |
+          {
+            echo ""
+            echo "## Sintassi JavaScript (server e schema)"
+            echo ""
+            echo "Solo i moduli CommonJS: \`pannello/moduli/\` usa i moduli ES e"
+            echo "il browser li carica come tali, quindi resta fuori da questo controllo."
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          totale=0
+          rotti=0
+          while IFS= read -r f; do
+            totale=$((totale + 1))
+            if ! node --check "$f" 2>/tmp/node-errore; then
+              rotti=$((rotti + 1))
+              {
+                echo "- \`$f\` — **errore di sintassi**"
+                echo '  ```'
+                sed 's/^/  /' /tmp/node-errore
+                echo '  ```'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done < <(git ls-files 'server/*.js' 'server/**/*.js' 'contenuti/schema.js')
+          echo "Controllati **$totale** file, con errori: **$rotti**." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Convalida i contenuti contro lo schema
+        id: schema
+        continue-on-error: true
+        run: |
+          {
+            echo ""
+            echo "## Copertura dello schema"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          node -e '
+            const schema = require("./contenuti/schema.js");
+            const contenuti = require("./contenuti/contenuti.json");
+            const scoperte = schema.verificaCopertura(contenuti);
+            if (!scoperte.length) {
+              console.log("contenuti/schema.js copre tutte le chiavi di contenuti.json.");
+              process.exit(0);
+            }
+            console.log("Chiavi non coperte da contenuti/schema.js:");
+            console.log("");
+            for (const p of scoperte) { console.log("- " + p.messaggio); }
+          ' >> "$GITHUB_STEP_SUMMARY" 2>&1
+
+      - name: Collaudo del backend
+        id: collaudo
+        continue-on-error: true
+        run: |
+          {
+            echo ""
+            echo "## Collaudo (\`node server/autotest.js\`)"
+            echo ""
+            echo "Il collaudo è **indietro rispetto al sito**: alla scrittura di questo"
+            echo "workflow segnalava 12 prove fallite su 117, tutte conseguenze volute"
+            echo "delle modifiche arrivate dopo (il gruppo «account», \`js/account.js\`,"
+            echo "\`js/canale.js\`). Il punto è annotato in \`RIPRENDI-DOMANI.md\`."
+            echo "Qui interessa il **confronto**: se il numero sale, la modifica ha rotto"
+            echo "qualcosa in più."
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          if node server/autotest.js > /tmp/collaudo.log 2>&1; then
+            echo "Il collaudo è passato per intero." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Il collaudo segnala dei fallimenti — vedi quanti, qui sotto:" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          {
+            echo ""
+            echo '<details><summary>Uscita del collaudo</summary>'
+            echo ""
+            echo '```'
+            tail -n 120 /tmp/collaudo.log
+            echo '```'
+            echo ""
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Riepilogo
+        if: always()
+        run: |
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Esito complessivo"
+            echo ""
+            echo "| Verifica | Esito |"
+            echo "|---|---|"
+            echo "| File standard | ${{ steps.standard.outcome }} |"
+            echo "| File JSON | ${{ steps.json.outcome }} |"
+            echo "| Sintassi JavaScript | ${{ steps.sintassi.outcome }} |"
+            echo "| Copertura dello schema | ${{ steps.schema.outcome }} |"
+            echo "| Collaudo del backend | ${{ steps.collaudo.outcome }} |"
+            echo ""
+            echo "Questo workflow è **informativo**: non fa fallire il lavoro in nessun caso."
+          } >> "$GITHUB_STEP_SUMMARY"
