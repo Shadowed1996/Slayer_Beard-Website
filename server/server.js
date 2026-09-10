@@ -14,7 +14,7 @@
    Avvio:  node server/server.js            (porta 4173, o SB_PORTA)
            node server/server.js --guarda   rigenera a ogni modifica
 
-   Se il collegamento con Twitch e configurato (server/dati/twitch.json),
+   Se le chiavi ci sono (server/dati/chiavi.js),
    finche questo processo gira tiene fresche da se «Ultima diretta» e la
    vetrina delle clip: un giro ogni SB_AGGIORNA_MIN minuti, 10 di serie.
    Con SB_AGGIORNA_MIN=0 non parte, e resta solo l'aggiornamento alla
@@ -33,6 +33,7 @@ const api = require('./lib/api');
 const archivio = require('./lib/archivio');
 const controlli = require('./lib/controlli');
 const costruisci = require('./lib/costruisci');
+const chiavi = require('./lib/chiavi');
 const twitch = require('./lib/twitch');
 const schema = require('../contenuti/schema.js');
 
@@ -289,7 +290,9 @@ function aggiornamentoAutomatico(opzioni) {
   const scelte = opzioni || {};
 
   if (!Number.isFinite(AGGIORNA_MIN) || AGGIORNA_MIN <= 0) { return null; }
-  if (!twitch.configurato()) {
+  // Col solo Client ID non c'e niente da chiedere a Twitch, ma c'e ancora
+  // da portarlo dentro la pagina: il giro serve lo stesso.
+  if (!twitch.configurato() && !chiavi.configurato()) {
     // Non e un errore: e lo stato di chi non ha registrato nessuna app.
     // Si dice una volta, perche il campo «Ultima diretta» scritto a mano e
     // proprio la cosa che qualcuno sta cercando di capire perche non cambia.
@@ -314,10 +317,17 @@ function aggiornamentoAutomatico(opzioni) {
       try { allineato = api.statoDelSito(archivio.leggi()).daPubblicare === false; }
       catch (e) { allineato = false; }
 
+      // Anche il Client ID: chi modifica server/dati/chiavi.js mentre il
+      // server gira deve vederlo arrivare in pagina al giro dopo, senza
+      // riavviare niente.
+      const daChiavi = chiavi.sincronizzaClientId();
+      if (chiavi.racconta(daChiavi)) { console.log('  ' + ora() + ' ' + chiavi.racconta(daChiavi)); }
+
       const daTwitch = await twitch.aggiornaUltimaDiretta();
       const leClip = await twitch.aggiornaClip();
 
-      const cambiato = daTwitch.stato === 'aggiornato' || leClip.stato === 'aggiornato';
+      const cambiato = daChiavi.stato === 'copiato' ||
+        daTwitch.stato === 'aggiornato' || leClip.stato === 'aggiornato';
 
       // Si stampa solo cio che e successo davvero, e ogni riga risponde del
       // proprio esito: un server che ripete «gia aggiornata» ogni dieci

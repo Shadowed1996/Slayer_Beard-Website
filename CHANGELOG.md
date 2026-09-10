@@ -15,6 +15,21 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Tutte le chiavi in un file solo: `server/dati/chiavi.js`.** Prima il Client
+  ID stava scritto in due posti — il campo del pannello, e quindi
+  `contenuti.json`, più il file del server insieme al secret — e due copie
+  dello stesso valore sono due cose che prima o poi smettono di essere
+  d'accordo. Adesso si scrive una volta e da lì lo prendono il login del sito,
+  «Ultima diretta» e la vetrina delle clip.
+- Alla pubblicazione il Client ID viene **copiato da sé** da `chiavi.js` dentro
+  `config.account.clientId`, e quindi nella pagina. Non svuota mai il campo: chi
+  non usa `chiavi.js` non si accorge che esiste.
+- `server/modelli/chiavi.esempio.js`, il modello da copiare, con dentro le
+  istruzioni. È un `.js` e non un `.json` apposta: un file che si compila a mano
+  ha bisogno di commenti, e JSON non li ammette. `server/lib/chiavi.js` in
+  cambio controlla la forma di quello che il file esporta invece di fidarsi.
+- Le chiavi si possono cambiare **a server acceso**: la cache di `require` viene
+  buttata prima di ogni lettura, quindi il valore nuovo vale dal giro dopo.
 - **«Ultima diretta» e le clip si aggiornano da sole, senza premere niente.**
   Finché `node server/server.js` gira fa un giro ogni dieci minuti
   (`SB_AGGIORNA_MIN`, `0` per spegnerlo) e, se qualcosa è cambiato,
@@ -58,7 +73,7 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   c'era. Chiude il quarto punto lasciato aperto dal rifacimento del profilo.
 - `node server/imposta-twitch.js <clientId> <clientSecret>` per configurare quel
   collegamento, con `--prova` per verificarlo subito e `--togli` per rimuoverlo.
-  Il file finisce in `server/dati/twitch.json`, con permessi ristretti dove il
+  Il file finisce in `server/dati/chiavi.js`, con permessi ristretti dove il
   sistema li ha, ed è escluso dal controllo di versione.
 - Sezione 9 del collaudo, *Collegamento con Twitch*: otto prove che non toccano
   la rete, perché quello che dev'essere dimostrato è come si comporta una
@@ -88,7 +103,7 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - `README.md`: aggiunti i badge, l'indice della documentazione, le sezioni
   Licenza e Autore. Il resto del documento è rimasto invariato.
 - `.gitignore` esteso con le cartelle degli editor e altri file temporanei.
-- `.gitignore` esclude anche `server/dati/twitch.json`.
+- `.gitignore` esclude anche `server/dati/chiavi.js`.
 - La Content-Security-Policy accetta due host in piu in `img-src`,
   `clips-media-assets2.twitch.tv` e `clips-media-assets.twitch.tv`: sono le
   anteprime delle clip, e come `static-cdn.jtvnw.net` sono host di sole

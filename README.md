@@ -62,7 +62,7 @@ video non parte. Serve un server, anche banale.
 | `SB_AGGIORNA_MIN=30 node server/server.js` | ogni quanti minuti chiedere a Twitch «Ultima diretta» e le clip: 10 di serie, `0` per non chiedere mai |
 | `node server/genera.js` | genera `index.html`, `js/dati.js` e `css/tema.css` e basta, senza avviare niente |
 | `node server/imposta-password.js` | crea o cambia la password del pannello |
-| `node server/imposta-twitch.js <clientId> <secret>` | collega il server a Twitch, così «Ultima diretta» si aggiorna da sé (facoltativo, vedi sotto) |
+| `node server/imposta-twitch.js <clientId> <secret>` | scrive `server/dati/chiavi.js`, l'unico file in cui stanno le chiavi (facoltativo, vedi sotto) |
 | `node server/imposta-twitch.js --prova` | chiede subito il titolo a Twitch e dice com'è andata, senza scrivere niente |
 | `node server/autotest.js` | collaudo: motore dei modelli, convalida, testo ricco, tema, generazione, API, modalità lurk, collegamento con Twitch, vetrina delle clip |
 
@@ -113,9 +113,11 @@ sito/
 │  └─ icone/             le icone SVG, una per file
 ├─ server/               il CMS: generazione, API, sessioni, backup, media, tema
 │  ├─ lib/controlli.js   i controlli d'insieme: avvertimenti, mai errori
+│  ├─ lib/chiavi.js      LE CHIAVI: un file solo, e da lì le prende tutto
 │  ├─ lib/twitch.js      l'unico punto in cui il server locale chiama Twitch
-│  └─ dati/              password del pannello e credenziali Twitch. Non si
-│                        carica online e non sta nel controllo di versione.
+│  ├─ modelli/chiavi.esempio.js  il modello da copiare, con le istruzioni
+│  └─ dati/              password del pannello e chiavi.js. Non si carica
+│                        online e non sta nel controllo di versione.
 ├─ pannello/             l'interfaccia di amministrazione
 ├─ docs/PANNELLO.md      guida per chi amministra il sito
 ├─ docs/PRESENZA-TWITCH.md  studio su presenza, lurk e login Twitch: come Twitch conta
@@ -232,6 +234,71 @@ Netlify, Vercel, GitHub Pages o un FTP qualsiasi vanno tutti bene: è HTML stati
 
 ---
 
+## Le chiavi: un file solo
+
+Tutto quello che è una chiave sta in **`server/dati/chiavi.js`**, e da lì lo prende chiunque ne
+abbia bisogno. Prima erano sparse — il Client ID nel pannello e quindi in `contenuti.json`, e di
+nuovo insieme al secret in un file per il server — e due copie dello stesso valore sono due cose
+che prima o poi smettono di essere d'accordo.
+
+```js
+module.exports = {
+  twitch: {
+    clientId: '...',      // pubblico per natura: finisce nella pagina
+    clientSecret: '...'   // segreto: non esce mai da server/
+  }
+};
+```
+
+Si scrive in due modi, a scelta:
+
+```bash
+node server/imposta-twitch.js <clientId> <clientSecret>
+```
+
+oppure a mano, copiando **`server/modelli/chiavi.esempio.js`** in `server/dati/chiavi.js`: è un
+normale file JavaScript, con le istruzioni dentro.
+
+**È un `.js` e non un `.json` apposta**: un file di configurazione che si compila a mano ha
+bisogno di commenti, e JSON non li ammette — senza, chi lo apre fra sei mesi trova due stringhe
+vuote e nessuna idea di cosa infilarci. Il prezzo è che il file viene eseguito, quindi
+`server/lib/chiavi.js` controlla la forma di quello che esporta invece di fidarsi: un file che
+esporta un numero, un elenco o niente viene detto, non lasciato scoprire tre funzioni più in là.
+
+### Dove finisce ciascuna delle due
+
+| | Dove arriva | Perché |
+|---|---|---|
+| `clientId` | fino dentro `index.html` | Il browser deve mandarlo a Twitch per il login: è pubblico per natura |
+| `clientSecret` | **da nessuna parte** | Serve solo al server locale per prendere un app token |
+
+Alla pubblicazione il Client ID viene **copiato da sé** nel campo del pannello e quindi nella
+pagina. Il campo resta visibile — così vedi qual è — ma non è più una cosa da scrivere due volte:
+lo riscrive ogni pubblicazione. Se `chiavi.js` non c'è, quel campo resta quello che hai scritto a
+mano e non cambia niente: chi non usa `chiavi.js` non si accorge che esiste.
+
+Il collaudo verifica tutte e tre le cose che contano: che il Client ID arrivi davvero fino ai
+contenuti, che **non** venga svuotato quando il file manca, e che il secret non compaia in nessuno
+dei tre file generati.
+
+### Cosa non c'è dentro, e perché
+
+**La password del pannello.** Non è una chiave da copiare: è un hash `scrypt` che scrive
+`node server/imposta-password.js`, e sta in `server/dati/auth.json`. Metterla in un file che si
+apre con l'editor sarebbe un invito a scriverla in chiaro.
+
+### Modificarlo a server acceso
+
+Si può. `server/lib/chiavi.js` butta la cache di `require` prima di ogni lettura, quindi una
+chiave cambiata vale dal giro successivo — dieci minuti al massimo — senza riavviare niente.
+
+> **`server/dati/` non si carica online e non sta nel controllo di versione.** Il `.gitignore`
+> esclude sia `chiavi.js` sia `auth.json`, e il collaudo controlla che continui a farlo. Il
+> modello `chiavi.esempio.js` invece sta nel repository apposta, ed è vuoto: un modello con dentro
+> una chiave vera sarebbe una chiave vera nel repository, e anche questo è una prova del collaudo.
+
+---
+
 ## «Ultima diretta» che si aggiorna da sé
 
 Il campo *Ultima diretta*, nella copertina, era una casella da riempire a mano — e nessuno la
@@ -243,8 +310,8 @@ riempiva. Adesso ha **due sorgenti**, e nessuna delle due è obbligatoria:
    Client ID del gruppo «Profilo del sito».
 2. **Tutti gli altri** — cioè la quasi totalità di chi passa — vedono quello che c'era scritto
    in `contenuti.json` al momento della pubblicazione. Perché lì dentro ci sia il titolo giusto,
-   il **server locale** lo chiede a Twitch **prima di generare**, con le credenziali di
-   `server/dati/twitch.json`.
+   il **server locale** lo chiede a Twitch **prima di generare**, con le chiavi di
+   `server/dati/chiavi.js`.
 3. **E senza che nessuno prema niente**: finché `node server/server.js` gira, ogni dieci minuti
    rifà da sé lo stesso lavoro e, se il titolo è cambiato, ripubblica. È la sorgente che serve
    davvero, perché la seconda dipende da qualcuno che si ricordi di pubblicare — ed è esattamente
@@ -289,7 +356,7 @@ valore che c'era resta dov'era.
 > aggiorna da solo, e quando carichi porti su l'ultimo».
 
 **Il client secret non si mette da nessun'altra parte.** Non nel pannello, non in
-`contenuti.json`, non nel sito generato: `server/dati/twitch.json` sta accanto alla password del
+`contenuti.json`, non nel sito generato: sta in `server/dati/chiavi.js` accanto alla password del
 pannello, è escluso dal controllo di versione, e `server/` non si carica online. Il token che il
 server ne ricava è un *app token* (`client_credentials`): non appartiene a nessuna persona, non
 legge niente di privato e non può scrivere in chat. Il CONTRATTO-3 §4.3 diceva che il secret «non
@@ -571,7 +638,7 @@ d'ingresso: qui sotto c'è cosa leggere e quando.
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Il codice di condotta della comunità. |
 | [`CHANGELOG.md`](CHANGELOG.md) | Il registro delle modifiche, versione per versione. |
 
-`node server/autotest.js` passa per intero: **143 prove su 143**. Il collaudo non
+`node server/autotest.js` passa per intero: **146 prove su 146**. Il collaudo non
 tocca la rete nemmeno nella sezione sul collegamento con Twitch — quello che si
 prova lì è che una pubblicazione regga quando Twitch non risponde, e un collaudo
 che dipendesse da Twitch sarebbe rosso proprio il giorno in cui deve dimostrarlo.

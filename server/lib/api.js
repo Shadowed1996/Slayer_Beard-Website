@@ -28,6 +28,7 @@ const costruisci = require('./costruisci');
 const media = require('./media');
 const backup = require('./backup');
 const tema = require('./tema.js');
+const chiavi = require('./chiavi');
 const twitch = require('./twitch');
 const schema = require('../../contenuti/schema.js');
 
@@ -221,6 +222,9 @@ async function rottaScriviContenuti(req, res) {
  * pubblicazione va avanti identica a prima con il valore che c era.
  */
 async function rottaPubblica(req, res) {
+  // L'ordine conta: il Client ID arriva da server/dati/chiavi.js e va
+  // messo nei contenuti prima che costruisci.genera() li rilegga.
+  const daChiavi = chiavi.sincronizzaClientId();
   const daTwitch = await twitch.aggiornaUltimaDiretta();
   const leClip = await twitch.aggiornaClip();
   const esito = costruisci.genera();
@@ -231,7 +235,8 @@ async function rottaPubblica(req, res) {
     ok: true, backup: esito.backup, durataMs: esito.durataMs,
     scritti: esito.scritti, controlli: esito.controlli,
     twitch: { stato: daTwitch.stato, messaggio: twitch.racconta(daTwitch) },
-    clip: { stato: leClip.stato, messaggio: twitch.raccontaClip(leClip) }
+    clip: { stato: leClip.stato, messaggio: twitch.raccontaClip(leClip) },
+    chiavi: { stato: daChiavi.stato, messaggio: chiavi.racconta(daChiavi) }
   });
 }
 

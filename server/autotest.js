@@ -34,6 +34,7 @@ const controlli = require('./lib/controlli');
 const testoricco = require('./lib/testoricco');
 const tema = require('./lib/tema');
 const twitch = require('./lib/twitch');
+const chiavi = require('./lib/chiavi');
 const schema = require('../contenuti/schema.js');
 
 /* --- MINIMO INDISPENSABILE PER PROVARE ------------------------------ */
@@ -1600,11 +1601,15 @@ async function proveApi(costruisci) {
 async function proveTwitch(costruisci, archivio) {
   apriSezione('9. Collegamento con Twitch (server/lib/twitch.js)');
 
+  // Le chiavi stanno in un file solo, e quel file e JavaScript: si scrive
+  // col compositore vero (chiavi.componi) invece che a mano, cosi la prova
+  // esercita anche quello. Una stringa passa dritta: serve ai casi rotti.
   const scriviCredenziali = (dati) => {
-    fs.mkdirSync(path.dirname(P.twitch), { recursive: true });
-    fs.writeFileSync(P.twitch, typeof dati === 'string' ? dati : JSON.stringify(dati, null, 2));
+    fs.mkdirSync(path.dirname(P.chiavi), { recursive: true });
+    const testo = typeof dati === 'string' ? dati : chiavi.componi({ twitch: dati });
+    fs.writeFileSync(P.chiavi, testo);
   };
-  const togliCredenziali = () => { try { fs.unlinkSync(P.twitch); } catch (e) { /* gia sparito */ } };
+  const togliCredenziali = () => { try { fs.unlinkSync(P.chiavi); } catch (e) { /* gia sparito */ } };
   const titoloSalvato = () => archivio.leggi().config.ultimaDiretta;
 
   await prova('senza il file delle credenziali il collegamento e semplicemente spento', async () => {
@@ -1641,8 +1646,8 @@ async function proveTwitch(costruisci, archivio) {
     // File assente e file rotto sono due cose diverse: nel secondo caso
     // qualcuno ha provato a configurarlo, e trattarlo come «non c e»
     // vorrebbe dire lasciarlo a chiedersi perche non funziona.
-    scriviCredenziali('{ questo non e json');
-    esigiErrore(() => twitch.credenziali(), 'non e JSON valido', 'credenziali() su file rotto');
+    scriviCredenziali('module.exports = { questo non e javascript');
+    esigiErrore(() => twitch.credenziali(), 'non si legge', 'credenziali() su file rotto');
     // configurato() invece non lancia mai: e una domanda, non un ordine.
     esigiUguale(twitch.configurato(), false, 'configurato() su file rotto');
 
@@ -1651,6 +1656,59 @@ async function proveTwitch(costruisci, archivio) {
     esigiUguale(esito.stato, 'fallito', 'stato');
     esigiUguale(titoloSalvato(), prima, 'ha toccato ultimaDiretta e non doveva');
     togliCredenziali();
+  });
+
+  await prova('un file che esporta la cosa sbagliata viene detto', () => {
+    // Un .js si esegue, quindi puo esportare qualunque cosa: un elenco, un
+    // numero, niente. Si controlla la forma invece di fidarsi, altrimenti
+    // l errore salterebbe fuori tre funzioni piu in la, senza dire dove.
+    for (const storto of ['module.exports = [1, 2, 3];', 'module.exports = 42;', 'module.exports = null;']) {
+      scriviCredenziali(storto);
+      esigiErrore(() => chiavi.leggi(), 'non esporta un oggetto', 'leggi() con ' + storto);
+    }
+    // Un oggetto senza il ramo twitch invece e legittimo: vuol dire che le
+    // chiavi non ci sono ancora, non che il file e sbagliato.
+    scriviCredenziali('module.exports = {};');
+    esigiUguale(chiavi.leggi().twitch.clientId, '', 'oggetto vuoto: nessun client id');
+    esigiUguale(twitch.credenziali(), null, 'oggetto vuoto: nessuna credenziale');
+    togliCredenziali();
+  });
+
+  await prova('chi cambia le chiavi non deve riavviare il server', () => {
+    // require tiene in cache i moduli gia caricati: senza buttarla, chi
+    // modifica chiavi.js mentre il server gira continuerebbe a vedere il
+    // valore vecchio finche non lo riavvia — e non capirebbe perche.
+    scriviCredenziali({ clientId: 'primoclientid1234567890abc', clientSecret: 'unsegretolungoabbastanza' });
+    esigiUguale(chiavi.clientId(), 'primoclientid1234567890abc', 'prima lettura');
+    scriviCredenziali({ clientId: 'secondoclientid234567890ab', clientSecret: 'unsegretolungoabbastanza' });
+    esigiUguale(chiavi.clientId(), 'secondoclientid234567890ab', 'dopo la modifica, senza riavviare');
+    togliCredenziali();
+  });
+
+  await prova('il Client ID va da chiavi.js fino dentro i contenuti', () => {
+    // E il passaggio che fa di chiavi.js l unica sorgente: nel pannello il
+    // campo resta, ma non e piu una cosa da scrivere due volte.
+    const documento = archivio.leggi();
+    const originale = documento.config.account.clientId;
+    try {
+      scriviCredenziali({ clientId: 'dalfilechiavi1234567890abc', clientSecret: 'unsegretolungoabbastanza' });
+      esigiUguale(chiavi.sincronizzaClientId().stato, 'copiato', 'primo giro');
+      esigiUguale(archivio.leggi().config.account.clientId, 'dalfilechiavi1234567890abc', 'valore nei contenuti');
+
+      // Due giri di fila non riscrivono contenuti.json per niente.
+      esigiUguale(chiavi.sincronizzaClientId().stato, 'invariato', 'secondo giro');
+
+      // Senza file non si svuota niente: chi non usa chiavi.js non deve
+      // accorgersi che esiste.
+      togliCredenziali();
+      esigiUguale(chiavi.sincronizzaClientId().stato, 'spento', 'senza file');
+      esigiUguale(archivio.leggi().config.account.clientId, 'dalfilechiavi1234567890abc', 'ha svuotato il campo');
+    } finally {
+      const rimesso = archivio.leggi();
+      rimesso.config.account.clientId = originale;
+      archivio.salva(rimesso);
+      togliCredenziali();
+    }
   });
 
   await prova('senza ID del canale non parte nessuna richiesta', async () => {
@@ -1716,8 +1774,21 @@ async function proveTwitch(costruisci, archivio) {
     // riga che protegge il secret e nel repository, ed e li che deve
     // restare anche fra sei mesi.
     const ignorati = fs.readFileSync(path.join(RADICE_VERA, '.gitignore'), 'utf8');
-    esigiDentro(ignorati, 'server/dati/twitch.json', 'il .gitignore non esclude le credenziali di Twitch');
+    esigiDentro(ignorati, 'server/dati/chiavi.js', 'il .gitignore non esclude il file delle chiavi');
     esigiDentro(ignorati, 'server/dati/auth.json', 'il .gitignore non esclude piu la password del pannello');
+
+    // Il modello invece ci deve stare: e la spiegazione di cosa mettere
+    // dentro, e senza quella il file delle chiavi e due stringhe vuote.
+    const modello = path.join(RADICE_VERA, 'server', 'modelli', 'chiavi.esempio.js');
+    esigi(fs.existsSync(modello), 'manca server/modelli/chiavi.esempio.js');
+    const testoModello = fs.readFileSync(modello, 'utf8');
+    esigiDentro(testoModello, 'clientId', 'il modello non nomina clientId');
+    esigiDentro(testoModello, 'clientSecret', 'il modello non nomina clientSecret');
+    // E dev essere vuoto: un modello con dentro una chiave vera sarebbe una
+    // chiave vera nel repository.
+    const caricato = require(modello);
+    esigiUguale(caricato.twitch.clientId, '', 'il modello ha un Client ID dentro');
+    esigiUguale(caricato.twitch.clientSecret, '', 'il modello ha un secret dentro');
   });
 }
 

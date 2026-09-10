@@ -277,11 +277,16 @@ Perché è una cosa diversa, punto per punto:
 
 - **Non è il token di nessuna persona.** Un app token non appartiene a un utente, non può leggere
   niente di privato e **non può scrivere in chat**: il rischio del §4.5 non si applica.
-- **Non passa dal browser.** Il secret sta in `server/dati/twitch.json`, accanto alla password del
+- **Non passa dal browser.** Il secret sta in `server/dati/chiavi.js`, accanto alla password del
   pannello. Non è nello schema, non è in `contenuti.json`, non è in nessuno dei tre file generati.
   Il collaudo lo verifica: *«il client secret non finisce mai nei file generati»*, sezione 9.
-- **Non è nel controllo di versione.** `.gitignore` esclude `server/dati/twitch.json`, e anche
+- **Non è nel controllo di versione.** `.gitignore` esclude `server/dati/chiavi.js`, e anche
   questo è una prova del collaudo, non una promessa.
+- **Il Client ID sta nello stesso file, ma non è un segreto.** È pubblico per natura e alla
+  pubblicazione viene copiato dentro `config.account.clientId` e quindi nella pagina: sta lì
+  soltanto perché stia insieme al secret della stessa applicazione, invece di essere scritto due
+  volte in due posti che poi divergono. Il §6.1 diceva che quel valore si scrive nel pannello:
+  resta vero se `chiavi.js` non c'è, e il campo continua a esistere.
 - **È facoltativo.** Senza quel file il collegamento è semplicemente spento e il campo *Ultima
   diretta* torna a essere una casella scritta a mano: nessun errore, nessun avviso, nessun
   degrado del sito pubblicato.

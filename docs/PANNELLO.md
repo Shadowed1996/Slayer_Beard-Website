@@ -410,8 +410,10 @@ giù, chiavi sbagliate, rete assente — con un avviso, e il titolo che c'era
 
 Il **client secret** serve solo a questo comando e non va scritto da nessun'altra
 parte: non c'è nessun campo per lui nel pannello, e non deve essercene uno.
-Finisce in `server/dati/twitch.json`, accanto alla password del pannello, in una
-cartella che non si carica mai online.
+Finisce in `server/dati/chiavi.js` — l'unico file in cui stanno le chiavi di
+questo sito — accanto alla password del pannello, in una cartella che non si
+carica mai online. Da quel file il **Client ID** viene copiato da sé, a ogni
+pubblicazione, nel campo qui sopra: così non è una cosa da scrivere due volte.
 
 Se non dai quel comando non succede niente di male: *Ultima diretta* resta una
 casella che riempi a mano quando ti va.

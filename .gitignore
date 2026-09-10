@@ -5,7 +5,7 @@ node_modules/
 .env
 .env.local
 server/dati/auth.json
-server/dati/twitch.json
+server/dati/chiavi.js
 
 # log e file temporanei
 *.log

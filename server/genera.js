@@ -18,6 +18,7 @@ const path = require('node:path');
 
 const { P } = require('./lib/percorsi');
 const costruisci = require('./lib/costruisci');
+const chiavi = require('./lib/chiavi');
 const twitch = require('./lib/twitch');
 
 function byteLeggibili(n) {
@@ -40,11 +41,16 @@ async function esegui() {
   // costruisci.genera() resta sincrona apposta: l unica cosa che ha
   // bisogno della rete e questa riga, e tenerla fuori significa che una
   // generazione senza collegamento a Twitch e identica a prima.
+  // Prima di tutto il Client ID: sta in server/dati/chiavi.js insieme al
+  // secret, e da li deve arrivare fino dentro la pagina.
+  const daChiavi = chiavi.sincronizzaClientId();
+  if (chiavi.racconta(daChiavi)) { console.log('  ' + chiavi.racconta(daChiavi)); }
+
   const daTwitch = await twitch.aggiornaUltimaDiretta();
   if (daTwitch.stato !== 'spento') { console.log('  ' + twitch.racconta(daTwitch)); }
   const leClip = await twitch.aggiornaClip();
   if (leClip.stato !== 'spento') { console.log('  ' + twitch.raccontaClip(leClip)); }
-  if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento') { console.log(''); }
+  if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento' || chiavi.racconta(daChiavi)) { console.log(''); }
 
   const esito = costruisci.genera();
 

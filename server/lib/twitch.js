@@ -28,8 +28,8 @@
    mai, non si scrive da nessuna parte e non deve esistere». Resta vero
    per il BROWSER, che e cio di cui parlava: nella pagina il secret
    sarebbe un secret regalato al primo che passa. Qui e un'altra cosa —
-   sta in server/dati/twitch.json, sul computer di chi amministra,
-   accanto alla password del pannello, e server/ non si carica online.
+   sta in server/dati/chiavi.js, sul computer di chi amministra, accanto
+   alla password del pannello, e server/ non si carica online.
    La deroga e motivata nel CONTRATTO-3, §4.6.
 
    Il token che si prende qui e un APP token (client_credentials): non
@@ -46,7 +46,7 @@ const https = require('node:https');
 
 const { P } = require('./percorsi');
 const archivio = require('./archivio');
-const { leggiSeEsiste } = require('./file');
+const chiavi = require('./chiavi');
 
 // Oltre questo tempo si rinuncia: la pubblicazione non deve restare
 // appesa a Twitch. Se la rete e lenta si tiene il titolo che c'e gia.
@@ -71,27 +71,18 @@ let tokenInCache = null;   // { valore, scadeIl }
 /* --- CREDENZIALI ---------------------------------------------------- */
 
 /**
- * Legge server/dati/twitch.json.
- * Ritorna null se il file non c'e o non ha le due chiavi: e la condizione
- * normale di chi non ha registrato nessuna app, e non e un errore.
+ * La coppia Client ID + secret, da server/dati/chiavi.js.
+ * Ritorna null se il file non c'e o se ne manca una: e la condizione
+ * normale di chi non ha registrato nessuna app, e non e un errore. Un
+ * file rotto invece lancia — la differenza fra «non configurato» e
+ * «configurato male» e proprio quello che chi guarda vuole sapere.
+ *
+ * Le chiavi stanno in un posto solo e questo modulo non le tiene in
+ * cache: la lettura passa da lib/chiavi.js, che rilegge il file quando
+ * cambia, cosi chi lo modifica non deve riavviare il server.
  */
 function credenziali() {
-  const grezzo = leggiSeEsiste(P.twitch);
-  if (grezzo === null) { return null; }
-
-  let dati;
-  try {
-    dati = JSON.parse(grezzo);
-  } catch (e) {
-    // Un file rotto e diverso da un file assente: qui qualcuno ha provato
-    // a configurarlo e va detto, invece di comportarsi come se non ci fosse.
-    throw new Error(P.twitch + ' non e JSON valido: ' + e.message);
-  }
-
-  const clientId = dati && typeof dati.clientId === 'string' ? dati.clientId.trim() : '';
-  const clientSecret = dati && typeof dati.clientSecret === 'string' ? dati.clientSecret.trim() : '';
-  if (!clientId || !clientSecret) { return null; }
-  return { clientId: clientId, clientSecret: clientSecret };
+  return chiavi.twitchComplete();
 }
 
 /** Vero se il collegamento a Twitch e configurato. */
@@ -148,7 +139,7 @@ async function appToken() {
   if (tokenInCache && tokenInCache.scadeIl - ANTICIPO_MS > ora) { return tokenInCache.valore; }
 
   const chiavi = credenziali();
-  if (!chiavi) { throw new Error('Manca ' + P.twitch + ': lancia node server/imposta-twitch.js.'); }
+  if (!chiavi) { throw new Error('Mancano le chiavi in ' + P.chiavi + ': lancia node server/imposta-twitch.js.'); }
 
   const corpo = new URLSearchParams({
     client_id: chiavi.clientId,

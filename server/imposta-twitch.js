@@ -6,32 +6,42 @@
          node server/imposta-twitch.js --togli
          node server/imposta-twitch.js --prova
 
-   Scrive server/dati/twitch.json, che serve a una cosa sola: alla
-   pubblicazione, chiedere a Twitch il titolo dell'ultima diretta e
-   scriverlo nei contenuti, cosi «Ultima diretta» resta fresca anche per
-   chi visita il sito senza collegare nessun account.
+   Scrive server/dati/chiavi.js, che e l'unico posto in cui stanno le
+   chiavi del sito. Da li le prendono tutti:
+
+     - il login «Collegati con Twitch» (serve il solo Client ID, che alla
+       pubblicazione viene copiato nel campo del pannello e quindi nella
+       pagina);
+     - «Ultima diretta» e la vetrina delle clip, che con la coppia
+       completa prendono un app token e chiedono a Twitch.
 
    IL SECRET NON VA DA NESSUN'ALTRA PARTE. Non nello schema, non in
-   contenuti.json, non nel sito generato. Quello che finisce nella pagina
-   e solo il Client ID del gruppo «Profilo del sito», che e pubblico per
-   natura. Questo file sta accanto alla password del pannello, in una
-   cartella che non si carica online: e lo stesso genere di segreto, e si
-   tratta allo stesso modo.
+   contenuti.json, non nel sito generato. Quel file sta accanto alla
+   password del pannello, in una cartella che non si carica online: e lo
+   stesso genere di segreto, e si tratta allo stesso modo.
+
+   Il file si puo anche scrivere a mano, copiando
+   server/modelli/chiavi.esempio.js: e un normale file JavaScript, con le
+   istruzioni dentro.
    ===================================================================== */
 
 const fs = require('node:fs');
 
 const { P } = require('./lib/percorsi');
 const { scriviAtomico, assicuraCartella, leggiSeEsiste } = require('./lib/file');
+const chiavi = require('./lib/chiavi');
 const twitch = require('./lib/twitch');
 
 function aiuto() {
   console.error('');
   console.error('  Uso: node server/imposta-twitch.js <clientId> <clientSecret>');
   console.error('');
-  console.error('  Le due chiavi stanno su dev.twitch.tv/console/apps, nella scheda');
-  console.error('  dell applicazione. Puo essere la stessa app del «Profilo del sito»:');
-  console.error('  il Client ID e lo stesso, il secret si genera li con «New Secret».');
+  console.error('  Scrive server/dati/chiavi.js, l unico file in cui stanno le chiavi.');
+  console.error('  Le due escono dalla stessa scheda su dev.twitch.tv/console/apps: una');
+  console.error('  sola applicazione, il Client ID in chiaro e il secret da «New Secret».');
+  console.error('');
+  console.error('  In alternativa si scrive a mano, copiando');
+  console.error('  server/modelli/chiavi.esempio.js in server/dati/chiavi.js.');
   console.error('');
   console.error('  Altri comandi:');
   console.error('    --prova   chiede a Twitch il titolo dell ultima diretta, senza scrivere niente');
@@ -41,22 +51,19 @@ function aiuto() {
 
 function scrivi(clientId, clientSecret) {
   assicuraCartella(P.dati);
-  scriviAtomico(P.twitch, JSON.stringify({
-    clientId: clientId,
-    clientSecret: clientSecret,
-    scrittoIl: new Date().toISOString()
-  }, null, 2) + '\n');
+  scriviAtomico(P.chiavi, chiavi.componi({ twitch: { clientId: clientId, clientSecret: clientSecret } }));
 
   // Su Linux e macOS toglie il file dagli occhi degli altri utenti del
   // computer. Su Windows i permessi POSIX non esistono e chmod non fa
   // niente: non e un errore, e non deve fermare il comando.
-  try { fs.chmodSync(P.twitch, 0o600); } catch (e) { /* Windows: nessun permesso POSIX */ }
+  try { fs.chmodSync(P.chiavi, 0o600); } catch (e) { /* Windows: nessun permesso POSIX */ }
 }
 
 async function prova() {
   if (!twitch.configurato()) {
     console.error('');
-    console.error('  Non c e nessun collegamento da provare: ' + P.twitch + ' non esiste.');
+    console.error('  Non c e nessun collegamento da provare: ' + P.chiavi + ' non esiste,');
+    console.error('  oppure non ha tutte e due le chiavi.');
     console.error('');
     process.exit(1);
   }
@@ -71,16 +78,17 @@ async function prova() {
 }
 
 function togli() {
-  if (leggiSeEsiste(P.twitch) === null) {
+  if (leggiSeEsiste(P.chiavi) === null) {
     console.log('');
     console.log('  Non c era nessun collegamento da togliere.');
     console.log('');
     return;
   }
-  fs.unlinkSync(P.twitch);
+  fs.unlinkSync(P.chiavi);
   console.log('');
-  console.log('  Collegamento con Twitch tolto.');
-  console.log('  «Ultima diretta» torna a essere un campo scritto a mano nel pannello.');
+  console.log('  Collegamento con Twitch tolto: ' + P.chiavi + ' cancellato.');
+  console.log('  «Ultima diretta» e le clip tornano a essere campi scritti a mano, e il');
+  console.log('  bottone del login sparisce alla prossima pubblicazione.');
   console.log('');
 }
 
@@ -111,16 +119,20 @@ async function esegui() {
     process.exit(1);
   }
 
-  const cambio = leggiSeEsiste(P.twitch) !== null;
+  const cambio = leggiSeEsiste(P.chiavi) !== null;
   scrivi(clientId, clientSecret);
   // Le credenziali sono cambiate: il token in cache non vale piu niente.
   twitch.dimenticaToken();
 
   console.log('');
-  console.log('  Collegamento con Twitch ' + (cambio ? 'aggiornato' : 'creato') + ' in ' + P.twitch);
+  console.log('  Chiavi ' + (cambio ? 'aggiornate' : 'scritte') + ' in ' + P.chiavi);
+  console.log('  E l unico posto in cui stanno: da qui le prendono il login del sito,');
+  console.log('  «Ultima diretta» e la vetrina delle clip.');
+  console.log('');
   console.log('  Il file NON va caricato online e non va messo sotto controllo di versione.');
   console.log('');
   console.log('  Provalo con:  node server/imposta-twitch.js --prova');
+  console.log('  Poi pubblica, cosi il Client ID arriva anche nella pagina.');
   console.log('');
 }
 
