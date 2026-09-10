@@ -33,6 +33,7 @@ const controlli = require('./lib/controlli');
 // cima, prima che la radice venga spostata sulla copia di lavoro.
 const testoricco = require('./lib/testoricco');
 const tema = require('./lib/tema');
+const twitch = require('./lib/twitch');
 const schema = require('../contenuti/schema.js');
 
 /* --- MINIMO INDISPENSABILE PER PROVARE ------------------------------ */
@@ -227,14 +228,14 @@ async function proveConvalida(contenutiVeri) {
   await prova('Client ID: passa solo quello che ha la forma di un Client ID', () => {
     // Il campo e facoltativo: vuoto vuol dire «nessuna app registrata», ed e
     // lo stato di partenza del progetto.
-    esigiUguale(convalida.convalidaCampo('config.lurk.clientId', '').length, 0, 'vuoto');
-    esigiUguale(convalida.convalidaCampo('config.lurk.clientId', 'k3j9x2q7w1m5v8b4n6z0c7t2y5r8p3').length, 0, 'trenta minuscole e cifre');
+    esigiUguale(convalida.convalidaCampo('config.account.clientId', '').length, 0, 'vuoto');
+    esigiUguale(convalida.convalidaCampo('config.account.clientId', 'k3j9x2q7w1m5v8b4n6z0c7t2y5r8p3').length, 0, 'trenta minuscole e cifre');
 
     // Il caso vero: il promemoria lasciato al posto del valore. Prima passava
     // la convalida e si schiantava soltanto sotto le mani di un visitatore,
     // con un 400 «invalid client» dal server di Twitch.
     for (const storto of ['DAxSOSTITUIRExCONxQUELLOxVERO', 'abc', 'k3j9x2q7w1 m5v8b4n6z0', 'K3J9X2Q7W1M5V8B4N6Z0C7T2Y5R8P3']) {
-      esigi(convalida.convalidaCampo('config.lurk.clientId', storto).length === 1,
+      esigi(convalida.convalidaCampo('config.account.clientId', storto).length === 1,
         'doveva essere rifiutato: ' + storto);
     }
   });
@@ -248,8 +249,9 @@ async function proveConvalida(contenutiVeri) {
     documento.config.sitoUrl = 'https://slayerbeard.it/';
     documento.config.twitch.domini = ['slayerbeard.it'];
     documento.config.lurk.messaggioAttivo = true;
-    documento.config.lurk.clientId = 'k3j9x2q7w1m5v8b4n6z0c7t2y5r8p3';
-    documento.config.lurk.urlRitorno = 'https://slayerbeard.it/';
+    documento.config.account.attivo = true;
+    documento.config.account.clientId = 'k3j9x2q7w1m5v8b4n6z0c7t2y5r8p3';
+    documento.config.account.urlRitorno = 'https://slayerbeard.it/';
     const avvertimenti = controlli.controlli(documento);
     esigiUguale(avvertimenti.length, 0,
       'avvertimenti inattesi: ' + avvertimenti.map((a) => a.chiave).join(', '));
@@ -271,19 +273,21 @@ async function proveConvalida(contenutiVeri) {
     documento.config.sitoUrl = 'https://slayerbeard.it/';
     documento.config.twitch.domini = ['slayerbeard.it'];
     documento.config.lurk.messaggioAttivo = true;
-    documento.config.lurk.clientId = 'k3j9x2q7w1m5v8b4n6z0c7t2y5r8p3';
-    documento.config.lurk.urlRitorno = 'http://localhost:4173/';
+    documento.config.account.attivo = true;
+    documento.config.account.clientId = 'k3j9x2q7w1m5v8b4n6z0c7t2y5r8p3';
+    documento.config.account.urlRitorno = 'http://localhost:4173/';
     const avvertimenti = controlli.controlli(documento);
-    esigi(avvertimenti.some((a) => a.chiave === 'config.lurk.urlRitorno'),
+    esigi(avvertimenti.some((a) => a.chiave === 'config.account.urlRitorno'),
       'nessun avvertimento sull indirizzo di ritorno');
   });
 
   await prova('controlli: l interruttore acceso senza Client ID viene detto', () => {
     const documento = JSON.parse(JSON.stringify(contenutiVeri));
     documento.config.lurk.messaggioAttivo = true;
-    documento.config.lurk.clientId = '';
+    documento.config.account.attivo = true;
+    documento.config.account.clientId = '';
     const avvertimenti = controlli.controlli(documento);
-    esigi(avvertimenti.some((a) => a.chiave === 'config.lurk.clientId'),
+    esigi(avvertimenti.some((a) => a.chiave === 'config.account.clientId'),
       'nessun avvertimento sul Client ID mancante');
   });
 
@@ -400,7 +404,7 @@ async function proveSchema(contenutiVeri) {
     // Prima i gruppi nell ordine in cui si incontrano scendendo, poi i due
     // che non stanno in nessun punto della pagina perche valgono ovunque:
     // "canale" (i dati tecnici) e "aspetto" (colori e font).
-    const atteso = ['meta', 'marchio', 'deck', 'diretta', 'lurk', 'pollo', 'settimana', 'chi',
+    const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'settimana', 'chi',
       'supporto', 'saluti', 'piede', 'canale', 'aspetto'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
@@ -879,11 +883,40 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
    * guarda quello che finisce davvero in pagina, non una funzione interna
    * che un domani potrebbe non essere piu quella chiamata.
    */
-  const ramo = (lurk) => {
+  /* Tre profili del sito, che sono i tre casi che contano: uno completo,
+     uno con l interruttore spento e uno acceso ma senza app registrata.
+     Gli ultimi due devono produrre lo stesso effetto sul messaggio in
+     chat — spento — per strade diverse. */
+  const profiloSano = { attivo: true, clientId: 'abcdef1234567890abcdef', urlRitorno: 'https://slayerbeard.it/' };
+  const profiloSpento = { attivo: false, clientId: 'abcdef1234567890abcdef', urlRitorno: 'https://slayerbeard.it/' };
+  const profiloSenzaClientId = { attivo: true, clientId: '', urlRitorno: 'https://slayerbeard.it/' };
+
+  /** Mette lurk e account dentro una copia dei contenuti veri. */
+  function documentoCon(lurk, account) {
     const documento = JSON.parse(JSON.stringify(contenutiVeri));
     if (lurk === undefined) { delete documento.config.lurk; } else { documento.config.lurk = lurk; }
-    return costruisci.oggettoDati(documento).lurk;
-  };
+    if (account === undefined) { delete documento.config.account; } else { documento.config.account = account; }
+    return documento;
+  }
+
+  /**
+   * Il ramo `lurk` di window.DATI calcolato su una config.lurk di prova.
+   *
+   * Il secondo argomento e la config.account. Dal rifacimento e il profilo
+   * del sito ad accendere o spegnere il messaggio in chat, quindi va poter
+   * variare; omesso vale `profiloSano`, cosi le prove che del profilo non
+   * parlano restano leggibili. Passarlo `undefined` di proposito e un caso
+   * diverso da non passarlo — vuol dire «il ramo account non c e» — e per
+   * questo si guarda arguments.length invece di un valore di ripiego.
+   */
+  function ramo(lurk, account) {
+    return costruisci.oggettoDati(documentoCon(lurk, arguments.length < 2 ? profiloSano : account)).lurk;
+  }
+
+  /** Il ramo `account`, sulla stessa strada e con la stessa regola. */
+  function ramoAccount(account) {
+    return costruisci.oggettoDati(documentoCon(sana(), arguments.length < 1 ? profiloSano : account)).account;
+  }
 
   /** Una config.lurk sana, da sporcare un pezzo per volta. */
   const sana = (aggiunte) => Object.assign({
@@ -903,9 +936,12 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigiUguale(typeof lurk.oreMax, 'number', 'oreMax');
     esigi(lurk.messaggio && typeof lurk.messaggio === 'object', 'manca il sottoramo messaggio');
     esigiUguale(typeof lurk.messaggio.attivo, 'boolean', 'messaggio.attivo');
-    esigiUguale(typeof lurk.messaggio.clientId, 'string', 'messaggio.clientId');
-    esigiUguale(typeof lurk.messaggio.urlRitorno, 'string', 'messaggio.urlRitorno');
     esigi(Array.isArray(lurk.messaggio.frasi), 'messaggio.frasi non e un elenco');
+    // Client ID e indirizzo di ritorno stanno nel ramo account e SOLO li:
+    // due copie dello stesso valore sono due cose che possono smettere di
+    // essere d accordo, e quella sbagliata sarebbe quella che parla a Twitch.
+    esigiUguale(lurk.messaggio.clientId, undefined, 'il lurk non deve avere un suo clientId');
+    esigiUguale(lurk.messaggio.urlRitorno, undefined, 'il lurk non deve avere un suo urlRitorno');
     // Questi li scrive js/lurk.js con textContent: se ne manca uno, al posto
     // dello stato o del bottone resta una riga vuota.
     for (const chiave of ['accendi', 'spegni', 'audio', 'ripresa', 'ciSei', 'ciSono',
@@ -916,9 +952,39 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
       // chiedere una conferma a parte (CONTRATTO-3 §4.1).
       // `manda` e il bottone di ripiego per chi non ha i comandi del player:
       // senza accensione non ci sarebbe niente a cui agganciare il messaggio.
-      'entra', 'esci', 'schermo', 'collegato', 'preavviso', 'invito', 'manda', 'inviato']) {
+      // entra / esci / collegato sono passati al ramo account: il login non
+      // e piu una cosa del lurk. `chiuso` invece e nuova, e la dice la
+      // diretta che finisce mentre il lurk e acceso.
+      'schermo', 'chiuso', 'preavviso', 'invito', 'manda', 'inviato']) {
       esigi(!!lurk.testi[chiave], 'manca o e vuoto lurk.testi.' + chiave);
     }
+  });
+
+  await prova('window.DATI.account ha la forma esatta, e non porta la nota ricca', () => {
+    const testo = fs.readFileSync(P.datiJs, 'utf8');
+    const dati = JSON.parse(testo.slice(testo.indexOf('{'), testo.lastIndexOf('}') + 1));
+    const account = dati.account;
+    esigi(account && typeof account === 'object', 'manca il ramo account');
+    esigiUguale(typeof account.attivo, 'boolean', 'account.attivo');
+    esigiUguale(typeof account.motivo, 'string', 'account.motivo');
+    esigiUguale(typeof account.clientId, 'string', 'account.clientId');
+    esigiUguale(typeof account.urlRitorno, 'string', 'account.urlRitorno');
+    for (const chiave of ['entra', 'esci', 'collegato']) {
+      esigi(!!account.testi[chiave], 'manca o e vuoto account.testi.' + chiave);
+    }
+    // `account.nota` e un campo ricco: in js/dati.js l HTML verrebbe
+    // stampato invece che interpretato. Lo stampa il modello, con la
+    // tripla graffa, e qui non deve arrivare affatto.
+    esigiUguale(account.testi.nota, undefined, 'la nota ricca non deve entrare in js/dati.js');
+  });
+
+  await prova('il ramo account dice PERCHE e spento', () => {
+    esigiUguale(ramoAccount().motivo, '', 'tutto a posto: nessun motivo');
+    esigiUguale(ramoAccount(profiloSpento).motivo, 'spento', 'interruttore spento');
+    esigiUguale(ramoAccount(profiloSenzaClientId).motivo, 'senzaClientId', 'client id mancante');
+    // L ordine e lo stesso del lurk: il primo ostacolo e l interruttore.
+    esigiUguale(ramoAccount({ attivo: false, clientId: '' }).motivo, 'spento',
+      'con tutto spento si nomina l interruttore per primo');
   });
 
   await prova('il ramo dice PERCHE il messaggio e spento, non solo che lo e', () => {
@@ -927,50 +993,67 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     // che e esattamente il modo di far perdere un pomeriggio a chi prova.
     esigiUguale(ramo(sana()).messaggio.motivo, '', 'tutto a posto: nessun motivo');
     esigiUguale(ramo(sana({ messaggioAttivo: false })).messaggio.motivo, 'spento', 'interruttore spento');
-    esigiUguale(ramo(sana({ clientId: '' })).messaggio.motivo, 'senzaClientId', 'client id mancante');
+    esigiUguale(ramo(sana(), profiloSpento).messaggio.motivo, 'senzaAccount', 'profilo del sito spento');
+    esigiUguale(ramo(sana(), profiloSenzaClientId).messaggio.motivo, 'senzaAccount', 'profilo senza Client ID');
     esigiUguale(ramo(sana({ frasi: [] })).messaggio.motivo, 'senzaFrasi', 'nessuna frase');
     // L ordine conta: se manca tutto, il primo ostacolo e l interruttore.
-    esigiUguale(ramo(sana({ messaggioAttivo: false, clientId: '' })).messaggio.motivo, 'spento',
+    esigiUguale(ramo(sana({ messaggioAttivo: false }), profiloSpento).messaggio.motivo, 'spento',
       'con tutto spento si nomina l interruttore per primo');
   });
 
-  await prova('senza Client ID il messaggio resta spento, anche con l interruttore acceso', () => {
+  await prova('senza profilo del sito il messaggio resta spento, anche con l interruttore acceso', () => {
     // E l invariante che tiene fermo l OAuth su un sito pubblicato da chi non
     // ha registrato nessuna app: senza app non c e niente da interrogare, e
-    // il bottone sarebbe un bottone che fallisce.
-    esigiUguale(ramo(sana({ clientId: '' })).messaggio.attivo, false, 'client id vuoto');
-    esigiUguale(ramo(sana({ clientId: '   ' })).messaggio.attivo, false, 'client id di soli spazi');
-    const senza = sana();
-    delete senza.clientId;
-    esigiUguale(ramo(senza).messaggio.attivo, false, 'chiave clientId mancante');
+    // il bottone sarebbe un bottone che fallisce. Da quando il login e del
+    // sito e non del lurk, l app che manca e quella del PROFILO — ma la
+    // conseguenza sul messaggio in chat deve essere rimasta identica.
+    esigiUguale(ramo(sana(), profiloSpento).messaggio.attivo, false, 'profilo spento');
+    esigiUguale(ramo(sana(), profiloSenzaClientId).messaggio.attivo, false, 'client id vuoto');
+    esigiUguale(ramo(sana(), { attivo: true, clientId: '   ' }).messaggio.attivo, false, 'client id di soli spazi');
+    esigiUguale(ramo(sana(), {}).messaggio.attivo, false, 'ramo config.account vuoto');
+    esigiUguale(ramo(sana(), undefined).messaggio.attivo, false, 'ramo config.account mancante');
+    // E il contrario: un Client ID scritto nel posto sbagliato — dentro il
+    // lurk, dov era prima — non deve accendere niente.
+    esigiUguale(ramo(sana({ clientId: 'abcdef1234567890abcdef' }), profiloSpento).messaggio.attivo, false,
+      'client id rimasto dentro config.lurk');
   });
 
-  await prova('senza frasi il messaggio resta spento, anche col Client ID a posto', () => {
+  await prova('senza frasi il messaggio resta spento, anche col profilo a posto', () => {
     esigiUguale(ramo(sana({ frasi: [] })).messaggio.attivo, false, 'elenco vuoto');
     esigiUguale(ramo(sana({ frasi: ['', '   '] })).messaggio.attivo, false, 'solo frasi vuote');
     esigiUguale(ramo(sana({ frasi: 'Hey! Lurko dal sito.' })).messaggio.attivo, false, 'frasi non e un elenco');
   });
 
-  await prova('interruttore, Client ID e almeno una frase: allora si accende', () => {
+  await prova('interruttore, profilo e almeno una frase: allora si accende', () => {
     const lurk = ramo(sana());
     esigiUguale(lurk.messaggio.attivo, true, 'messaggio.attivo');
-    esigiUguale(lurk.messaggio.clientId, 'abcdef1234567890abcdef', 'client id nel ramo');
-    esigiUguale(lurk.messaggio.urlRitorno, 'https://slayerbeard.it/', 'url di ritorno nel ramo');
     esigiUguale(lurk.messaggio.frasi.join('|'), 'Hey! Lurko dal sito.', 'frasi nel ramo');
+    // Il Client ID sta di la, nel ramo che lo possiede.
+    esigiUguale(ramoAccount().clientId, 'abcdef1234567890abcdef', 'client id nel ramo account');
+    esigiUguale(ramoAccount().urlRitorno, 'https://slayerbeard.it/', 'url di ritorno nel ramo account');
     // Con l interruttore spento non basta avere tutto il resto in ordine.
     esigiUguale(ramo(sana({ messaggioAttivo: false })).messaggio.attivo, false, 'interruttore spento');
   });
 
-  await prova('col messaggio spento il Client ID non esce affatto', () => {
-    // Non deve finire in pagina il Client ID di un app che non si usa: e un
-    // dato pubblico per natura, ma stamparlo lo stesso vuol dire pubblicare
-    // un app registrata a nome di qualcuno senza che serva a niente.
+  await prova('col messaggio spento le frasi non escono affatto', () => {
+    // Le frasi di un messaggio che non partira sono testo pubblicato per
+    // niente: stanno nel sorgente della pagina e non le legge nessuno.
     for (const storta of [{ messaggioAttivo: false }, { frasi: [] }, { messaggioAttivo: 'si' }]) {
       const lurk = ramo(sana(storta));
       esigiUguale(lurk.messaggio.attivo, false, 'atteso spento con ' + JSON.stringify(storta));
-      esigiUguale(lurk.messaggio.clientId, '', 'client id con ' + JSON.stringify(storta));
-      esigiUguale(lurk.messaggio.urlRitorno, '', 'url di ritorno con ' + JSON.stringify(storta));
       esigiUguale(lurk.messaggio.frasi.length, 0, 'frasi con ' + JSON.stringify(storta));
+    }
+  });
+
+  await prova('col profilo spento il Client ID non esce affatto', () => {
+    // Non deve finire in pagina il Client ID di un app che non si usa: e un
+    // dato pubblico per natura, ma stamparlo lo stesso vuol dire pubblicare
+    // un app registrata a nome di qualcuno senza che serva a niente.
+    for (const storto of [profiloSpento, { attivo: 'si', clientId: 'abcdef1234567890abcdef' }, {}]) {
+      const account = ramoAccount(storto);
+      esigiUguale(account.attivo, false, 'atteso spento con ' + JSON.stringify(storto));
+      esigiUguale(account.clientId, '', 'client id con ' + JSON.stringify(storto));
+      esigiUguale(account.urlRitorno, '', 'url di ritorno con ' + JSON.stringify(storto));
     }
   });
 
@@ -1072,8 +1155,12 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
 
     // E gli altri restano dove erano: dati.js prima di tutti quelli che
     // leggono window.DATI, lurk.js prima di pollo.js (CONTRATTO-3 §5.3).
+    // La coda e una catena di iscrizioni e l ordine non e decorativo:
+    // account.js pubblica window.Account, canale.js e lurk.js ci si
+    // iscrivono, e pollo.js si iscrive a window.Lurk — che deve gia esistere.
     const soloNostri = script.map((s) => s.src).filter((s) => s.indexOf('js/') === 0);
-    esigiUguale(soloNostri.join(','), 'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/lurk.js,js/pollo.js',
+    esigiUguale(soloNostri.join(','),
+      'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js',
       'ordine degli script del sito');
   });
 
@@ -1107,12 +1194,16 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     }
   });
 
-  await prova('il gruppo lurk sta fra diretta e pollo e usa solo tipi gia ammessi', () => {
+  await prova('il gruppo lurk sta fra account e pollo e usa solo tipi gia ammessi', () => {
+    // Il CONTRATTO-3 §6.3 diceva «fra diretta e pollo». Fra i due si e
+    // infilato «account», che e nato dopo e che il lurk consuma: l ordine
+    // della pagina e rimasto quello, il login sta in cima alla diretta.
     const ids = schema.gruppi.map((g) => g.id);
     const dove = ids.indexOf('lurk');
     esigi(dove !== -1, 'lo schema non ha il gruppo lurk');
-    esigiUguale(ids[dove - 1], 'diretta', 'il gruppo che viene prima');
+    esigiUguale(ids[dove - 1], 'account', 'il gruppo che viene prima');
     esigiUguale(ids[dove + 1], 'pollo', 'il gruppo che viene dopo');
+    esigiUguale(ids[dove - 2], 'diretta', 'il gruppo che viene prima di account');
     const gruppo = schema.gruppi[dove];
     esigi(gruppo.campi.length > 0, 'il gruppo lurk e vuoto');
     for (const campo of gruppo.campi) {
@@ -1490,6 +1581,137 @@ async function proveApi(costruisci) {
   }
 }
 
+/* --- 9. COLLEGAMENTO CON TWITCH -------------------------------------- */
+
+/*
+   server/lib/twitch.js e l unico punto in cui il server locale chiama
+   Twitch, e serve a una cosa sola: aggiornare «Ultima diretta» alla
+   pubblicazione, cosi il campo resta fresco anche per chi visita il sito
+   senza collegare nessun account.
+
+   Qui NON si chiama la rete. Tutte le prove si fermano prima — sul file
+   delle credenziali assente, rotto o incompleto, e sull ID del canale che
+   manca — perche l invariante che conta e proprio quella: qualunque cosa
+   vada storta, la pubblicazione va avanti e il titolo che c era non si
+   perde. Un collaudo che dipendesse da Twitch sarebbe rosso il giorno in
+   cui Twitch e giu, cioe esattamente il giorno in cui questo file deve
+   dimostrare di reggere.
+*/
+async function proveTwitch(costruisci, archivio) {
+  apriSezione('9. Collegamento con Twitch (server/lib/twitch.js)');
+
+  const scriviCredenziali = (dati) => {
+    fs.mkdirSync(path.dirname(P.twitch), { recursive: true });
+    fs.writeFileSync(P.twitch, typeof dati === 'string' ? dati : JSON.stringify(dati, null, 2));
+  };
+  const togliCredenziali = () => { try { fs.unlinkSync(P.twitch); } catch (e) { /* gia sparito */ } };
+  const titoloSalvato = () => archivio.leggi().config.ultimaDiretta;
+
+  await prova('senza il file delle credenziali il collegamento e semplicemente spento', async () => {
+    togliCredenziali();
+    esigiUguale(twitch.configurato(), false, 'configurato()');
+    esigiUguale(twitch.credenziali(), null, 'credenziali()');
+
+    // E la condizione normale di chi quel campo lo scrive a mano: non e un
+    // errore, non stampa niente e non tocca i contenuti.
+    const prima = titoloSalvato();
+    const esito = await twitch.aggiornaUltimaDiretta();
+    esigiUguale(esito.stato, 'spento', 'stato');
+    esigiUguale(titoloSalvato(), prima, 'ha toccato ultimaDiretta e non doveva');
+  });
+
+  await prova('mezze credenziali valgono come nessuna credenziale', () => {
+    for (const mezze of [{ clientId: 'abcdef1234567890abcdef' }, { clientSecret: 'unsegretolungoabbastanza' },
+      { clientId: '', clientSecret: '' }, { clientId: '   ', clientSecret: '   ' }, {}]) {
+      scriviCredenziali(mezze);
+      esigiUguale(twitch.configurato(), false, 'configurato() con ' + JSON.stringify(mezze));
+    }
+    togliCredenziali();
+  });
+
+  await prova('le due chiavi arrivano ripulite dagli spazi', () => {
+    scriviCredenziali({ clientId: '  abcdef1234567890abcdef  ', clientSecret: '  unsegretolungoabbastanza  ' });
+    const chiavi = twitch.credenziali();
+    esigiUguale(chiavi.clientId, 'abcdef1234567890abcdef', 'clientId');
+    esigiUguale(chiavi.clientSecret, 'unsegretolungoabbastanza', 'clientSecret');
+    togliCredenziali();
+  });
+
+  await prova('un file rotto viene detto, non ignorato', async () => {
+    // File assente e file rotto sono due cose diverse: nel secondo caso
+    // qualcuno ha provato a configurarlo, e trattarlo come «non c e»
+    // vorrebbe dire lasciarlo a chiedersi perche non funziona.
+    scriviCredenziali('{ questo non e json');
+    esigiErrore(() => twitch.credenziali(), 'non e JSON valido', 'credenziali() su file rotto');
+    // configurato() invece non lancia mai: e una domanda, non un ordine.
+    esigiUguale(twitch.configurato(), false, 'configurato() su file rotto');
+
+    const prima = titoloSalvato();
+    const esito = await twitch.aggiornaUltimaDiretta();
+    esigiUguale(esito.stato, 'fallito', 'stato');
+    esigiUguale(titoloSalvato(), prima, 'ha toccato ultimaDiretta e non doveva');
+    togliCredenziali();
+  });
+
+  await prova('senza ID del canale non parte nessuna richiesta', async () => {
+    scriviCredenziali({ clientId: 'abcdef1234567890abcdef', clientSecret: 'unsegretolungoabbastanza' });
+    const documento = archivio.leggi();
+    const idVero = documento.config.twitch.idUtente;
+    const titoloVero = documento.config.ultimaDiretta;
+
+    documento.config.twitch.idUtente = '';
+    archivio.salva(documento);
+    try {
+      const esito = await twitch.aggiornaUltimaDiretta();
+      esigiUguale(esito.stato, 'senzaCanale', 'stato');
+      esigiUguale(titoloSalvato(), titoloVero, 'ha toccato ultimaDiretta e non doveva');
+    } finally {
+      const rimesso = archivio.leggi();
+      rimesso.config.twitch.idUtente = idVero;
+      archivio.salva(rimesso);
+      togliCredenziali();
+    }
+  });
+
+  await prova('ogni stato ha la sua riga, e racconta() non lancia mai', () => {
+    for (const stato of ['spento', 'senzaCanale', 'aggiornato', 'invariato', 'vuoto', 'fallito']) {
+      const riga = twitch.racconta({ stato: stato, titolo: 'Un titolo', motivo: 'un motivo', precedente: '' });
+      esigi(typeof riga === 'string' && riga.length > 0, 'nessuna riga per lo stato ' + stato);
+    }
+    // Le forme impreviste non devono far cadere una pubblicazione riuscita.
+    for (const storto of [null, undefined, {}, { stato: 'inventato' }]) {
+      esigiUguale(twitch.racconta(storto), '', 'racconta(' + JSON.stringify(storto) + ')');
+    }
+  });
+
+  await prova('il client secret non finisce mai nei file generati', () => {
+    // L invariante che giustifica l intera deroga del CONTRATTO-3 §4.6: il
+    // secret vive sul computer di chi amministra e in nessun altro posto.
+    // Quello che va in pagina e solo il Client ID del profilo, che e
+    // pubblico per natura.
+    const spia = 'segretochenondevecomparirequi0000';
+    scriviCredenziali({ clientId: 'abcdef1234567890abcdef', clientSecret: spia });
+    try {
+      costruisci.genera();
+      for (const file of [P.indexHtml, P.datiJs, P.temaCss]) {
+        esigi(fs.readFileSync(file, 'utf8').indexOf(spia) === -1, 'il secret e finito dentro ' + path.basename(file));
+      }
+      esigi(fs.readFileSync(P.contenutiJson, 'utf8').indexOf(spia) === -1, 'il secret e finito dentro contenuti.json');
+    } finally {
+      togliCredenziali();
+    }
+  });
+
+  await prova('il file delle credenziali e escluso dal controllo di versione', () => {
+    // Si guarda il .gitignore VERO, non quello della copia di lavoro: la
+    // riga che protegge il secret e nel repository, ed e li che deve
+    // restare anche fra sei mesi.
+    const ignorati = fs.readFileSync(path.join(RADICE_VERA, '.gitignore'), 'utf8');
+    esigiDentro(ignorati, 'server/dati/twitch.json', 'il .gitignore non esclude le credenziali di Twitch');
+    esigiDentro(ignorati, 'server/dati/auth.json', 'il .gitignore non esclude piu la password del pannello');
+  });
+}
+
 /* --- ESECUZIONE ------------------------------------------------------ */
 
 async function esegui() {
@@ -1520,6 +1742,7 @@ async function esegui() {
     await proveGenerazione(progetto, costruisci, archivio);
     await proveLurk(contenutiVeri, costruisci, archivio);
     await proveApi(costruisci);
+    await proveTwitch(costruisci, archivio);
   } finally {
     percorsi.imposta(RADICE_VERA);
     try { fs.rmSync(temporanea, { recursive: true, force: true }); } catch (e) { /* su Windows a volte il file e ancora aperto */ }

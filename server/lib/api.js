@@ -28,6 +28,7 @@ const costruisci = require('./costruisci');
 const media = require('./media');
 const backup = require('./backup');
 const tema = require('./tema.js');
+const twitch = require('./twitch');
 const schema = require('../../contenuti/schema.js');
 
 const MAX_JSON = 1024 * 1024;
@@ -210,14 +211,25 @@ async function rottaScriviContenuti(req, res) {
   json(res, 200, { ok: true, aggiornatoIl: aggiornatoIl, stato: statoDelSito(unito) });
 }
 
-function rottaPubblica(req, res) {
+/**
+ * L'unica rotta che parla con la rete, e lo fa prima di generare: il
+ * titolo dell'ultima diretta viene da Twitch e finisce in contenuti.json,
+ * che costruisci.genera() rilegge subito dopo.
+ *
+ * `aggiornaUltimaDiretta()` non lancia mai e non svuota mai il campo: se
+ * Twitch e giu, o se il collegamento non e configurato affatto, la
+ * pubblicazione va avanti identica a prima con il valore che c era.
+ */
+async function rottaPubblica(req, res) {
+  const daTwitch = await twitch.aggiornaUltimaDiretta();
   const esito = costruisci.genera();
   // `controlli` sono avvertimenti d'insieme, non errori: la pubblicazione e
   // riuscita comunque, e il pannello li mostra dopo invece di trattarli come
   // un fallimento.
   json(res, 200, {
     ok: true, backup: esito.backup, durataMs: esito.durataMs,
-    scritti: esito.scritti, controlli: esito.controlli
+    scritti: esito.scritti, controlli: esito.controlli,
+    twitch: { stato: daTwitch.stato, messaggio: twitch.racconta(daTwitch) }
   });
 }
 

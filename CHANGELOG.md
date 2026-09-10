@@ -15,6 +15,30 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **«Ultima diretta» si aggiorna da sé anche per i visitatori anonimi.**
+  `server/lib/twitch.js` prende un app token (`client_credentials`) e, prima di
+  ogni generazione, chiede a Twitch il titolo dell'ultimo VOD
+  (`helix/videos?type=archive`, con ripiego su `helix/channels`) e lo scrive in
+  `config.ultimaDiretta`. Non lancia mai e **non svuota mai** il valore
+  esistente: se Twitch non risponde la pubblicazione va avanti con quello che
+  c'era. Chiude il quarto punto lasciato aperto dal rifacimento del profilo.
+- `node server/imposta-twitch.js <clientId> <clientSecret>` per configurare quel
+  collegamento, con `--prova` per verificarlo subito e `--togli` per rimuoverlo.
+  Il file finisce in `server/dati/twitch.json`, con permessi ristretti dove il
+  sistema li ha, ed è escluso dal controllo di versione.
+- Sezione 9 del collaudo, *Collegamento con Twitch*: otto prove che non toccano
+  la rete, perché quello che dev'essere dimostrato è come si comporta una
+  pubblicazione quando Twitch **non** risponde. Fra queste, due invarianti
+  verificate e non promesse: il client secret non compare in nessuno dei file
+  generati, e `.gitignore` continua a escluderlo.
+- Prove nuove sul ramo `account` di `window.DATI` — forma, motivo dello
+  spegnimento, e l'invariante «senza profilo del sito il messaggio in chat resta
+  spento» nelle due direzioni.
+- `CONTRATTO-3.md` §4.6: la deroga motivata sul client secret e su `node:https`,
+  più un avviso in testa al documento che elenca i cinque punti superati dal
+  rifacimento del profilo.
+- `README.md`: capitolo *«Ultima diretta» che si aggiorna da sé*.
+- `docs/PANNELLO.md`: capitolo 12, *Il profilo del sito (login con Twitch)*.
 - `LICENSE`: licenza d'uso proprietaria, tutti i diritti riservati.
 - `SECURITY.md` con la politica di sicurezza, i punti sensibili noti e i casi
   fuori ambito.
@@ -30,6 +54,26 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - `README.md`: aggiunti i badge, l'indice della documentazione, le sezioni
   Licenza e Autore. Il resto del documento è rimasto invariato.
 - `.gitignore` esteso con le cartelle degli editor e altri file temporanei.
+- `.gitignore` esclude anche `server/dati/twitch.json`.
+
+### Rimosso
+
+- `RIPRENDI-DOMANI.md`: era l'appunto di un lavoro interrotto a metà, e quel
+  lavoro adesso è chiuso. Quello che restava da dire è finito nel README, nel
+  CONTRATTO-3 e in questo registro; il resto è nella storia del repository.
+
+### Corretto
+
+- **Il collaudo torna verde: 128 prove su 128** (erano 12 fallite su 117). Le
+  prove che parlavano di `config.lurk.clientId`, dell'ordine dei gruppi e
+  dell'ordine degli script erano rimaste indietro rispetto al rifacimento del
+  profilo del sito, e descrivevano un programma che non esisteva più.
+- La rotta `POST /api/pubblica` e `node server/genera.js` sono diventate
+  asincrone: la chiamata a Twitch avviene **prima** di generare, perché
+  `costruisci.genera()` rilegge `contenuti.json` da capo e va lasciata sincrona.
+- Il pannello dice, a pubblicazione finita, se «Ultima diretta» è stata
+  aggiornata o no. Senza collegamento configurato non dice niente: è il caso
+  normale di chi quel campo lo scrive a mano.
 
 ## [1.0.0] — 2026-09-08
 

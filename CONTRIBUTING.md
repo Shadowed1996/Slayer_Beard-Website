@@ -77,14 +77,15 @@ o sul generatore.
 
 5. Apri la PR compilando il [template](.github/PULL_REQUEST_TEMPLATE.md).
 
-> **Il collaudo oggi non passa del tutto, ed è noto.** `node server/autotest.js`
-> segnala **12 prove fallite su 117**: sono conseguenze volute delle modifiche
-> arrivate dopo che il collaudo era stato scritto — il gruppo «account»,
-> `js/account.js` e `js/canale.js`. Il punto è annotato in
-> [`RIPRENDI-DOMANI.md`](RIPRENDI-DOMANI.md), insieme al rifacimento del
-> collaudo che resta da fare. Finché non è rifatto, il metro non è «zero
-> fallimenti» ma **«nessun fallimento nuovo rispetto a `main`»**: lancia il
-> collaudo prima e dopo la tua modifica e confronta i numeri.
+> **Il metro è zero fallimenti.** `node server/autotest.js` passa per intero su
+> `main` — **128 prove su 128** — e una modifica che ne rompe una è una modifica
+> da sistemare, non un numero da confrontare. Se la tua modifica cambia un
+> comportamento di proposito, aggiorna la prova che lo descriveva: una prova che
+> racconta un programma che non esiste più è peggio di nessuna prova.
+>
+> Il collaudo non tocca la rete, nemmeno nella sezione sul collegamento con
+> Twitch: quello che si prova lì è come si comporta una pubblicazione quando
+> Twitch **non** risponde.
 
 ## Convenzione dei commit
 
@@ -157,8 +158,7 @@ terzo passo, il controllo di copertura te lo dice all'avvio del server.
 
 ## Checklist prima di aprire una pull request
 
-- [ ] `node server/autotest.js` non introduce fallimenti **nuovi** rispetto a `main`
-      (oggi il riferimento è 12 su 117, vedi il riquadro qui sopra)
+- [ ] `node server/autotest.js` passa per intero (128 prove su 128)
 - [ ] `node server/genera.js` si chiude senza errori e senza avvertimenti nuovi
 - [ ] non ho modificato a mano `index.html`, `js/dati.js` o `css/tema.css`
 - [ ] il sito è stato provato da un server vero, non con `file://`

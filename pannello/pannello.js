@@ -1452,6 +1452,22 @@ async function pubblica() {
       });
     }
 
+    /* «Ultima diretta» la chiede il server a Twitch, prima di generare
+       (server/lib/twitch.js). Se il collegamento non è configurato il
+       server non manda niente e qui non si dice niente: è il caso normale
+       di chi quel campo lo scrive a mano. Quando invece il collegamento
+       c'è ma non ha funzionato, va detto — altrimenti si pubblica un
+       titolo vecchio convinti che si aggiorni da sé. */
+    const daTwitch = risposta && risposta.twitch;
+    if (daTwitch && daTwitch.messaggio && daTwitch.stato !== 'spento' && daTwitch.stato !== 'invariato') {
+      const andataMale = daTwitch.stato === 'fallito' || daTwitch.stato === 'vuoto' || daTwitch.stato === 'senzaCanale';
+      avviso(daTwitch.messaggio, {
+        tipo: andataMale ? 'info' : 'ok',
+        durata: andataMale ? 0 : 6000,
+        titolo: andataMale ? 'Ultima diretta non aggiornata' : 'Ultima diretta aggiornata'
+      });
+    }
+
     // Il server non è tenuto a rimandare la data: intanto si segna adesso,
     // e il prossimo caricamento dei contenuti la corregge se serve.
     stato.statoServer = {

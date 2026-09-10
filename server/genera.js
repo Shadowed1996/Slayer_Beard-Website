@@ -18,6 +18,7 @@ const path = require('node:path');
 
 const { P } = require('./lib/percorsi');
 const costruisci = require('./lib/costruisci');
+const twitch = require('./lib/twitch');
 
 function byteLeggibili(n) {
   if (n < 1024) { return n + ' B'; }
@@ -25,11 +26,22 @@ function byteLeggibili(n) {
   return (n / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-function esegui() {
+async function esegui() {
   console.log('');
   console.log('  Generazione del sito');
   console.log('  radice: ' + P.radice);
   console.log('');
+
+  // Prima di generare, non dopo: aggiornaUltimaDiretta() scrive dentro
+  // contenuti.json, e costruisci.genera() lo rilegge da capo. Invertire i
+  // due passi vorrebbe dire pubblicare il titolo vecchio e trovarselo
+  // giusto solo alla pubblicazione successiva.
+  //
+  // costruisci.genera() resta sincrona apposta: l unica cosa che ha
+  // bisogno della rete e questa riga, e tenerla fuori significa che una
+  // generazione senza collegamento a Twitch e identica a prima.
+  const daTwitch = await twitch.aggiornaUltimaDiretta();
+  if (daTwitch.stato !== 'spento') { console.log('  ' + twitch.racconta(daTwitch)); console.log(''); }
 
   const esito = costruisci.genera();
 
@@ -85,12 +97,10 @@ function racconta(err) {
 }
 
 if (require.main === module) {
-  try {
-    esegui();
-  } catch (err) {
+  esegui().catch((err) => {
     racconta(err);
     process.exit(1);
-  }
+  });
 }
 
 module.exports = { esegui };

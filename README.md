@@ -61,7 +61,9 @@ video non parte. Serve un server, anche banale.
 | `node server/server.js --guarda` | idem, e rigenera a ogni modifica di `modelli/`, `contenuti/` o `server/modelli/` |
 | `node server/genera.js` | genera `index.html`, `js/dati.js` e `css/tema.css` e basta, senza avviare niente |
 | `node server/imposta-password.js` | crea o cambia la password del pannello |
-| `node server/autotest.js` | collaudo: motore dei modelli, convalida, testo ricco, tema, generazione, API, modalità lurk |
+| `node server/imposta-twitch.js <clientId> <secret>` | collega il server a Twitch, così «Ultima diretta» si aggiorna da sé (facoltativo, vedi sotto) |
+| `node server/imposta-twitch.js --prova` | chiede subito il titolo a Twitch e dice com'è andata, senza scrivere niente |
+| `node server/autotest.js` | collaudo: motore dei modelli, convalida, testo ricco, tema, generazione, API, modalità lurk, collegamento con Twitch |
 
 La porta si cambia con la variabile d'ambiente `SB_PORTA` (per esempio
 `SB_PORTA=4174 node server/server.js`). Il collaudo lavora in una cartella temporanea e non
@@ -79,6 +81,8 @@ sito/
 │  ├─ dati.js            ← GENERATO. Configurazione letta dal front-end.
 │  ├─ player.js          player Twitch: embed, stato in onda, chat
 │  ├─ sito.js            navigazione, conto alla rovescia, settimana, copia email
+│  ├─ account.js         il profilo del sito: login con Twitch, tessera, revoca
+│  ├─ canale.js          per chi è collegato: stato del canale e titolo dell'ultima diretta
 │  ├─ lurk.js            la modalità lurk: sorveglia il video e lo fa ripartire
 │  ├─ ritorno.js         la finestrella del login Twitch: consegna il token e si chiude
 │  └─ pollo.js           la mascotte: reagisce alla chat (vedi sotto)
@@ -91,6 +95,7 @@ sito/
 │  ├─ sezioni.css        settimana, chi sono, supporto, saluti
 │  ├─ player.css         interno del player e della chat
 │  ├─ pollo.css          il pollo: posizione, fumetto, animazioni
+│  ├─ account.css        la tessera di chi si è collegato con Twitch
 │  └─ lurk.css           il pannello della modalità lurk, sotto al monitor
 ├─ img/                  avatar, mascotte, banner, anteprima social, favicon
 │
@@ -104,7 +109,10 @@ sito/
 │  │  └─ lurk.html       il pannello della modalità lurk, dentro «diretta»
 │  └─ icone/             le icone SVG, una per file
 ├─ server/               il CMS: generazione, API, sessioni, backup, media, tema
-│  └─ lib/controlli.js   i controlli d'insieme: avvertimenti, mai errori
+│  ├─ lib/controlli.js   i controlli d'insieme: avvertimenti, mai errori
+│  ├─ lib/twitch.js      l'unico punto in cui il server locale chiama Twitch
+│  └─ dati/              password del pannello e credenziali Twitch. Non si
+│                        carica online e non sta nel controllo di versione.
 ├─ pannello/             l'interfaccia di amministrazione
 ├─ docs/PANNELLO.md      guida per chi amministra il sito
 ├─ docs/PRESENZA-TWITCH.md  studio su presenza, lurk e login Twitch: come Twitch conta
@@ -112,7 +120,6 @@ sito/
 ├─ CONTRATTO.md          le regole con cui è stato costruito
 ├─ CONTRATTO-2.md        l'addendum della seconda fase: diretta, pollo, tema, testo ricco
 ├─ CONTRATTO-3.md        l'addendum della terza fase: la modalità lurk
-├─ RIPRENDI-DOMANI.md    appunto di lavoro: cosa era rimasto in sospeso, e dove
 └─ Cattura.PNG           cattura della pagina del canale su Twitch — banner, riquadro
                          fuori onda, handle social. Non è un'anteprima di questo sito.
 ```
@@ -201,7 +208,14 @@ prosa, in questo file, e la prosa non parla.
 2. **Indirizzo pubblico del sito.** Nello stesso gruppo: riempie il `<link rel="canonical">` e
    l'`og:url`. Lasciato vuoto, la pagina usa `./` e funziona lo stesso, ma le anteprime social
    sono più fragili. I testi delle anteprime stanno nel gruppo «Scheda della pagina».
-3. **Pubblica**, poi **carica online** il contenuto della cartella: `index.html`, `css/`, `js/`,
+3. **«Ultima diretta», se vuoi che si aggiorni da sé.** È facoltativo e si fa una volta sola:
+   `node server/imposta-twitch.js <clientId> <clientSecret>`, con le due chiavi di un'app
+   registrata su [dev.twitch.tv](https://dev.twitch.tv/console/apps) — può essere la stessa del
+   «Profilo del sito». Da quel momento ogni **Pubblica** chiede a Twitch il titolo dell'ultima
+   diretta e lo scrive nei contenuti, così è fresco anche per chi visita il sito senza collegare
+   nessun account. Senza, quel campo resta una casella da riempire a mano, e il sito funziona
+   esattamente come prima. Il capitolo qui sotto spiega il resto.
+4. **Pubblica**, poi **carica online** il contenuto della cartella: `index.html`, `css/`, `js/`,
    `img/`, e `contenuti/media/` se hai caricato immagini dal pannello.
    Attenzione: i file generati sono tre — `index.html`, `js/dati.js` e **`css/tema.css`**. Se
    carichi solo l'HTML, il sito online resta con i colori e i caratteri di `tokens.css` e non si
@@ -210,6 +224,52 @@ prosa, in questo file, e la prosa non parla.
    attrezzi, non il sito. Se il tuo hosting è pubblico, **è meglio non caricarli affatto**.
 
 Netlify, Vercel, GitHub Pages o un FTP qualsiasi vanno tutti bene: è HTML statico.
+
+---
+
+## «Ultima diretta» che si aggiorna da sé
+
+Il campo *Ultima diretta*, nella copertina, era una casella da riempire a mano — e nessuno la
+riempiva. Adesso ha **due sorgenti**, e nessuna delle due è obbligatoria:
+
+1. **Chi si è collegato col profilo del sito** lo vede aggiornarsi da solo dopo pochi secondi:
+   `js/canale.js` chiede a Twitch `helix/streams` e `helix/videos` col token di quella persona,
+   un giro ogni due minuti, solo a pagina visibile. Non richiede niente da configurare oltre al
+   Client ID del gruppo «Profilo del sito».
+2. **Tutti gli altri** — cioè la quasi totalità di chi passa — vedono quello che c'era scritto
+   in `contenuti.json` al momento della pubblicazione. Perché lì dentro ci sia il titolo giusto,
+   il **server locale** lo chiede a Twitch **prima di generare**, con le credenziali di
+   `server/dati/twitch.json`.
+
+Si configura una volta:
+
+```bash
+node server/imposta-twitch.js <clientId> <clientSecret>
+node server/imposta-twitch.js --prova     # controlla che funzioni
+```
+
+Le due chiavi stanno su [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps), nella
+scheda dell'applicazione: il Client ID è lo stesso che si mette nel pannello, il secret si genera
+lì con *New Secret*. Il file si toglie con `--togli`, e allora il campo torna a essere una casella
+da riempire a mano.
+
+**Il client secret non si mette da nessun'altra parte.** Non nel pannello, non in
+`contenuti.json`, non nel sito generato: `server/dati/twitch.json` sta accanto alla password del
+pannello, è escluso dal controllo di versione, e `server/` non si carica online. Il token che il
+server ne ricava è un *app token* (`client_credentials`): non appartiene a nessuna persona, non
+legge niente di privato e non può scrivere in chat. Il CONTRATTO-3 §4.3 diceva che il secret «non
+deve esistere» — resta vero per il browser, ed è discusso nel §4.6 dello stesso documento.
+
+**Se Twitch non risponde non succede niente.** La pubblicazione va avanti, il titolo che c'era
+resta dov'era, e il pannello lo dice in un avviso invece di lasciar credere che si sia aggiornato.
+Vale anche per il caso opposto: se Twitch risponde ma non ha nessun titolo da dare — un canale
+senza VOD, per esempio — il campo **non** viene svuotato.
+
+Il titolo che si prende è quello dell'ultimo VOD (`helix/videos?type=archive`), cioè quello che
+c'era scritto *durante* l'ultima diretta. I VOD però scadono — sette giorni per gli affiliati — e
+chi li tiene spenti non ne ha nessuno: in quel caso si ripiega su `helix/channels`, che dà il
+titolo **attuale** del canale, quello che si vedrà alla prossima accensione. È un ripiego, non un
+equivalente, ed è comunque meglio di un campo fermo a mesi fa.
 
 ---
 
@@ -379,8 +439,8 @@ minuto: spegnere e riaccendere il lurk dieci volte non deve diventare dieci righ
 eccezione alla regola «parte con l'accensione» è chi ha un adblock che filtra l'SDK di Twitch: lì
 il lurk non si può accendere affatto — l'interruttore non viene proprio costruito, perché sarebbe
 un bottone che non fa mai niente — e al suo posto compare *Dillo in chat*, che resta un clic e un
-messaggio. Per accenderlo servono il Client ID di un'app Twitch registrata
-dall'amministratore (`config.lurk.clientId`, vuoto di serie) e almeno una frase: senza, la
+messaggio. Per accenderlo servono il profilo del sito acceso col suo Client ID
+(`config.account.clientId`, gruppo «Profilo del sito», vuoto di serie) e almeno una frase: senza, la
 generazione lo lascia spento comunque — e siccome un blocco spento è un blocco invisibile, in
 **locale** il riquadro scrive in fondo una riga che dice quale delle tre cose manca. Solo su
 `localhost`: sul sito pubblicato quella riga non compare a nessuno, e il motivo per cui esiste è
@@ -428,13 +488,10 @@ d'ingresso: qui sotto c'è cosa leggere e quando.
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Il codice di condotta della comunità. |
 | [`CHANGELOG.md`](CHANGELOG.md) | Il registro delle modifiche, versione per versione. |
 
-C'è poi [`RIPRENDI-DOMANI.md`](RIPRENDI-DOMANI.md), che **non è documentazione
-ufficiale**: è l'appunto di un lavoro interrotto a metà — cosa era stato chiuso,
-cosa restava aperto e dove riprendere. Va letto come tale, e invecchia in fretta.
-È lì che sta anche la ragione per cui `node server/autotest.js` oggi segnala
-**12 prove fallite su 117**: il collaudo è indietro rispetto al sito, i
-fallimenti sono conseguenze volute delle modifiche arrivate dopo, e il suo
-rifacimento è fra le cose da fare.
+`node server/autotest.js` passa per intero: **128 prove su 128**. Il collaudo non
+tocca la rete nemmeno nella sezione sul collegamento con Twitch — quello che si
+prova lì è che una pubblicazione regga quando Twitch non risponde, e un collaudo
+che dipendesse da Twitch sarebbe rosso proprio il giorno in cui deve dimostrarlo.
 
 ---
 
@@ -444,7 +501,10 @@ Il sito non ha dipendenze da installare, ma a pagina aperta parla con tre
 soggetti esterni, e vale la pena sapere quali:
 
 - **Twitch** — il player e la chat sono incorporati da `embed.twitch.tv`, con
-  l'SDK servito da Twitch stessa. Marchio, logo e colore istituzionale sono di
+  l'SDK servito da Twitch stessa. Se il collegamento è configurato, alla
+  pubblicazione anche il **server locale** chiama `id.twitch.tv` e
+  `api.twitch.tv` per il titolo dell'ultima diretta: succede sul computer di
+  chi amministra, non nel browser di chi visita. Marchio, logo e colore istituzionale sono di
   Twitch Interactive, Inc.; il loro uso qui identifica il canale e nient'altro.
   Il player, la chat e il collegamento facoltativo con l'account sono soggetti
   alle condizioni d'uso e alle Community Guidelines di Twitch.

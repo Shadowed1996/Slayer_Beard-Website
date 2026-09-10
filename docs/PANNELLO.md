@@ -321,7 +321,96 @@ del sito: cambiarli qui li cambia in tutte e due i posti.
 
 ---
 
-## 12. La modalità lurk
+## 12. Il profilo del sito (login con Twitch)
+
+In cima alla sezione «La diretta» c'è un bottone **Collegati con Twitch**. Chi
+lo usa si ritrova lì la propria **tessera** — immagine del profilo, nome, e un
+*scollega e revoca* — come su qualunque sito dove si entra col proprio account.
+Le impostazioni stanno nella sezione **Profilo del sito (login con Twitch)** del
+pannello, fra *La diretta* e *Modalità lurk*.
+
+**Di serie è spento**, e finché è spento sul sito non compare nessun bottone: chi
+passa e non accende niente non deve vedersi proporre di collegare il proprio
+account.
+
+### A che serve
+
+Tre cose, e nessuna delle tre è obbligatoria:
+
+1. **Mettere la faccia a chi guarda dal sito.** È il motivo più semplice.
+2. **Tenere aggiornata «Ultima diretta»** nella copertina: chi è collegato la
+   vede aggiornarsi da sola dopo pochi secondi, perché il sito può chiedere a
+   Twitch il titolo col token di quella persona. Per tutti gli altri c'è
+   l'aggiornamento alla pubblicazione, spiegato in fondo a questo capitolo.
+3. **Permettere il messaggio in chat della modalità lurk** (capitolo 13). Quel
+   messaggio parte a nome di chi si è collegato: senza profilo non c'è nessuno a
+   nome di cui scrivere, e resta spento comunque anche col suo interruttore
+   acceso.
+
+### I campi, uno per uno
+
+**Attiva il profilo del sito** — l'interruttore principale. Spento, il bottone
+*Collegati con Twitch* non compare per nessuno e il resto della sezione non ha
+effetto.
+
+**Client ID dell'app Twitch** — il codice dell'applicazione che registri tu
+(istruzioni nel capitolo 13, *Registrare l'applicazione su Twitch*). È pubblico
+per sua natura e finisce dentro la pagina del sito: va bene così, è fatto per
+essere visto. Senza, l'interruttore resta senza effetto.
+
+**Indirizzo di ritorno dopo il login** — l'indirizzo su cui il visitatore torna
+dopo aver detto sì a Twitch. Deve **combaciare carattere per carattere** con
+quello registrato su Twitch, barra finale compresa. Lasciato vuoto, il sito usa
+l'indirizzo della pagina in cui si trova.
+
+**I testi** — *collegati con Twitch*, *scollega*, la riga «collegato come
+{nome}», e una nota che puoi scrivere sotto al bottone per dire alla gente
+perché dovrebbe collegarsi. Nella riga «collegato come» puoi scrivere `{nome}`,
+che viene sostituito dal nome vero.
+
+### Cosa il sito sa di chi si collega
+
+Solo quello che è già pubblico sul canale di quella persona: **nome e immagine
+del profilo**, e nient'altro. Nessuna email. Il permesso di scrivere in chat si
+chiede **solo** se il messaggio di lurk è acceso.
+
+Il token vive nella scheda del browser e **muore quando la scheda si chiude**:
+non esiste nessun «ricorda il login», ed è voluto — quel token permetterebbe di
+scrivere a nome di quella persona in *qualsiasi* canale di Twitch, non solo nel
+tuo. *Scollega* non si limita a dimenticarlo: chiama davvero la revoca su
+Twitch.
+
+### «Ultima diretta» che si aggiorna da sé, per tutti
+
+Il campo *Ultima diretta* della copertina si aggiorna da solo per chi è
+collegato. Per **tutti gli altri** — cioè la quasi totalità di chi passa — resta
+quello che c'era scritto al momento della pubblicazione.
+
+Se vuoi che sia fresco anche per loro, c'è un comando da dare **una volta sola**,
+sul computer dove gira il pannello:
+
+```bash
+node server/imposta-twitch.js <clientId> <clientSecret>
+node server/imposta-twitch.js --prova
+```
+
+Da quel momento **ogni Pubblica** chiede a Twitch il titolo dell'ultima diretta
+e lo scrive nei contenuti prima di generare la pagina. Il pannello te lo dice a
+pubblicazione finita: se è andata, con una riga verde; se non è andata — Twitch
+giù, chiavi sbagliate, rete assente — con un avviso, e il titolo che c'era
+**resta dov'era**. Non viene mai svuotato.
+
+Il **client secret** serve solo a questo comando e non va scritto da nessun'altra
+parte: non c'è nessun campo per lui nel pannello, e non deve essercene uno.
+Finisce in `server/dati/twitch.json`, accanto alla password del pannello, in una
+cartella che non si carica mai online.
+
+Se non dai quel comando non succede niente di male: *Ultima diretta* resta una
+casella che riempi a mano quando ti va.
+
+---
+
+## 13. La modalità lurk
 
 Sotto al video, nella sezione «La diretta» del sito, può comparire un secondo
 riquadro: la **modalità lurk**. Le sue impostazioni stanno tutte nella sezione
@@ -446,22 +535,18 @@ Prima di tutto il resto, la cosa che conta:
 > quella che vuoi.
 
 **Permetti di dire in chat che si sta guardando** — l'interruttore. Anche
-acceso, resta senza effetto finché non ci sono un Client ID e almeno una frase.
+acceso, resta senza effetto finché non ci sono il **profilo del sito** acceso
+col suo Client ID (capitolo 12) e almeno una frase.
 
-**Client ID dell'app Twitch** — il codice dell'applicazione che registri tu. È
-pubblico per sua natura e finisce dentro la pagina del sito: va bene così, è
-fatto per essere visto.
-
-**Indirizzo di ritorno dopo il login** — l'indirizzo su cui il visitatore torna
-dopo aver detto sì a Twitch. Deve **combaciare carattere per carattere** con
-quello registrato su Twitch, barra finale compresa. Lasciato vuoto, il sito usa
-l'indirizzo della pagina in cui si trova.
+> Il Client ID e l'indirizzo di ritorno **non stanno più qui**: sono del profilo
+> del sito, nella sezione precedente, perché il login non è più una cosa della
+> modalità lurk — si può entrare col proprio account anche col lurk spento. Il
+> messaggio in chat è soltanto uno degli usi di quel collegamento.
 
 **Frasi del messaggio di lurk** — l'elenco da cui il sito pesca. Leggi il
 riquadro qui sotto **prima** di scriverle.
 
-**I bottoni e le righe di questa parte** — *collegati con Twitch*, *scollega*,
-la riga «collegato come {nome}», l'invito che compare accendendo il lurk,
+**I bottoni e le righe di questa parte** — l'invito che compare accendendo il lurk,
 l'avviso di cosa verrà detto in chat, il bottone *dillo in chat* e la conferma
 dopo l'invio. Nell'invito e nell'avviso puoi scrivere `{frase}`, che viene
 sostituito dalla frase vera: **toglierlo è una pessima idea**, perché è l'unico
@@ -557,14 +642,19 @@ Si fa una volta sola, e solo se vuoi accendere il messaggio in chat.
 5. **Category**: quella che ti sembra più adatta, non cambia niente.
 6. **Client Type**: **Confidential**.
 7. Salva. Twitch ti mostra un **Client ID**: copialo nel campo *Client ID
-   dell'app Twitch* del pannello, accendi l'interruttore, poi **Salva** e
-   **Pubblica**.
+   dell'app Twitch* della sezione **Profilo del sito** (capitolo 12), accendi
+   *Attiva il profilo del sito*, poi **Salva** e **Pubblica**.
 
-> **Il «client secret» non va copiato da nessuna parte.** Nella stessa pagina
-> Twitch te ne offre uno: qui non serve, non c'è nessun campo dove metterlo, e
+> **Il «client secret» non va copiato nel pannello.** Nella stessa pagina Twitch
+> te ne offre uno: nel pannello non serve, non c'è nessun campo dove metterlo, e
 > non deve essercene uno. Tutto quello che scrivi nel pannello finisce dentro la
 > pagina del sito, che chiunque può leggere: un secret lì dentro sarebbe un
 > secret regalato al primo che passa.
+>
+> C'è **un solo posto** dove quel secret ha senso, e non è il pannello: il
+> comando `node server/imposta-twitch.js`, che serve ad aggiornare da sé «Ultima
+> diretta» e che lo tiene sul tuo computer, in una cartella che non si carica
+> online. È spiegato in fondo al capitolo 12.
 
 ### Quando qualcosa non va
 
@@ -578,8 +668,9 @@ collegamento è spento, in fondo al riquadro della modalità lurk compare una ri
 che spiega esattamente cosa manca — il Client ID, le frasi, o l'interruttore. Su
 `localhost` e basta: sul sito pubblicato quella riga non compare a nessuno.
 
-Nel 99% dei casi **manca il Client ID**, oppure l'elenco delle frasi è vuoto:
-senza tutti e due il collegamento resta spento anche con l'interruttore acceso,
+Nel 99% dei casi **manca il Client ID** — che sta nella sezione *Profilo del
+sito*, non qui — oppure l'elenco delle frasi è vuoto: senza tutti e due il
+collegamento resta spento anche con l'interruttore acceso,
 e sul sito non compare proprio niente. È lo stato in cui nasce il progetto.
 Ricordati di **pubblicare** dopo aver messo il Client ID: il sito legge il file
 generato, non il pannello.
@@ -641,7 +732,7 @@ eccezioni del blocco, oppure spegnerlo su questa pagina.
 
 ---
 
-## 13. Il pollo
+## 14. Il pollo
 
 Accanto al player, nella sezione «La diretta», c'è la mascotte: un pollo che fa
 da bottone per aprire la chat e che ogni tanto dice una frase in un fumetto.
@@ -704,7 +795,7 @@ scrive»* non dovrebbero dare per certo che il messaggio sia stato inviato.
 
 ---
 
-## 14. Aspetto: colori, caratteri e forma
+## 15. Aspetto: colori, caratteri e forma
 
 La sezione **Aspetto**, in fondo alla colonna, cambia il sito **intero** in una
 volta: non è la sezione di una pagina, è la pelle di tutte.
@@ -787,7 +878,7 @@ niente. E come sempre: finché non premi Pubblica, il sito vero è quello di pri
 
 ---
 
-## 15. Se qualcosa va storto: tornare indietro
+## 16. Se qualcosa va storto: tornare indietro
 
 Ogni volta che pubblichi, il server mette da parte una **copia di sicurezza** del
 sito com'era prima: la pagina, i dati, il foglio dei colori e i contenuti.
@@ -810,7 +901,7 @@ Le copie conservate sono le venti più recenti; le più vecchie spariscono da so
 
 ---
 
-## 16. Scorciatoie da tastiera
+## 17. Scorciatoie da tastiera
 
 | Tasti | Cosa fanno |
 |---|---|
@@ -826,7 +917,7 @@ sempre un bordo azzurro ben visibile.
 
 ---
 
-## 17. Quando qualcosa non funziona
+## 18. Quando qualcosa non funziona
 
 **«Non riesco a contattare il server»**
 La finestra nera con `node server/server.js` è stata chiusa o il computer è stato
@@ -861,7 +952,7 @@ solo con Pubblica.
 
 **Il testo non si legge più**
 Vai in *Aspetto* e guarda il rapporto di contrasto dei tre colori del testo
-(capitolo 14). Se non è almeno **AA**, alza il contrasto o premi *Ripristina i
+(capitolo 15). Se non è almeno **AA**, alza il contrasto o premi *Ripristina i
 colori di partenza*.
 
 **Il pollo non dice niente / non compare**
@@ -876,12 +967,12 @@ in una finestra anonima per controllare.
 Controlla che *Mostra la modalità lurk* sia acceso e di aver **pubblicato** dopo
 averlo acceso. Se il riquadro c'è ma dice che i comandi del video non sono
 disponibili, è un blocco della pubblicità che sta fermando il programma di
-Twitch: capitolo 12.
+Twitch: capitolo 13.
 
 **Il messaggio in chat non parte**
 Quasi sempre è un'impostazione della chat — solo per chi segue, solo per
 abbonati, slow mode — o l'email non verificata sull'account di chi scrive.
-L'elenco completo è nel capitolo 12. E ricorda che quel messaggio **non fa
+L'elenco completo è nel capitolo 13. E ricorda che quel messaggio **non fa
 salire il numero di spettatori**: non serve a quello.
 
 **Il player di Twitch non parte nell'anteprima**
@@ -898,13 +989,13 @@ niente, il sito pubblicato non è stato toccato.
 poi riprova.
 
 **Ho fatto un disastro**
-Vai in *Copie di sicurezza* e ripristina la copia di prima (capitolo 15). Se il
+Vai in *Copie di sicurezza* e ripristina la copia di prima (capitolo 16). Se il
 disastro non è ancora stato pubblicato, basta ricaricare la pagina del pannello
 senza salvare: le modifiche non salvate spariscono e torna la bozza di prima.
 
 ---
 
-## 18. Riassunto in cinque righe
+## 19. Riassunto in cinque righe
 
 1. `node server/server.js`, poi `http://localhost:4173/pannello/`.
 2. Trova il campo (`Ctrl+K`) e cambia quello che ti serve.

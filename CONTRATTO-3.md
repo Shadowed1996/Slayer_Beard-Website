@@ -10,6 +10,29 @@ Contiene la ricerca da cui nasce tutta questa fase e, soprattutto, il fatto che 
 disegno: **Twitch conta uno spettatore finché il video gira, e la chat non entra nel conteggio.**
 Chi salta quella lettura costruirà la cosa sbagliata con le migliori intenzioni.
 
+> **Cinque punti sono superati da quello che è venuto dopo**, e in un documento vincolante è
+> meglio dirlo in testa che lasciarlo scoprire a chi lo prende alla lettera. Il login con Twitch
+> è uscito dalla modalità lurk ed è diventato il **profilo del sito** (`js/account.js`,
+> `config.account`, gruppo «Profilo del sito» del pannello): si entra col proprio account anche
+> col lurk spento, e il messaggio in chat è soltanto uno degli usi di quel collegamento. Quindi:
+>
+> - **§4.3** — il divieto sul client secret vale **per il browser**, dove non è cambiato niente.
+>   Sul server locale del CMS il secret esiste, ed è la deroga motivata nel **§4.6**;
+> - **§5.3** — l'ordine degli script è cresciuto di due file:
+>   `ritorno, dati, player, sito, account, canale, lurk, pollo`, e `js/ritorno.js` è il primo e
+>   **non** è differito;
+> - **§6.1** — `config.lurk` non ha più `clientId` né `urlRitorno`, che sono passati a
+>   `config.account`; ha invece `attivo`, `tieniSchermoAcceso`, `oreMax`, `messaggioAttivo` e
+>   `frasi`;
+> - **§6.2** — `lurk.entra`, `lurk.esci` e `lurk.collegato` sono diventati `account.*`; sono nate
+>   `lurk.chiuso`, `lurk.notaAccount`, `lurk.preavviso` e `lurk.invito`;
+> - **§6.3** — il gruppo `lurk` sta fra **`account`** e `pollo`, non fra `diretta` e `pollo`:
+>   l'ordine della pagina è rimasto quello, perché il profilo sta in cima alla sezione «Diretta».
+>
+> L'invariante del §6.4 invece **non è cambiata**, ha solo cambiato nome: senza profilo del sito
+> il messaggio in chat resta spento comunque (`motivo: 'senzaAccount'`, prima `senzaClientId`).
+> Il collaudo la verifica in tutte e due le direzioni.
+
 ---
 
 ## 0. Cosa si costruisce, e cosa no
@@ -199,7 +222,8 @@ può rendere illecita una funzione lecita.**
 Twitch non supporta PKCE, e l'authorization code richiede un client secret, che richiederebbe un
 backend. Resta l'**implicit grant** (l'app va registrata come *confidential*; il secret viene
 generato e **non si usa mai**, non si scrive da nessuna parte, non esiste un campo per lui nello
-schema e non deve esistere).
+schema e non deve esistere). **Vale per il browser**: per il server locale del CMS c'e la
+deroga del §4.6.
 
 Obblighi, tutti non negoziabili:
 
@@ -236,6 +260,42 @@ chi si è collegato: `broadcaster_id` è un parametro della richiesta, non un vi
 
 Per questo il blocco B **nasce spento** (`clientId` vuoto) e per questo l'integratore aggiunge
 una **Content-Security-Policy** in `modelli/parziali/testa.html`.
+
+### 4.6 Deroga: il client secret sul server locale
+
+Il §4.3 dice che il client secret «viene generato e **non si usa mai**, non si scrive da nessuna
+parte, non esiste un campo per lui nello schema e non deve esistere». Quella frase **resta valida
+per intero nel contesto in cui è stata scritta**, che è il browser: nella pagina un secret sarebbe
+un secret regalato al primo che passa, e nessuna delle righe qui sotto lo cambia.
+
+La deroga riguarda un contesto che nel §4.3 non esisteva ancora: il **server locale del CMS**, che
+gira sul computer di chi amministra e che non si carica online. Da lì, alla pubblicazione,
+`server/lib/twitch.js` prende un **app token** (`grant_type=client_credentials`) per chiedere a
+Twitch il titolo dell'ultima diretta e scriverlo in `contenuti.json`.
+
+Perché è una cosa diversa, punto per punto:
+
+- **Non è il token di nessuna persona.** Un app token non appartiene a un utente, non può leggere
+  niente di privato e **non può scrivere in chat**: il rischio del §4.5 non si applica.
+- **Non passa dal browser.** Il secret sta in `server/dati/twitch.json`, accanto alla password del
+  pannello. Non è nello schema, non è in `contenuti.json`, non è in nessuno dei tre file generati.
+  Il collaudo lo verifica: *«il client secret non finisce mai nei file generati»*, sezione 9.
+- **Non è nel controllo di versione.** `.gitignore` esclude `server/dati/twitch.json`, e anche
+  questo è una prova del collaudo, non una promessa.
+- **È facoltativo.** Senza quel file il collegamento è semplicemente spento e il campo *Ultima
+  diretta* torna a essere una casella scritta a mano: nessun errore, nessun avviso, nessun
+  degrado del sito pubblicato.
+- **Non può rompere una pubblicazione.** `aggiornaUltimaDiretta()` non lancia mai e non svuota mai
+  il valore esistente: rete assente, credenziali sbagliate o Twitch giù producono un resoconto,
+  non un fallimento.
+
+Con la stessa deroga entra `node:https`, che il CONTRATTO §0 non elencava fra i moduli interni
+ammessi. È la stessa famiglia di `node:http`, che il server usa già; l'alternativa era `fetch`,
+che su Node 18 — il minimo dichiarato dal progetto — stampa un avviso di funzione sperimentale a
+ogni pubblicazione.
+
+Resta vietato tutto il resto: nessun secret nello schema, nessun secret nel pannello, nessuna
+chiamata a Twitch dal sito pubblicato che non sia quella del §4.4 col token dell'utente.
 
 ---
 

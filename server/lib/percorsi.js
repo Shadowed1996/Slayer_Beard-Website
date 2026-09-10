@@ -50,6 +50,10 @@ function calcola(radice) {
     server: path.join(radice, 'server'),
     dati: path.join(radice, 'server', 'dati'),
     auth: path.join(radice, 'server', 'dati', 'auth.json'),
+    // Client ID e secret dell'app Twitch usata alla pubblicazione. Sta
+    // accanto alla password del pannello perche e la stessa categoria di
+    // cosa: un segreto locale, che non esce mai da questo computer.
+    twitch: path.join(radice, 'server', 'dati', 'twitch.json'),
     backup: path.join(radice, 'server', 'backup'),
     modelloDati: path.join(radice, 'server', 'modelli', 'dati.js.tpl')
   };
