@@ -732,7 +732,91 @@ eccezioni del blocco, oppure spegnerlo su questa pagina.
 
 ---
 
-## 14. Il pollo
+## 14. Le clip
+
+In fondo alla sezione «La diretta» del sito, sotto al riquadro della modalità
+lurk, può comparire una griglia con **le clip più viste del canale**: anteprima,
+durata, quante volte è stata guardata, quando, e il nome di chi l'ha ritagliata.
+Le impostazioni stanno nella sezione **Le clip** del pannello, fra *Il pollo* e
+*La settimana*.
+
+**Di serie è spenta.**
+
+### Le clip non le scegli tu, e non è un limite
+
+Le clip le ritaglia chi guarda, e Twitch sa quali sono state viste di più: la
+vetrina prende quelle, in quell'ordine, e si aggiorna **da sola a ogni
+Pubblica**. Non c'è un elenco da compilare e non c'è niente da tenere
+aggiornato — che è esattamente il motivo per cui esiste, invece di essere
+l'ennesimo campo che invecchia.
+
+> **Serve il collegamento con Twitch.** È lo stesso del capitolo 12, quello che
+> tiene fresca «Ultima diretta»: `node server/imposta-twitch.js`. Senza, puoi
+> accendere l'interruttore quanto vuoi ma sul sito non compare niente, perché
+> non c'è niente da mostrare. Se ti sembra di aver acceso tutto e non vedi la
+> vetrina, comincia da lì.
+
+### I campi, uno per uno
+
+**Mostra le clip** — l'interruttore principale. Spento, la vetrina non compare
+per nessuno, il resto della sezione non ha effetto, e alla pubblicazione non
+viene chiesto niente a Twitch.
+
+**Quante clip mostrare** — da 1 a 12. Sei è un buon numero: due righe da tre sui
+monitor larghi, una colonna sul telefono. Se lo abbassi, la vetrina si accorcia
+subito, senza aspettare il prossimo giro.
+
+**Fra le clip di quale periodo** — quattro scelte, e la differenza conta:
+
+| Periodo | Cosa ottieni |
+|---|---|
+| Ultima settimana | Cambia in continuazione. Nelle settimane fiacche può restare vuota, e allora la vetrina sparisce. |
+| Ultimo mese | Il compromesso: cambia spesso e quasi mai resta vuota. |
+| Ultimo anno | Cambia poco, ma sono le clip che valgono. |
+| Da sempre | Sempre piena, sempre uguale. La memoria storica del canale. |
+
+Se Twitch non trova nessuna clip nel periodo scelto, le clip che c'erano
+**restano**: non ti ritrovi la vetrina svuotata perché è stata una settimana
+tranquilla.
+
+**Occhiello, titolo e riga di presentazione** — le tre righe sopra alla griglia,
+come in ogni altra sezione. La riga di presentazione può restare vuota.
+
+**Le tre parole delle card** — quella che descrive il link per chi non vede lo
+schermo («Guarda la clip»), quella dopo il numero delle visualizzazioni, e
+quella prima del nome di chi ha ritagliato la clip («clip di»).
+
+### Perché non c'è nel menu laterale
+
+Il menu del sito ha sei voci, e sul telefono diventa la barra in basso: sei
+etichette ci stanno anche su uno schermo da 320 px, la settima no. Le clip sono
+l'archivio di quello che succede nel video lì sopra, quindi stanno dentro la
+stessa sezione «La diretta» invece di chiederne una tutta loro. Chi scende la
+pagina le trova; il menu resta leggibile su qualunque telefono.
+
+### Quando qualcosa non va
+
+**Ho acceso l'interruttore e non compare niente**
+Nell'ordine: hai dato `node server/imposta-twitch.js`? Hai **pubblicato** dopo
+aver acceso l'interruttore? Il canale ha davvero delle clip nel periodo scelto?
+Prova ad allargare il periodo a «da sempre»: se compaiono, era quello.
+
+**Le card ci sono ma le immagini no**
+Twitch serve le anteprime da due indirizzi noti. Se una clip ha l'anteprima
+altrove, il server la scarta e te lo scrive alla pubblicazione — la card resta,
+col suo fondo scuro, e non è un guasto. Se invece **nessuna** immagine si vede,
+di solito è l'hosting che aggiunge una propria Content-Security-Policy più
+stretta di quella della pagina: vanno permessi `clips-media-assets2.twitch.tv` e
+`clips-media-assets.twitch.tv` in `img-src`. È lo stesso problema dell'avatar
+della tessera, un capitolo più su.
+
+**Le clip sono vecchie**
+Si aggiornano a ogni **Pubblica**, non da sole. Se non pubblichi da un mese, la
+vetrina ha un mese.
+
+---
+
+## 15. Il pollo
 
 Accanto al player, nella sezione «La diretta», c'è la mascotte: un pollo che fa
 da bottone per aprire la chat e che ogni tanto dice una frase in un fumetto.
@@ -795,7 +879,7 @@ scrive»* non dovrebbero dare per certo che il messaggio sia stato inviato.
 
 ---
 
-## 15. Aspetto: colori, caratteri e forma
+## 16. Aspetto: colori, caratteri e forma
 
 La sezione **Aspetto**, in fondo alla colonna, cambia il sito **intero** in una
 volta: non è la sezione di una pagina, è la pelle di tutte.
@@ -878,7 +962,7 @@ niente. E come sempre: finché non premi Pubblica, il sito vero è quello di pri
 
 ---
 
-## 16. Se qualcosa va storto: tornare indietro
+## 17. Se qualcosa va storto: tornare indietro
 
 Ogni volta che pubblichi, il server mette da parte una **copia di sicurezza** del
 sito com'era prima: la pagina, i dati, il foglio dei colori e i contenuti.
@@ -901,7 +985,7 @@ Le copie conservate sono le venti più recenti; le più vecchie spariscono da so
 
 ---
 
-## 17. Scorciatoie da tastiera
+## 18. Scorciatoie da tastiera
 
 | Tasti | Cosa fanno |
 |---|---|
@@ -917,7 +1001,7 @@ sempre un bordo azzurro ben visibile.
 
 ---
 
-## 18. Quando qualcosa non funziona
+## 19. Quando qualcosa non funziona
 
 **«Non riesco a contattare il server»**
 La finestra nera con `node server/server.js` è stata chiusa o il computer è stato
@@ -952,7 +1036,7 @@ solo con Pubblica.
 
 **Il testo non si legge più**
 Vai in *Aspetto* e guarda il rapporto di contrasto dei tre colori del testo
-(capitolo 15). Se non è almeno **AA**, alza il contrasto o premi *Ripristina i
+(capitolo 16). Se non è almeno **AA**, alza il contrasto o premi *Ripristina i
 colori di partenza*.
 
 **Il pollo non dice niente / non compare**
@@ -989,13 +1073,13 @@ niente, il sito pubblicato non è stato toccato.
 poi riprova.
 
 **Ho fatto un disastro**
-Vai in *Copie di sicurezza* e ripristina la copia di prima (capitolo 16). Se il
+Vai in *Copie di sicurezza* e ripristina la copia di prima (capitolo 17). Se il
 disastro non è ancora stato pubblicato, basta ricaricare la pagina del pannello
 senza salvare: le modifiche non salvate spariscono e torna la bozza di prima.
 
 ---
 
-## 19. Riassunto in cinque righe
+## 20. Riassunto in cinque righe
 
 1. `node server/server.js`, poi `http://localhost:4173/pannello/`.
 2. Trova il campo (`Ctrl+K`) e cambia quello che ti serve.

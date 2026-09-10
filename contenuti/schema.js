@@ -48,6 +48,18 @@ const TIPI = ['testo', 'testolungo', 'url', 'email', 'numero', 'immagine',
 // non devono comparire fra quelle "scoperte".
 const SISTEMA = ['versione', 'aggiornatoIl'];
 
+// I rami che NON si scrivono a mano: li riempie il server alla
+// pubblicazione, chiedendoli a Twitch (server/lib/twitch.js). Non hanno un
+// campo nello schema, e non devono averlo: un campo nel pannello sarebbe
+// una casella che la pubblicazione successiva riscrive sotto le dita di chi
+// l'ha appena compilata. La copertura li salta invece di segnalarli come
+// chiavi scoperte, ed e l'unica eccezione ammessa alla regola «lo schema
+// copre esattamente contenuti.json».
+//
+// `config.ultimaDiretta` NON sta qui: quello resta un campo scritto a mano,
+// che il server si limita a tenere aggiornato se il collegamento c'e.
+const GENERATI = ['config.clip.voci'];
+
 // Le icone disponibili sono i file in modelli/icone/: se se ne aggiunge una
 // si aggiunge qui il nome, e la generazione la trova da sola.
 const ICONE_SOCIAL = ['twitch', 'youtube', 'instagram', 'tiktok'];
@@ -288,6 +300,39 @@ const gruppi = [
         aiuto: 'Le dice quando il visitatore accende il lurk qui sopra. Se la modalità lurk è spenta, questo elenco non viene mai usato.' },
       { chiave: 'config.pollo.frasi.offline', etichetta: 'Frasi — quando il canale è spento', tipo: 'elencoTesti',
         aiuto: 'Meglio non scriverci dentro giorni e orari fissi: se cambi le dirette qui sotto, queste frasi resterebbero indietro.' }
+    ]
+  },
+
+  // La vetrina delle clip sta in fondo alla sezione «diretta», sotto il
+  // riquadro del lurk: quindi il gruppo viene dopo «pollo» e prima della
+  // «settimana», come tutto il resto segue l'ordine in cui si scende.
+  {
+    id: 'clip',
+    titolo: 'Le clip',
+    descrizione: 'La vetrina dei momenti migliori, in fondo alla sezione «La diretta». Le clip le prende il server da Twitch a ogni pubblicazione: qui si decide quante, di che periodo, e come si presenta.',
+    campi: [
+      { chiave: 'config.clip.attivo', etichetta: 'Mostra le clip', tipo: 'interruttore',
+        aiuto: 'Spento, la vetrina non compare per nessuno, il resto di questo gruppo non ha effetto e alla pubblicazione non viene chiesto niente a Twitch.' },
+      { chiave: 'config.clip.quante', etichetta: 'Quante clip mostrare', tipo: 'numero', min: 1, max: 12,
+        aiuto: 'Da 1 a 12. Sei è un buon numero: due righe da tre sui monitor larghi, una colonna sul telefono.' },
+      { chiave: 'config.clip.periodo', etichetta: 'Fra le clip di quale periodo', tipo: 'scelta',
+        opzioni: [
+          { valore: '7', etichetta: 'Ultima settimana' },
+          { valore: '30', etichetta: 'Ultimo mese' },
+          { valore: '365', etichetta: 'Ultimo anno' },
+          { valore: 'sempre', etichetta: 'Da sempre' }
+        ],
+        aiuto: 'Twitch le ordina per visualizzazioni, dalla più vista in giù. Periodo stretto = vetrina che cambia spesso ma può restare vuota nelle settimane fiacche; «da sempre» = sempre piena, ma sempre uguale.' },
+      { chiave: 'clip.occhiello', etichetta: 'Occhiello', tipo: 'testo', max: 40 },
+      { chiave: 'clip.titolo', etichetta: 'Titolo della vetrina', tipo: 'testo', max: 60 },
+      { chiave: 'clip.testo', etichetta: 'Riga di presentazione', tipo: 'ricco', max: 220,
+        aiuto: 'Una riga sotto al titolo. Può restare vuota.' },
+      { chiave: 'clip.guarda', etichetta: 'Cosa fa il link della card, per chi non la vede', tipo: 'testo', max: 40,
+        aiuto: 'Lo leggono i lettori di schermo, seguito dal titolo della clip: scrivi l\'azione («Guarda la clip»), non «clicca qui».' },
+      { chiave: 'clip.visualizzazioni', etichetta: 'Parola per le visualizzazioni', tipo: 'testo', max: 30,
+        aiuto: 'Compare dopo il numero: «1.2k visualizzazioni».' },
+      { chiave: 'clip.di', etichetta: 'Parola prima del nome di chi l\'ha creata', tipo: 'testo', max: 20,
+        aiuto: 'Le clip le ritaglia chi guarda, non chi trasmette: questo dice di chi è il merito. Per esempio «clip di».' }
     ]
   },
 
@@ -616,6 +661,8 @@ function verificaCopertura(contenuti) {
 
   for (const chiave of chiaviDeiContenuti(contenuti)) {
     if (dichiarate.has(chiave)) { continue; }
+    // I rami riempiti dal server non hanno un campo, ed e voluto.
+    if (GENERATI.indexOf(chiave) !== -1) { continue; }
     // Un campo che descrive un ramo intero (config.orari) copre le sue foglie.
     let coperta = false;
     if (chiave.startsWith('config.')) {
@@ -635,7 +682,13 @@ function verificaCopertura(contenuti) {
     }
   }
 
+  for (const chiave of GENERATI) {
+    if (dichiarate.has(chiave)) {
+      problemi.push({ tipo: 'doppia', chiave: chiave, messaggio: 'La chiave "' + chiave + '" la riempie il server a ogni pubblicazione: un campo nel pannello sarebbe una casella riscritta sotto le dita di chi la compila.' });
+    }
+  }
+
   return problemi;
 }
 
-module.exports = { gruppi, TIPI, SISTEMA, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura };
+module.exports = { gruppi, TIPI, SISTEMA, GENERATI, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura };

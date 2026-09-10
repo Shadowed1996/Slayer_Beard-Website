@@ -15,10 +15,15 @@
      Costa poco: un foglio di stile iniettato non può leggere un token, e la difesa che serve
      contro il furto è quella sugli script.
 
-     `img-src` ha un dominio esterno solo, static-cdn.jtvnw.net: è dove Twitch tiene le
-     immagini di profilo, e serve alla tessera dell'account — l'avatar di chi si è collegato,
-     accanto al suo nome. È un host di sole immagini: non può eseguire niente, e nessun'altra
-     cosa della pagina viene da lì.
+     `img-src` ha tre domini esterni, e tutti e tre sono host di SOLE IMMAGINI: non possono
+     eseguire niente, e nessun'altra cosa della pagina viene da lì.
+     - static-cdn.jtvnw.net è dove Twitch tiene le immagini di profilo, e serve alla tessera
+       dell'account — l'avatar di chi si è collegato, accanto al suo nome;
+     - clips-media-assets2.twitch.tv e clips-media-assets.twitch.tv servono le anteprime delle
+       clip. Sono due perché Twitch non ha mai migrato del tutto le clip vecchie sul nome nuovo.
+       L'elenco è ripetuto in server/lib/twitch.js (HOST_ANTEPRIME), che scarta le anteprime su
+       host diversi invece di stamparle e lasciarle bloccare in silenzio: un'immagine che la CSP
+       ferma non lo dice a nessuno.
 
      `frame-ancestors` NON c'è: in un <meta> viene ignorato per specifica, e va messo come
      intestazione HTTP dall'hosting. Stessa cosa per report-uri. -->
@@ -27,7 +32,7 @@
   script-src 'self' https://embed.twitch.tv;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src https://fonts.gstatic.com;
-  img-src 'self' data: https://static-cdn.jtvnw.net;
+  img-src 'self' data: https://static-cdn.jtvnw.net https://clips-media-assets2.twitch.tv https://clips-media-assets.twitch.tv;
   frame-src https://player.twitch.tv https://www.twitch.tv https://embed.twitch.tv;
   connect-src 'self' https://api.twitch.tv https://id.twitch.tv wss://irc-ws.chat.twitch.tv;
   base-uri 'self';

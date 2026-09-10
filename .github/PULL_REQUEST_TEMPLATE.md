@@ -32,7 +32,7 @@ node server/server.js
 
 ## Checklist
 
-- [ ] `node server/autotest.js` passa per intero (128 prove su 128 su `main`)
+- [ ] `node server/autotest.js` passa per intero (141 prove su 141 su `main`)
 - [ ] `node server/genera.js` si chiude senza errori e senza avvertimenti nuovi
 - [ ] Non ho modificato a mano i file generati: `index.html`, `js/dati.js`, `css/tema.css`
 - [ ] La PR tratta **un solo** argomento

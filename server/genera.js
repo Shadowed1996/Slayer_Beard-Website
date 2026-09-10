@@ -41,7 +41,10 @@ async function esegui() {
   // bisogno della rete e questa riga, e tenerla fuori significa che una
   // generazione senza collegamento a Twitch e identica a prima.
   const daTwitch = await twitch.aggiornaUltimaDiretta();
-  if (daTwitch.stato !== 'spento') { console.log('  ' + twitch.racconta(daTwitch)); console.log(''); }
+  if (daTwitch.stato !== 'spento') { console.log('  ' + twitch.racconta(daTwitch)); }
+  const leClip = await twitch.aggiornaClip();
+  if (leClip.stato !== 'spento') { console.log('  ' + twitch.raccontaClip(leClip)); }
+  if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento') { console.log(''); }
 
   const esito = costruisci.genera();
 

@@ -1,0 +1,51 @@
+<!-- La vetrina delle clip, in fondo alla sezione «diretta».
+
+     Non ha una voce nel binario, e non e una dimenticanza: css/base.css
+     stringe il dock finche SEI etichette ci stanno anche a 320px, e la
+     settima le farebbe traboccare. Le clip sono l'archivio di quello che
+     succede nel monitor qui sopra, quindi stanno dentro la stessa sezione
+     invece di chiederne una propria — e il binario resta a sei voci.
+
+     Tutto statico: nessun id e contratto con nessun JavaScript, e senza JS
+     questa parte funziona per intero. L'elenco lo riempie la generazione,
+     da config.clip.voci, che a sua volta arriva da server/lib/twitch.js.
+     Stampata solo se c'e almeno una clip: il ramo `clip.attivo` del
+     contesto e gia «acceso E non vuoto» (server/lib/costruisci.js). -->
+<div class="clip">
+  <div class="clip__testa">
+    <p class="sezione__occhiello">{{clip.occhiello}}</p>
+    <h3 class="clip__titolo">{{clip.titolo}}</h3>
+    <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
+    <p class="clip__testo">{{{clip.testo}}}</p>
+  </div>
+
+  <ul class="clip__griglia">
+    {{#ogni clip.voci}}
+    <li class="clip__voce">
+      <!-- Il link avvolge tutta la card: il bersaglio grosso è il punto,
+           su un telefono. aria-label unisce l'azione al titolo, perché
+           «Guarda la clip» ripetuto sei volte non distingue niente. -->
+      <a class="clip__card" href="{{url}}" target="_blank" rel="noopener" aria-label="{{clip.guarda}}: {{titolo}}">
+        <span class="clip__anteprima">
+          <!-- L'anteprima è un di più e può mancare: la card sta in piedi
+               lo stesso, col suo fondo. alt vuoto perché il titolo qui
+               sotto dice già di che clip si tratta: descriverla due volte
+               è rumore per chi ascolta. loading="lazy" perché la vetrina
+               sta in fondo alla sezione e quasi sempre fuori schermo. -->
+          {{#se anteprima}}<img class="clip__immagine" src="{{anteprima}}" alt="" loading="lazy" decoding="async" width="480" height="272">{{/se}}
+          <span class="clip__durata">{{durata}}</span>
+        </span>
+
+        <span class="clip__corpo">
+          <span class="clip__nome">{{titolo}}</span>
+          <span class="clip__dati">
+            <span class="clip__viste">{{visualizzazioni}} {{clip.visualizzazioni}}</span>
+            {{#se quando}}<span class="clip__quando">{{quando}}</span>{{/se}}
+          </span>
+          {{#se firma}}<span class="clip__firma">{{firma}}</span>{{/se}}
+        </span>
+      </a>
+    </li>
+    {{/ogni}}
+  </ul>
+</div>

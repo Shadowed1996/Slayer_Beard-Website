@@ -93,6 +93,16 @@
        raggiungibili col Tab che non rispondono a niente. -->
   {{#se config.lurk.attivo}}{{> parziali/lurk}}{{/se}}
 
+  <!-- La vetrina delle clip: l'archivio di quello che succede nel monitor
+       qui sopra, e per questo sta dentro questa sezione invece di
+       chiederne una propria — il binario resta a sei voci, che è il
+       numero per cui css/base.css è tarato a 320px.
+
+       `clip.attivo` è già «acceso E almeno una clip»: un titolo con sotto
+       il vuoto è peggio di nessun titolo, e la distinzione la fa la
+       generazione invece di lasciarla al modello. -->
+  {{#se clip.attivo}}{{> parziali/clip}}{{/se}}
+
   <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
   <p class="diretta__nota">{{{diretta.nota}}}</p>
 </section>

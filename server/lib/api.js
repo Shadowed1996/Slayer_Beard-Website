@@ -222,6 +222,7 @@ async function rottaScriviContenuti(req, res) {
  */
 async function rottaPubblica(req, res) {
   const daTwitch = await twitch.aggiornaUltimaDiretta();
+  const leClip = await twitch.aggiornaClip();
   const esito = costruisci.genera();
   // `controlli` sono avvertimenti d'insieme, non errori: la pubblicazione e
   // riuscita comunque, e il pannello li mostra dopo invece di trattarli come
@@ -229,7 +230,8 @@ async function rottaPubblica(req, res) {
   json(res, 200, {
     ok: true, backup: esito.backup, durataMs: esito.durataMs,
     scritti: esito.scritti, controlli: esito.controlli,
-    twitch: { stato: daTwitch.stato, messaggio: twitch.racconta(daTwitch) }
+    twitch: { stato: daTwitch.stato, messaggio: twitch.racconta(daTwitch) },
+    clip: { stato: leClip.stato, messaggio: twitch.raccontaClip(leClip) }
   });
 }
 

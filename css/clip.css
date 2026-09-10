@@ -1,0 +1,169 @@
+/* =====================================================================
+   clip.css — la vetrina delle clip, in fondo alla sezione «diretta».
+
+   Nessun valore esadecimale qui dentro: i colori sono i token di
+   tokens.css, riscritti da tema.css (CONTRATTO §3). Il foglio si carica
+   dopo diretta.css e prima di pollo.css.
+
+   La forma e quella del resto della sala regia: rettangoli con un bordo
+   da 1px, etichette in monospazio, e un solo accento acceso. Le card non
+   sono ombreggiate e non si sollevano al passaggio del mouse — quel
+   gesto appartiene ai volantini, non a una strumentazione.
+   ===================================================================== */
+
+.clip {
+  margin-block-start: var(--passo-4);
+  padding-block-start: var(--passo-3);
+  border-block-start: 1px solid var(--linea);
+}
+
+.clip__testa {
+  margin-block-end: var(--passo-3);
+  max-inline-size: 62ch;
+}
+
+.clip__titolo {
+  margin-block: var(--passo) 0;
+  font-family: var(--font-titolo);
+  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+  line-height: 1.15;
+  color: var(--testo);
+}
+
+.clip__testo {
+  margin-block-start: var(--passo);
+  color: var(--testo-medio);
+}
+
+/* La griglia si riempie da sé: nessun conteggio scritto nel CSS, così
+   «quante clip mostrare» resta una scelta del pannello e non un numero da
+   tenere d'accordo in due posti. auto-fill e non auto-fit: con due sole
+   clip devono restare larghe quanto le altre, non spalmarsi sulla riga. */
+.clip__griglia {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: var(--passo-2);
+}
+
+/* Sotto i 520px una colonna sola: due card da 115px non mostrerebbero né
+   l'anteprima né il titolo per intero. */
+@media (max-width: 519.98px) {
+  .clip__griglia { grid-template-columns: 1fr; }
+}
+
+/* La voce e il contenitore che la griglia allunga fino all altezza della
+   riga; la card ci si distende dentro. Senza questo passaggio le card di
+   una stessa riga finirebbero a altezze diverse: un block-size in
+   percentuale non si risolve contro un genitore alto 'auto'. */
+.clip__voce { display: flex; }
+
+.clip__card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  border: 1px solid var(--linea);
+  border-radius: var(--raggio-s);
+  background: var(--pannello);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.clip__card:hover,
+.clip__card:focus-visible {
+  border-color: var(--ciano);
+  background: var(--pannello-2);
+}
+
+/* Il fuoco da tastiera deve vedersi sulla card intera, non sul testo:
+   il link avvolge tutto, ed è tutto il rettangolo a essere il bersaglio. */
+.clip__card:focus-visible {
+  outline: 2px solid var(--ciano);
+  outline-offset: 2px;
+}
+
+/* 16:9 come le anteprime di Twitch (480x272 è quasi esatto). Il rapporto
+   sta qui e non sull'immagine: la riserva anche quando l'immagine manca,
+   così una card senza anteprima è alta come le altre e la griglia non
+   diventa una scalinata. */
+.clip__anteprima {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  background: var(--fondo-2);
+  border-block-end: 1px solid var(--linea);
+}
+
+.clip__immagine {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Stessa forma del badge LIVE del monitor: è la stessa famiglia di cose. */
+.clip__durata {
+  position: absolute;
+  inset-block-end: 6px;
+  inset-inline-end: 6px;
+  padding: 2px 6px;
+  border-radius: var(--raggio-s);
+  background: var(--velo);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--testo);
+}
+
+.clip__corpo {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--passo-2);
+}
+
+/* Due righe e poi i puntini: i titoli delle clip sono scritti da chi le
+   ritaglia e possono essere lunghissimi. Il titolo intero resta nell'aria
+   -label del link, quindi chi ascolta non perde niente. */
+.clip__nome {
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--testo);
+  /* I titoli li scrive chi ritaglia la clip: capita che ci infili un
+     indirizzo intero o una parola di quaranta lettere. Senza questo, a
+     320px quella parola sfonda la card e con lei la pagina. */
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.clip__dati {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--passo);
+  margin-block-start: auto;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: var(--testo-tenue);
+}
+
+.clip__viste { color: var(--testo-medio); }
+
+.clip__firma {
+  font-size: 0.78rem;
+  color: var(--testo-tenue);
+}
+
+/* Chi ha chiesto meno animazioni non deve vedere nemmeno questa. */
+@media (prefers-reduced-motion: reduce) {
+  .clip__card { transition: none; }
+}

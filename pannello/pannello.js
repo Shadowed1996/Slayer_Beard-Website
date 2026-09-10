@@ -1468,6 +1468,19 @@ async function pubblica() {
       });
     }
 
+    /* Le clip, con la stessa regola: si tace quando non c'è niente da
+       dire — sezione spenta o vetrina identica a prima — e si insiste
+       solo quando il server ha provato e non ce l'ha fatta. */
+    const leClip = risposta && risposta.clip;
+    if (leClip && leClip.messaggio && leClip.stato !== 'spento' && leClip.stato !== 'invariato') {
+      const andataMale = leClip.stato === 'fallito' || leClip.stato === 'vuoto' || leClip.stato === 'senzaCanale';
+      avviso(leClip.messaggio, {
+        tipo: andataMale ? 'info' : 'ok',
+        durata: andataMale ? 0 : 6000,
+        titolo: andataMale ? 'Clip non aggiornate' : 'Clip aggiornate'
+      });
+    }
+
     // Il server non è tenuto a rimandare la data: intanto si segna adesso,
     // e il prossimo caricamento dei contenuti la corregge se serve.
     stato.statoServer = {

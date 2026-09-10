@@ -207,7 +207,11 @@ function controllaValore(campo, valore, aggiungi, chiave) {
     return;
   }
   if (campo.tipo === 'scelta') {
-    const opzioni = campo.opzioni || [];
+    // Un'opzione puo essere una stringa secca ('twitch') oppure una coppia
+    // { valore, etichetta }, che serve quando quello che si salva non e
+    // leggibile da solo: '30' vuol dire «ultimo mese», e nel pannello deve
+    // esserci scritto cosi. Qui conta il valore, li conta l'etichetta.
+    const opzioni = (campo.opzioni || []).map((o) => (o && typeof o === 'object' ? String(o.valore) : String(o)));
     if (opzioni.indexOf(testo) === -1) {
       aggiungi('«' + etichetta + '» può valere solo: ' + opzioni.join(', ') + '.');
     }

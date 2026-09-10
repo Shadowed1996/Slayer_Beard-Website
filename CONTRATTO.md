@@ -6,9 +6,13 @@
 > modificabile e il testo ricco:
 >
 > - §6 — i file generati sono **tre**, non due: `index.html`, `js/dati.js` e `css/tema.css`;
-> - §7 — i gruppi dello schema sono dodici: `meta, marchio, deck, diretta, pollo, settimana,
->   chi, supporto, saluti, piede, canale, aspetto`, e ai tipi di campo se ne sono aggiunti
->   quattro (`ricco`, `colore`, `font`, `interruttore`);
+> - §7 — i gruppi dello schema sono **quindici**: `meta, marchio, deck, diretta, account, lurk,
+>   pollo, clip, settimana, chi, supporto, saluti, piede, canale, aspetto` — `account` e `lurk`
+>   sono arrivati con la terza fase, `clip` dopo — e ai tipi di campo se ne sono aggiunti
+>   quattro (`ricco`, `colore`, `font`, `interruttore`). Vale ancora che lo schema copre
+>   esattamente `contenuti.json`, con **una** eccezione dichiarata: i rami che riempie il server
+>   a ogni pubblicazione (`GENERATI` in `contenuti/schema.js`), che non hanno un campo perché
+>   una casella riscritta a ogni Pubblica sarebbe peggio di nessuna casella;
 > - §8 — l'API ha due rotte in più, `POST /api/anteprima` e `POST /api/tema`, e la porta si
 >   cambia con `SB_PORTA` (qui sotto è scritto `SB_PORT`, che non è mai esistito nel codice).
 

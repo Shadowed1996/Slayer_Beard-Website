@@ -404,7 +404,7 @@ async function proveSchema(contenutiVeri) {
     // Prima i gruppi nell ordine in cui si incontrano scendendo, poi i due
     // che non stanno in nessun punto della pagina perche valgono ovunque:
     // "canale" (i dati tecnici) e "aspetto" (colori e font).
-    const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'settimana', 'chi',
+    const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'settimana', 'chi',
       'supporto', 'saluti', 'piede', 'canale', 'aspetto'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
@@ -1712,6 +1712,230 @@ async function proveTwitch(costruisci, archivio) {
   });
 }
 
+/* --- 10. LA VETRINA DELLE CLIP --------------------------------------- */
+
+/*
+   La vetrina e interamente statica: nessun id e contratto con nessun
+   JavaScript, e senza JS funziona per intero. Quello che va tenuto fermo
+   e quindi tutto in generazione — chi decide se stampare, quante, e come
+   si formattano i numeri — piu una cosa che non si vede e che si rompe in
+   silenzio: gli host delle anteprime devono essere gli stessi nel modulo
+   che le filtra e nella Content-Security-Policy che le lascia passare.
+*/
+async function proveClip(contenutiVeri, costruisci, archivio) {
+  apriSezione('10. La vetrina delle clip');
+
+  const clipFinta = (aggiunte) => Object.assign({
+    id: 'abc', titolo: 'Una clip', url: 'https://clips.twitch.tv/abc',
+    anteprima: 'https://clips-media-assets2.twitch.tv/abc-preview-480x272.jpg',
+    durataSec: 32, visualizzazioni: 1234, creataIl: '2026-08-03T20:11:00Z', autore: 'Qualcuno'
+  }, aggiunte || {});
+
+  /** Il ramo clip del contesto, su una config.clip di prova. */
+  const ramo = (clip) => {
+    const documento = JSON.parse(JSON.stringify(contenutiVeri));
+    if (clip === undefined) { delete documento.config.clip; } else { documento.config.clip = clip; }
+    return costruisci.clipDi(documento.config, documento.testi);
+  };
+
+  const accesa = (aggiunte) => Object.assign({ attivo: true, quante: 6, periodo: '30', voci: [clipFinta()] }, aggiunte || {});
+
+  await prova('la vetrina e accesa solo se c e l interruttore E almeno una clip', () => {
+    esigiUguale(ramo(accesa()).attivo, true, 'interruttore acceso e una clip');
+    esigiUguale(ramo(accesa({ attivo: false })).attivo, false, 'interruttore spento');
+    esigiUguale(ramo(accesa({ voci: [] })).attivo, false, 'nessuna clip');
+    esigiUguale(ramo(accesa({ voci: 'non un elenco' })).attivo, false, 'voci non e un elenco');
+    esigiUguale(ramo(undefined).attivo, false, 'ramo config.clip mancante');
+    // Gli interruttori si confrontano con true, come dappertutto.
+    esigiUguale(ramo(accesa({ attivo: 'si' })).attivo, false, 'la stringa non accende niente');
+  });
+
+  await prova('una clip senza indirizzo o senza titolo viene scartata', () => {
+    // Sono le due cose senza cui la card sarebbe un rettangolo muto che non
+    // porta da nessuna parte. Il resto e tutto facoltativo.
+    const voci = [clipFinta(), clipFinta({ url: '' }), clipFinta({ titolo: '   ' }), clipFinta({ titolo: 'Buona' })];
+    const fuori = ramo(accesa({ voci: voci })).voci;
+    esigiUguale(fuori.length, 2, 'clip rimaste');
+    esigiUguale(fuori.map((v) => v.titolo).join('|'), 'Una clip|Buona', 'quali sono rimaste');
+  });
+
+  await prova('senza anteprima e senza autore la card resta, ma senza quei pezzi', () => {
+    const solo = ramo(accesa({ voci: [clipFinta({ anteprima: '', autore: '', creataIl: '' })] })).voci[0];
+    esigiUguale(solo.anteprima, '', 'anteprima');
+    esigiUguale(solo.autore, '', 'autore');
+    // La firma e gia decisa qui: il modello non sa fare «se c e l autore».
+    esigiUguale(solo.firma, '', 'firma');
+    esigiUguale(solo.quando, '', 'data illeggibile');
+    esigi(!!solo.titolo && !!solo.url, 'la card e sopravvissuta');
+  });
+
+  await prova('«quante» vale anche in resa, non solo alla richiesta', () => {
+    // Chi abbassa il numero dal pannello si aspetta di vederne meno subito,
+    // senza dover ripescare le clip da Twitch.
+    const dieci = [];
+    for (let i = 0; i < 10; i++) { dieci.push(clipFinta({ id: 'c' + i, titolo: 'Clip ' + i })); }
+    esigiUguale(ramo(accesa({ quante: 3, voci: dieci })).voci.length, 3, 'tre');
+    esigiUguale(ramo(accesa({ quante: 99, voci: dieci })).voci.length, 10, 'sopra il tetto restano quelle che ci sono');
+    esigiUguale(ramo(accesa({ quante: 0, voci: dieci })).voci.length, 1, 'zero viene riportato a uno');
+    esigiUguale(ramo(accesa({ quante: 'sei', voci: dieci })).voci.length, 6, 'parola al posto del numero: sei');
+    const senza = accesa({ voci: dieci });
+    delete senza.quante;
+    esigiUguale(ramo(senza).voci.length, 6, 'chiave mancante: sei');
+  });
+
+  await prova('durata, visualizzazioni e data sono in italiano corrente', () => {
+    const uno = (aggiunte) => ramo(accesa({ voci: [clipFinta(aggiunte)] })).voci[0];
+    esigiUguale(uno({ durataSec: 32 }).durata, '0:32', 'trentadue secondi');
+    esigiUguale(uno({ durataSec: 75 }).durata, '1:15', 'un minuto e un quarto');
+    esigiUguale(uno({ durataSec: 5 }).durata, '0:05', 'i secondi hanno sempre due cifre');
+    esigiUguale(uno({ durataSec: 'tanto' }).durata, '0:00', 'durata illeggibile');
+
+    // Il punto delle migliaia si scrive a mano, senza toLocaleString: una
+    // build di Node senza dati ICU stamperebbe «1,234» e nessuno se ne
+    // accorgerebbe finche non lo legge un italiano.
+    esigiUguale(uno({ visualizzazioni: 7 }).visualizzazioni, '7', 'unita');
+    esigiUguale(uno({ visualizzazioni: 999 }).visualizzazioni, '999', 'sotto il migliaio');
+    esigiUguale(uno({ visualizzazioni: 1234 }).visualizzazioni, '1.234', 'migliaia');
+    esigiUguale(uno({ visualizzazioni: 1234567 }).visualizzazioni, '1.234.567', 'milioni');
+    esigiUguale(uno({ visualizzazioni: -5 }).visualizzazioni, '0', 'niente numeri negativi');
+
+    esigiUguale(uno({ creataIl: '2026-08-03T20:11:00Z' }).quando, '3 agosto 2026', 'data');
+    esigiUguale(uno({ creataIl: '2026-01-31T00:00:00Z' }).quando, '31 gennaio 2026', 'gennaio e il primo mese');
+    esigiUguale(uno({ creataIl: 'ieri' }).quando, '', 'data che non si legge');
+  });
+
+  await prova('a vetrina spenta la pagina non stampa nessuna card', () => {
+    const documento = archivio.leggi();
+    documento.config.clip = accesa({ attivo: false });
+    const html = costruisci.anteprimaDi(documento);
+    esigi(html.indexOf('clip__griglia') === -1, 'la griglia e finita in pagina con la vetrina spenta');
+    esigi(html.indexOf('clip__card') === -1, 'le card sono finite in pagina con la vetrina spenta');
+  });
+
+  await prova('a vetrina accesa le card ci sono, e i valori arrivano protetti', () => {
+    const documento = archivio.leggi();
+    documento.config.clip = accesa({ voci: [
+      clipFinta({ titolo: 'Titolo con & e <b>', autore: 'Tizio' }),
+      clipFinta({ id: 'due', titolo: 'La seconda', anteprima: '' })
+    ] });
+    const html = costruisci.anteprimaDi(documento);
+
+    esigiDentro(html, 'clip__griglia', 'manca la griglia');
+    esigiUguale((html.match(/clip__card/g) || []).length, 2, 'quante card');
+    // Il titolo di una clip lo scrive chi la ritaglia: e testo di terzi, e
+    // deve arrivare in pagina protetto, non interpretato.
+    esigiDentro(html, 'Titolo con &amp; e &lt;b&gt;', 'il titolo non e stato protetto');
+    esigi(html.indexOf('<b>Titolo') === -1, 'il titolo e arrivato in pagina come markup');
+    // La seconda non ha anteprima: una sola <img> in tutta la vetrina.
+    const dentro = html.slice(html.indexOf('clip__griglia'));
+    esigiUguale((dentro.match(/clip__immagine/g) || []).length, 1, 'immagini stampate');
+    esigiDentro(html, '0:32', 'manca la durata');
+    esigiDentro(html, '1.234 visualizzazioni', 'mancano le visualizzazioni');
+  });
+
+  await prova('la vetrina non porta nessuna voce nuova nel binario', () => {
+    // css/base.css e tarato perche SEI etichette ci stiano a 320px: la
+    // settima le farebbe traboccare, e le clip stanno dentro «diretta»
+    // proprio per non chiederla. Se un domani qualcuno aggiunge la voce,
+    // questa prova glielo ricorda prima che lo scopra un telefono.
+    const documento = archivio.leggi();
+    documento.config.clip = accesa();
+    const html = costruisci.anteprimaDi(documento);
+    const nav = html.slice(html.indexOf('binario__nav'), html.indexOf('binario__stato'));
+    esigiUguale((nav.match(/binario__voce/g) || []).length, 6, 'voci nel binario');
+    // E la vetrina sta davvero dentro la sezione della diretta.
+    const diretta = html.slice(html.indexOf('id="diretta"'), html.indexOf('id="settimana"'));
+    esigiDentro(diretta, 'clip__griglia', 'la vetrina non e dentro la sezione «diretta»');
+  });
+
+  await prova('gli host delle anteprime sono gli stessi nel modulo e nella CSP', () => {
+    // E il guasto che non si vede: un host che il modulo accetta ma che la
+    // CSP non conosce produce card senza immagine, e il browser non lo dice
+    // a nessuno tranne che nella console di chi guarda.
+    const documento = archivio.leggi();
+    const html = costruisci.anteprimaDi(documento);
+    // Si legge il contenuto del <meta>, non la pagina intera: sopra alla
+    // CSP c e il commento che la spiega, che nomina img-src e gli host
+    // uno per uno. Cercare nel testo grezzo troverebbe quello, e la prova
+    // passerebbe leggendo la spiegazione invece della regola.
+    const meta = /<meta http-equiv="Content-Security-Policy" content="([\s\S]*?)">/.exec(html);
+    esigi(meta !== null, 'la Content-Security-Policy non c e piu');
+    const csp = meta[1].replace(/\s+/g, ' ');
+    const imgSrc = (csp.match(/img-src[^;]*/) || [''])[0];
+    esigi(!!imgSrc, 'la CSP non ha una direttiva img-src');
+    for (const host of twitch.HOST_ANTEPRIME) {
+      esigiDentro(imgSrc, 'https://' + host, 'img-src non lascia passare ' + host);
+    }
+    // E il contrario: nessun host delle clip in img-src che il modulo non
+    // conosca — sarebbe un permesso concesso e mai usato.
+    for (const pezzo of imgSrc.split(/\s+/)) {
+      if (pezzo.indexOf('clips-media') === -1) { continue; }
+      const host = pezzo.replace(/^https:\/\//, '').replace(/;$/, '');
+      esigi(twitch.HOST_ANTEPRIME.indexOf(host) !== -1, 'la CSP permette ' + host + ', che il modulo non usa');
+    }
+  });
+
+  await prova('config.clip.voci non ha un campo nello schema, ed e voluto', () => {
+    // La riempie il server a ogni pubblicazione: un campo nel pannello
+    // sarebbe una casella riscritta sotto le dita di chi la compila.
+    esigi(schema.GENERATI.indexOf('config.clip.voci') !== -1, 'config.clip.voci non e fra i rami generati');
+    esigi(!schema.campo('config.clip.voci'), 'lo schema ha un campo per config.clip.voci');
+    // E la copertura non se ne lamenta: e l unica eccezione ammessa.
+    const problemi = schema.verificaCopertura(contenutiVeri);
+    esigi(problemi.length === 0, problemi.map((p) => p.messaggio).join(' | '));
+    // Gli altri tre campi invece ci sono, perche quelli si scelgono a mano.
+    for (const chiave of ['config.clip.attivo', 'config.clip.quante', 'config.clip.periodo']) {
+      esigi(!!schema.campo(chiave), 'manca il campo ' + chiave);
+    }
+  });
+
+  await prova('il periodo accetta solo i quattro valori previsti', () => {
+    for (const buono of ['7', '30', '365', 'sempre']) {
+      esigiUguale(convalida.convalidaCampo('config.clip.periodo', buono).length, 0, 'periodo ' + buono);
+    }
+    for (const storto of ['14', 'mese', '', 'SEMPRE']) {
+      esigi(convalida.convalidaCampo('config.clip.periodo', storto).length === 1, 'doveva essere rifiutato: ' + storto);
+    }
+    // I giorni di ogni periodo stanno nel modulo, e devono essere gli stessi
+    // che lo schema offre: un'opzione senza giorni verrebbe ignorata in
+    // silenzio e chiederebbe a Twitch tutt'altro intervallo.
+    const campo = schema.campo('config.clip.periodo');
+    for (const opzione of campo.opzioni) {
+      const valore = typeof opzione === 'object' ? opzione.valore : opzione;
+      esigi(valore === 'sempre' || Object.prototype.hasOwnProperty.call(twitch.PERIODI, valore),
+        'il periodo "' + valore + '" e nello schema ma non in twitch.PERIODI');
+    }
+  });
+
+  await prova('a vetrina spenta non si chiede niente a Twitch', async () => {
+    // Una richiesta in rete a ogni pubblicazione per riempire un ramo che
+    // nessuno stampa e tempo speso per niente. Senza credenziali il caso
+    // non si distingue, quindi qui si guarda quello che si puo: che non
+    // lanci e che non tocchi i contenuti.
+    const documento = archivio.leggi();
+    documento.config.clip = accesa({ attivo: false, voci: [clipFinta()] });
+    archivio.salva(documento);
+    const esito = await twitch.aggiornaClip();
+    esigiUguale(esito.stato, 'spento', 'stato');
+    esigiUguale(archivio.leggi().config.clip.voci.length, 1, 'ha toccato le voci e non doveva');
+  });
+
+  await prova('ogni stato delle clip ha la sua riga, e raccontaClip() non lancia mai', () => {
+    for (const stato of ['spento', 'senzaCanale', 'aggiornato', 'invariato', 'vuoto', 'fallito']) {
+      const riga = twitch.raccontaClip({ stato: stato, quante: 6, motivo: 'un motivo' });
+      esigi(typeof riga === 'string' && riga.length > 0, 'nessuna riga per lo stato ' + stato);
+    }
+    for (const storto of [null, undefined, {}, { stato: 'inventato' }]) {
+      esigiUguale(twitch.raccontaClip(storto), '', 'raccontaClip(' + JSON.stringify(storto) + ')');
+    }
+    // Gli host sconosciuti vanno detti: un'anteprima bloccata dalla CSP non
+    // lo dice a nessuno, e senza questa riga si guarda una card vuota
+    // chiedendosi cosa sia andato storto.
+    const conStrani = twitch.raccontaClip({ stato: 'aggiornato', quante: 3, hostStrani: ['esempio.twitchcdn.net'] });
+    esigiDentro(conStrani, 'esempio.twitchcdn.net', 'non nomina l host sconosciuto');
+  });
+}
+
 /* --- ESECUZIONE ------------------------------------------------------ */
 
 async function esegui() {
@@ -1743,6 +1967,7 @@ async function esegui() {
     await proveLurk(contenutiVeri, costruisci, archivio);
     await proveApi(costruisci);
     await proveTwitch(costruisci, archivio);
+    await proveClip(contenutiVeri, costruisci, archivio);
   } finally {
     percorsi.imposta(RADICE_VERA);
     try { fs.rmSync(temporanea, { recursive: true, force: true }); } catch (e) { /* su Windows a volte il file e ancora aperto */ }

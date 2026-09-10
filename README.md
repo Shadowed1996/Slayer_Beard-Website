@@ -63,7 +63,7 @@ video non parte. Serve un server, anche banale.
 | `node server/imposta-password.js` | crea o cambia la password del pannello |
 | `node server/imposta-twitch.js <clientId> <secret>` | collega il server a Twitch, così «Ultima diretta» si aggiorna da sé (facoltativo, vedi sotto) |
 | `node server/imposta-twitch.js --prova` | chiede subito il titolo a Twitch e dice com'è andata, senza scrivere niente |
-| `node server/autotest.js` | collaudo: motore dei modelli, convalida, testo ricco, tema, generazione, API, modalità lurk, collegamento con Twitch |
+| `node server/autotest.js` | collaudo: motore dei modelli, convalida, testo ricco, tema, generazione, API, modalità lurk, collegamento con Twitch, vetrina delle clip |
 
 La porta si cambia con la variabile d'ambiente `SB_PORTA` (per esempio
 `SB_PORTA=4174 node server/server.js`). Il collaudo lavora in una cartella temporanea e non
@@ -95,6 +95,7 @@ sito/
 │  ├─ sezioni.css        settimana, chi sono, supporto, saluti
 │  ├─ player.css         interno del player e della chat
 │  ├─ pollo.css          il pollo: posizione, fumetto, animazioni
+│  ├─ clip.css           la vetrina delle clip, in fondo alla «diretta»
 │  ├─ account.css        la tessera di chi si è collegato con Twitch
 │  └─ lurk.css           il pannello della modalità lurk, sotto al monitor
 ├─ img/                  avatar, mascotte, banner, anteprima social, favicon
@@ -106,7 +107,8 @@ sito/
 ├─ modelli/
 │  ├─ index.html         la struttura della pagina, con i {{segnaposto}}
 │  ├─ parziali/          le sezioni, incluse con {{> parziali/nome}}
-│  │  └─ lurk.html       il pannello della modalità lurk, dentro «diretta»
+│  │  ├─ lurk.html       il pannello della modalità lurk, dentro «diretta»
+│  │  └─ clip.html       la vetrina delle clip, in fondo a «diretta»
 │  └─ icone/             le icone SVG, una per file
 ├─ server/               il CMS: generazione, API, sessioni, backup, media, tema
 │  ├─ lib/controlli.js   i controlli d'insieme: avvertimenti, mai errori
@@ -125,8 +127,10 @@ sito/
 ```
 
 Le sezioni della pagina, nell'ordine: **regia** (la copertina), **diretta** (il player, grande,
-con la chat e il pollo accanto), **settimana**, **chi sono**, **supporto**, **saluti**. Il binario
-laterale ha quindi sei voci.
+con la chat e il pollo accanto, e in fondo la vetrina delle clip), **settimana**, **chi sono**,
+**supporto**, **saluti**. Il binario laterale ha quindi sei voci — e resta a sei: la vetrina delle
+clip sta dentro «diretta» proprio per non chiederne una settima, che sotto i 400 px non ci
+starebbe.
 
 La versione precedente del sito è conservata in `Desktop/sito-backup/`: serve solo come
 riferimento storico, non è collegata a niente.
@@ -270,6 +274,54 @@ c'era scritto *durante* l'ultima diretta. I VOD però scadono — sette giorni p
 chi li tiene spenti non ne ha nessuno: in quel caso si ripiega su `helix/channels`, che dà il
 titolo **attuale** del canale, quello che si vedrà alla prossima accensione. È un ripiego, non un
 equivalente, ed è comunque meglio di un campo fermo a mesi fa.
+
+---
+
+## La vetrina delle clip
+
+In fondo alla sezione «diretta», sotto al riquadro del lurk, può comparire una griglia con le
+clip più viste del canale: anteprima, durata, visualizzazioni, data e nome di chi l'ha ritagliata.
+
+**È tutta statica.** Nessun `id` è contratto con del JavaScript, e senza JS funziona per intero:
+l'elenco viene stampato dentro `index.html` alla pubblicazione, non caricato dal browser. Il sito
+pubblicato resta quello che era — HTML che non parla con nessuno — e in cambio la vetrina
+invecchia fra una pubblicazione e l'altra invece di aggiornarsi in tempo reale. Per un canale che
+va in onda quattro sere a settimana è lo scambio giusto.
+
+**Non ha una voce nel binario, ed è voluto.** `css/base.css` stringe il dock finché *sei*
+etichette ci stanno anche a 320 px, e la settima le farebbe traboccare: il commento che lo spiega
+è lì da quando il dock è nato. Le clip sono l'archivio di quello che succede nel monitor lì
+sopra, quindi stanno dentro la stessa sezione invece di chiederne una propria. Una prova del
+collaudo controlla che le voci restino sei.
+
+**Serve il collegamento con Twitch** (`node server/imposta-twitch.js`, capitolo qui sopra): è lo
+stesso app token che aggiorna «Ultima diretta». Senza, la vetrina resta spenta e nel pannello si
+può accendere quanto si vuole senza che compaia niente — non ci sarebbe niente da mostrare.
+
+Dal pannello, gruppo **«Le clip»**, si scelgono tre cose: se mostrarla, **quante** clip (da 1 a
+12) e **di quale periodo** — ultima settimana, ultimo mese, ultimo anno, o da sempre. Twitch le
+ordina per visualizzazioni, dalla più vista in giù. Periodo stretto significa vetrina che cambia
+spesso ma che può restare vuota nelle settimane fiacche; «da sempre» significa vetrina sempre
+piena e sempre uguale.
+
+L'elenco vero sta in `config.clip.voci` ed è **l'unico ramo di `contenuti.json` che non ha un
+campo nello schema**: lo riempie il server a ogni pubblicazione, e una casella nel pannello
+sarebbe una casella riscritta sotto le dita di chi la compila. La copertura dello schema lo salta
+apposta (`GENERATI` in `contenuti/schema.js`) e il collaudo verifica tutte e due le cose.
+
+**Le anteprime.** Le serve Twitch da `clips-media-assets2.twitch.tv` (e da
+`clips-media-assets.twitch.tv`, per le clip vecchie): sono i due host che si sono aggiunti a
+`img-src` nella Content-Security-Policy, e come `static-cdn.jtvnw.net` sono host di sole
+immagini. `server/lib/twitch.js` **scarta** le anteprime che arrivano da un host diverso invece
+di stamparle e lasciarle bloccare in silenzio — un'immagine che la CSP ferma non lo dice a
+nessuno — e la generazione lo scrive in fondo, così si sa che è successo. La card senza anteprima
+resta comunque in piedi, col suo fondo: meglio una clip senza immagine che una clip in meno. Il
+collaudo controlla che i due elenchi, quello del modulo e quello della CSP, non prendano strade
+diverse.
+
+Come per «Ultima diretta», **se Twitch non risponde non succede niente**: la pubblicazione va
+avanti e la vetrina resta quella di prima. Anche se Twitch risponde ma non ha nessuna clip per il
+periodo scelto, l'elenco **non** viene svuotato.
 
 ---
 
@@ -488,7 +540,7 @@ d'ingresso: qui sotto c'è cosa leggere e quando.
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Il codice di condotta della comunità. |
 | [`CHANGELOG.md`](CHANGELOG.md) | Il registro delle modifiche, versione per versione. |
 
-`node server/autotest.js` passa per intero: **128 prove su 128**. Il collaudo non
+`node server/autotest.js` passa per intero: **141 prove su 141**. Il collaudo non
 tocca la rete nemmeno nella sezione sul collegamento con Twitch — quello che si
 prova lì è che una pubblicazione regga quando Twitch non risponde, e un collaudo
 che dipendesse da Twitch sarebbe rosso proprio il giorno in cui deve dimostrarlo.
@@ -512,8 +564,11 @@ soggetti esterni, e vale la pena sapere quali:
   `fonts.googleapis.com`, con le rispettive licenze aperte. Se si scelgono solo
   caratteri di sistema quell'indirizzo resta vuoto e la pagina non contatta
   nessuno.
-- **`static-cdn.jtvnw.net`** — l'unico dominio esterno ammesso in `img-src`
-  oltre al sito stesso: serve le immagini di profilo di Twitch, e solo quelle.
+- **`static-cdn.jtvnw.net`**, **`clips-media-assets2.twitch.tv`** e
+  **`clips-media-assets.twitch.tv`** — i tre domini esterni ammessi in
+  `img-src` oltre al sito stesso. Il primo serve le immagini di profilo di
+  Twitch, gli altri due le anteprime delle clip. Sono tutti host di sole
+  immagini: non eseguono niente, e nessun'altra cosa della pagina viene da lì.
 
 Le immagini in `img/` e la cattura `Cattura.PNG` ritraggono materiale grafico
 del canale slayer_beard e non sono coperte dalla licenza di questo progetto.

@@ -15,6 +15,28 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **La vetrina delle clip**, in fondo alla sezione «La diretta»: le clip più
+  viste del canale, con anteprima, durata, visualizzazioni, data e nome di chi
+  le ha ritagliate. `server/lib/twitch.js` le chiede a `helix/clips` a ogni
+  pubblicazione e le scrive in `config.clip.voci`; dal pannello si scelgono
+  quante (1–12) e di quale periodo (settimana, mese, anno, sempre).
+  È **interamente statica**: nessun `id` è contratto con del JavaScript e senza
+  JS funziona per intero. Come per «Ultima diretta», Twitch che non risponde non
+  svuota niente e non fa fallire la pubblicazione.
+- La vetrina **non aggiunge una voce nel binario**, e sta dentro «diretta» per
+  questo: `css/base.css` è tarato perché sei etichette ci stiano anche a 320 px,
+  e la settima le farebbe traboccare. Una prova del collaudo lo tiene fermo.
+- `contenuti/schema.js`: `GENERATI`, i rami che riempie il server e che non
+  hanno — né devono avere — un campo nel pannello. È l'unica eccezione ammessa
+  alla regola «lo schema copre esattamente `contenuti.json`», e la copertura la
+  applica in tutte e due le direzioni: non segnala quei rami come scoperti, e
+  segnala chi provasse a descriverli.
+- `css/clip.css` e `modelli/parziali/clip.html`, più il gruppo «Le clip» nello
+  schema e il capitolo 14 di `docs/PANNELLO.md`.
+- Sezione 10 del collaudo, *La vetrina delle clip*: tredici prove, fra cui che
+  gli host delle anteprime siano gli stessi nel modulo che le filtra e nella CSP
+  che le lascia passare — un'immagine bloccata dalla Content-Security-Policy non
+  lo dice a nessuno, ed è il guasto che si scoprirebbe solo guardando il sito.
 - **«Ultima diretta» si aggiorna da sé anche per i visitatori anonimi.**
   `server/lib/twitch.js` prende un app token (`client_credentials`) e, prima di
   ogni generazione, chiede a Twitch il titolo dell'ultimo VOD
@@ -55,6 +77,13 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   Licenza e Autore. Il resto del documento è rimasto invariato.
 - `.gitignore` esteso con le cartelle degli editor e altri file temporanei.
 - `.gitignore` esclude anche `server/dati/twitch.json`.
+- La Content-Security-Policy accetta due host in piu in `img-src`,
+  `clips-media-assets2.twitch.tv` e `clips-media-assets.twitch.tv`: sono le
+  anteprime delle clip, e come `static-cdn.jtvnw.net` sono host di sole
+  immagini.
+- Le opzioni dei campi `scelta` possono essere `{ valore, etichetta }` e non
+  solo stringhe secche: nel pannello si legge «Ultimo mese», nei dati resta
+  `30`.
 
 ### Rimosso
 

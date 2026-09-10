@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-07T00:40:00.041Z",
+  "aggiornatoIl": "2026-09-10T08:41:28.524Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -74,6 +74,12 @@
     "lurk.inviato": "Fatto: il messaggio è in chat.",
     "pollo.etichetta": "Apri la chat del canale",
     "pollo.nascondi": "Nascondi il pollo",
+    "clip.occhiello": "ARCHIVIO",
+    "clip.titolo": "I momenti migliori",
+    "clip.testo": "Le clip più viste del canale, ritagliate da chi guardava. Si aggiornano da sole a ogni pubblicazione.",
+    "clip.guarda": "Guarda la clip",
+    "clip.visualizzazioni": "visualizzazioni",
+    "clip.di": "clip di",
     "settimana.occhiello": "Calendario",
     "settimana.titolo": "La settimana",
     "settimana.testo": "Quattro sere a settimana, sempre alle 21:00. Le altre le passo a fare altro.",
@@ -257,6 +263,12 @@
           "Luce spenta. Si riparte la prossima serata."
         ]
       }
+    },
+    "clip": {
+      "attivo": false,
+      "quante": 6,
+      "periodo": "30",
+      "voci": []
     },
     "social": [
       {

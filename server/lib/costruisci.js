@@ -99,6 +99,84 @@ function settimanaDi(config, testi) {
   });
 }
 
+const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+  'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+
+/** m:ss. Le clip di Twitch stanno fra 5 e 60 secondi, ma non si scommette. */
+function durataTesto(secondi) {
+  const totale = Math.max(0, Math.round(Number(secondi) || 0));
+  const minuti = Math.floor(totale / 60);
+  const resto = totale % 60;
+  return minuti + ':' + String(resto).padStart(2, '0');
+}
+
+/**
+ * Il numero con il punto delle migliaia, all'italiana.
+ * Si scrive a mano invece di usare toLocaleString: la formattazione dipende
+ * dai dati ICU, che in una build ridotta di Node possono non esserci, e un
+ * sito che stampa «1,234» invece di «1.234» a seconda di come e stato
+ * compilato l'interprete e un sito che sbaglia in silenzio.
+ */
+function numeroTesto(valore) {
+  const n = Math.max(0, Math.round(Number(valore) || 0));
+  const cifre = String(n);
+  let fuori = '';
+  for (let i = 0; i < cifre.length; i++) {
+    if (i > 0 && (cifre.length - i) % 3 === 0) { fuori += '.'; }
+    fuori += cifre[i];
+  }
+  return fuori;
+}
+
+/** «3 gennaio 2026», oppure stringa vuota se la data non si legge. */
+function dataTesto(iso) {
+  const quando = new Date(String(iso || ''));
+  if (Number.isNaN(quando.getTime())) { return ''; }
+  return quando.getUTCDate() + ' ' + MESI[quando.getUTCMonth()] + ' ' + quando.getUTCFullYear();
+}
+
+/**
+ * La vetrina delle clip, pronta da stampare.
+ *
+ * Le voci le riempie server/lib/twitch.js alla pubblicazione: qui si
+ * formatta e basta. La sezione e accesa solo se c'e almeno una clip —
+ * un titolo con sotto il vuoto e peggio di nessun titolo, e il modello non
+ * deve mettersi a distinguere fra «spenta» e «accesa ma vuota».
+ */
+function clipDi(config, testi) {
+  const clip = (config.clip && typeof config.clip === 'object') ? config.clip : {};
+  const grezze = Array.isArray(clip.voci) ? clip.voci : [];
+
+  // Il tetto vale anche qui e non solo alla richiesta: chi abbassa «quante»
+  // dal pannello si aspetta di vederne meno subito, senza dover ripescare
+  // le clip da Twitch.
+  let quante = Number(clip.quante);
+  if (!Number.isFinite(quante)) { quante = 6; }
+  quante = Math.min(12, Math.max(1, Math.round(quante)));
+
+  const voci = [];
+  for (const voce of grezze) {
+    const url = String((voce && voce.url) || '').trim();
+    const titolo = String((voce && voce.titolo) || '').trim();
+    if (!url || !titolo) { continue; }
+    const autore = String((voce && voce.autore) || '').trim();
+    voci.push({
+      titolo: titolo,
+      url: url,
+      anteprima: String((voce && voce.anteprima) || '').trim(),
+      durata: durataTesto(voce && voce.durataSec),
+      visualizzazioni: numeroTesto(voce && voce.visualizzazioni),
+      autore: autore,
+      // Il modello non sa fare «se c'e l'autore»: gli si passa gia deciso.
+      firma: autore ? (testi['clip.di'] || '') + ' ' + autore : '',
+      quando: dataTesto(voce && voce.creataIl)
+    });
+    if (voci.length >= quante) { break; }
+  }
+
+  return { attivo: clip.attivo === true && voci.length > 0, voci: voci };
+}
+
 /* ------------------------------------------------------------------ */
 /* TESTO RICCO                                                         */
 /* ------------------------------------------------------------------ */
@@ -272,6 +350,7 @@ function costruisciContesto(contenuti, opzioni) {
     social: social,
     supporto: elencoVisibile(config.supporto, cache, mancanti),
     settimana: settimanaDi(config, testi),
+    clip: clipDi(config, testi),
     sito: {
       urlCanale: urlCanale,
       urlChat: 'https://www.twitch.tv/popout/' + canale + '/chat',
@@ -626,5 +705,5 @@ function genera(opzioni) {
 
 module.exports = {
   genera, anteprima, anteprimaDi, rendi, costruisciContesto,
-  oggettoDati, orariTesto, settimanaDi, jsonSicuro, chiaviRicche
+  oggettoDati, orariTesto, settimanaDi, clipDi, jsonSicuro, chiaviRicche
 };

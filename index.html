@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Generato il 2026-09-07T00:40:00.029Z da modelli/index.html + contenuti/contenuti.json.
+<!-- Generato il 2026-09-10T08:41:28.516Z da modelli/index.html + contenuti/contenuti.json.
      Non si modifica a mano: si riscrive a ogni pubblicazione (CONTRATTO §6). -->
 <html lang="it">
 <head>
@@ -20,10 +20,15 @@
      Costa poco: un foglio di stile iniettato non può leggere un token, e la difesa che serve
      contro il furto è quella sugli script.
 
-     `img-src` ha un dominio esterno solo, static-cdn.jtvnw.net: è dove Twitch tiene le
-     immagini di profilo, e serve alla tessera dell'account — l'avatar di chi si è collegato,
-     accanto al suo nome. È un host di sole immagini: non può eseguire niente, e nessun'altra
-     cosa della pagina viene da lì.
+     `img-src` ha tre domini esterni, e tutti e tre sono host di SOLE IMMAGINI: non possono
+     eseguire niente, e nessun'altra cosa della pagina viene da lì.
+     - static-cdn.jtvnw.net è dove Twitch tiene le immagini di profilo, e serve alla tessera
+       dell'account — l'avatar di chi si è collegato, accanto al suo nome;
+     - clips-media-assets2.twitch.tv e clips-media-assets.twitch.tv servono le anteprime delle
+       clip. Sono due perché Twitch non ha mai migrato del tutto le clip vecchie sul nome nuovo.
+       L'elenco è ripetuto in server/lib/twitch.js (HOST_ANTEPRIME), che scarta le anteprime su
+       host diversi invece di stamparle e lasciarle bloccare in silenzio: un'immagine che la CSP
+       ferma non lo dice a nessuno.
 
      `frame-ancestors` NON c'è: in un <meta> viene ignorato per specifica, e va messo come
      intestazione HTTP dall'hosting. Stessa cosa per report-uri. -->
@@ -32,7 +37,7 @@
   script-src 'self' https://embed.twitch.tv;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src https://fonts.gstatic.com;
-  img-src 'self' data: https://static-cdn.jtvnw.net;
+  img-src 'self' data: https://static-cdn.jtvnw.net https://clips-media-assets2.twitch.tv https://clips-media-assets.twitch.tv;
   frame-src https://player.twitch.tv https://www.twitch.tv https://embed.twitch.tv;
   connect-src 'self' https://api.twitch.tv https://id.twitch.tv wss://irc-ws.chat.twitch.tv;
   base-uri 'self';
@@ -106,6 +111,7 @@
 <link rel="stylesheet" href="css/diretta.css">
 <link rel="stylesheet" href="css/sezioni.css">
 <link rel="stylesheet" href="css/player.css">
+<link rel="stylesheet" href="css/clip.css">
 <link rel="stylesheet" href="css/pollo.css">
 <link rel="stylesheet" href="css/account.css">
 <link rel="stylesheet" href="css/lurk.css">
@@ -371,6 +377,16 @@
   <p class="lurk__mobile">Sul telefono il browser mette in pausa il video appena esci da questa scheda, e da qui non posso rimediare. La modalità lurk vale finché resti su questa pagina.</p>
 </section>
 
+
+  <!-- La vetrina delle clip: l'archivio di quello che succede nel monitor
+       qui sopra, e per questo sta dentro questa sezione invece di
+       chiederne una propria — il binario resta a sei voci, che è il
+       numero per cui css/base.css è tarato a 320px.
+
+       `clip.attivo` è già «acceso E almeno una clip»: un titolo con sotto
+       il vuoto è peggio di nessun titolo, e la distinzione la fa la
+       generazione invece di lasciarla al modello. -->
+  
 
   <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
   <p class="diretta__nota">Se lo schermo resta nero è quasi sempre il browser: cookie di terze parti bloccati, oppure un&#39;estensione che ferma gli iframe. In quel caso il canale si apre lo stesso su Twitch.</p>
