@@ -13,6 +13,12 @@
 
    Avvio:  node server/server.js            (porta 4173, o SB_PORTA)
            node server/server.js --guarda   rigenera a ogni modifica
+
+   Se il collegamento con Twitch e configurato (server/dati/twitch.json),
+   finche questo processo gira tiene fresche da se «Ultima diretta» e la
+   vetrina delle clip: un giro ogni SB_AGGIORNA_MIN minuti, 10 di serie.
+   Con SB_AGGIORNA_MIN=0 non parte, e resta solo l'aggiornamento alla
+   pubblicazione.
    ===================================================================== */
 
 const http = require('node:http');
@@ -27,11 +33,22 @@ const api = require('./lib/api');
 const archivio = require('./lib/archivio');
 const controlli = require('./lib/controlli');
 const costruisci = require('./lib/costruisci');
+const twitch = require('./lib/twitch');
 const schema = require('../contenuti/schema.js');
 
 const PORTA = Number(process.env.SB_PORTA) || 4173;
 const HOST = process.env.SB_HOST || '127.0.0.1';
 const ANTIRIMBALZO_MS = 250;
+
+// Ogni quanto chiedere a Twitch. Dieci minuti perche il titolo di una
+// diretta cambia poche volte al giorno e il VOD compare quando la diretta
+// finisce: piu spesso non porterebbe niente, e piu di rado si vedrebbe.
+// Un app token ha un tetto larghissimo, quindi il limite non e li.
+const AGGIORNA_MIN = process.env.SB_AGGIORNA_MIN === undefined ? 10 : Number(process.env.SB_AGGIORNA_MIN);
+
+// Il primo giro non parte insieme al server: le righe d'avvio devono
+// restare leggibili, e un errore di rete stampato in mezzo le spezzerebbe.
+const PRIMO_GIRO_MS = 4000;
 
 /* --- MESSAGGI DI AVVIO --------------------------------------------- */
 
@@ -243,6 +260,109 @@ function sorveglia() {
   return osservatori;
 }
 
+/* --- AGGIORNAMENTO AUTOMATICO DA TWITCH ------------------------------ */
+
+/*
+   «Ultima diretta» e le clip si aggiornano alla pubblicazione, ed e il
+   posto giusto: e li che nasce il sito che vedra la gente. Ma se nessuno
+   pubblica per una settimana, per una settimana quel campo resta indietro
+   — che e esattamente il difetto per cui era stato scritto a mano.
+
+   Quindi, finche questo processo gira, lo stesso lavoro si rifa da solo a
+   intervalli. Non e un secondo modo di pubblicare: e lo stesso, chiamato
+   da un timer invece che da un bottone.
+
+   LA REGOLA CHE NON SI TOCCA. Salva e Pubblica sono due cose diverse, e
+   un timer non puo diventare la scorciatoia che le confonde: chi ha
+   salvato una bozza e non l'ha ancora pubblicata l'ha fatto apposta.
+   Percio si guarda PRIMA se il sito pubblicato e gia allineato alla
+   bozza: se lo e, si rigenera (l'unica differenza sara il titolo fresco);
+   se non lo e, si aggiorna solo contenuti.json e si lascia la
+   pubblicazione a chi di dovere, dicendolo.
+
+   In modalita --guarda la distinzione e gia sospesa di suo — li qualunque
+   salvataggio rigenera, ed e dichiarato — quindi non c'e niente da
+   riconciliare: la sorveglianza vede cambiare contenuti.json e fa il
+   resto da se.
+*/
+function aggiornamentoAutomatico(opzioni) {
+  const scelte = opzioni || {};
+
+  if (!Number.isFinite(AGGIORNA_MIN) || AGGIORNA_MIN <= 0) { return null; }
+  if (!twitch.configurato()) {
+    // Non e un errore: e lo stato di chi non ha registrato nessuna app.
+    // Si dice una volta, perche il campo «Ultima diretta» scritto a mano e
+    // proprio la cosa che qualcuno sta cercando di capire perche non cambia.
+    console.log('  «Ultima diretta» e le clip restano come le hai scritte: manca il collegamento');
+    console.log('  con Twitch. Si configura una volta sola, con node server/imposta-twitch.js');
+    return null;
+  }
+
+  let inCorso = false;
+  const ora = () => '[' + new Date().toLocaleTimeString('it-IT') + ']';
+
+  const giro = async () => {
+    // Due giri sovrapposti riscriverebbero contenuti.json a vicenda: se il
+    // precedente non ha finito, questo salta e basta.
+    if (inCorso) { return; }
+    inCorso = true;
+    try {
+      // Si guarda com'era PRIMA di scrivere: aggiornaUltimaDiretta() tocca
+      // contenuti.json, e dopo sembrerebbe sempre che ci sia una bozza in
+      // attesa — cioe la condizione che deve fermarci.
+      let allineato = false;
+      try { allineato = api.statoDelSito(archivio.leggi()).daPubblicare === false; }
+      catch (e) { allineato = false; }
+
+      const daTwitch = await twitch.aggiornaUltimaDiretta();
+      const leClip = await twitch.aggiornaClip();
+
+      const cambiato = daTwitch.stato === 'aggiornato' || leClip.stato === 'aggiornato';
+
+      // Si stampa solo cio che e successo davvero, e ogni riga risponde del
+      // proprio esito: un server che ripete «gia aggiornata» ogni dieci
+      // minuti diventa rumore, e il rumore nasconde la riga che conta.
+      const dueRighe = [[daTwitch, twitch.racconta(daTwitch)], [leClip, twitch.raccontaClip(leClip)]];
+      for (const [esito, riga] of dueRighe) {
+        if (!riga) { continue; }
+        if (esito.stato !== 'aggiornato' && esito.stato !== 'fallito') { continue; }
+        console.log('  ' + ora() + ' ' + riga);
+      }
+      if (!cambiato) { return; }
+
+      if (scelte.guarda) {
+        // La sorveglianza ha gia visto cambiare contenuti.json e rigenera
+        // da se: rigenerare anche qui vorrebbe dire farlo due volte.
+        return;
+      }
+      if (!allineato) {
+        console.log('  ' + ora() + ' Non ripubblico da solo: c e una bozza salvata e non ancora pubblicata.');
+        console.log('           Premi Pubblica quando sei pronto e il titolo nuovo parte con lei.');
+        return;
+      }
+
+      const esito = costruisci.genera();
+      console.log('  ' + ora() + ' sito ripubblicato in ' + esito.durataMs + ' ms: ' +
+        esito.scritti.map((x) => x.file).join(', '));
+    } catch (err) {
+      // Un giro andato storto non deve fermare il server ne i giri dopo.
+      console.error('  ' + ora() + ' aggiornamento automatico non riuscito: ' + (err && err.message ? err.message : err));
+    } finally {
+      inCorso = false;
+    }
+  };
+
+  const primo = setTimeout(giro, PRIMO_GIRO_MS);
+  const battito = setInterval(giro, AGGIORNA_MIN * 60 * 1000);
+  // unref: questi due timer non devono tenere vivo il processo da soli.
+  primo.unref();
+  battito.unref();
+
+  console.log('  «Ultima diretta» e le clip si aggiornano da sole ogni ' + AGGIORNA_MIN +
+    (AGGIORNA_MIN === 1 ? ' minuto' : ' minuti') + ', finche questo server gira.');
+  return { giro: giro, ferma: () => { clearTimeout(primo); clearInterval(battito); } };
+}
+
 /* --- AVVIO ---------------------------------------------------------- */
 
 function avvia(opzioni) {
@@ -271,6 +391,7 @@ function avvia(opzioni) {
     console.log('  Pannello ->  http://localhost:' + PORTA + '/pannello/');
     console.log('');
     if (scelte.guarda) { sorveglia(); }
+    aggiornamentoAutomatico({ guarda: scelte.guarda === true });
     console.log('  Ctrl+C per fermare.');
     console.log('');
   });
@@ -296,4 +417,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { creaServer, avvia, sorveglia, PORTA };
+module.exports = { creaServer, avvia, sorveglia, aggiornamentoAutomatico, PORTA, AGGIORNA_MIN };

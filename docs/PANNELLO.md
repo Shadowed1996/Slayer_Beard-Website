@@ -395,7 +395,15 @@ node server/imposta-twitch.js --prova
 ```
 
 Da quel momento **ogni Pubblica** chiede a Twitch il titolo dell'ultima diretta
-e lo scrive nei contenuti prima di generare la pagina. Il pannello te lo dice a
+e lo scrive nei contenuti prima di generare la pagina. E non solo: finché il
+server è acceso lo rifà **da solo ogni dieci minuti**, e se il titolo è cambiato
+ripubblica senza che tu debba premere niente.
+
+> **Una bozza salvata non viene mai pubblicata al posto tuo.** Se hai salvato
+> qualcosa e non l'hai ancora pubblicato, l'aggiornamento automatico si ferma:
+> aggiorna il titolo nei contenuti e ti lascia il bottone. Lo scrive nella
+> finestra del server. Salva e Pubblica restano due cose diverse anche quando a
+> premere è un timer. Il pannello te lo dice a
 pubblicazione finita: se è andata, con una riga verde; se non è andata — Twitch
 giù, chiavi sbagliate, rete assente — con un avviso, e il titolo che c'era
 **resta dov'era**. Non viene mai svuotato.

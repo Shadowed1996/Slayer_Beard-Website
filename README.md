@@ -59,6 +59,7 @@ video non parte. Serve un server, anche banale.
 |---|---|
 | `node server/server.js` | avvia sito + pannello su http://localhost:4173 |
 | `node server/server.js --guarda` | idem, e rigenera a ogni modifica di `modelli/`, `contenuti/` o `server/modelli/` |
+| `SB_AGGIORNA_MIN=30 node server/server.js` | ogni quanti minuti chiedere a Twitch «Ultima diretta» e le clip: 10 di serie, `0` per non chiedere mai |
 | `node server/genera.js` | genera `index.html`, `js/dati.js` e `css/tema.css` e basta, senza avviare niente |
 | `node server/imposta-password.js` | crea o cambia la password del pannello |
 | `node server/imposta-twitch.js <clientId> <secret>` | collega il server a Twitch, così «Ultima diretta» si aggiorna da sé (facoltativo, vedi sotto) |
@@ -244,6 +245,10 @@ riempiva. Adesso ha **due sorgenti**, e nessuna delle due è obbligatoria:
    in `contenuti.json` al momento della pubblicazione. Perché lì dentro ci sia il titolo giusto,
    il **server locale** lo chiede a Twitch **prima di generare**, con le credenziali di
    `server/dati/twitch.json`.
+3. **E senza che nessuno prema niente**: finché `node server/server.js` gira, ogni dieci minuti
+   rifà da sé lo stesso lavoro e, se il titolo è cambiato, ripubblica. È la sorgente che serve
+   davvero, perché la seconda dipende da qualcuno che si ricordi di pubblicare — ed è esattamente
+   quello che non succede.
 
 Si configura una volta:
 
@@ -256,6 +261,32 @@ Le due chiavi stanno su [dev.twitch.tv/console/apps](https://dev.twitch.tv/conso
 scheda dell'applicazione: il Client ID è lo stesso che si mette nel pannello, il secret si genera
 lì con *New Secret*. Il file si toglie con `--togli`, e allora il campo torna a essere una casella
 da riempire a mano.
+
+### L'aggiornamento automatico, e la regola che non scavalca
+
+Finché il server locale gira fa un giro ogni **dieci minuti** (`SB_AGGIORNA_MIN`, `0` per
+spegnerlo) e, quando trova qualcosa di nuovo, **ripubblica da sé**. Vale sia per «Ultima diretta»
+sia per la vetrina delle clip.
+
+Non è un secondo modo di pubblicare: è lo stesso, chiamato da un timer invece che da un bottone.
+E proprio per questo non può scavalcare la regola su cui è costruito tutto il resto — **Salva e
+Pubblica sono due cose diverse**, e chi ha salvato una bozza senza pubblicarla l'ha fatto apposta.
+Quindi il giro automatico guarda **prima** se il sito pubblicato è già allineato alla bozza:
+
+- **se lo è**, rigenera — l'unica differenza sarà il titolo fresco;
+- **se non lo è**, aggiorna solo `contenuti.json` e lascia la pubblicazione a te, dicendolo in
+  console.
+
+In modalità `--guarda` la distinzione è già sospesa di suo (lì qualunque salvataggio rigenera, ed
+è dichiarato), quindi il giro automatico non rigenera una seconda volta: ci pensa la sorveglianza.
+
+Se Twitch non risponde, il giro lo scrive e riprova al giro dopo. Il server non si ferma, e il
+valore che c'era resta dov'era.
+
+> **Il sito online è un'altra cosa.** Questo tiene fresca la copia sul computer dove gira il
+> server. Se il sito sta su un hosting esterno, i file generati vanno comunque caricati: finché
+> non c'è un passo di caricamento automatico, «si aggiorna da solo» vuol dire «in locale si
+> aggiorna da solo, e quando carichi porti su l'ultimo».
 
 **Il client secret non si mette da nessun'altra parte.** Non nel pannello, non in
 `contenuti.json`, non nel sito generato: `server/dati/twitch.json` sta accanto alla password del
@@ -540,7 +571,7 @@ d'ingresso: qui sotto c'è cosa leggere e quando.
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Il codice di condotta della comunità. |
 | [`CHANGELOG.md`](CHANGELOG.md) | Il registro delle modifiche, versione per versione. |
 
-`node server/autotest.js` passa per intero: **141 prove su 141**. Il collaudo non
+`node server/autotest.js` passa per intero: **143 prove su 143**. Il collaudo non
 tocca la rete nemmeno nella sezione sul collegamento con Twitch — quello che si
 prova lì è che una pubblicazione regga quando Twitch non risponde, e un collaudo
 che dipendesse da Twitch sarebbe rosso proprio il giorno in cui deve dimostrarlo.

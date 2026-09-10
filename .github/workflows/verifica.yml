@@ -149,7 +149,7 @@ jobs:
             echo ""
             echo "## Collaudo (\`node server/autotest.js\`)"
             echo ""
-            echo "Su \`main\` il collaudo passa per intero: 141 prove su 141."
+            echo "Su \`main\` il collaudo passa per intero: 143 prove su 143."
             echo "Una prova rossa qui sotto è quindi una regressione, non un arretrato"
             echo "noto. Questo passo resta informativo — il workflow non fa da guardiano —"
             echo "ma il metro è zero fallimenti."

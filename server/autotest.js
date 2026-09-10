@@ -1684,6 +1684,15 @@ async function proveTwitch(costruisci, archivio) {
     }
   });
 
+  await prova('l aggiornamento automatico non parte senza collegamento', () => {
+    // E la domanda che si fa chi guarda «Ultima diretta» ferma da una
+    // settimana: il server deve dirlo all avvio invece di tacere, e non
+    // deve mettersi a chiedere niente a nessuno.
+    togliCredenziali();
+    const { aggiornamentoAutomatico } = require('./server.js');
+    esigiUguale(aggiornamentoAutomatico({ guarda: false }), null, 'ha avviato un timer senza credenziali');
+  });
+
   await prova('il client secret non finisce mai nei file generati', () => {
     // L invariante che giustifica l intera deroga del CONTRATTO-3 §4.6: il
     // secret vive sul computer di chi amministra e in nessun altro posto.
@@ -1918,6 +1927,24 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
     const esito = await twitch.aggiornaClip();
     esigiUguale(esito.stato, 'spento', 'stato');
     esigiUguale(archivio.leggi().config.clip.voci.length, 1, 'ha toccato le voci e non doveva');
+  });
+
+  await prova('«spento» ha due motivi, e il resoconto li distingue', async () => {
+    // Senza collegamento e con la vetrina spenta il ramo si comporta allo
+    // stesso modo, ma chi legge il resoconto sta cercando proprio di capire
+    // quale delle due cose gli manca: una riga sola per due cause diverse
+    // manderebbe a controllare il posto sbagliato.
+    const senza = twitch.raccontaClip({ stato: 'spento' });
+    const sezione = twitch.raccontaClip({ stato: 'spento', motivo: 'sezione' });
+    esigi(senza !== sezione, 'le due righe sono identiche');
+    esigiDentro(senza, 'collegamento', 'la riga senza credenziali non nomina il collegamento');
+    esigiDentro(sezione, 'pannello', 'la riga a vetrina spenta non manda al pannello');
+
+    // E il motivo arriva davvero da aggiornaClip, non solo da racconta.
+    const documento = archivio.leggi();
+    documento.config.clip = accesa({ attivo: false });
+    archivio.salva(documento);
+    esigiUguale((await twitch.aggiornaClip()).motivo, undefined, 'senza credenziali non si nomina la sezione');
   });
 
   await prova('ogni stato delle clip ha la sua riga, e raccontaClip() non lancia mai', () => {

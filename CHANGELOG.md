@@ -15,6 +15,18 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **«Ultima diretta» e le clip si aggiornano da sole, senza premere niente.**
+  Finché `node server/server.js` gira fa un giro ogni dieci minuti
+  (`SB_AGGIORNA_MIN`, `0` per spegnerlo) e, se qualcosa è cambiato,
+  ripubblica. Prima si aggiornava solo alla pubblicazione, il che voleva dire
+  che senza un Pubblica il campo restava indietro — cioè il difetto per cui
+  era stato scritto a mano.
+- L'aggiornamento automatico **non scavalca la distinzione fra Salva e
+  Pubblica**: guarda prima se il sito pubblicato è già allineato alla bozza e,
+  se non lo è, aggiorna `contenuti.json` e lascia la pubblicazione a chi di
+  dovere invece di mandare online una bozza che qualcuno stava trattenendo.
+- All'avvio il server dice se il collegamento con Twitch manca, invece di
+  tacere: è la prima cosa da sapere quando «Ultima diretta» non cambia.
 - **La vetrina delle clip**, in fondo alla sezione «La diretta»: le clip più
   viste del canale, con anteprima, durata, visualizzazioni, data e nome di chi
   le ha ritagliate. `server/lib/twitch.js` le chiede a `helix/clips` a ogni
@@ -93,6 +105,11 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Corretto
 
+- Il resoconto delle clip distingue i due motivi per cui può essere spento —
+  manca il collegamento, oppure la vetrina non è accesa nel pannello — invece
+  di mandare a controllare il posto sbagliato.
+- Gli errori di Twitch non spezzano più la riga di resoconto: il corpo della
+  risposta arriva con un a capo dentro e veniva stampato così com'era.
 - **Il collaudo torna verde: 128 prove su 128** (erano 12 fallite su 117). Le
   prove che parlavano di `config.lurk.clientId`, dell'ordine dei gruppi e
   dell'ordine degli script erano rimaste indietro rispetto al rifacimento del

@@ -115,7 +115,11 @@ function chiedi(opzioni, corpo) {
       risposta.on('end', () => {
         const testo = Buffer.concat(pezzi).toString('utf8');
         if (risposta.statusCode < 200 || risposta.statusCode >= 300) {
-          rifiuta(new Error('Twitch ha risposto ' + risposta.statusCode + ': ' + testo.slice(0, 200)));
+          // Il corpo arriva con l'a capo finale: infilato dentro una riga di
+          // resoconto la spezzerebbe a meta, e quella riga la legge qualcuno
+          // che sta cercando di capire cosa non va.
+          const corpoBreve = testo.replace(/\s+/g, ' ').trim().slice(0, 200);
+          rifiuta(new Error('Twitch ha risposto ' + risposta.statusCode + ': ' + corpoBreve));
           return;
         }
         try { risolvi(JSON.parse(testo)); }
@@ -382,8 +386,11 @@ async function aggiornaClip() {
   }
 
   // La sezione spenta non si aggiorna: sarebbe una richiesta in rete a
-  // ogni pubblicazione per riempire un ramo che nessuno stampa.
-  if (clip.attivo !== true) { return { stato: 'spento' }; }
+  // ogni pubblicazione per riempire un ramo che nessuno stampa. Il motivo
+  // viaggia con lo stato perche «spento» qui vuol dire due cose diverse —
+  // manca il collegamento, oppure la vetrina non la vuole nessuno — e chi
+  // legge il resoconto sta cercando di distinguerle.
+  if (clip.attivo !== true) { return { stato: 'spento', motivo: 'sezione' }; }
   if (!idUtente) { return { stato: 'senzaCanale' }; }
 
   const quante = Number.isFinite(Number(clip.quante)) ? Math.round(Number(clip.quante)) : 6;
@@ -447,7 +454,9 @@ function raccontaClip(esito) {
     : '';
   switch (esito.stato) {
     case 'spento':
-      return 'Clip: sezione spenta o collegamento con Twitch non configurato, non ho chiesto niente.';
+      return esito.motivo === 'sezione'
+        ? 'Clip: la vetrina e spenta nel pannello, non ho chiesto niente a Twitch.'
+        : 'Clip: il collegamento con Twitch non e configurato, non ho chiesto niente.';
     case 'senzaCanale':
       return 'Clip: manca l ID del canale (campo config.twitch.idUtente), non ho chiesto niente a Twitch.';
     case 'aggiornato':

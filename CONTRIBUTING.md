@@ -78,7 +78,7 @@ o sul generatore.
 5. Apri la PR compilando il [template](.github/PULL_REQUEST_TEMPLATE.md).
 
 > **Il metro è zero fallimenti.** `node server/autotest.js` passa per intero su
-> `main` — **141 prove su 141** — e una modifica che ne rompe una è una modifica
+> `main` — **143 prove su 143** — e una modifica che ne rompe una è una modifica
 > da sistemare, non un numero da confrontare. Se la tua modifica cambia un
 > comportamento di proposito, aggiorna la prova che lo descriveva: una prova che
 > racconta un programma che non esiste più è peggio di nessuna prova.
@@ -158,7 +158,7 @@ terzo passo, il controllo di copertura te lo dice all'avvio del server.
 
 ## Checklist prima di aprire una pull request
 
-- [ ] `node server/autotest.js` passa per intero (141 prove su 141)
+- [ ] `node server/autotest.js` passa per intero (143 prove su 143)
 - [ ] `node server/genera.js` si chiude senza errori e senza avvertimenti nuovi
 - [ ] non ho modificato a mano `index.html`, `js/dati.js` o `css/tema.css`
 - [ ] il sito è stato provato da un server vero, non con `file://`
