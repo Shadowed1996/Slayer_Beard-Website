@@ -3,12 +3,12 @@
      Gli id #twitch-embed, #twitch-chat, #monitor-lato, #chat-toggle,
      #monitor-badge, #monitor-titolo e #apri-twitch sono contratto con
      js/player.js: non si rinominano e non si tolgono. -->
-<section id="diretta" class="diretta" aria-labelledby="diretta-titolo">
+<section id="diretta" class="diretta" aria-labelledby="diretta-titolo" data-sb-sezione="diretta">
   <div class="diretta__testa">
-    <p class="sezione__occhiello">{{diretta.occhiello}}</p>
-    <h2 id="diretta-titolo" class="sezione__titolo">{{diretta.titolo}}</h2>
+    <p class="sezione__occhiello" data-sb-testo="diretta.occhiello">{{diretta.occhiello}}</p>
+    <h2 id="diretta-titolo" class="sezione__titolo" data-sb-testo="diretta.titolo">{{diretta.titolo}}</h2>
     <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
-    <p class="sezione__testo">{{{diretta.testo}}}</p>
+    <p class="sezione__testo" data-sb-testo="diretta.testo">{{{diretta.testo}}}</p>
 
     <!-- Il profilo del sito. Sta qui in cima, staccato dai comandi del lurk,
          perché sono due cose diverse: questa dice CHI sei sul sito, quella
@@ -22,12 +22,12 @@
          #account arriva vuoto per contratto: lo riempie js/account.js, e solo
          se l'amministratore ha configurato un Client ID. Senza JavaScript non
          deve restare in pagina nessun bottone raggiungibile col Tab. -->
-    {{#se config.account.attivo}}<div class="account">
+    {{#se config.account.attivo}}<div class="account" data-sb-parte="account">
       <div id="account" class="account__tessera"></div>
       <!-- Tripla graffa: campo «ricco», già sanificato in generazione. La
            nasconde js/account.js appena qualcuno si collega: a quel punto ha
            già risposto alla domanda a cui serviva. -->
-      <p id="account-nota" class="account__nota">{{{account.nota}}}</p>
+      <p id="account-nota" class="account__nota" data-sb-testo="account.nota">{{{account.nota}}}</p>
       <!-- role="status": gli esiti del collegamento (revoca riuscita, token
            scaduto, finestra chiusa) vanno annunciati. È una regione sua e non
            quella del lurk perché stanno in due punti diversi della pagina, e
@@ -40,7 +40,7 @@
        dichiara relative e le riserva la corsia, css/pollo.css ci mette dentro
        la mascotte. Il pollo è l'ultimo figlio, dopo il monitor. -->
   <div class="diretta__scena">
-    <div class="monitor">
+    <div class="monitor" data-sb-parte="monitor">
       <div class="monitor__telaio">
         <div class="monitor__barra">
           <span class="monitor__punti" aria-hidden="true">
@@ -67,7 +67,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.6L3 21l1.9-5.8A8.5 8.5 0 1 1 21 11.5z"/></svg>
             {{deck.chatApri}}
           </button>
-          <p class="monitor__nota">{{deck.notaPlayer}}</p>
+          <p class="monitor__nota" data-sb-testo="deck.notaPlayer">{{deck.notaPlayer}}</p>
           <a id="apri-twitch" class="monitor__link" href="{{sito.urlCanale}}" target="_blank" rel="noopener">
             {{nav.vaiAlCanale}}
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4h6v6"/><path d="M20 4 10.5 13.5"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg>
@@ -104,5 +104,5 @@
   {{#se clip.attivo}}{{> parziali/clip}}{{/se}}
 
   <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
-  <p class="diretta__nota">{{{diretta.nota}}}</p>
+  <p class="diretta__nota" data-sb-testo="diretta.nota">{{{diretta.nota}}}</p>
 </section>

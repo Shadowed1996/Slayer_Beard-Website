@@ -1,0 +1,324 @@
+/* =====================================================================
+   motore.css — quello che disegna il motore nel documento del pannello
+   (CONTRATTO-4 §10, §12): il telaio dell'anteprima con zoom e cornice,
+   il velo di caricamento, l'indicatore dello zoom e l'ispettore delle
+   posizioni nella scheda Avanzate.
+
+   Gli stili DENTRO l'iframe (contorni, maniglie, etichetta) li scrive
+   motore.js a runtime: il sito pubblicato non ne contiene nemmeno uno.
+
+   Solo le variabili di pannello.css: nessun esadecimale. Linee da 1 px,
+   superfici piatte, etichette in monospazio maiuscolo; ciano per ciò che
+   è acceso, viola per l'azione principale.
+   ===================================================================== */
+
+/* --- anteprima ------------------------------------------------------ */
+
+.motore {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 320px;
+  background: var(--p-fondo);
+}
+
+/* Riga di stato quando l'anteprima mostra la bozza salvata e non quella dal vivo. */
+.motore__avviso {
+  flex: none;
+  margin: 0;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--p-linea);
+  background: var(--p-fondo-2);
+  color: var(--p-allerta);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .04em;
+  line-height: 1.4;
+}
+
+/* Il fondo quadrettato è la carta millimetrata della regia: dice che si è
+   dietro le quinte senza competere con il sito che ci sta sopra. */
+.motore__telaio {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  padding: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background-color: var(--p-fondo);
+  background-image:
+    linear-gradient(var(--p-fondo-2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--p-fondo-2) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.motore__telaio:focus { outline: none; }
+.motore__telaio:focus-visible { box-shadow: inset 0 0 0 2px var(--p-ciano); }
+
+.motore[data-dispositivo="telefono"] .motore__telaio,
+.motore[data-dispositivo="tablet"] .motore__telaio { padding: 22px; }
+
+/* Grande quanto la cornice a schermo: larghezza e altezza le scrive il
+   motore. La cornice vera sta dentro, in alto a sinistra, e con lo zoom si
+   rimpicciolisce da quell'angolo. */
+.motore__zoom {
+  position: relative;
+  flex: none;
+  height: 100%;
+  margin: 0 auto;
+}
+
+.motore__cornice {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  overflow: hidden;
+  transform-origin: 0 0;
+  background: var(--p-fondo);
+  box-shadow: 0 0 0 1px var(--p-linea-forte);
+}
+
+/* Telefono e tablet con una cornice da apparecchio: due linee e un bordo
+   pieno del colore del pannello, niente ombre sfumate. */
+.motore[data-dispositivo="telefono"] .motore__cornice,
+.motore[data-dispositivo="tablet"] .motore__cornice {
+  border-radius: var(--p-raggio);
+  box-shadow:
+    0 0 0 1px var(--p-linea-forte),
+    0 0 0 8px var(--p-pannello),
+    0 0 0 9px var(--p-linea);
+}
+
+.motore__iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--p-fondo);
+}
+
+/* --- velo: caricamento, aggiornamento, errore ----------------------- */
+
+.motore__velo {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  text-align: center;
+  background: var(--p-velo);
+}
+
+/* Aggiornamento con la pagina già a video: solo una targhetta, la pagina resta leggibile. */
+.motore__velo[data-tipo="aggiorno"] {
+  inset: 12px 14px auto auto;
+  padding: 5px 10px;
+  border: 1px solid var(--p-linea-forte);
+  background: var(--p-pannello);
+  pointer-events: none;
+}
+
+.motore__velo-riquadro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 440px;
+}
+
+.motore__velo-titolo {
+  margin: 0;
+  color: var(--p-testo);
+  font-family: var(--p-mono);
+  font-size: 12px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.motore__velo[data-tipo="aggiorno"] .motore__velo-titolo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--p-ciano);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+}
+.motore__velo[data-tipo="aggiorno"] .motore__velo-titolo::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: none;
+  background: var(--p-ciano);
+}
+
+.motore__velo[data-tipo="errore"] .motore__velo-titolo { color: var(--p-errore); }
+
+.motore__velo-testo {
+  margin: 0;
+  color: var(--p-testo-medio);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* --- indicatore dello zoom ------------------------------------------ */
+
+.motore__zoombar {
+  position: absolute;
+  right: 28px;                /* lascia libera la barra di scorrimento del sito */
+  bottom: 18px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  color: var(--p-testo-tenue);
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.motore__zoom-valore {
+  min-width: 3.4em;
+  color: var(--p-testo);
+  font-variant-numeric: tabular-nums;
+}
+
+.motore__zoom-bottone {
+  padding: 4px 9px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 4px;
+  background: var(--p-pannello-2);
+  color: var(--p-ciano);
+  font: inherit;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color var(--p-durata-lampo) ease, background-color var(--p-durata-lampo) ease;
+}
+.motore__zoom-bottone:hover { border-color: var(--p-ciano); background: var(--p-pannello-3); }
+.motore__zoom-bottone[aria-pressed="true"] { border-color: var(--p-ciano); }
+
+/* --- riquadri degli ispettori --------------------------------------- */
+
+.motore-slot:empty { display: none; }
+.motore-slot + .motore-slot { margin-top: 18px; }
+
+.motore-slot__errore {
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--p-linea);
+  border-left: 2px solid var(--p-allerta);
+  background: var(--p-pannello);
+  color: var(--p-allerta);
+  font-size: 13px;
+}
+
+/* --- ispettore delle posizioni (scheda Avanzate) -------------------- */
+
+.motore-pos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  container-type: inline-size;
+}
+
+.motore-pos__occhiello {
+  margin: 0;
+  color: var(--p-ciano);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.motore-pos__stato {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: var(--p-testo-medio);
+  font-size: 13.5px;
+}
+.motore-pos__stato[data-stato="libera"] { color: var(--p-testo); }
+.motore-pos__stato[data-stato="libera"]::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: none;
+  background: var(--p-ciano);
+  transform: translateY(-1px);
+}
+
+.motore-pos__griglia {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+}
+@container (min-width: 440px) {
+  .motore-pos__griglia { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.motore-pos__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.motore-pos__etichetta {
+  color: var(--p-testo-tenue);
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.motore-pos__input {
+  padding: 7px 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.motore-pos__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.motore-pos__nota,
+.motore-pos__tasti {
+  margin: 0;
+  color: var(--p-testo-tenue);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.motore-pos__tasti kbd {
+  display: inline-block;
+  padding: 0 4px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 3px;
+  background: var(--p-pannello-2);
+  color: var(--p-testo);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* --- schermi stretti ------------------------------------------------ */
+
+@media (max-width: 560px) {
+  .motore__telaio { padding: 8px; }
+  .motore[data-dispositivo="telefono"] .motore__telaio,
+  .motore[data-dispositivo="tablet"] .motore__telaio { padding: 14px; }
+  .motore__zoombar { right: 12px; bottom: 12px; }
+}

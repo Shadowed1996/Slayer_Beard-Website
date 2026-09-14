@@ -1,12 +1,12 @@
-<section id="settimana" class="settimana" aria-labelledby="settimana-titolo">
-  <div class="sezione__testa settimana__testa">
-    <p class="sezione__occhiello">{{settimana.occhiello}}</p>
-    <h2 id="settimana-titolo" class="sezione__titolo">{{settimana.titolo}}</h2>
-    <p class="sezione__testo">{{{settimana.testo}}}</p>
+<section id="settimana" class="settimana" aria-labelledby="settimana-titolo" data-sb-sezione="settimana" data-sb-riquadro="settimana">
+  <div class="sezione__testa settimana__testa" data-sb-blocco="settimana.testa">
+    <p class="sezione__occhiello" data-sb-testo="settimana.occhiello">{{settimana.occhiello}}</p>
+    <h2 id="settimana-titolo" class="sezione__titolo" data-sb-testo="settimana.titolo">{{settimana.titolo}}</h2>
+    <p class="sezione__testo" data-sb-testo="settimana.testo">{{{settimana.testo}}}</p>
   </div>
 
   <!-- Sette voci sempre, anche i giorni di riposo: il nastro è una settimana intera, non un elenco di dirette. -->
-  <ol id="nastro" class="nastro" aria-label="{{sito.orariTesto}}">
+  <ol id="nastro" class="nastro" aria-label="{{sito.orariTesto}}" data-sb-parte="nastro" data-sb-blocco="settimana.nastro">
     {{#ogni settimana}}
     <li class="nastro__giorno{{#se diretta}} is-diretta{{/se}}" data-giorno="{{indice}}">
       <span class="nastro__abbr">{{abbr}}</span>
@@ -16,8 +16,8 @@
     {{/ogni}}
   </ol>
 
-  <div class="settimana__piede">
-    <p class="settimana__nota">{{{settimana.nota}}}</p>
-    <a class="btn btn--vuoto" href="{{sito.urlCanale}}" target="_blank" rel="noopener">{{settimana.cta}}</a>
+  <div class="settimana__piede" data-sb-blocco="settimana.piede">
+    <p class="settimana__nota" data-sb-testo="settimana.nota">{{{settimana.nota}}}</p>
+    <a class="btn btn--vuoto" href="{{sito.urlCanale}}" target="_blank" rel="noopener" data-sb-testo="settimana.cta">{{settimana.cta}}</a>
   </div>
 </section>

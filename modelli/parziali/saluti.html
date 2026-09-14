@@ -1,11 +1,11 @@
-<section id="saluti" class="saluti" aria-labelledby="saluti-titolo">
+<section id="saluti" class="saluti" aria-labelledby="saluti-titolo" data-sb-sezione="saluti" data-sb-riquadro="saluti">
   <div class="saluti__griglia">
-    <div class="saluti__social">
-      <p class="sezione__occhiello">{{saluti.occhiello}}</p>
-      <h2 id="saluti-titolo" class="sezione__titolo">{{saluti.titolo}}</h2>
-      <p class="sezione__testo">{{{saluti.testo}}}</p>
+    <div class="saluti__social" data-sb-blocco="saluti.social">
+      <p class="sezione__occhiello" data-sb-testo="saluti.occhiello">{{saluti.occhiello}}</p>
+      <h2 id="saluti-titolo" class="sezione__titolo" data-sb-testo="saluti.titolo">{{saluti.titolo}}</h2>
+      <p class="sezione__testo" data-sb-testo="saluti.testo">{{{saluti.testo}}}</p>
 
-      <ul id="social" class="social">
+      <ul id="social" class="social" data-sb-parte="social">
         {{#ogni social}}
         <li>
           <a class="social__voce" href="{{url}}" target="_blank" rel="noopener">{{{svg}}}<span class="social__nome">{{nome}}</span><span class="social__handle">{{handle}}</span></a>
@@ -14,9 +14,9 @@
       </ul>
     </div>
 
-    <div class="contatti">
-      <h3 class="contatti__titolo">{{saluti.contattiTitolo}}</h3>
-      <p class="contatti__testo">{{{saluti.contattiTesto}}}</p>
+    <div class="contatti" data-sb-blocco="saluti.contatti">
+      <h3 class="contatti__titolo" data-sb-testo="saluti.contattiTitolo">{{saluti.contattiTitolo}}</h3>
+      <p class="contatti__testo" data-sb-testo="saluti.contattiTesto">{{{saluti.contattiTesto}}}</p>
       <p><code id="email" class="contatti__email">{{config.email}}</code></p>
 
       <div class="contatti__azioni">
@@ -33,5 +33,5 @@
     </div>
   </div>
 
-  <p class="saluti__chiusura">{{{saluti.chiusura}}}</p>
+  <p class="saluti__chiusura" data-sb-testo="saluti.chiusura" data-sb-blocco="saluti.chiusura">{{{saluti.chiusura}}}</p>
 </section>

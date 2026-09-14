@@ -1,12 +1,12 @@
-<section id="supporto" class="supporto" aria-labelledby="supporto-titolo">
-  <div class="sezione__testa">
-    <p class="sezione__occhiello">{{supporto.occhiello}}</p>
-    <h2 id="supporto-titolo" class="sezione__titolo">{{supporto.titolo}}</h2>
-    <p class="sezione__testo">{{{supporto.testo}}}</p>
+<section id="supporto" class="supporto" aria-labelledby="supporto-titolo" data-sb-sezione="supporto" data-sb-riquadro="supporto">
+  <div class="sezione__testa" data-sb-blocco="supporto.testa">
+    <p class="sezione__occhiello" data-sb-testo="supporto.occhiello">{{supporto.occhiello}}</p>
+    <h2 id="supporto-titolo" class="sezione__titolo" data-sb-testo="supporto.titolo">{{supporto.titolo}}</h2>
+    <p class="sezione__testo" data-sb-testo="supporto.testo">{{{supporto.testo}}}</p>
   </div>
 
   <!-- Le voci senza URL sono già state tolte dalla generazione: qui non arriva niente di rotto. -->
-  <ol id="listino" class="listino">
+  <ol id="listino" class="listino" data-sb-parte="listino" data-sb-blocco="supporto.listino">
     {{#ogni supporto}}
     <li class="listino__riga">
       <span class="listino__icona">{{{svg}}}</span>
@@ -20,5 +20,5 @@
     {{/ogni}}
   </ol>
 
-  <p class="supporto__chiusura">{{{supporto.chiusura}}}</p>
+  <p class="supporto__chiusura" data-sb-testo="supporto.chiusura" data-sb-blocco="supporto.chiusura">{{{supporto.chiusura}}}</p>
 </section>

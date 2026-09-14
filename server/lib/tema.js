@@ -158,9 +158,60 @@ function famigliaDi(slot, nome) {
   return null;
 }
 
+/**
+ * La famiglia del catalogo con questo nome, in qualunque slot, per chi la
+ * sceglie fuori dal tema (config.stili, `famiglia:<nome>`). I font di
+ * sistema non contano: non hanno un nome da scrivere in font-family, e per
+ * loro c'e gia `ruolo:`.
+ */
+function famigliaCatalogo(nome) {
+  for (const slot of SLOT) {
+    const famiglia = famigliaDi(slot, nome);
+    if (famiglia && famiglia.pesi.length) { return famiglia; }
+  }
+  return null;
+}
+
 /** Valore pronto per --font-*: la famiglia scelta e dietro il suo ripiego. */
 function pilaFont(famiglia) {
   return famiglia.pesi.length ? "'" + famiglia.nome + "', " + famiglia.ripiego : famiglia.ripiego;
+}
+
+/* ------------------------------------------------------------------ */
+/* FONT CARICATI (CONTRATTO-4 §4.4 e §6.2)                              */
+/* ------------------------------------------------------------------ */
+
+const PREFISSO_CARICATO = 'caricato:';
+
+/**
+ * La voce del font caricato indicato da uno slot, oppure null. font.js si
+ * chiede qui dentro e non in cima al file: il catalogo e le formule del
+ * tema non hanno bisogno del disco, e convalida.js carica questo modulo
+ * solo per il catalogo.
+ */
+function caricatoDi(valore) {
+  if (typeof valore !== 'string' || valore.indexOf(PREFISSO_CARICATO) !== 0) { return null; }
+  return require('./font').voce(valore.slice(PREFISSO_CARICATO.length));
+}
+
+/**
+ * Il ripiego di uno slot con un font caricato e quello della famiglia di
+ * partenza dello slot: chi carica un font da titoli si aspetta che, finche
+ * il file non arriva, i titoli restino titoli.
+ */
+function ripiegoDelloSlot(slot) {
+  return famigliaDi(slot, PREDEFINITO.font[slot]).ripiego;
+}
+
+/**
+ * La @font-face di un font caricato, scritta dal generatore condiviso: e la
+ * stessa funzione che la mette in <style id="sb-stili">, cosi un font usato
+ * sia nel tema sia in uno stile ha una regola sola, uguale al byte, e cambia
+ * solo il percorso. `base` va da chi carica il foglio alla radice del sito:
+ * '../' da css/tema.css.
+ */
+function facciaCaricato(voce, base) {
+  return require('../../pannello/condivisi/stili.js').fontFace(voce, { base: base });
 }
 
 /* ------------------------------------------------------------------ */
@@ -218,10 +269,12 @@ function normalizza(tema) {
     colori[chiave] = letto ? esadecimale(letto) : PREDEFINITO.colori[chiave];
   }
 
+  // Un font caricato che non esiste piu (cancellato con la conferma) vale
+  // come un nome fuori catalogo: si torna alla famiglia di partenza.
   const font = {};
   for (const slot of SLOT) {
     const nome = (arrivo.font || {})[slot];
-    font[slot] = famigliaDi(slot, nome) ? nome : PREDEFINITO.font[slot];
+    font[slot] = (famigliaDi(slot, nome) || caricatoDi(nome)) ? nome : PREDEFINITO.font[slot];
   }
 
   const forma = {};
@@ -246,18 +299,23 @@ function normalizza(tema) {
  * Stringa vuota se sono tutti font di sistema: in quel caso il modello non
  * stampa il <link> e la pagina non contatta nessuno.
  */
-function urlGoogleFonts(tema) {
+function urlGoogleFonts(tema, altre) {
   const scelto = normalizza(tema);
   // Una famiglia usata in due slot va chiesta una volta sola, con l'unione
   // dei pesi: due `family=` uguali nello stesso indirizzo sono uno spreco.
   const famiglie = new Map();
-  for (const slot of SLOT) {
-    const famiglia = famigliaDi(slot, scelto.font[slot]);
-    if (!famiglia || !famiglia.pesi.length) { continue; }
+  const aggiungi = (famiglia) => {
+    if (!famiglia || !famiglia.pesi.length) { return; }
     const pesi = famiglie.get(famiglia.nome) || new Set();
     for (const peso of famiglia.pesi) { pesi.add(peso); }
     famiglie.set(famiglia.nome, pesi);
-  }
+  };
+  // Uno slot con un font caricato non passa di qui: famigliaDi non lo
+  // trova, e il suo file sta sul sito, non su Google.
+  for (const slot of SLOT) { aggiungi(famigliaDi(slot, scelto.font[slot])); }
+  // `altre`: i nomi del catalogo scelti fuori dal tema, negli stili dei
+  // singoli elementi (CONTRATTO-4 §6.1). Stessi pesi del catalogo.
+  for (const nome of Array.isArray(altre) ? altre : []) { aggiungi(famigliaCatalogo(nome)); }
   if (!famiglie.size) { return ''; }
 
   const parti = [];
@@ -361,7 +419,21 @@ function css(tema) {
 
   const raggio = t.forma.raggio;
   const font = {};
-  for (const slot of SLOT) { font[slot] = pilaFont(famigliaDi(slot, t.font[slot])); }
+  const nomiFont = {};
+  const facce = [];
+  for (const slot of SLOT) {
+    const caricato = caricatoDi(t.font[slot]);
+    if (!caricato) {
+      font[slot] = pilaFont(famigliaDi(slot, t.font[slot]));
+      nomiFont[slot] = t.font[slot];
+      continue;
+    }
+    font[slot] = "'sb-" + caricato.id + "', " + ripiegoDelloSlot(slot);
+    nomiFont[slot] = caricato.etichetta + ' (caricato)';
+    // Lo stesso font in due slot: una @font-face sola.
+    const faccia = facciaCaricato(caricato, '../');
+    if (faccia && facce.indexOf(faccia) === -1) { facce.push(faccia); }
+  }
 
   // Da qui in giù si scrive il file che chi amministra apre: è italiano
   // vero, con gli accenti, non l'ASCII dei commenti del codice.
@@ -380,9 +452,12 @@ function css(tema) {
     '',
     '   Polarità: ' + (chiara ? 'CHIARA' : 'SCURA') + ' — luminanza del fondo ' + lum.toFixed(3) +
       ', quindi linee, vetri e veli sono ' + (chiara ? 'neri' : 'bianchi') + ' con alpha.',
-    '   Aloni: ' + t.sfondo.aloni + '%.  Font: ' + t.font.titolo + ' / ' + t.font.testo + ' / ' + t.font.mono + '.',
+    '   Aloni: ' + t.sfondo.aloni + '%.  Font: ' + nomiFont.titolo + ' / ' + nomiFont.testo + ' / ' + nomiFont.mono + '.',
     '   ============================================================================= */',
     '',
+    // I font caricati dal pannello stanno sul sito: la loro @font-face va
+    // prima del blocco che li usa, e il percorso parte da css/.
+    ...facce.map((faccia) => faccia + '\n'),
     ':root {',
     '',
     '  /* --- MARCHIO E STATI — gli unici colori scelti a mano ------------------- */',
@@ -551,4 +626,7 @@ const PRESET = [
   }
 ];
 
-module.exports = { css, CATALOGO_FONT, PRESET, urlGoogleFonts, PREDEFINITO };
+module.exports = {
+  css, CATALOGO_FONT, PRESET, urlGoogleFonts, PREDEFINITO,
+  famigliaCatalogo, PREFISSO_CARICATO
+};

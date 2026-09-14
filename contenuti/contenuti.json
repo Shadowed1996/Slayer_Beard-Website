@@ -353,6 +353,36 @@
         "cta": "Fai una donazione",
         "url": ""
       }
-    ]
+    ],
+    "sezioni": [
+      {
+        "id": "regia",
+        "attiva": true
+      },
+      {
+        "id": "diretta",
+        "attiva": true
+      },
+      {
+        "id": "settimana",
+        "attiva": true
+      },
+      {
+        "id": "chi",
+        "attiva": true
+      },
+      {
+        "id": "supporto",
+        "attiva": true
+      },
+      {
+        "id": "saluti",
+        "attiva": true
+      }
+    ],
+    "stili": {},
+    "disposizione": {
+      "blocchi": {}
+    }
   }
 }

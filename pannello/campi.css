@@ -8,6 +8,10 @@
    (--p-*) qui si usano e basta. Si carica dopo, cosi' l'ordine e' chiaro
    anche a chi legge il sorgente della pagina.
 
+   Nessun colore scritto a mano (CONTRATTO-4 §12): le tinte velate si
+   ottengono da --p-* con color-mix, cosi' seguono le variabili del
+   pannello invece di ripeterne i numeri.
+
    Struttura:
      1. editor di testo ricco   (.ricco__*)
      2. colore                  (.colore__*)
@@ -65,7 +69,7 @@
    non basterebbe: c'e' anche il bordo, per chi i colori non li distingue. */
 .ricco__cmd.is-attivo,
 .ricco__cmd[aria-pressed="true"] {
-  background: rgba(34, 224, 255, .13);
+  background: color-mix(in srgb, var(--p-ciano) 13%, transparent);
   border-color: var(--p-ciano);
   color: var(--p-ciano);
 }
@@ -93,7 +97,7 @@
 }
 .ricco__area a { color: var(--p-ciano); }
 .ricco__area code { font-family: var(--p-mono); font-size: .92em; }
-.ricco__area mark { background: rgba(255, 176, 32, .28); color: var(--p-testo); padding: 0 2px; border-radius: 3px; }
+.ricco__area mark { background: color-mix(in srgb, var(--p-allerta) 28%, transparent); color: var(--p-testo); padding: 0 2px; border-radius: 3px; }
 .ricco__area span.evidenza { color: var(--p-magenta); }
 .ricco__area span.tenue { color: var(--p-testo-tenue); }
 .ricco__area span.mono { font-family: var(--p-mono); font-size: .92em; }
@@ -130,7 +134,7 @@
   border-top: 1px solid var(--p-linea);
 }
 .ricco__nota { color: var(--p-testo-tenue); font-family: var(--p-mono); overflow-wrap: anywhere; }
-.ricco__avviso { color: var(--p-allerta); background: rgba(255, 176, 32, .08); }
+.ricco__avviso { color: var(--p-allerta); background: color-mix(in srgb, var(--p-allerta) 8%, transparent); }
 
 /* In modalita' codice il campo cambia faccia: si vede a colpo d'occhio
    che quello che si sta toccando non e' piu' il testo, e' il sorgente. */
@@ -198,7 +202,7 @@
 .colore__contrasto[data-grave="1"] .colore__livello {
   border-color: var(--p-errore);
   color: var(--p-errore);
-  background: rgba(255, 92, 120, .1);
+  background: color-mix(in srgb, var(--p-errore) 10%, transparent);
 }
 .colore__contrasto[data-grave="1"] .colore__verdetto { color: var(--p-errore); }
 
@@ -234,7 +238,7 @@
 }
 .interruttore:hover { border-color: var(--p-linea-viva); }
 .interruttore:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 2px; }
-.interruttore[aria-checked="true"] { background: rgba(34, 224, 255, .16); border-color: var(--p-ciano); }
+.interruttore[aria-checked="true"] { background: color-mix(in srgb, var(--p-ciano) 16%, transparent); border-color: var(--p-ciano); }
 
 .interruttore__pista { position: absolute; inset: 0; display: block; }
 .interruttore__pallina {
@@ -293,9 +297,12 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease;
+  transition: border-color var(--p-durata-lampo) ease;
 }
-.preset:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+/* Superfici piatte come nella regia (CONTRATTO-4 §12): al passaggio del
+   mouse compare una linea, niente ombre né sollevamenti. Il bordo porta
+   già il colore guida del preset, quindi la linea sta fuori, staccata. */
+.preset:hover { outline: 1px solid var(--p-linea-viva); outline-offset: 1px; }
 .preset:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 2px; }
 .preset__nome { font-size: 13.5px; font-weight: 600; }
 .preset__campioni { display: flex; gap: 4px; }
@@ -305,7 +312,7 @@
   border-radius: 50%;
   /* Il contorno chiaro serve ai campioni scuri su fondo scuro: senza,
      il nero del tema notte sparirebbe dentro il bottone. */
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-testo) 35%, transparent);
 }
 .preset__vuoto { font-size: 13px; color: var(--p-testo-tenue); }
 
@@ -335,5 +342,4 @@
   .preset {
     transition: none;
   }
-  .preset:hover { transform: none; }
 }

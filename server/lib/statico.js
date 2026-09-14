@@ -9,7 +9,8 @@
 
    Fuori dal browser restano server/ (ci sono l'hash della password e i
    backup) e i file di lavoro dentro contenuti/ — tranne contenuti/media/,
-   che e la libreria di immagini e nel sito pubblicato serve davvero.
+   che e la libreria di immagini e nel sito pubblicato serve davvero, e i
+   font di contenuti/font/, che servono allo stesso modo.
    ===================================================================== */
 
 const fs = require('node:fs');
@@ -40,6 +41,7 @@ const TIPI = {
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
   '.mp4': 'video/mp4',
   '.webm': 'video/webm',
   '.mp3': 'audio/mpeg',
@@ -74,10 +76,17 @@ function nonModificato(req, etag, mtime) {
   return false;
 }
 
+// I soli file che escono da contenuti/font/: i font. elenco.json e un file
+// di lavoro del pannello, e non serve a nessuna pagina.
+const ESTENSIONI_FONT = new Set(['.woff2', '.woff', '.ttf', '.otf']);
+
 /** Vero se il file, pur stando nella radice, non deve uscire dal browser. */
 function riservato(assoluto) {
   if (eDentro(P.server, assoluto)) { return true; }
   if (eDentro(P.media, assoluto)) { return false; }
+  // I font caricati dal pannello stanno nel sito pubblicato come le
+  // immagini: css/tema.css e <style id="sb-stili"> li chiedono da qui.
+  if (eDentro(P.font, assoluto) && ESTENSIONI_FONT.has(path.extname(assoluto).toLowerCase())) { return false; }
   return eDentro(P.cartellaContenuti, assoluto);
 }
 

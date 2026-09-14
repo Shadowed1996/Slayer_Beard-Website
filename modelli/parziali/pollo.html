@@ -9,11 +9,11 @@
      la contiene ha già un nome accessibile, ripeterlo dentro sarebbe rumore.
      Il fondo viola di mascot.png non è trasparente: lo sfuma css/pollo.css con
      una maschera, qui non serve nessun accorgimento. -->
-<div id="pollo" class="pollo" data-stato="riposo">
+<div id="pollo" class="pollo" data-stato="riposo" data-sb-parte="pollo">
   <div id="pollo-fumetto" class="pollo__fumetto" aria-hidden="true" hidden><span class="pollo__testo"></span></div>
 
   <button id="pollo-bottone" class="pollo__bottone" type="button" aria-label="{{pollo.etichetta}}">
-    <img class="pollo__img" src="{{config.immagini.mascotte}}" alt="" aria-hidden="true">
+    <img class="pollo__img" src="{{config.immagini.mascotte}}" alt="" aria-hidden="true" data-sb-immagine="config.immagini.mascotte">
   </button>
 
   <!-- La croce è disegnata dal CSS con due barrette: il DOM resta quello del

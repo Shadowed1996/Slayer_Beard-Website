@@ -147,6 +147,9 @@ function gestisciErrore(res, err) {
   if (err && Array.isArray(err.errori)) { extra.errori = err.errori; }
   if (err && Array.isArray(err.problemi)) { extra.problemi = err.problemi; }
   if (err && Array.isArray(err.usatoDa)) { extra.usatoDa = err.usatoDa; }
+  // Un font in uso (409): il pannello mostra dove, prima di chiedere se
+  // cancellarlo lo stesso.
+  if (err && Array.isArray(err.usatoIn)) { extra.usatoIn = err.usatoIn; }
   errore(res, stato, messaggio, extra);
 }
 

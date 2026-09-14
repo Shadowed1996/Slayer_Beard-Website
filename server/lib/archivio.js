@@ -84,12 +84,28 @@ function fondi(base, modifiche) {
   return fuori;
 }
 
+/*
+   I rami che scrive l'editor (CONTRATTO-4 §6.4) si sostituiscono in blocco
+   quando arrivano, come gia gli elenchi. Con la fusione chiave per chiave
+   uno stile tolto nel pannello rinascerebbe dal salvato: il pannello manda
+   config.stili senza «testo:deck.titolo», la fusione tiene quello del disco,
+   e chi amministra vede tornare il colore che ha appena cancellato.
+*/
+const RAMI_IN_BLOCCO = ['sezioni', 'stili', 'disposizione'];
+
 /** Applica al documento salvato quello che arriva dal pannello. */
 function unisci(documento, arrivo) {
   const fuori = copia(documento);
   if (arrivo && arrivo.testi) { fuori.testi = Object.assign(copia(documento.testi), copia(arrivo.testi)); }
-  if (arrivo && arrivo.config) { fuori.config = fondi(documento.config, arrivo.config); }
+  if (arrivo && arrivo.config) {
+    fuori.config = fondi(documento.config, arrivo.config);
+    for (const ramo of RAMI_IN_BLOCCO) {
+      if (Object.prototype.hasOwnProperty.call(arrivo.config, ramo)) {
+        fuori.config[ramo] = copia(arrivo.config[ramo]);
+      }
+    }
+  }
   return fuori;
 }
 
-module.exports = { leggi, salva, unisci, fondi, copia };
+module.exports = { leggi, salva, unisci, fondi, copia, RAMI_IN_BLOCCO };

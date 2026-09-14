@@ -1,0 +1,674 @@
+/* =====================================================================
+   stile.css — schede «Stile» e «Avanzate» (editor/stile.js).
+
+   Parla la lingua della regia (CONTRATTO-4 §12): grafite, linee da 1 px,
+   nomi in monospazio maiuscolo, viola per quello che è scelto, ciano per
+   il fuoco. Solo le variabili --p-* di pannello.css; le tinte leggere si
+   ottengono con color-mix sulle stesse variabili, così nessun colore
+   scritto a mano entra in questo foglio.
+
+   Riusa quello che il pannello ha già: .btn, .campo__input, .campo__scelta,
+   .interruttore, .ico, .sr-only. Qui solo quello che manca, col prefisso
+   .stile per non toccare gli altri moduli.
+
+   Il pannello laterale è largo 380–760 px: la disposizione dei controlli
+   segue la sua larghezza (container query su .stile), non la finestra.
+
+   Indice
+     1. Contenitore, note, dispositivo
+     2. Fisarmonica dei gruppi
+     3. Griglia e intestazione dei campi
+     4. Numeri
+     5. Scelte: menu e bottoni
+     6. Colore di ripiego e controlli di TEMA
+     7. Immagine di sfondo
+     8. Riquadro degli spazi
+     9. Avanzate: visibilità, sezioni, ripristino
+    10. Larghezze del pannello e movimento ridotto
+   ===================================================================== */
+
+/* --------------------------------------------------------------- 1. */
+.stile {
+  container: stile / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--p-testo);
+}
+.motore-slot + .motore-slot .stile,
+.stile + .stile { margin-top: 2px; }
+
+.stile__glifo { display: block; flex: none; }
+
+.stile__nota {
+  padding: 12px 14px;
+  border: 1px dashed var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  color: var(--p-testo-medio);
+  font-size: 13px;
+}
+
+.stile__dispositivi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-fondo-2);
+}
+.stile__stai {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.stile__stai strong { color: var(--p-testo); font-weight: 700; }
+.stile__stai .stile__glifo { color: var(--p-viola); }
+
+.stile__dispositivi-scelta {
+  margin-left: auto;
+  display: inline-flex;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  overflow: hidden;
+}
+.stile__dispositivo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--p-testo-medio);
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color var(--p-durata-lampo) ease, color var(--p-durata-lampo) ease;
+}
+.stile__dispositivo + .stile__dispositivo { border-left: 1px solid var(--p-linea); }
+.stile__dispositivo:hover { background: var(--p-pannello-3); color: var(--p-testo); }
+.stile__dispositivo:focus-visible { outline-offset: -3px; }
+.stile__dispositivo[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--p-viola) 22%, transparent);
+  color: var(--p-testo);
+  box-shadow: inset 0 -2px 0 var(--p-viola);
+}
+/* Il puntino dice «qui c'è qualcosa di cambiato» senza aprire il dispositivo. */
+.stile__dispositivo-punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--p-viola);
+}
+.stile__dispositivi-nota {
+  flex-basis: 100%;
+  padding-left: 9px;
+  border-left: 2px solid var(--p-viola);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--p-testo-medio);
+}
+
+/* --------------------------------------------------------------- 2. */
+.stile__gruppo {
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+}
+.stile__gruppo-testa { margin: 0; font-size: inherit; font-weight: inherit; }
+.stile__gruppo-bottone {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--p-raggio-s);
+  background: transparent;
+  color: var(--p-testo);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+}
+.stile__gruppo-bottone:hover { background: var(--p-pannello-2); }
+.stile__gruppo-bottone:focus-visible { outline-offset: -2px; }
+.stile__gruppo-bottone[aria-expanded="true"] { border-radius: var(--p-raggio-s) var(--p-raggio-s) 0 0; }
+.stile__conta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 1px solid var(--p-viola);
+  border-radius: 999px;
+  color: var(--p-testo);
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.stile__freccia {
+  margin-left: auto;
+  display: inline-flex;
+  color: var(--p-testo-tenue);
+  transition: transform var(--p-durata) ease;
+}
+.stile__gruppo-bottone[aria-expanded="true"] .stile__freccia { transform: rotate(180deg); color: var(--p-testo-medio); }
+.stile__gruppo-corpo {
+  padding: 0 12px 14px;
+  border-top: 1px solid var(--p-linea);
+}
+
+/* --------------------------------------------------------------- 3. */
+.stile__griglia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px 18px;
+  padding-top: 12px;
+}
+.stile__campo { min-width: 0; }
+
+.stile__testa {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 26px;
+  margin-bottom: 6px;
+}
+.stile__nome {
+  flex: none;
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--p-testo-medio);
+}
+.stile__testa[data-stato="proprio"] .stile__nome { color: var(--p-testo); }
+
+/* Pallino: pieno viola = cambiato su questo dispositivo; anello viola =
+   preso da un dispositivo più grande; anello spento = come nel sito. La
+   differenza sta nella forma, non solo nel colore. */
+.stile__pallino {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--p-linea-viva);
+}
+.stile__testa[data-stato="proprio"] .stile__pallino { background: var(--p-viola); border-color: var(--p-viola); }
+.stile__testa[data-stato="ereditato"] .stile__pallino { border-color: var(--p-viola); }
+
+.stile__da {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--p-testo-tenue);
+}
+.stile__testa[data-stato="ereditato"] .stile__da-testo { color: var(--p-testo-medio); }
+
+.stile__ripristina,
+.stile__lucchetto {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: transparent;
+  color: var(--p-testo-medio);
+  cursor: pointer;
+  transition: color var(--p-durata-lampo) ease, border-color var(--p-durata-lampo) ease, background-color var(--p-durata-lampo) ease;
+}
+.stile__ripristina:hover,
+.stile__lucchetto:hover { color: var(--p-testo); border-color: var(--p-linea-viva); background: var(--p-pannello-3); }
+/* Senza niente da togliere il bottone non serve, ma il suo posto resta:
+   le intestazioni non ballano quando un valore compare o sparisce. */
+.stile__ripristina:disabled { visibility: hidden; }
+
+.stile__aiuto {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--p-testo-tenue);
+}
+.stile__errore {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--p-errore);
+}
+
+/* --------------------------------------------------------------- 4. */
+.stile__riga-numero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.stile__cursore {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  background: transparent;
+  accent-color: var(--p-viola);
+  cursor: pointer;
+}
+.stile__cursore:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 2px; }
+/* Cursore «di passaggio»: segna il valore del sito, non una scelta. */
+.stile__controllo-numero.is-fantasma .stile__cursore { accent-color: var(--p-linea-viva); }
+
+.stile__scatola {
+  flex: none;
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  overflow: hidden;
+}
+.stile__scatola:hover { border-color: var(--p-linea-viva); }
+.stile__scatola:focus-within { border-color: var(--p-ciano); }
+
+.stile .stile__numero {
+  width: 5.6em;
+  min-height: 32px;
+  /* Un po' più d'aria a destra: il segnaposto in corsivo sporge, e la
+     scatola che taglia gli angoli gli mangerebbe l'ultima cifra. */
+  padding: 4px 10px 4px 7px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--p-mono);
+  font-size: 13px;
+  text-align: right;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.stile .stile__numero:focus { outline: none; background: var(--p-pannello-2); }
+.stile .stile__numero[aria-invalid="true"] { color: var(--p-errore); }
+.stile__numero::-webkit-inner-spin-button,
+.stile__numero::-webkit-outer-spin-button,
+.stile__lato::-webkit-inner-spin-button,
+.stile__lato::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.stile__numero::placeholder,
+.stile__lato::placeholder,
+.stile__esa::placeholder { color: var(--p-testo-tenue); font-style: italic; opacity: 1; }
+
+.stile__suffisso,
+.stile__unita {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 0;
+  border-left: 1px solid var(--p-linea);
+  background: var(--p-pannello-2);
+  color: var(--p-testo-medio);
+  font-family: var(--p-mono);
+  font-size: 12px;
+}
+.stile__unita { cursor: pointer; }
+.stile__unita:focus { outline: none; color: var(--p-testo); background: var(--p-pannello-3); }
+.stile__unita:focus-visible { box-shadow: inset 0 0 0 2px var(--p-ciano); }
+
+/* --------------------------------------------------------------- 5. */
+.stile .stile__menu { font-size: 14px; padding-top: 7px; padding-bottom: 7px; }
+.stile .stile__menu.is-fantasma { color: var(--p-testo-medio); }
+
+.stile__bottoni {
+  display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  overflow: hidden;
+}
+.stile__bottone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 40px;
+  min-height: 34px;
+  padding: 5px 11px;
+  border: 0;
+  background: var(--p-pannello);
+  color: var(--p-testo-medio);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color var(--p-durata-lampo) ease, color var(--p-durata-lampo) ease;
+}
+.stile__bottone + .stile__bottone { border-left: 1px solid var(--p-linea); }
+.stile__bottone--glifo { padding: 5px 9px; }
+.stile__bottone:hover { background: var(--p-pannello-3); color: var(--p-testo); }
+.stile__bottone:focus-visible { outline-offset: -3px; }
+.stile__bottone[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--p-viola) 22%, transparent);
+  color: var(--p-testo);
+  box-shadow: inset 0 -2px 0 var(--p-viola);
+}
+/* Il valore che arriva da un altro dispositivo o dal sito: tratteggiato,
+   per distinguerlo da una scelta fatta qui. */
+.stile__bottone.is-fantasma { color: var(--p-testo); box-shadow: inset 0 -2px 0 var(--p-linea-viva); }
+
+.stile__punto {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.stile__punto[data-tinta="viola"] { background: var(--p-viola); box-shadow: 0 0 6px color-mix(in srgb, var(--p-viola) 80%, transparent); }
+.stile__punto[data-tinta="ciano"] { background: var(--p-ciano); box-shadow: 0 0 6px color-mix(in srgb, var(--p-ciano) 80%, transparent); }
+
+/* --------------------------------------------------------------- 6. */
+.stile__colore { display: flex; flex-direction: column; gap: 8px; }
+.stile__campioni { display: flex; flex-wrap: wrap; gap: 6px; }
+.stile__campione {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--p-linea-viva);
+  border-radius: 4px;
+  background: var(--stile-campione, transparent);
+  cursor: pointer;
+}
+.stile__campione:hover { border-color: var(--p-testo-medio); }
+.stile__campione[aria-pressed="true"] { outline: 2px solid var(--p-viola); outline-offset: 2px; }
+.stile__campione.is-fantasma::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 1px dashed var(--p-testo-medio);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.stile__riga { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stile__tavolozza {
+  flex: none;
+  width: 44px;
+  height: 34px;
+  padding: 3px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  cursor: pointer;
+}
+.stile__tavolozza::-webkit-color-swatch-wrapper { padding: 0; }
+.stile__tavolozza::-webkit-color-swatch { border: 0; border-radius: 3px; }
+.stile__tavolozza::-moz-color-swatch { border: 0; border-radius: 3px; }
+.stile__tavolozza.is-fantasma { opacity: .55; border-style: dashed; }
+.stile .stile__esa { width: 9.5em; font-family: var(--p-mono); font-size: 13px; }
+
+.stile__esterno { min-width: 0; }
+/* I controlli di TEMA hanno un loro nome visibile: nella scheda lo dice già
+   l'intestazione del campo, con pallino e provenienza. Resta per i lettori
+   di schermo, che lo usano come nome del gruppo. */
+.stile__campo--esterno .comando-tema__etichetta {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------- 7. */
+.stile__immagine { display: flex; align-items: center; gap: 12px; }
+.stile__miniatura {
+  flex: none;
+  width: 84px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background:
+    linear-gradient(45deg, var(--p-pannello-2) 25%, transparent 25%, transparent 75%, var(--p-pannello-2) 75%) 0 0 / 12px 12px,
+    linear-gradient(45deg, var(--p-pannello-2) 25%, transparent 25%, transparent 75%, var(--p-pannello-2) 75%) 6px 6px / 12px 12px,
+    var(--p-pannello);
+}
+.stile__miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.stile__miniatura.is-fantasma { border-style: dashed; }
+.stile__miniatura.is-fantasma img { opacity: .5; }
+.stile__vuota {
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.stile__immagine-lato { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.stile__didascalia {
+  font-family: var(--p-mono);
+  font-size: 11px;
+  color: var(--p-testo-medio);
+  overflow-wrap: anywhere;
+}
+.stile__azioni { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* --------------------------------------------------------------- 8. */
+.stile__spazi-teste { display: grid; gap: 2px; margin-bottom: 8px; }
+.stile__spazi-teste .stile__testa { margin-bottom: 0; }
+
+.stile__fuori,
+.stile__dentro {
+  --stile-cella: 4em;
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--stile-cella) minmax(0, 1fr) var(--stile-cella);
+  grid-template-areas:
+    ".      sopra  ."
+    "sinistra centro destra"
+    ".      sotto  .";
+  align-items: center;
+  gap: 5px;
+  padding: 6px;
+}
+/* Fuori tratteggiato, dentro a filo pieno: si capisce quale spazio sta
+   attorno all'elemento e quale sta dentro, anche senza leggere. */
+.stile__fuori {
+  border: 1px dashed var(--p-linea-viva);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-fondo-2);
+}
+.stile__dentro {
+  grid-area: centro;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 4px;
+  background: var(--p-pannello-2);
+}
+.stile__cella { display: flex; justify-content: center; min-width: 0; }
+.stile__cella--sopra { grid-area: sopra; }
+.stile__cella--destra { grid-area: destra; }
+.stile__cella--sotto { grid-area: sotto; }
+.stile__cella--sinistra { grid-area: sinistra; }
+.stile__nucleo {
+  grid-area: centro;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid var(--p-linea);
+  border-radius: 3px;
+  background: var(--p-pannello-3);
+  color: var(--p-testo-tenue);
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.stile__cartellino {
+  position: absolute;
+  top: 5px;
+  left: 7px;
+  font-family: var(--p-mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+  pointer-events: none;
+}
+
+.stile__lato {
+  width: 100%;
+  max-width: var(--stile-cella);
+  min-height: 30px;
+  padding: 3px 2px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 4px;
+  background: var(--p-pannello);
+  color: var(--p-testo);
+  font-family: var(--p-mono);
+  font-size: 12.5px;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.stile__lato:hover { border-color: var(--p-linea-viva); }
+.stile__lato:focus { outline: none; border-color: var(--p-ciano); box-shadow: 0 0 0 1px var(--p-ciano); }
+.stile__lato.is-impostato { border-color: var(--p-viola); }
+.stile__lato[aria-invalid="true"] { border-color: var(--p-errore); color: var(--p-errore); }
+
+.stile__lucchetto[aria-pressed="true"] {
+  color: var(--p-testo);
+  border-color: var(--p-viola);
+  background: color-mix(in srgb, var(--p-viola) 18%, transparent);
+}
+
+/* --------------------------------------------------------------- 9. */
+.stile__sezione {
+  padding: 11px 12px 13px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+}
+.stile__sezione .stile__griglia { padding-top: 8px; }
+.stile__sezione-titolo {
+  margin: 0;
+  font-family: var(--p-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo);
+}
+.stile__sezione-titolo:focus { outline: none; }
+.stile__sezione-titolo:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 3px; }
+.stile__sezione--pericolo { border-color: color-mix(in srgb, var(--p-errore) 35%, var(--p-linea)); }
+.stile__sezione--pericolo .btn { margin-top: 10px; }
+.stile__dove { margin-top: 6px; font-size: 13px; color: var(--p-testo-medio); }
+
+.stile__nascosto { display: flex; flex-direction: column; gap: 8px; }
+.stile__leva-testo { font-size: 14px; color: var(--p-testo); cursor: pointer; }
+.stile__nascosto .stile__aiuto { margin-top: 0; }
+.stile__mostra { align-self: flex-start; }
+
+.stile__riepilogo {
+  display: grid;
+  gap: 1px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-linea);
+  overflow: hidden;
+}
+.stile__riepilogo-voce {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  background: var(--p-fondo-2);
+  color: var(--p-testo-medio);
+  font-size: 12.5px;
+}
+.stile__riepilogo-voce.is-corrente { background: var(--p-pannello-2); color: var(--p-testo); }
+.stile__riepilogo-nome {
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  min-width: 7em;
+}
+.stile__riepilogo-stato { margin-left: auto; text-align: right; }
+.stile__riepilogo-voce[data-nascosto="1"] .stile__riepilogo-stato { color: var(--p-allerta); }
+
+.stile__protetto {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 9px 11px;
+  border: 1px solid var(--p-linea);
+  border-left: 2px solid var(--p-ciano);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-fondo-2);
+  color: var(--p-testo-medio);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.stile__protetto .ico { color: var(--p-ciano); margin-top: 2px; }
+.stile__aiuto--protetto {
+  padding-left: 9px;
+  border-left: 2px solid var(--p-ciano);
+  color: var(--p-testo-medio);
+}
+
+/* --------------------------------------------------------------- 10. */
+
+/* Pannello stretto: il selettore del dispositivo va a capo sotto la frase. */
+@container stile (max-width: 430px) {
+  .stile__dispositivi-scelta { margin-left: 0; width: 100%; }
+  .stile__dispositivo { flex: 1 1 0; justify-content: center; }
+  .stile__immagine { align-items: flex-start; }
+}
+
+/* Molto stretto (telefono con il pannello a tutta larghezza): le etichette
+   dei dispositivi lasciano il posto ai soli disegni, che hanno il nome nel
+   title e nel testo per i lettori di schermo. */
+@container stile (max-width: 340px) {
+  .stile__dispositivo-nome { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .stile__immagine { flex-direction: column; }
+  .stile__fuori, .stile__dentro { --stile-cella: 3.4em; gap: 3px; padding: 4px; }
+}
+
+/* Pannello largo: due colonne di controlli, riquadro degli spazi più comodo. */
+@container stile (min-width: 540px) {
+  .stile__griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stile__campo--pieno { grid-column: 1 / -1; }
+  .stile__fuori,
+  .stile__dentro { --stile-cella: 4.8em; gap: 7px; padding: 8px; }
+  .stile__nucleo { min-height: 56px; }
+  .stile__spazi-teste { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; }
+}
+
+/* Le transizioni passano già dalle durate --p-*, che pannello.css porta a
+   1 ms col movimento ridotto; qui resta solo la freccia, che ruota. */
+@media (prefers-reduced-motion: reduce) {
+  .stile__freccia { transition: none; }
+}

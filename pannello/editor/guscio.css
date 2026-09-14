@@ -1,0 +1,691 @@
+/* =====================================================================
+   guscio.css — la struttura dell'editor unico (CONTRATTO-4 §9.1, §12).
+
+   Barra alta, pannello laterale ridimensionabile, anteprima sul palco.
+   Stessa lingua della regia del sito: grafite, linee da 1 px, etichette
+   in monospazio maiuscolo, viola per le azioni e per cio' che e' scelto,
+   ciano per cio' che e' acceso (fuoco, maniglie, passo attuale).
+
+   Solo variabili --p-* di pannello.css: niente colori scritti qui.
+
+   Indice
+     1. App e barra alta
+     2. Banco: pannello, maniglia, palco
+     3. Pannello: ricerca, riepilogo, modi, testa, percorso, schede
+     4. Pagina: scorciatoie, passi, pubblicazione
+     5. Viste del menu
+     6. Schermi stretti: cassetto sotto i 1024 px, barra a due righe
+     7. Movimento ridotto
+   ===================================================================== */
+
+/* --------------------------------------------------------------- 1. */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Link per saltare al pannello con la tastiera: invisibile finche' non
+   riceve il fuoco. */
+.salta {
+  position: absolute;
+  left: 8px; top: -60px;
+  z-index: 80;
+  padding: 8px 12px;
+  background: var(--p-pannello-2);
+  border: 1px solid var(--p-ciano);
+  border-radius: var(--p-raggio-s);
+  color: var(--p-testo);
+  font-family: var(--p-mono);
+  font-size: 12px;
+}
+.salta:focus { top: 8px; }
+
+.barra {
+  flex: none;
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--p-barra-h);
+  padding: 7px 12px;
+  background: var(--p-fondo-2);
+  border-bottom: 1px solid var(--p-linea);
+}
+.barra__sinistra,
+.barra__centro,
+.barra__destra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* La sinistra cede per prima (il nome dell'elemento si accorcia), centro
+   e destra non si stringono mai: niente pezzi della barra uno sopra l'altro. */
+.barra__sinistra { flex: 1 1 0; }
+.barra__centro   { flex: none; gap: 10px; }
+.barra__destra   { flex: none; justify-content: flex-end; }
+
+.barra__icona {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 36px; height: 36px; flex: none;
+  padding: 0 8px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello-2);
+  color: var(--p-testo-medio);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color var(--p-durata-lampo) ease, border-color var(--p-durata-lampo) ease, color var(--p-durata-lampo) ease;
+}
+.barra__icona:hover:not(:disabled) { color: var(--p-testo); border-color: var(--p-linea-viva); background: var(--p-pannello-3); }
+.barra__icona:disabled { opacity: .36; cursor: not-allowed; }
+.barra__icona[aria-expanded="true"] { color: var(--p-ciano); border-color: var(--p-ciano); background: var(--p-ciano-velo); }
+
+.barra__cassetto { display: none; }
+
+.barra__titolo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+.barra__marchio {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  color: var(--p-testo); text-decoration: none;
+  font-family: var(--p-mono); font-size: 13px; font-weight: 500;
+}
+.barra__marchio img { border-radius: 50%; border: 1px solid var(--p-linea-forte); }
+.barra__marchio:hover { color: var(--p-ciano); }
+.barra__sep { color: var(--p-testo-tenue); flex: none; }
+.barra__selezione {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--p-mono);
+  font-size: 11.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--p-ciano);
+}
+
+/* --- dispositivi: controllo a segmenti --- */
+.dispositivi {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-fondo);
+}
+.dispositivi__btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--p-testo-tenue);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dispositivi__btn .ico { width: 16px; height: 16px; }
+.dispositivi__btn:hover:not(:disabled) { color: var(--p-testo); background: var(--p-pannello-2); }
+.dispositivi__btn[aria-pressed="true"] {
+  color: var(--p-su-colore);
+  background: var(--p-viola-cupo);
+  border-color: var(--p-viola);
+}
+.dispositivi__btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.storia { display: inline-flex; gap: 4px; }
+
+/* --- stato e comandi --- */
+.barra__stato {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+}
+.barra__pubblicazione {
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .04em;
+  color: var(--p-testo-tenue);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.barra__pubblicazione[data-da-fare="1"] { color: var(--p-allerta); }
+.barra__pubblicazione:empty { display: none; }
+
+/* --------------------------------------------------------------- 2. */
+.banco {
+  --lato-larghezza: 480px;
+  flex: 1 1 auto;
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--lato-larghezza) 9px minmax(0, 1fr);
+  min-height: 0;
+  /* clip e non solo hidden: uno scrollIntoView dentro il pannello non puo'
+     far salire tutto l'editor (trappola gia' vista a Mobscene93). */
+  overflow: hidden;
+  overflow: clip;
+}
+
+.lato {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--p-fondo-2);
+}
+.lato:focus { outline: none; }
+.lato__avvio,
+.lato__guasto { margin: 18px; color: var(--p-testo-medio); font-size: 14px; }
+
+.maniglia {
+  position: relative;
+  z-index: 4;
+  cursor: col-resize;
+  background: var(--p-fondo-2);
+  border-left: 1px solid var(--p-linea);
+  border-right: 1px solid var(--p-linea);
+  touch-action: none;
+}
+.maniglia::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 3px; height: 40px;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background: var(--p-linea-viva);
+  transition: background-color var(--p-durata) ease, height var(--p-durata) ease;
+}
+.maniglia:hover::after,
+.banco.is-ridimensiona .maniglia::after { background: var(--p-ciano); height: 72px; }
+.maniglia:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: -2px; border-radius: 0; }
+.maniglia:focus-visible::after { background: var(--p-ciano); }
+.banco.is-ridimensiona { cursor: col-resize; user-select: none; }
+.banco.is-ridimensiona iframe { pointer-events: none; }
+
+.palco {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  overflow: clip;
+  background-color: var(--p-palco);
+  background-image: radial-gradient(var(--p-palco-punto) 1px, transparent 1.4px);
+  background-size: 18px 18px;
+}
+/* Assoluto e a tutta area: da' al motore un contenitore con un'altezza
+   vera, dentro cui calcola lo zoom del dispositivo. */
+.palco__anteprima {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.palco__vuoto {
+  margin: auto;
+  width: min(460px, calc(100% - 32px));
+  padding: 20px 22px;
+  border: 1px dashed var(--p-linea-forte);
+  border-radius: var(--p-raggio);
+  background: var(--p-pannello);
+  color: var(--p-testo-medio);
+  font-size: 14px;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+}
+
+/* --------------------------------------------------------------- 3. */
+.lato__ricerca {
+  flex: none;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--p-linea);
+  position: relative;
+}
+
+.ricerca { display: flex; flex-direction: column; gap: 5px; }
+.ricerca__riga { position: relative; display: flex; align-items: center; }
+.ricerca__ico { position: absolute; left: 9px; color: var(--p-testo-tenue); pointer-events: none; }
+.ricerca__input {
+  width: 100%;
+  padding: 7px 30px 7px 32px;
+  background: var(--p-pannello);
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  color: var(--p-testo);
+  font: inherit; font-size: 13.5px;
+}
+.ricerca__input::-webkit-search-cancel-button { display: none; }
+.ricerca__input:hover { border-color: var(--p-linea-viva); }
+.ricerca__input:focus { border-color: var(--p-viola); outline: 2px solid var(--p-viola-bordo); outline-offset: 0; }
+.ricerca__pulisci {
+  position: absolute; right: 5px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; padding: 0;
+  border: 0; border-radius: 4px;
+  background: none; color: var(--p-testo-tenue);
+  cursor: pointer;
+}
+.ricerca__pulisci:hover { color: var(--p-testo); }
+.ricerca__aiuto {
+  font-family: var(--p-mono); font-size: 10px;
+  color: var(--p-testo-tenue);
+  padding-left: 2px;
+}
+.ricerca__aiuto kbd { font-family: inherit; border: 1px solid var(--p-linea-forte); border-radius: 3px; padding: 0 3px; }
+
+/* I risultati coprono il pannello invece di spingerlo in giu': la testa
+   dell'elemento scelto non deve saltare mentre si digita. */
+.ricerca__risultati {
+  position: absolute;
+  left: 14px; right: 14px; top: calc(100% - 4px);
+  z-index: 12;
+  display: flex; flex-direction: column; gap: 1px;
+  max-height: 52vh;
+  overflow-y: auto;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  box-shadow: var(--p-ombra);
+  padding: 3px;
+}
+.ricerca__voce { display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.ricerca__voce:hover, .ricerca__voce.is-scelta { background: var(--p-pannello-3); }
+.ricerca__voce.is-scelta { outline: 1px solid var(--p-ciano); outline-offset: -1px; }
+.ricerca__etichetta { font-size: 13.5px; color: var(--p-testo); }
+.ricerca__dove { font-family: var(--p-mono); font-size: 10px; color: var(--p-testo-tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ricerca__vuoto { padding: 8px; font-size: 13px; color: var(--p-testo-medio); }
+
+/* --- riepilogo degli errori --- */
+.lato__riepilogo {
+  flex: none;
+  max-height: 34vh;
+  overflow-y: auto;
+  margin: 10px 14px 0;
+}
+.riepilogo {
+  padding: 10px 12px;
+  border: 1px solid var(--p-errore-bordo);
+  border-left: 3px solid var(--p-errore);
+  background: var(--p-errore-velo);
+  border-radius: var(--p-raggio-s);
+  color: var(--p-errore);
+  font-size: 13.5px;
+}
+.riepilogo__titolo { font-weight: 600; }
+.riepilogo ul { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.riepilogo li { display: flex; flex-direction: column; gap: 1px; color: var(--p-testo-medio); }
+.riepilogo button {
+  display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: baseline;
+  background: none; border: 0; padding: 0;
+  color: var(--p-ciano); font: inherit; cursor: pointer; text-align: left;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.riepilogo button code { font-size: 10.5px; color: var(--p-testo-tenue); text-decoration: none; }
+.riepilogo__messaggio { font-size: 13px; }
+
+/* --- i tre modi --- */
+.lato__modo {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.lato__testa {
+  flex: none;
+  padding: 12px 16px 12px;
+  border-bottom: 1px solid var(--p-linea);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lato__modo[data-modo="elemento"] .lato__testa { border-bottom: 0; padding-bottom: 8px; }
+.lato__testa--vista { gap: 6px; }
+
+.lato__occhiello {
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.lato__scorri .lato__occhiello { margin: 22px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--p-linea); }
+.lato__scorri > .lato__occhiello:first-child { margin-top: 0; }
+
+.lato__titolo {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -.005em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+/* I titoli ricevono il fuoco solo per guidare la tastiera (tabindex=-1). */
+.lato__titolo:focus, .lato__titolo:focus-visible { outline: none; }
+.lato__nota { font-size: 13.5px; color: var(--p-testo-medio); line-height: 1.45; }
+
+/* Il contenitore che scorre. Container query «lato» per i moduli:
+   @container lato (max-width: 460px) { … } */
+.lato__scorri {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 14px 16px 48px;
+  container-type: inline-size;
+  container-name: lato;
+}
+.lato__scorri:focus { outline: none; }
+.lato__scorri:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: -3px; border-radius: 0; }
+
+.lato__vuoto {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 16px;
+  border: 1px dashed var(--p-linea-forte);
+  border-radius: var(--p-raggio);
+  color: var(--p-testo-medio);
+  font-size: 13.5px;
+}
+.lato__vuoto-titolo {
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo);
+}
+.lato__azioni { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+/* --- percorso dell'elemento --- */
+.percorso__elenco {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 2px 0;
+  margin-bottom: 6px;
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.percorso__voce { display: inline-flex; align-items: center; min-width: 0; }
+.percorso__voce + .percorso__voce::before { content: "›"; margin: 0 5px; color: var(--p-testo-tenue); }
+.percorso__btn {
+  max-width: 15em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--p-testo-tenue);
+  font: inherit; letter-spacing: inherit; text-transform: inherit;
+  cursor: pointer;
+}
+.percorso__btn:hover { color: var(--p-testo); border-color: var(--p-linea-forte); }
+.percorso__attuale { padding: 2px 4px; color: var(--p-ciano); overflow-wrap: anywhere; }
+
+.lato__riga-titolo {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+}
+.lato__box-titolo { min-width: 0; flex: 1 1 180px; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.lato__tipo {
+  padding: 1px 6px;
+  border: 1px solid var(--p-viola-bordo);
+  border-radius: 3px;
+  background: var(--p-viola-velo);
+  color: var(--p-testo);
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.lato__genitore { flex: none; gap: 7px; text-align: left; }
+.lato__genitore .ico { width: 15px; height: 15px; color: var(--p-ciano); }
+.lato__genitore-testo { display: flex; flex-direction: column; line-height: 1.2; font-size: 12.5px; }
+.lato__genitore-nome {
+  max-width: 13em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--p-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+
+/* --- schede --- */
+.lato__schede {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0 16px;
+  border-bottom: 1px solid var(--p-linea);
+}
+.lato__scheda-btn {
+  position: relative;
+  min-height: 40px;
+  padding: 6px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--p-testo-tenue);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.lato__scheda-btn:hover { color: var(--p-testo); background: var(--p-pannello); }
+.lato__scheda-btn[aria-selected="true"] { color: var(--p-testo); box-shadow: inset 0 -2px 0 var(--p-viola); }
+.lato__scheda-btn:focus-visible { outline-offset: -3px; }
+
+.lato__scheda { min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+.lato__scheda:empty { display: none; }
+.lato__scheda-vuota { margin-top: 2px; }
+
+/* I campi di una vista del menu, uno sotto l'altro. */
+.lato__campi { display: flex; flex-direction: column; gap: 18px; }
+.lato__modulo { display: flex; flex-direction: column; gap: 14px; }
+
+/* --------------------------------------------------------------- 4. */
+.scorciatoie {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 22px;
+}
+.scorciatoia {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 9px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  color: var(--p-testo);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color var(--p-durata-lampo) ease, background-color var(--p-durata-lampo) ease;
+}
+.scorciatoia:hover { border-color: var(--p-viola); background: var(--p-pannello-2); }
+.scorciatoia__ico { grid-row: 1 / span 2; color: var(--p-viola); }
+.scorciatoia__nome {
+  font-family: var(--p-mono); font-size: 10.5px; font-weight: 500;
+  letter-spacing: .12em; text-transform: uppercase;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.scorciatoia__nota { font-size: 12px; color: var(--p-testo-tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* I quattro passi. Il passo che tocca adesso e' l'unico acceso: e' li'
+   che si guarda quando ci si chiede «e ora?». */
+.passi { display: flex; flex-direction: column; gap: 1px; }
+.passi__passo {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--p-linea);
+  color: var(--p-testo-tenue);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.passi__num {
+  font-family: var(--p-mono); font-size: 10px;
+  width: 17px; height: 17px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 50%;
+}
+.passi__testo { display: flex; flex-direction: column; }
+.passi__testo em { font-style: normal; font-family: var(--p-mono); font-size: 10px; color: var(--p-testo-tenue); }
+.passi__passo.is-adesso { border-left-color: var(--p-ciano); color: var(--p-testo); background: var(--p-pannello); }
+.passi__passo.is-adesso .passi__num { border-color: var(--p-ciano); color: var(--p-ciano); }
+
+.lato__pubblicazione {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--p-linea);
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  color: var(--p-testo-tenue);
+}
+.lato__pubblicazione[data-da-fare="1"] { color: var(--p-allerta); }
+
+/* --------------------------------------------------------------- 5. */
+.lato__indietro { align-self: flex-start; margin-left: -6px; gap: 6px; font-family: var(--p-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.lato__indietro .ico { width: 15px; height: 15px; }
+
+.menu-lato { display: flex; flex-direction: column; gap: 4px; }
+.menu-lato__btn {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 11px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  color: var(--p-testo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--p-durata-lampo) ease, background-color var(--p-durata-lampo) ease;
+}
+.menu-lato__btn:hover { border-color: var(--p-viola); background: var(--p-pannello-2); }
+.menu-lato__ico { grid-row: 1 / span 2; color: var(--p-viola); }
+.menu-lato__nome { font-family: var(--p-mono); font-size: 11.5px; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; }
+.menu-lato__nota { font-size: 12.5px; color: var(--p-testo-tenue); }
+.menu-lato__btn--esci { margin-top: 8px; background: transparent; border-style: dashed; }
+.menu-lato__btn--esci .menu-lato__ico { color: var(--p-testo-tenue); }
+.menu-lato--compatto .menu-lato__btn { grid-template-columns: 1fr; padding: 8px 10px; }
+
+.opzioni { display: flex; flex-direction: column; gap: 2px; }
+.opzione {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--p-raggio-s);
+  background: transparent;
+  color: var(--p-testo-medio);
+  font: inherit; font-size: 13px; text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.opzione:hover { background: var(--p-pannello); color: var(--p-testo); }
+.opzione[aria-pressed="true"] { border-color: var(--p-linea-forte); background: var(--p-pannello-2); color: var(--p-ciano); }
+
+/* --------------------------------------------------------------- 6. */
+/* Sopra i 1600 px c'e' spazio per centrare davvero i dispositivi. */
+@media (min-width: 1600px) {
+  .barra__destra { flex: 1 1 0; }
+}
+
+@media (max-width: 1439.98px) {
+  .barra__pubblicazione { display: none; }
+  .cmd__nota { display: none; }
+}
+
+@media (max-width: 1279.98px) {
+  .dispositivi__nome { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  .dispositivi__btn { padding: 0 9px; }
+}
+
+@media (max-width: 1023.98px) {
+  .barra__cassetto { display: inline-flex; }
+  .barra__nome, .barra__sep { display: none; }
+  /* La spia resta, la scritta la sente solo chi usa un lettore di schermo
+     (e il bottone Salva acceso in arancione dice la stessa cosa). */
+  .stato { padding: 6px; }
+  .stato__testo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+  .banco { grid-template-columns: minmax(0, 1fr); }
+  .maniglia { display: none; }
+
+  /* Il pannello scivola sopra l'anteprima; chiuso e' `inert` (guscio.js),
+     cosi' la tastiera non ci entra. */
+  .lato {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    z-index: 10;
+    width: min(var(--lato-larghezza), calc(100% - 40px));
+    border-right: 1px solid var(--p-linea-forte);
+    box-shadow: var(--p-ombra-cassetto);
+    transform: translateX(-104%);
+    visibility: hidden;
+    transition: transform var(--p-durata-lunga) ease-out, visibility 0s linear var(--p-durata-lunga);
+  }
+  .banco.is-cassetto-aperto .lato {
+    transform: none;
+    visibility: visible;
+    transition: transform var(--p-durata-lunga) ease-out, visibility 0s linear 0s;
+  }
+}
+
+@media (max-width: 759.98px) {
+  .barra { flex-wrap: wrap; row-gap: 6px; padding: 6px 8px; }
+  .barra__sinistra { flex: 1 1 auto; }
+  .barra__destra { flex: 1 1 auto; }
+  .barra__centro { order: 3; flex: 1 1 100%; justify-content: space-between; }
+  .barra__cassetto-nome { display: none; }
+  .cmd { padding: 6px 9px; }
+  .lato { width: calc(100% - 24px); }
+}
+
+@media (max-width: 400px) {
+  .barra__marchio img { display: none; }
+  .cmd { gap: 5px; padding: 6px 7px; }
+  .cmd .ico { width: 16px; height: 16px; }
+  .scorciatoie { grid-template-columns: minmax(0, 1fr); }
+}
+
+@container lato (max-width: 400px) {
+  .scorciatoie { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* --------------------------------------------------------------- 7. */
+@media (prefers-reduced-motion: reduce) {
+  .lato,
+  .banco.is-cassetto-aperto .lato { transition: none; }
+}

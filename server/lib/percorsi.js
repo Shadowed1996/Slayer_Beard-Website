@@ -34,6 +34,10 @@ function calcola(radice) {
     contenutiJson: path.join(radice, 'contenuti', 'contenuti.json'),
     schemaJs: path.join(radice, 'contenuti', 'schema.js'),
     media: path.join(radice, 'contenuti', 'media'),
+    // I font caricati dal pannello (CONTRATTO-4 §4.4): i file e il loro
+    // elenco. Come media/, la cartella va online insieme al sito.
+    font: path.join(radice, 'contenuti', 'font'),
+    elencoFont: path.join(radice, 'contenuti', 'font', 'elenco.json'),
 
     // Modelli del sito (agente A).
     modelli: path.join(radice, 'modelli'),

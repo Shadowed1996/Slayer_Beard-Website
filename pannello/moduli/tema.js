@@ -16,6 +16,16 @@
      contrasto(a, b)                            -> rapporto WCAG (numero)
      etichettaContrasto(rapporto)               -> { livello, testo, grave }
      precaricaFont(nomi)                        -> Promise, carica le anteprime
+
+   e, per i font caricati da chi amministra (CONTRATTO-4 §4.4):
+     impostaFontCaricati(elenco)   -> registra l'elenco e ne mette i @font-face nel pannello
+     fontCaricati()                -> copia dell'elenco, oppure null se non e' ancora noto
+     suFontCaricati(fn)            -> iscrizione ai cambi dell'elenco; torna chi la toglie
+     famigliaCaricato(id)          -> "'sb-<id>'", il nome della famiglia nel CSS
+     urlFontCaricato(voce)         -> l'indirizzo del file visto dal pannello
+     formatoCss(voce)              -> il valore giusto per format() in @font-face
+   L'elenco lo chiede al server editor/impostazioni.js; qui lo si tiene e
+   basta, cosi' anche campi.js lo trova senza fare richieste.
    ===================================================================== */
 
 import { el, bottone } from './dom.js';
@@ -186,6 +196,127 @@ export function precaricaFont(nomi) {
     // nessuno deve restare a guardare un menu vuoto.
     setTimeout(() => risolvi(false), 5000);
   });
+}
+
+/* ---------------------------------------------------------------------
+   2b. Font caricati da chi amministra
+
+   Stanno sul server in contenuti/font/ e il server li serve come serve le
+   immagini. Nel pannello ogni font diventa una famiglia 'sb-<id>', lo
+   stesso nome che usa il sito: chi legge un'anteprima e poi il CSS
+   generato trova la stessa parola.
+
+   Il registro vive qui, e non dentro editor/impostazioni.js, per una
+   ragione di dipendenze: il campo «font» di campi.js deve elencare i
+   caricati, e campi.js non puo' importare un modulo dell'editor (che si
+   carica a richiesta e puo' mancare). Questo file invece c'e' sempre.
+   --------------------------------------------------------------------- */
+
+const RE_ID_CARICATO = /^[0-9a-f]{16}$/;
+// Solo nomi di file semplici: il valore finisce dentro url('…') in un
+// foglio di stile, e un apice o una parentesi lo farebbero uscire.
+const RE_FILE_CARICATO = /^[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.(woff2|woff|ttf|otf)$/i;
+const ID_FOGLIO_CARICATI = 'sb-font-caricati';
+
+let elencoCaricati = null;          // null = nessuno l'ha ancora letto dal server
+const iscrittiCaricati = new Set();
+
+/** Nome della famiglia CSS di un font caricato, virgolette comprese. */
+export function famigliaCaricato(id) {
+  return "'sb-" + String(id || '').replace(/[^0-9a-f]/g, '') + "'";
+}
+
+/** Il nome del file senza cartelle: il server puo' mandarlo con o senza «contenuti/font/». */
+function nomeFileCaricato(voce) {
+  const grezzo = String((voce && voce.file) || '').replace(/\\/g, '/');
+  const nome = grezzo.split('/').pop();
+  return RE_FILE_CARICATO.test(nome) && !nome.includes('..') ? nome : '';
+}
+
+/** Indirizzo del file visto dal pannello, che vive sotto /pannello/. */
+export function urlFontCaricato(voce) {
+  const nome = nomeFileCaricato(voce);
+  return nome ? '/contenuti/font/' + encodeURIComponent(nome) : '';
+}
+
+/**
+ * Il valore per format() in @font-face. Non e' l'estensione: per un TTF
+ * il browser vuole «truetype» e per un OTF «opentype», e una sorgente con
+ * un format() che non conosce la scarta senza dire niente.
+ */
+export function formatoCss(voce) {
+  const dichiarato = String((voce && voce.formato) || '').toLowerCase();
+  const estensione = (nomeFileCaricato(voce).match(/\.([a-z0-9]+)$/i) || [])[1] || '';
+  const grezzo = dichiarato || estensione.toLowerCase();
+  return { woff2: 'woff2', woff: 'woff', ttf: 'truetype', truetype: 'truetype', otf: 'opentype', opentype: 'opentype' }[grezzo] || '';
+}
+
+/** Tiene solo le voci con un id e un file utilizzabili; le altre non si possono mostrare. */
+function pulisciCaricati(elenco) {
+  const visti = new Set();
+  const fuori = [];
+  for (const voce of [].concat(elenco || [])) {
+    if (!voce || typeof voce !== 'object') continue;
+    const id = String(voce.id || '');
+    if (!RE_ID_CARICATO.test(id) || visti.has(id) || !nomeFileCaricato(voce)) continue;
+    visti.add(id);
+    fuori.push({
+      ...voce,
+      id,
+      etichetta: String(voce.etichetta || '').trim() || 'Font ' + id.slice(0, 6),
+      usatoIn: Array.isArray(voce.usatoIn) ? voce.usatoIn.map(String) : []
+    });
+  }
+  return fuori;
+}
+
+function copiaCaricati() {
+  return elencoCaricati ? elencoCaricati.map((voce) => ({ ...voce, usatoIn: voce.usatoIn.slice() })) : null;
+}
+
+/**
+ * I @font-face di tutti i caricati in un solo <style> del pannello.
+ * Riscritto per intero a ogni cambio: sono poche righe, e un font tolto
+ * deve sparire anche dal foglio.
+ */
+function scriviFoglioCaricati() {
+  let foglio = document.getElementById(ID_FOGLIO_CARICATI);
+  if (!foglio) {
+    foglio = el('style', { id: ID_FOGLIO_CARICATI });
+    document.head.append(foglio);
+  }
+  const regole = (elencoCaricati || []).map((voce) => {
+    const formato = formatoCss(voce);
+    return '@font-face { font-family: ' + famigliaCaricato(voce.id) + '; src: url(\'' + urlFontCaricato(voce) + '\')' +
+      (formato ? ' format(\'' + formato + '\')' : '') + '; font-display: swap; }';
+  });
+  const testo = regole.join('\n');
+  if (foglio.textContent !== testo) foglio.textContent = testo;
+}
+
+/**
+ * Registra l'elenco dei font caricati (quello di GET /api/font) e avvisa
+ * chi e' iscritto. Le voci storte si scartano: un id o un file che non
+ * rispettano la forma del server non si possono ne' mostrare ne' usare.
+ */
+export function impostaFontCaricati(elenco) {
+  elencoCaricati = pulisciCaricati(elenco);
+  scriviFoglioCaricati();
+  for (const fn of Array.from(iscrittiCaricati)) {
+    try { fn(copiaCaricati()); } catch { /* un iscritto rotto non ferma gli altri */ }
+  }
+}
+
+/** L'elenco registrato (copia), oppure null se non e' ancora arrivato. */
+export function fontCaricati() {
+  return copiaCaricati();
+}
+
+/** Chiama `fn(elenco)` a ogni cambio; restituisce la funzione che toglie l'iscrizione. */
+export function suFontCaricati(fn) {
+  if (typeof fn !== 'function') return () => {};
+  iscrittiCaricati.add(fn);
+  return () => iscrittiCaricati.delete(fn);
 }
 
 /* ---------------------------------------------------------------------
@@ -379,12 +510,18 @@ export function creaBarraTema(ctx, { preset, onApplica, predefinito, temaInizial
 
   const daRipristinare = () => dichiarato || fotografiaIniziale;
 
+  // Le parole cambiano con la fonte: il tema di partenza del sito non e'
+  // «com'era quando hai aperto il pannello», e dirlo sarebbe un inganno.
+  const verso = dichiarato
+    ? 'Colori, font e forma tornano quelli di partenza del sito.'
+    : 'Tutte le modifiche fatte all\'aspetto tornano com\'erano quando hai aperto il pannello.';
+
   const btnRipristina = bottone({
     testo: 'Ripristina i colori di partenza',
     ico: 'ricarica',
     classe: 'btn btn--fantasma',
     disabilitato: true,   // si accende quando si sa a cosa tornare
-    titolo: 'Rimette i colori e i font com\'erano prima delle tue prove.',
+    titolo: dichiarato ? 'Rimette colori, font e forma di partenza del sito.' : 'Rimette i colori e i font com\'erano prima delle tue prove.',
     su: async () => {
       const partenza = daRipristinare();
       if (typeof onRipristina !== 'function' && !partenza) return;
@@ -394,7 +531,7 @@ export function creaBarraTema(ctx, { preset, onApplica, predefinito, temaInizial
         const ok = await ctx.conferma({
           titolo: 'Rimetto i colori di partenza?',
           testo: [
-            'Tutte le modifiche fatte all\'aspetto tornano com\'erano quando hai aperto il pannello.',
+            verso,
             'Cambia solo la bozza: il sito pubblicato resta quello finché non premi Pubblica.'
           ],
           conferma: 'Ripristina'

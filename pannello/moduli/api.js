@@ -263,19 +263,12 @@ export const api = {
   esci: () => richiesta('POST', '/api/esci', {}, { silenziosa: true }),
 
   /**
-   * Crea la password al primo avvio. Il contratto non elenca una rotta a
-   * parte: la lettura naturale e' che POST /api/entra, quando auth.json
-   * non esiste, imposti la password e apra la sessione. Se il server ha
-   * scelto una rotta dedicata si prova anche quella prima di arrendersi.
+   * Crea la password al primo avvio: POST /api/entra, quando auth.json non
+   * esiste, imposta la password e apra la sessione. Niente ripiego su
+   * /api/password: da CONTRATTO-4 §7 quella rotta cambia una password che
+   * c'è già, con la sessione aperta, e al primo avvio risponderebbe 401.
    */
-  async creaPassword(password) {
-    try {
-      return await richiesta('POST', '/api/entra', { password }, { silenziosa: true });
-    } catch (errore) {
-      if (!(errore instanceof ErroreApi) || !STATI_DA_RITENTARE.has(errore.stato)) throw errore;
-      return richiesta('POST', '/api/password', { password }, { silenziosa: true });
-    }
-  },
+  creaPassword: (password) => richiesta('POST', '/api/entra', { password }, { silenziosa: true }),
 
   /* contenuti */
   contenuti: () => richiesta('GET', '/api/contenuti'),
@@ -312,6 +305,22 @@ export const api = {
   },
 
   /**
+   * Anteprima dell'editor (CONTRATTO-4 §6.3): con `editor: true` il server
+   * toglie gli script, mette <base href="/"> e stampa sempre i due <style>
+   * dell'editor. Senza `editor` è la stessa di `anteprimaViva`. Torna HTML.
+   */
+  async anteprima({ contenuti, editor = false } = {}) {
+    const corpo = { contenuti };
+    if (editor) corpo.editor = true;
+    const { testo, dati } = await grezza('POST', '/api/anteprima', corpo, { accetta: 'text/html, application/json' });
+    if (dati && typeof dati === 'object') {
+      const html = dati.html ?? dati.anteprima ?? dati.pagina ?? dati.contenuto;
+      if (typeof html === 'string') return html;
+    }
+    return testo;
+  },
+
+  /**
    * Foglio del tema calcolato al volo (CONTRATTO-2 §9). Non salva niente:
    * serve solo a far vedere subito un colore cambiato, iniettandolo nel
    * documento dell'anteprima.
@@ -337,5 +346,49 @@ export const api = {
     const risposta = await richiesta('GET', '/api/backup');
     return comeElenco(risposta, 'backup', 'copie', 'elenco', 'voci', 'items').map(normalizzaBackup);
   },
-  ripristina: (id) => richiesta('POST', '/api/backup/' + encodeURIComponent(id) + '/ripristina', {})
+  ripristina: (id) => richiesta('POST', '/api/backup/' + encodeURIComponent(id) + '/ripristina', {}),
+
+  /* font caricati (CONTRATTO-4 §7) */
+
+  /** -> [{ id, etichetta, file, formato, caricatoIl, usatoIn: [testo] }] */
+  async font() {
+    const risposta = await richiesta('GET', '/api/font');
+    return comeElenco(risposta, 'font').filter((voce) => voce && typeof voce === 'object' && voce.id);
+  },
+
+  /**
+   * Carica un file di font. -> la voce creata { id, etichetta, file, formato, caricatoIl }.
+   * 413 oltre 2 MB, 415 se i primi byte non sono di un font: arrivano come
+   * ErroreApi con il messaggio del server.
+   */
+  async caricaFont(file, etichetta = '') {
+    const modulo = new FormData();
+    modulo.append('file', file, file.name);
+    modulo.append('etichetta', String(etichetta || '').trim() || file.name.replace(/\.[^.]+$/, ''));
+    const risposta = await richiesta('POST', '/api/font', modulo);
+    return (risposta && risposta.font) || risposta;
+  },
+
+  /**
+   * Cancella un font. Se è in uso il server risponde 409 con `usatoIn`:
+   * l'ErroreApi porta `dati.usatoIn`, e chi chiama chiede conferma e
+   * riprova con `{ forza: true }`.
+   */
+  eliminaFont: (id, { forza = false } = {}) =>
+    richiesta('DELETE', '/api/font/' + encodeURIComponent(id) + (forza ? '?forza=1' : '')),
+
+  /**
+   * Cambia la password (CONTRATTO-4 §7). Un 403 qui vuol dire «password
+   * attuale sbagliata», non «sessione scaduta», e non deve riportare alla
+   * schermata di accesso: la richiesta parte silenziosa e solo un 401 vero
+   * avvisa chi aspetta la scadenza della sessione.
+   */
+  async cambiaPassword(attuale, nuova) {
+    try {
+      return await richiesta('POST', '/api/password', { attuale, nuova }, { silenziosa: true });
+    } catch (errore) {
+      if (errore instanceof ErroreApi && errore.stato === 401 && alloScadere) alloScadere(errore);
+      throw errore;
+    }
+  }
 };

@@ -13,6 +13,9 @@
 
 const schema = require('../../contenuti/schema.js');
 const testoricco = require('./testoricco.js');
+// Il generatore dell'editor: le regole dei tre rami senza campo nello
+// schema stanno lì e non si ricopiano qui (CONTRATTO-4 §8).
+const SBStili = require('../../pannello/condivisi/stili.js');
 
 // Estensioni ammesse nei campi immagine: quelle che il sito sa mostrare.
 const ESTENSIONI_IMMAGINE = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'ico', 'gif', 'avif'];
@@ -69,6 +72,53 @@ function catalogoFont() {
     catalogoCaricato = null;
   }
   return catalogoCaricato;
+}
+
+/**
+ * La libreria dei font caricati (server/lib/font.js). Stessa regola del
+ * catalogo, con una differenza: un'assenza non si ricorda. font.js può
+ * arrivare dopo convalida.js (un server aggiornato a pezzi, una prova che
+ * lo crea a metà), e ricordare «non c'è» vorrebbe dire rifiutarlo per
+ * sempre. Un modulo trovato resta invece in memoria, come ogni require.
+ */
+let libreriaCaricata = null;
+function libreriaFont() {
+  if (libreriaCaricata) { return libreriaCaricata; }
+  try {
+    const font = require('./font.js');
+    if (font && typeof font.esiste === 'function') { libreriaCaricata = font; }
+  } catch (e) {
+    return null;
+  }
+  return libreriaCaricata;
+}
+
+/**
+ * Le `opzioni` del generatore condiviso: una famiglia vale se sta in uno
+ * qualunque dei tre slot del catalogo (lo stile di un elemento non è legato
+ * a uno slot), un font caricato se la libreria lo conosce. Senza catalogo o
+ * senza libreria la funzione manca, e il generatore tiene i valori di forma
+ * giusta invece di bocciarli alla cieca.
+ */
+function opzioniStili() {
+  const opzioni = {};
+  const catalogo = catalogoFont();
+  if (catalogo) {
+    opzioni.famiglia = (nome) => {
+      for (const slot of Object.keys(catalogo)) {
+        for (const voce of catalogo[slot] || []) {
+          // «Font di sistema» non è un nome da mettere in font-family.
+          if (voce && voce.nome === nome && Array.isArray(voce.pesi) && voce.pesi.length) { return voce; }
+        }
+      }
+      return null;
+    };
+  }
+  const libreria = libreriaFont();
+  if (libreria && typeof libreria.voce === 'function') {
+    opzioni.font = (id) => libreria.voce(id);
+  }
+  return opzioni;
 }
 
 /** I nomi delle famiglie di uno slot, qualunque forma abbiano le voci. */
@@ -274,6 +324,13 @@ function controllaFont(campo, testo, aggiungi, etichetta, chiave) {
     return;
   }
 
+  // Un font caricato dal pannello (CONTRATTO-4 §4.4): vale in qualunque
+  // slot, purché il file esista ancora.
+  if (testo.startsWith('caricato:')) {
+    controllaFontCaricato(testo.slice('caricato:'.length), aggiungi, etichetta);
+    return;
+  }
+
   const slot = campo.slot;
   if (!slot) {
     aggiungi('«' + etichetta + '»: lo schema non dice a quale dei tre caratteri del sito appartiene questo campo'
@@ -292,6 +349,22 @@ function controllaFont(campo, testo, aggiungi, etichetta, chiave) {
   if (famiglie.indexOf(testo) === -1) {
     aggiungi('«' + etichetta + '»: "' + testo + '" non è fra i caratteri disponibili per questo posto. Si può scegliere fra: '
       + famiglie.join(', ') + '.');
+  }
+}
+
+function controllaFontCaricato(id, aggiungi, etichetta) {
+  if (!/^[0-9a-f]{16}$/.test(id)) {
+    aggiungi('«' + etichetta + '»: il riferimento al font caricato non è valido. Sceglilo di nuovo dall\'elenco dei font.');
+    return;
+  }
+  const libreria = libreriaFont();
+  // Senza libreria non si può sapere se il file c'è: come per il catalogo,
+  // un controllo impossibile non blocca il salvataggio del resto.
+  if (!libreria) { return; }
+  let esiste = false;
+  try { esiste = libreria.esiste(id) === true; } catch (e) { esiste = false; }
+  if (!esiste) {
+    aggiungi('«' + etichetta + '»: il font caricato scelto qui non c\'è più. Scegline un altro o caricalo di nuovo dalle Impostazioni del sito.');
   }
 }
 
@@ -345,6 +418,215 @@ function controllaElenco(campo, valore, aggiungi, chiave) {
 }
 
 /* ------------------------------------------------------------------ */
+/* I RAMI DELL'EDITOR (CONTRATTO-4 §6.5, §8)                           */
+/* ------------------------------------------------------------------ */
+
+/*
+   config.sezioni, config.stili e config.disposizione arrivano qui GIÀ
+   ripuliti da pulisciSezioni / pulisciStili / pulisciDisposizione: un
+   valore sbagliato lì si scarta e non blocca il salvataggio del resto.
+   Qui si controlla solo che la forma rimasta sia quella pulita. Un errore
+   vuol dire che qualcuno ha saltato la pulizia (un file scritto a mano,
+   una rotta nuova), e allora è giusto fermarsi e dirlo.
+
+   Un ramo assente non è un errore: un contenuti.json di prima
+   dell'editor, o una copia di sicurezza vecchia, deve potersi ripristinare
+   e dà la pagina di sempre.
+*/
+
+function propria(oggetto, chiave) {
+  return Object.prototype.hasOwnProperty.call(oggetto, chiave);
+}
+
+function oggettoSemplice(valore) {
+  return valore !== null && typeof valore === 'object' && !Array.isArray(valore);
+}
+
+/** Uguaglianza profonda; l'ordine delle chiavi di un oggetto non conta. */
+function uguali(a, b) {
+  if (a === b) { return true; }
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) { return false; }
+    return a.every((voce, i) => uguali(voce, b[i]));
+  }
+  if (!oggettoSemplice(a) || !oggettoSemplice(b)) { return false; }
+  const chiaviA = Object.keys(a);
+  if (chiaviA.length !== Object.keys(b).length) { return false; }
+  return chiaviA.every((k) => propria(b, k) && uguali(a[k], b[k]));
+}
+
+function controllaSezioni(valore, aggiungi) {
+  if (!Array.isArray(valore)) {
+    aggiungi('L\'ordine delle sezioni deve essere un elenco.');
+    return;
+  }
+  const ammesse = SBStili.SEZIONI_ORDINABILI;
+  const viste = new Set();
+  valore.forEach((voce, i) => {
+    const numero = 'la voce numero ' + (i + 1);
+    if (!oggettoSemplice(voce)) { aggiungi('Nell\'ordine delle sezioni ' + numero + ' non è una sezione.'); return; }
+    const altre = Object.keys(voce).filter((k) => k !== 'id' && k !== 'attiva');
+    if (altre.length) { aggiungi('Nell\'ordine delle sezioni ' + numero + ' ha dati in più: ' + altre.join(', ') + '.'); }
+    if (ammesse.indexOf(voce.id) === -1) {
+      aggiungi('Nell\'ordine delle sezioni ' + numero + ' non è una sezione che si può spostare (sono: ' + ammesse.join(', ') + ').');
+      return;
+    }
+    if (viste.has(voce.id)) { aggiungi('La sezione «' + voce.id + '» compare due volte nell\'ordine delle sezioni.'); }
+    viste.add(voce.id);
+    if (typeof voce.attiva !== 'boolean') { aggiungi('La sezione «' + voce.id + '» deve essere accesa o spenta (true o false).'); }
+  });
+  const mancanti = ammesse.filter((id) => !viste.has(id));
+  if (mancanti.length) {
+    aggiungi('Nell\'ordine delle sezioni mancano: ' + mancanti.join(', ') + '. Una sezione si spegne, non si toglie dall\'elenco.');
+  }
+  const prima = valore[0];
+  if (!oggettoSemplice(prima) || prima.id !== 'regia' || prima.attiva !== true) {
+    aggiungi('La regia è la copertina con l\'unico titolo principale: deve restare la prima sezione, ed essere accesa.');
+  }
+}
+
+/* Il player (CONTRATTO-3 §3.4) non si spegne lasciandolo acceso per Twitch:
+   ogni proprietà vietata ha il suo perché, detto a chi amministra. */
+const MOTIVI_PROTETTI = {
+  nascosto: 'il player di Twitch non si nasconde',
+  opacita: 'il player di Twitch non si rende trasparente',
+  larghezzaMax: 'il player di Twitch non si rimpicciolisce',
+  margine: 'il player di Twitch non si rimpicciolisce e non si copre',
+  riempimento: 'il player di Twitch non si rimpicciolisce'
+};
+
+/* I lati che sui protetti escono da SBStili.LATI_PROTETTI, per nome. I numeri
+   stanno solo lì (li legge anche la scheda Stile): qui si costruisce la
+   frase. Il messaggio dice quali lati, così chi amministra non deve
+   indovinare quale dei quattro cursori ha sbagliato. */
+function latiFuori(valore, limiti) {
+  if (!oggettoSemplice(valore) || !limiti) { return []; }
+  return ['sopra', 'destra', 'sotto', 'sinistra'].filter((lato) => typeof valore[lato] === 'number'
+    && ((limiti.min !== undefined && valore[lato] < limiti.min) || (limiti.max !== undefined && valore[lato] > limiti.max)));
+}
+
+function regolaLati(proprieta, limiti) {
+  const nome = proprieta === 'riempimento' ? 'il riempimento' : 'il margine';
+  if (limiti.min !== undefined && limiti.max !== undefined) { return nome + ' qui deve stare fra ' + limiti.min + ' e ' + limiti.max + ' px'; }
+  if (limiti.min !== undefined) { return nome + ' qui non può andare sotto ' + limiti.min; }
+  return nome + ' qui non può superare ' + limiti.max + ' px';
+}
+
+function controllaStili(valore, aggiungiSu) {
+  const aggiungi = aggiungiSu('config.stili');
+  if (!oggettoSemplice(valore)) {
+    aggiungi('Gli stili degli elementi devono essere un gruppo di valori, uno per elemento.');
+    return;
+  }
+  const bersagli = Object.keys(valore);
+  if (bersagli.length > SBStili.MAX_BERSAGLI) {
+    aggiungi('Ci sono stili per ' + bersagli.length + ' elementi: il massimo è ' + SBStili.MAX_BERSAGLI + '.');
+  }
+  const opzioni = opzioniStili();
+  const nomi = SBStili.PROPRIETA.map((p) => p.nome);
+
+  for (const id of bersagli) {
+    // La chiave dell'errore porta il bersaglio: il pannello ci ritrova
+    // l'elemento da selezionare nell'anteprima.
+    const suQuesto = aggiungiSu('config.stili.' + id);
+    if (!SBStili.leggiBersaglio(id)) { suQuesto('«' + id + '» non è un elemento della pagina a cui si può dare uno stile.'); continue; }
+    const voce = valore[id];
+    if (!oggettoSemplice(voce)) { suQuesto('Lo stile di «' + id + '» deve essere diviso per dispositivo.'); continue; }
+    const dispositivi = Object.keys(voce);
+    if (!dispositivi.length) { suQuesto('Lo stile di «' + id + '» è vuoto: un elemento senza stile non si salva.'); continue; }
+
+    for (const dispositivo of dispositivi) {
+      if (SBStili.DISPOSITIVI.indexOf(dispositivo) === -1) {
+        suQuesto('Lo stile di «' + id + '» ha il dispositivo sconosciuto «' + dispositivo + '» (sono: ' + SBStili.DISPOSITIVI.join(', ') + ').');
+        continue;
+      }
+      const valori = voce[dispositivo];
+      if (!oggettoSemplice(valori) || !Object.keys(valori).length) {
+        suQuesto('Lo stile di «' + id + '» su ' + dispositivo + ' è vuoto: un dispositivo senza valori non si salva.');
+        continue;
+      }
+      for (const proprieta of Object.keys(valori)) {
+        const dove = '«' + id + '», ' + dispositivo + ', ';
+        if (nomi.indexOf(proprieta) === -1) { suQuesto(dove + 'la proprietà «' + proprieta + '» non esiste.'); continue; }
+        if (SBStili.PROTETTI.indexOf(id) !== -1) {
+          if (SBStili.VIETATE_AI_PROTETTI.indexOf(proprieta) !== -1) {
+            suQuesto(dove + '«' + proprieta + '» non si può usare qui: ' + (MOTIVI_PROTETTI[proprieta] || MOTIVI_PROTETTI.nascosto) + '.');
+            continue;
+          }
+          const limiti = propria(SBStili.LATI_PROTETTI, proprieta) ? SBStili.LATI_PROTETTI[proprieta] : null;
+          const lati = latiFuori(valori[proprieta], limiti);
+          if (lati.length) {
+            suQuesto(dove + regolaLati(proprieta, limiti) + ' (lati: ' + lati.join(', ') + '): '
+              + (MOTIVI_PROTETTI[proprieta] || MOTIVI_PROTETTI.larghezzaMax) + '.');
+            continue;
+          }
+        }
+        const pulito = SBStili.pulisciValore(id, proprieta, valori[proprieta], opzioni);
+        if (pulito === null) { suQuesto(dove + 'il valore di «' + proprieta + '» non è ammesso.'); continue; }
+        if (!uguali(pulito, valori[proprieta])) { suQuesto(dove + 'il valore di «' + proprieta + '» è fuori dai limiti o scritto in una forma non pulita.'); continue; }
+        if (proprieta === 'nascosto' && dispositivo === 'computer' && valori[proprieta] === false) {
+          suQuesto(dove + '«nascosto: false» su computer è già il comportamento normale e non si salva.');
+        }
+      }
+    }
+  }
+}
+
+function controllaDisposizione(valore, aggiungi) {
+  if (!oggettoSemplice(valore)) {
+    aggiungi('La disposizione dei blocchi deve essere un gruppo di valori con dentro «blocchi».');
+    return;
+  }
+  const altre = Object.keys(valore).filter((k) => k !== 'blocchi');
+  if (altre.length) { aggiungi('La disposizione dei blocchi ha dati sconosciuti: ' + altre.join(', ') + '.'); }
+  const blocchi = valore.blocchi;
+  if (!oggettoSemplice(blocchi)) {
+    aggiungi('La disposizione dei blocchi deve avere «blocchi», un gruppo di elenchi per riquadro.');
+    return;
+  }
+  const pulita = SBStili.pulisciDisposizione(valore).blocchi;
+  for (const riquadro of Object.keys(blocchi)) {
+    if (SBStili.RIQUADRI.indexOf(riquadro) === -1) {
+      aggiungi('«' + riquadro + '» non è un riquadro in cui si possono spostare blocchi (sono: ' + SBStili.RIQUADRI.join(', ') + ').');
+      continue;
+    }
+    const elenco = blocchi[riquadro];
+    if (!Array.isArray(elenco)) { aggiungi('I blocchi del riquadro «' + riquadro + '» devono essere un elenco.'); continue; }
+    if (uguali(elenco, pulita[riquadro])) { continue; }
+    // Qualcosa non torna: si dice quale voce, invece di un «non va» generico.
+    const visti = new Set();
+    let segnalati = 0;
+    const segnala = (messaggio) => { segnalati++; aggiungi(messaggio); };
+    elenco.forEach((voce, i) => {
+      const numero = 'nel riquadro «' + riquadro + '» il blocco numero ' + (i + 1);
+      if (!oggettoSemplice(voce) || typeof voce.id !== 'string') { segnala('Nella disposizione, ' + numero + ' non ha un nome.'); return; }
+      if (SBStili.leggiBersaglio('blocco:' + voce.id) === null || voce.id.split('.')[0] !== riquadro) {
+        segnala('Nella disposizione, ' + numero + ' («' + voce.id + '») non appartiene a questo riquadro.');
+        return;
+      }
+      if (visti.has(voce.id)) { segnala('Nella disposizione, il blocco «' + voce.id + '» compare due volte.'); return; }
+      visti.add(voce.id);
+      const attesa = pulita[riquadro].filter((p) => p.id === voce.id)[0];
+      if (!attesa) { return; }        // oltre il tetto dei blocchi: lo dice il controllo qui sotto
+      if (!uguali(voce, attesa)) {
+        segnala('Nella disposizione, la posizione del blocco «' + voce.id + '» non è nella forma pulita: servono telefono, tablet e computer, ciascuno vuoto o con x, y, l, a dentro i limiti.');
+      }
+    });
+    if (!segnalati) {
+      aggiungi('Il riquadro «' + riquadro + '» ha più blocchi di quanti se ne possano posizionare (' + pulita[riquadro].length + ').');
+    }
+  }
+}
+
+/** I tre rami dell'editor, ciascuno se c'è. */
+function controllaEditor(contenuti, aggiungiSu) {
+  const config = contenuti.config;
+  if (propria(config, 'sezioni')) { controllaSezioni(config.sezioni, aggiungiSu('config.sezioni')); }
+  if (propria(config, 'stili')) { controllaStili(config.stili, aggiungiSu); }
+  if (propria(config, 'disposizione')) { controllaDisposizione(config.disposizione, aggiungiSu('config.disposizione')); }
+}
+
+/* ------------------------------------------------------------------ */
 /* TUTTO IL DOCUMENTO                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -366,6 +648,8 @@ function convalida(contenuti) {
     errori.push({ chiave: 'config', messaggio: 'Manca l\'oggetto "config".' });
   }
   if (errori.length) { return errori; }
+
+  controllaEditor(contenuti, aggiungiSu);
 
   for (const campo of schema.campi()) {
     const esito = schema.valoreDi(contenuti, campo.chiave);
@@ -411,6 +695,13 @@ function convalida(contenuti) {
 
 /** Le stesse regole, ma su un valore solo: serve al pannello per il salvataggio parziale. */
 function convalidaCampo(chiave, valore) {
+  // I rami dell'editor non sono campi, ma il salvataggio parziale li manda lo stesso.
+  if ((schema.EDITOR || []).indexOf(chiave) !== -1) {
+    const errori = [];
+    const aggiungiSu = (dove) => (m) => errori.push({ chiave: dove, messaggio: m });
+    controllaEditor({ config: { [chiave.slice('config.'.length)]: valore } }, aggiungiSu);
+    return errori;
+  }
   const campo = schema.campo(chiave);
   if (!campo) { return [{ chiave: chiave, messaggio: 'Il campo "' + chiave + '" non esiste nello schema.' }]; }
   const errori = [];

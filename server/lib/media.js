@@ -35,11 +35,11 @@ function confineDi(intestazione) {
 }
 
 /**
- * Estrae le parti con un nome di file. Restituisce { nome, dati }.
- * Il corpo si scorre come Buffer: passare da una stringa rovinerebbe i byte
- * di un PNG alla prima conversione.
+ * Tutte le parti del modulo, file e campi di testo: { campo, nomeFile, dati }.
+ * `nomeFile` e null per un campo di testo. Il corpo si scorre come Buffer:
+ * passare da una stringa rovinerebbe i byte di un PNG alla prima conversione.
  */
-function parti(corpo, confine) {
+function campiModulo(corpo, confine) {
   const separatore = Buffer.from('--' + confine);
   const fuori = [];
   let posizione = corpo.indexOf(separatore);
@@ -65,10 +65,23 @@ function parti(corpo, confine) {
       dati = dati.slice(0, dati.length - 2);
     }
 
+    // `name=` va cercato come parola intera: dentro `filename=` c'e anche lui.
+    const campo = /(?:^|[;\s])name="([^"]*)"/i.exec(intestazioni);
     const nome = /filename\*?=(?:"([^"]*)"|([^;\r\n]+))/i.exec(intestazioni);
-    if (nome) { fuori.push({ nome: (nome[1] || nome[2] || '').trim(), dati: dati }); }
+    fuori.push({
+      campo: campo ? campo[1] : '',
+      nomeFile: nome ? (nome[1] || nome[2] || '').trim() : null,
+      dati: dati
+    });
   }
   return fuori;
+}
+
+/** Le sole parti con un nome di file: { nome, dati }. */
+function parti(corpo, confine) {
+  return campiModulo(corpo, confine)
+    .filter((parte) => parte.nomeFile !== null)
+    .map((parte) => ({ nome: parte.nomeFile, dati: parte.dati }));
 }
 
 /* --- NOMI ---------------------------------------------------------- */
@@ -236,4 +249,4 @@ function elimina(nomeGrezzo, contenuti) {
   return nome;
 }
 
-module.exports = { elenco, salva, elimina, doveUsato, normalizzaNome, confineDi, parti, ESTENSIONI, MAX_BYTE };
+module.exports = { elenco, salva, elimina, doveUsato, normalizzaNome, confineDi, parti, campiModulo, ESTENSIONI, MAX_BYTE };

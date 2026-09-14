@@ -1,0 +1,404 @@
+/* =====================================================================
+   parti.css — ispettori di parti e sezioni, e Navigatore
+   (CONTRATTO-4 §11.3 e §12).
+
+   Parla la lingua della regia: superfici piatte, linee da 1 px, etichette
+   in monospazio maiuscolo, viola per ciò che è scelto o si sta spostando,
+   ciano per ciò che è acceso. Solo variabili di pannello.css: nessun
+   colore scritto qui. Le tinte leggere si mescolano con color-mix dalle
+   stesse variabili, così seguono pannello.css se un giorno cambia.
+
+   Il pannello è largo da 380 a 760 px e si trascina: tutto quello che
+   dipende dalla larghezza passa da container query sui contenitori di
+   questo foglio, mai dalla finestra.
+
+   Classi: .parti* per gli ispettori, .navigatore* per il Navigatore.
+   Campi, bottoni e interruttori sono quelli del pannello (.campo,
+   .interruttore): qui si mettono solo in fila.
+   ===================================================================== */
+
+/* ------------------------------------------------------ 1. ispettori */
+.parti {
+  container: parti / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  color: var(--p-testo-medio);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.parti__testa { display: flex; flex-direction: column; gap: 4px; }
+
+.parti__occhiello,
+.parti__sottotitolo,
+.parti__gruppo-titolo {
+  font-family: var(--p-mono);
+  text-transform: uppercase;
+}
+
+.parti__occhiello {
+  font-size: 10.5px;
+  letter-spacing: .16em;
+  color: var(--p-testo-tenue);
+}
+
+.parti__titolo {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.005em;
+  color: var(--p-testo);
+}
+
+.parti__frase { font-size: 13.5px; color: var(--p-testo-medio); max-width: 64ch; }
+
+.parti__campi { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+.parti__vuoto {
+  padding: 14px;
+  border: 1px dashed var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  color: var(--p-testo-medio);
+  font-size: 13.5px;
+}
+
+/* Un gruppo di controlli con il suo titolo: una linea sopra, niente
+   scatola, come le fasce di strumenti del sito. */
+.parti__blocco {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--p-linea);
+  min-width: 0;
+}
+
+.parti__sottotitolo {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  color: var(--p-testo);
+}
+
+.parti__nota { font-size: 13px; color: var(--p-testo-tenue); }
+
+.parti__ico { width: 18px; height: 18px; flex: none; display: block; }
+
+/* --------------------------------------------------- 2. visibilità */
+.parti__vis {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--p-linea);
+  border-left: 2px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+}
+.parti__vis[data-acceso="1"] { border-left-color: var(--p-ciano); }
+.parti__vis[data-acceso="0"] { border-left-color: var(--p-allerta); }
+
+.parti__vis-riga { min-height: 36px; }
+
+.parti__vis-etichetta {
+  font-family: var(--p-mono);
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--p-testo);
+  cursor: pointer;
+  user-select: none;
+}
+
+.parti__vis-stato { font-size: 13px; color: var(--p-testo-medio); }
+.parti__vis[data-acceso="0"] .parti__vis-stato { color: var(--p-allerta); }
+
+.parti__lucchetto {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--p-testo-medio);
+}
+.parti__lucchetto .parti__ico { color: var(--p-testo-tenue); margin-top: 1px; }
+
+/* ------------------------------------------------ 3. cosa contiene */
+.parti__gruppo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+.parti__gruppo-titolo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  color: var(--p-testo-medio);
+}
+
+.parti__conta {
+  font-size: 10px;
+  letter-spacing: 0;
+  color: var(--p-testo-tenue);
+  border: 1px solid var(--p-linea);
+  border-radius: 999px;
+  padding: 0 6px;
+}
+
+.parti__gruppo--piega > summary {
+  min-height: 32px;
+  cursor: pointer;
+  list-style: none;
+}
+.parti__gruppo--piega > summary::-webkit-details-marker { display: none; }
+/* summary in flex perde il triangolo del browser: se ne disegna uno piatto. */
+.parti__gruppo--piega > summary::before {
+  content: "";
+  flex: none;
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid var(--p-testo-tenue);
+  transition: transform var(--p-durata) ease;
+}
+.parti__gruppo--piega[open] > summary::before { transform: rotate(90deg); }
+.parti__gruppo--piega > summary:hover { color: var(--p-testo); }
+.parti__gruppo--piega[open] > summary { margin-bottom: 4px; }
+
+.parti__voci { display: flex; flex-direction: column; gap: 4px; }
+
+.parti__voce {
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 8px 11px;
+  border: 1px solid var(--p-linea);
+  border-left: 2px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  color: var(--p-testo);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--p-durata-lampo) ease, border-color var(--p-durata-lampo) ease;
+}
+.parti__voce:hover { background: var(--p-pannello-2); border-color: var(--p-linea-viva); }
+.parti__voce[data-tipo="parte"] { border-left-color: var(--p-viola); }
+.parti__voce[data-tipo="blocco"] { border-left-color: var(--p-linea-viva); }
+.parti__voce:hover, .parti__voce:focus-visible { border-left-color: var(--p-ciano); }
+
+.parti__voce-nome { font-weight: 600; }
+
+.parti__voce-dettaglio {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--p-testo-tenue);
+  overflow-wrap: anywhere;
+}
+
+.parti__voce-spenta {
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+  border: 1px dashed var(--p-linea-forte);
+  border-radius: 3px;
+  padding: 0 5px;
+}
+
+/* ------------------------------------------------------ 4. Navigatore */
+.navigatore {
+  container: navigatore / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.navigatore__intro { font-size: 13px; color: var(--p-testo-tenue); }
+
+.navigatore__elenco { display: flex; flex-direction: column; gap: 4px; }
+
+.navigatore__vuoto {
+  padding: 14px;
+  border: 1px dashed var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  color: var(--p-testo-medio);
+  font-size: 13.5px;
+}
+
+.navigatore__riga {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  transition: background-color var(--p-durata-lampo) ease, border-color var(--p-durata-lampo) ease;
+}
+.navigatore__riga:hover { border-color: var(--p-linea-forte); }
+
+/* Binario, piede e copertina non si muovono: fondo della colonna e linea
+   tratteggiata, così si capisce senza leggere che sono fermi. */
+.navigatore__riga[data-fissa="1"],
+.navigatore__riga[data-bloccata="1"] {
+  background: var(--p-fondo-2);
+  border-style: dashed;
+}
+
+.navigatore__riga[data-spenta="1"] .navigatore__testo { opacity: .55; }
+
+/* La sezione dell'elemento scelto nell'anteprima: acceso, quindi ciano. */
+.navigatore__riga[aria-current="true"] {
+  border-color: color-mix(in srgb, var(--p-ciano) 55%, transparent);
+  box-shadow: inset 2px 0 0 var(--p-ciano);
+}
+
+.navigatore__riga[data-trascina="1"] {
+  background: var(--p-pannello-3);
+  border-color: var(--p-viola);
+  z-index: 1;
+}
+
+.navigatore__riga[data-arrivo]::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: var(--p-viola);
+  pointer-events: none;
+}
+.navigatore__riga[data-arrivo="prima"]::after { top: -4px; }
+.navigatore__riga[data-arrivo="dopo"]::after { bottom: -4px; }
+
+.navigatore[data-trascina="1"] { cursor: grabbing; user-select: none; }
+
+.navigatore__maniglia,
+.navigatore__lucchetto,
+.navigatore__attrezzo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: var(--p-raggio-s);
+  color: var(--p-testo-tenue);
+}
+
+.navigatore__maniglia,
+.navigatore__attrezzo {
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--p-durata-lampo) ease, color var(--p-durata-lampo) ease, border-color var(--p-durata-lampo) ease;
+}
+/* touch-action: senza, sul telefono il dito sulla maniglia scorrerebbe il
+   pannello invece di trascinare la riga. */
+.navigatore__maniglia { cursor: grab; touch-action: none; }
+.navigatore__maniglia:hover,
+.navigatore__attrezzo:hover:not(:disabled) {
+  background: var(--p-pannello-3);
+  border-color: var(--p-linea-forte);
+  color: var(--p-testo);
+}
+.navigatore__attrezzo:disabled { opacity: .3; cursor: not-allowed; }
+
+.navigatore__occhio[aria-pressed="true"] { color: var(--p-ciano); }
+.navigatore__occhio[aria-pressed="false"] { color: var(--p-allerta); }
+
+.navigatore__principale {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  border-radius: var(--p-raggio-s);
+  background: transparent;
+  color: var(--p-testo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.navigatore__principale:hover { background: var(--p-pannello-2); }
+
+.navigatore__num {
+  flex: none;
+  min-width: 1.4em;
+  padding-top: 1px;
+  font-family: var(--p-mono);
+  font-size: 11px;
+  color: var(--p-testo-tenue);
+  text-align: right;
+}
+
+.navigatore__testo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+.navigatore__nome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--p-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.navigatore__segno {
+  font-size: 9.5px;
+  letter-spacing: .12em;
+  color: var(--p-allerta);
+  border: 1px solid color-mix(in srgb, var(--p-allerta) 45%, transparent);
+  border-radius: 3px;
+  padding: 0 5px;
+}
+
+.navigatore__cosa { font-size: 12.5px; color: var(--p-testo-tenue); line-height: 1.4; }
+
+.navigatore__attrezzi { display: flex; align-items: center; gap: 1px; }
+
+.navigatore__fissa {
+  padding: 0 10px;
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+
+/* Colonna stretta: la descrizione lascia il posto al nome, che è quello
+   che serve per orientarsi mentre si sposta. */
+@container navigatore (max-width: 420px) {
+  .navigatore__cosa { display: none; }
+  .navigatore__principale { align-items: center; }
+  .navigatore__riga { grid-template-columns: 32px minmax(0, 1fr) auto; }
+  .navigatore__maniglia, .navigatore__lucchetto, .navigatore__attrezzo { width: 32px; }
+  .navigatore__fissa { padding: 0 6px; }
+}
+
+@container parti (max-width: 360px) {
+  .parti__voce-dettaglio { flex-basis: 100%; }
+}
+
+/* Movimento ridotto: le transizioni passano già dai token di pannello.css,
+   resta il triangolo dei gruppi pieghevoli. */
+@media (prefers-reduced-motion: reduce) {
+  .parti__gruppo--piega > summary::before { transition: none; }
+}

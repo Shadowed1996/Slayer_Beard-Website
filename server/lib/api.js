@@ -1,6 +1,7 @@
 'use strict';
 /* =====================================================================
-   api.js — tutte le rotte /api/* del CONTRATTO §8 e del CONTRATTO-2 §9.
+   api.js — tutte le rotte /api/* del CONTRATTO §8, del CONTRATTO-2 §9 e
+   del CONTRATTO-4 §7.
 
    Regole valide ovunque:
    - fuori da /api/sessione e /api/entra serve una sessione valida;
@@ -12,7 +13,8 @@
      estraneo. Insieme al cookie SameSite=Strict e quello che tiene fuori
      una pagina di terzi che provasse a pilotare il pannello dal browser
      di chi e gia collegato;
-   - il corpo JSON si ferma a 1 MB, il caricamento di un file a 4 MB;
+   - il corpo JSON si ferma a 1 MB, il caricamento di un'immagine a 4 MB,
+     quello di un font a 2 MB;
    - ogni errore e { errore: "…" } in italiano, con lo stato HTTP giusto.
    ===================================================================== */
 
@@ -26,14 +28,17 @@ const convalida = require('./convalida');
 const controlli = require('./controlli');
 const costruisci = require('./costruisci');
 const media = require('./media');
+const font = require('./font');
 const backup = require('./backup');
 const tema = require('./tema.js');
 const chiavi = require('./chiavi');
 const twitch = require('./twitch');
 const schema = require('../../contenuti/schema.js');
+const SBStili = require('../../pannello/condivisi/stili.js');
 
 const MAX_JSON = 1024 * 1024;
 const MAX_FILE = 4 * 1024 * 1024 + 64 * 1024;   // 4 MB piu il contorno multipart
+const MAX_FONT = font.MAX_BYTE + 64 * 1024;      // 2 MB piu il contorno multipart
 
 const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra']);
 
@@ -187,6 +192,14 @@ function rottaLeggiContenuti(req, res) {
     // trovato aprendo la pagina, che sono un'altra cosa e prima o poi
     // ingannano chi amministra.
     tema: { font: tema.CATALOGO_FONT, preset: tema.PRESET, predefinito: tema.PREDEFINITO },
+    // Quello che serve all'editor e non sta nello schema (CONTRATTO-4 §7):
+    // i font caricati con i loro usi, e i due elenchi del generatore
+    // condiviso, cosi il pannello non se ne scrive una copia.
+    editor: {
+      font: font.elencoConUso(documento),
+      sezioni: SBStili.SEZIONI_ORDINABILI,
+      riquadri: SBStili.RIQUADRI
+    },
     stato: statoDelSito(documento)
   });
 }
@@ -199,8 +212,10 @@ async function rottaScriviContenuti(req, res) {
   }
 
   // Le modifiche si sovrappongono a quelle salvate: il pannello puo mandare
-  // solo cio che ha toccato senza che il resto sparisca.
-  const unito = archivio.unisci(archivio.leggi(), corpo);
+  // solo cio che ha toccato senza che il resto sparisca. I rami dell'editor
+  // si sostituiscono in blocco (archivio.unisci) e si ripuliscono prima
+  // della convalida: un valore storto si scarta, non ferma il resto.
+  const unito = costruisci.pulisciEditor(archivio.unisci(archivio.leggi(), corpo));
 
   const errori = convalida.convalida(unito);
   if (errori.length) {
@@ -252,6 +267,10 @@ function rottaAnteprima(req, res) {
  *
  * Le modifiche si sovrappongono a quelle salvate come nella PUT, cosi il
  * pannello puo mandare solo cio che ha toccato.
+ *
+ * Con `editor: true` (CONTRATTO-4 §6.3) la pagina esce pronta per l'editor:
+ * senza script, con <base href="/"> e con i due <style> dell'editor sempre
+ * presenti. Senza, resta quella di prima.
  */
 async function rottaAnteprimaDiProva(req, res) {
   const corpo = await leggiJson(req);
@@ -261,10 +280,10 @@ async function rottaAnteprimaDiProva(req, res) {
     return;
   }
 
-  const unito = archivio.unisci(archivio.leggi(), arrivo);
+  const unito = costruisci.pulisciEditor(archivio.unisci(archivio.leggi(), arrivo));
   let html;
   try {
-    html = costruisci.anteprimaDi(unito);
+    html = corpo.editor === true ? costruisci.anteprimaEditor(unito) : costruisci.anteprimaDi(unito);
   } catch (err) {
     // 422 e non 500: la richiesta e arrivata bene, sono i contenuti (o il
     // modello) a non stare in piedi. Il messaggio del motore dice file e
@@ -302,6 +321,62 @@ function rottaEliminaMedia(req, res, nome) {
   json(res, 200, { ok: true, eliminato: media.elimina(nome, archivio.leggi()) });
 }
 
+/* --- FONT CARICATI (CONTRATTO-4 §7) -------------------------------- */
+
+function rottaElencoFont(req, res) {
+  json(res, 200, { font: font.elencoConUso(archivio.leggi()) });
+}
+
+async function rottaCaricaFont(req, res) {
+  const corpo = await leggiCorpo(req, MAX_FONT);
+  json(res, 201, { ok: true, font: font.salva(corpo, req.headers['content-type']) });
+}
+
+/** `?forza=1` e la conferma esplicita di chi amministra: senza, un font in uso risponde 409. */
+function rottaEliminaFont(req, res, id, forza) {
+  const esito = font.elimina(id, archivio.leggi(), { forza: forza });
+  json(res, 200, { ok: true, eliminato: esito.id, usatoIn: esito.usatoIn });
+}
+
+/* --- PASSWORD ------------------------------------------------------ */
+
+/**
+ * Cambio della password dal pannello. La sessione da sola non basta: serve
+ * anche la password attuale, altrimenti un computer lasciato aperto
+ * basterebbe a cambiare la serratura. I tentativi sbagliati hanno un
+ * contatore loro, separato da quello dell'accesso.
+ *
+ * 403 e non 401 per la password attuale sbagliata: 401 vuol dire «sessione
+ * scaduta» per tutto il resto del pannello, che riporterebbe alla schermata
+ * d'accesso proprio chi e dentro e ha solo sbagliato a scrivere.
+ */
+async function rottaPassword(req, res) {
+  const attesa = auth.attesaResidua(req, 'password');
+  if (attesa > 0) {
+    errore(res, 429, 'Troppi tentativi sbagliati. Riprova fra ' + durataLeggibile(attesa) + '.');
+    return;
+  }
+
+  const corpo = await leggiJson(req);
+  const attuale = typeof corpo.attuale === 'string' ? corpo.attuale : '';
+  const nuova = typeof corpo.nuova === 'string' ? corpo.nuova : '';
+
+  if (!attuale || !auth.passwordCorretta(attuale)) {
+    auth.registraFallimento(req, 'password');
+    errore(res, 403, 'La password attuale non e giusta.');
+    return;
+  }
+  auth.azzeraTentativi(req, 'password');
+
+  if (nuova.length < auth.MIN_PASSWORD) {
+    errore(res, 422, 'La password nuova deve essere lunga almeno ' + auth.MIN_PASSWORD + ' caratteri.');
+    return;
+  }
+
+  auth.impostaPassword(nuova, { tieni: auth.idSessione(req) });
+  json(res, 200, { ok: true });
+}
+
 /* --- BACKUP -------------------------------------------------------- */
 
 function rottaElencoBackup(req, res) {
@@ -317,6 +392,13 @@ function rottaRipristina(req, res, id) {
 
 function metodoNonAmmesso(res, ammessi) {
   errore(res, 405, 'Metodo non ammesso su questa rotta. Ammessi: ' + ammessi + '.');
+}
+
+/** Un id preso dal percorso: la codifica sbagliata e un 400, non un 500. */
+function decodifica(pezzo) {
+  try { return decodeURIComponent(pezzo); } catch (e) {
+    throw erroreHttp(400, 'L identificativo nel percorso non e codificato correttamente.');
+  }
 }
 
 async function gestisci(req, res, percorso) {
@@ -368,6 +450,19 @@ async function gestisci(req, res, percorso) {
     try { nome = decodeURIComponent(percorso.slice('/api/media/'.length)); }
     catch (e) { return errore(res, 400, 'Il nome del file non e codificato correttamente.'); }
     return rottaEliminaMedia(req, res, nome);
+  }
+  if (percorso === '/api/font') {
+    if (metodo === 'GET') { return rottaElencoFont(req, res); }
+    if (metodo === 'POST') { return rottaCaricaFont(req, res); }
+    return metodoNonAmmesso(res, 'GET, POST');
+  }
+  if (percorso.startsWith('/api/font/')) {
+    if (metodo !== 'DELETE') { return metodoNonAmmesso(res, 'DELETE'); }
+    const forza = new URL(req.url, 'http://localhost').searchParams.get('forza');
+    return rottaEliminaFont(req, res, decodifica(percorso.slice('/api/font/'.length)), forza === '1' || forza === 'true');
+  }
+  if (percorso === '/api/password') {
+    return metodo === 'POST' ? rottaPassword(req, res) : metodoNonAmmesso(res, 'POST');
   }
   if (percorso === '/api/backup') {
     return metodo === 'GET' ? rottaElencoBackup(req, res) : metodoNonAmmesso(res, 'GET');

@@ -56,8 +56,12 @@ function esistePassword() {
   return leggiAuth() !== null;
 }
 
-/** Scrive server/dati/auth.json con l'hash della password data. */
-function impostaPassword(password) {
+/**
+ * Scrive server/dati/auth.json con l'hash della password data.
+ * `opzioni.tieni` e l'id della sessione da lasciare aperta: chi cambia la
+ * password dal pannello resta dentro, tutti gli altri escono.
+ */
+function impostaPassword(password, opzioni) {
   const testo = String(password == null ? '' : password);
   if (testo.length < MIN_PASSWORD) {
     throw erroreHttp(400, 'La password deve essere lunga almeno ' + MIN_PASSWORD + ' caratteri.');
@@ -69,8 +73,12 @@ function impostaPassword(password) {
     hash: calcolaHash(testo, sale).toString('hex'),
     creataIl: new Date().toISOString()
   }, null, 2) + '\n');
-  // Le sessioni aperte con la vecchia password non hanno piu motivo di esistere.
+  // Le sessioni aperte con la vecchia password non hanno piu motivo di
+  // esistere: una password si cambia proprio quando si teme che qualcuno la
+  // conosca, e quel qualcuno potrebbe essere gia dentro.
+  const tieni = opzioni && opzioni.tieni ? sessioni.get(opzioni.tieni) : null;
   sessioni.clear();
+  if (tieni && tieni.scadenza > Date.now()) { sessioni.set(opzioni.tieni, tieni); }
 }
 
 /** Confronto a tempo costante: la lunghezza dell'hash e sempre la stessa. */
@@ -116,6 +124,11 @@ function leggiCookie(req) {
   return fuori;
 }
 
+/** L'id della sessione portata dalla richiesta, oppure null. */
+function idSessione(req) {
+  return leggiCookie(req)[NOME_COOKIE] || null;
+}
+
 /** Vero se la richiesta porta una sessione ancora valida. */
 function autenticato(req) {
   const id = leggiCookie(req)[NOME_COOKIE];
@@ -156,34 +169,41 @@ function cookieScaduto(req) {
 
 /* --- FRENO AI TENTATIVI -------------------------------------------- */
 
-function indirizzoDi(req) {
+/*
+   `ambito` separa i contatori: sbagliare la password attuale nel cambio
+   password (ambito 'password') non deve chiudere fuori dall'accesso, e
+   viceversa. Senza ambito vale il contatore dell'accesso, come sempre.
+*/
+function chiaveTentativi(req, ambito) {
   const inoltrato = req.headers['x-forwarded-for'];
-  if (typeof inoltrato === 'string' && inoltrato.trim()) { return inoltrato.split(',')[0].trim(); }
-  return (req.socket && req.socket.remoteAddress) || 'sconosciuto';
+  const ip = (typeof inoltrato === 'string' && inoltrato.trim())
+    ? inoltrato.split(',')[0].trim()
+    : ((req.socket && req.socket.remoteAddress) || 'sconosciuto');
+  return ambito ? ambito + ':' + ip : ip;
 }
 
 /** Millisecondi che mancano allo sblocco, 0 se non e bloccato. */
-function attesaResidua(req) {
-  const ip = indirizzoDi(req);
-  const voce = tentativi.get(ip);
+function attesaResidua(req, ambito) {
+  const chiave = chiaveTentativi(req, ambito);
+  const voce = tentativi.get(chiave);
   if (!voce) { return 0; }
-  if (voce.scadenza <= Date.now()) { tentativi.delete(ip); return 0; }
+  if (voce.scadenza <= Date.now()) { tentativi.delete(chiave); return 0; }
   return voce.conteggio >= MAX_TENTATIVI ? voce.scadenza - Date.now() : 0;
 }
 
-function registraFallimento(req) {
-  const ip = indirizzoDi(req);
+function registraFallimento(req, ambito) {
+  const chiave = chiaveTentativi(req, ambito);
   const adesso = Date.now();
-  const voce = tentativi.get(ip);
+  const voce = tentativi.get(chiave);
   if (!voce || voce.scadenza <= adesso) {
-    tentativi.set(ip, { conteggio: 1, scadenza: adesso + FINESTRA_TENTATIVI_MS });
+    tentativi.set(chiave, { conteggio: 1, scadenza: adesso + FINESTRA_TENTATIVI_MS });
     return;
   }
   voce.conteggio += 1;
 }
 
-function azzeraTentativi(req) {
-  tentativi.delete(indirizzoDi(req));
+function azzeraTentativi(req, ambito) {
+  tentativi.delete(chiaveTentativi(req, ambito));
 }
 
 /** Solo per il collaudo: azzera sessioni e tentativi fra una prova e l'altra. */
@@ -195,6 +215,6 @@ function azzeraTutto() {
 module.exports = {
   NOME_COOKIE, MIN_PASSWORD, MAX_TENTATIVI, DURATA_SESSIONE_MS,
   esistePassword, impostaPassword, passwordCorretta,
-  creaSessione, autenticato, chiudiSessione, cookieSessione, cookieScaduto,
+  creaSessione, autenticato, idSessione, chiudiSessione, cookieSessione, cookieScaduto,
   attesaResidua, registraFallimento, azzeraTentativi, azzeraTutto
 };

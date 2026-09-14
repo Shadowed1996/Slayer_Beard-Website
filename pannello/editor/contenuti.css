@@ -1,0 +1,189 @@
+/* =====================================================================
+   contenuti.css — la scheda «Contenuto» di testi e immagini
+   (CONTRATTO-4 §11.1 e §12).
+
+   Solo le variabili di pannello.css: la scheda parla la lingua della
+   regia, come il resto del pannello. Etichette in monospazio maiuscolo,
+   linee da 1 px, superfici piatte; viola per l'azione, ciano per quello
+   che e' acceso (la scrittura in corso). Bottoni, campi e contatore sono
+   quelli che il pannello ha gia' (.btn, .campo, .campo__contatore); la
+   barra del testo ricco usa le classi di campi.css. Qui sta solo quello
+   che non esisteva.
+
+   Il contorno del testo in scrittura dentro l'anteprima NON sta qui: e'
+   un <style> che contenuti.js mette nell'iframe, dove questo foglio non
+   arriva.
+
+   Struttura:
+     1. scheda e testata
+     2. azioni, note, stato della scrittura
+     3. campo dello schema dentro la scheda
+     4. immagine
+     5. schermi stretti e movimento ridotto
+   ===================================================================== */
+
+/* --------------------------------------------------------------- 1. */
+.cont {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--p-testo-medio);
+}
+
+.cont__testa { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.cont__occhiello {
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+  overflow-wrap: anywhere;
+}
+
+.cont__aiuto { font-size: 13px; color: var(--p-testo-medio); }
+
+/* --------------------------------------------------------------- 2. */
+.cont__azioni { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.cont__suggerimento {
+  font-size: 12.5px;
+  color: var(--p-testo-tenue);
+  border-left: 2px solid transparent;
+  transition: color var(--p-durata) ease, border-color var(--p-durata) ease, background-color var(--p-durata) ease;
+}
+
+/* Invio premuto in un testo semplice: la riga che lo spiega si accende,
+   invece di lasciar credere che la tastiera non risponda. */
+.cont__suggerimento[data-lampo] {
+  padding: 4px 8px;
+  color: var(--p-testo);
+  border-left-color: var(--p-ciano);
+  background: var(--p-pannello-2);
+}
+
+/* Le note hanno il colore del loro significato sulla linea a sinistra e
+   la parola scritta: il colore da solo non basterebbe a chi non lo vede. */
+.cont__nota {
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: var(--p-testo);
+  background: var(--p-pannello);
+  border: 1px solid var(--p-linea);
+  border-left: 3px solid var(--p-linea-viva);
+  border-radius: var(--p-raggio-s);
+  overflow-wrap: anywhere;
+}
+.cont__nota[data-tipo="ok"]      { border-left-color: var(--p-ok); }
+.cont__nota[data-tipo="info"]    { border-left-color: var(--p-viola); }
+.cont__nota[data-tipo="allerta"] { border-left-color: var(--p-allerta); }
+.cont__nota[data-tipo="errore"]  { border-left-color: var(--p-errore); color: var(--p-errore); }
+
+/* «Stai scrivendo sulla pagina»: la cosa accesa in questo momento. */
+.cont__stato {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--p-ciano);
+}
+.cont__spia {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--p-ciano);
+  animation: cont-pulsa 1.6s ease-in-out infinite;
+}
+@keyframes cont-pulsa { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* La barra riusa .ricco di campi.css, che la pensa sopra un'area di testo:
+   qui l'area e' la pagina, quindi l'ultimo pezzo non ha bisogno del filo
+   di separazione in basso. */
+.cont__ricco > :last-child { border-bottom: 0; }
+
+.cont__conta { display: flex; justify-content: flex-end; min-height: 16px; }
+
+/* --------------------------------------------------------------- 3. */
+.cont__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--p-linea);
+}
+
+/* Il nome del campo lo scrive gia' la testata del pannello, l'aiuto la
+   testata della scheda. L'etichetta resta per i lettori di schermo (e'
+   quella legata al campo), l'aiuto sparisce: ripeterlo sarebbe rumore. */
+.cont__campo > .campo > .campo__testa > .campo__etichetta {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.cont__campo > .campo > .campo__aiuto { display: none; }
+
+/* --------------------------------------------------------------- 4. */
+.cont__figura {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  max-height: 240px;
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  /* La scacchiera fa vedere le parti trasparenti di un PNG o di un SVG:
+     su un fondo pieno un avatar rotondo sembrerebbe quadrato. */
+  background:
+    linear-gradient(45deg, var(--p-pannello-2) 25%, transparent 25%, transparent 75%, var(--p-pannello-2) 75%) 0 0 / 14px 14px,
+    linear-gradient(45deg, var(--p-pannello-2) 25%, transparent 25%, transparent 75%, var(--p-pannello-2) 75%) 7px 7px / 14px 14px,
+    var(--p-pannello);
+}
+.cont__figura img {
+  display: block;
+  max-width: 100%;
+  max-height: 222px;
+  object-fit: contain;
+}
+
+.cont__vuota {
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+
+.cont__file {
+  font-family: var(--p-mono);
+  font-size: 11px;
+  color: var(--p-testo-tenue);
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------- 5. */
+/* Il pannello e' un contenitore con nome (guscio.css): conta la sua
+   larghezza, non quella della finestra, che col pannello stretto accanto
+   all'anteprima direbbe il falso. */
+@container lato (max-width: 400px) {
+  .cont__azioni > .btn { flex: 1 1 100%; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cont__spia { animation: none; }
+  .cont__suggerimento { transition: none; }
+}

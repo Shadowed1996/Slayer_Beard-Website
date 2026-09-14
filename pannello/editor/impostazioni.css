@@ -1,0 +1,497 @@
+/* =====================================================================
+   impostazioni.css — la vista «Impostazioni del sito», i controlli
+   colore e font della scheda Stile, la libreria dei font caricati.
+
+   Sta dentro il pannello laterale largo 380–760 px: la vista segue la
+   larghezza del pannello con le container query (@container imp), non la
+   finestra. I controlli (.comando-tema) invece devono stare bene in
+   qualunque contenitore, e usano solo griglie che si riempiono da sole.
+
+   Lingua visiva della regia (CONTRATTO-4 §12): solo le variabili --p-* di
+   pannello.css, linee da 1 px, superfici piatte, etichette in monospazio
+   maiuscolo, viola per ciò che è scelto, ciano per il fuoco e per ciò che
+   è collegato al tema. I colori dei campioni li mette il JS sull'elemento:
+   sono dati di chi amministra, non stile del pannello.
+
+   Struttura:
+     1. vista (.imp)
+     2. riepilogo dei contrasti (.contrasti)
+     3. libreria dei font (.libreria-font)
+     4. controlli colore e font (.comando-tema)
+     5. larghezze del pannello e movimento ridotto
+   ===================================================================== */
+
+/* --------------------------------------------------------------- 1. */
+.imp {
+  container: imp / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.imp__intro { display: flex; flex-direction: column; gap: 4px; }
+.imp__nota { font-size: 13px; line-height: 1.5; color: var(--p-testo-medio); }
+
+.imp__indice { display: flex; flex-wrap: wrap; gap: 6px; }
+.imp__salto {
+  padding: 5px 10px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: transparent;
+  color: var(--p-testo-medio);
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color var(--p-durata-lampo) ease, color var(--p-durata-lampo) ease;
+}
+.imp__salto:hover { border-color: var(--p-linea-viva); color: var(--p-testo); }
+
+.imp__sezione {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--p-linea);
+  scroll-margin-top: 12px;
+}
+.imp__titolo {
+  font-family: var(--p-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--p-testo);
+}
+.imp__titolo:focus { outline: none; }
+.imp__titolo:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 3px; }
+
+/* La barra delle combinazioni ha un suo occhiello, che qui ripeterebbe il
+   titolo della sezione subito sopra. Resta la nota, che dice cosa fa. */
+.imp .tema-barra__testa .occhiello { display: none; }
+
+.imp__campi { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.imp__griglia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px 18px;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------- 2. */
+.contrasti {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+}
+.contrasti__titolo {
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.contrasti__elenco { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px 16px; }
+.contrasti__voce { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.contrasti__prova {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 24px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+.contrasti__nome { flex: 1 1 auto; min-width: 0; font-size: 13px; color: var(--p-testo-medio); }
+.contrasti__rapporto { flex: none; font-family: var(--p-mono); font-size: 12px; color: var(--p-testo); }
+.contrasti__livello {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid var(--p-ok);
+  border-radius: 3px;
+  color: var(--p-ok);
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+/* Sotto 4,5:1 cambiano insieme bordo, colore e parola: l'avviso arriva
+   anche a chi non distingue il verde dal rosso. */
+.contrasti__voce[data-grave="1"] .contrasti__livello { border-color: var(--p-errore); color: var(--p-errore); }
+.contrasti__voce[data-grave="1"] .contrasti__nome { color: var(--p-testo); }
+.contrasti__esito { font-size: 12.5px; color: var(--p-testo-tenue); }
+.contrasti__esito[data-grave="1"] { color: var(--p-errore); }
+
+/* --------------------------------------------------------------- 3. */
+.libreria-font {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio);
+  background: var(--p-pannello);
+}
+.libreria-font__testa { display: flex; flex-direction: column; gap: 4px; }
+.libreria-font__titolo {
+  margin: 0;
+  font-family: var(--p-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo);
+}
+.libreria-font__nota { font-size: 12.5px; color: var(--p-testo-medio); }
+
+.libreria-font__carica {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-fondo-2);
+  transition: border-color var(--p-durata) ease;
+}
+.libreria-font__carica[data-sopra="1"] { border-color: var(--p-ciano); border-style: solid; }
+.libreria-font__invito { font-size: 13px; color: var(--p-testo-medio); }
+.libreria-font__riga { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.libreria-font__riga--etichetta .campo__input { flex: 1 1 12rem; width: auto; min-width: 0; }
+.libreria-font__scelto {
+  flex: 1 1 10rem;
+  min-width: 0;
+  font-family: var(--p-mono);
+  font-size: 12px;
+  color: var(--p-testo-medio);
+  overflow-wrap: anywhere;
+}
+.libreria-font__codice {
+  flex: none;
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.libreria-font__piccola { font-size: 11.5px; line-height: 1.5; color: var(--p-testo-tenue); }
+
+/* L'input vero resta nella pagina (il bottone lo apre, e dà il nome al
+   file scelto) ma non si vede: il bottone «Scegli un file» parla meglio
+   del controllo nativo, che cambia lingua con il sistema. */
+.libreria-font__file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+.libreria-font__stato { font-size: 12.5px; color: var(--p-testo-medio); }
+.libreria-font__stato[data-tipo="errore"] { color: var(--p-errore); }
+
+.libreria-font__elenco { display: flex; flex-direction: column; gap: 8px; }
+.libreria-font__voce {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello-2);
+}
+.libreria-font__corpo { flex: 1 1 14rem; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.libreria-font__campione { font-size: 22px; line-height: 1.2; color: var(--p-testo); overflow-wrap: anywhere; }
+.libreria-font__meta {
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.libreria-font__uso { font-size: 12.5px; color: var(--p-testo-tenue); }
+.libreria-font__uso[data-in-uso="1"] { color: var(--p-ciano); }
+.libreria-font__vuoto { font-size: 13px; color: var(--p-testo-tenue); padding: 4px 2px; }
+
+/* --------------------------------------------------------------- 4. */
+.comando-tema { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.comando-tema__testa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+.comando-tema__etichetta {
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo-medio);
+}
+
+.comando-tema__apri {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 11rem;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 4px 10px 4px 5px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  color: var(--p-testo);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--p-durata-lampo) ease, background-color var(--p-durata-lampo) ease;
+}
+.comando-tema__apri:hover { border-color: var(--p-linea-viva); background: var(--p-pannello-2); }
+.comando-tema__apri[aria-expanded="true"] { border-color: var(--p-viola); }
+
+.comando-tema__campione,
+.comando-tema__puntino {
+  flex: none;
+  border: 1px solid var(--p-linea-viva);
+  background-color: var(--p-fondo);
+}
+.comando-tema__campione { width: 22px; height: 22px; border-radius: 4px; }
+.comando-tema__puntino { width: 18px; height: 18px; border-radius: 50%; }
+/* Nessun colore: barrato, come una spia spenta. */
+.comando-tema__campione.is-vuoto,
+.comando-tema__puntino.is-vuoto {
+  background-image: linear-gradient(135deg,
+    transparent calc(50% - 1px), var(--p-testo-tenue) calc(50% - 1px),
+    var(--p-testo-tenue) calc(50% + 1px), transparent calc(50% + 1px));
+}
+
+.comando-tema__aa {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 22px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 4px;
+  background: var(--p-fondo);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.comando-tema__nome { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.comando-tema__marca {
+  flex: none;
+  padding: 1px 5px;
+  border: 1px solid var(--p-ciano);
+  border-radius: 3px;
+  color: var(--p-ciano);
+  font-family: var(--p-mono);
+  font-size: 9.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.comando-tema__freccia {
+  flex: none;
+  width: 0;
+  height: 0;
+  margin-left: auto;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--p-testo-tenue);
+  transition: transform var(--p-durata) ease;
+}
+.comando-tema__apri[aria-expanded="true"] .comando-tema__freccia { transform: rotate(180deg); }
+
+.comando-tema__aiuto { font-size: 12.5px; color: var(--p-testo-medio); }
+.comando-tema__nota {
+  padding: 5px 9px;
+  border-left: 2px solid var(--p-ciano);
+  background: var(--p-pannello);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--p-testo-medio);
+}
+.comando-tema__nota[data-tipo="avviso"] { border-left-color: var(--p-allerta); color: var(--p-testo); }
+
+.comando-tema__scelte {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-fondo-2);
+}
+.comando-tema__insieme { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.comando-tema__legenda {
+  padding: 0;
+  margin-bottom: 2px;
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.comando-tema__gruppo { display: flex; flex-direction: column; gap: 4px; }
+.comando-tema__sottotitolo { font-size: 11px; color: var(--p-testo-tenue); }
+
+.comando-tema__griglia {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 132px), 1fr));
+  gap: 4px;
+}
+.comando-tema__griglia--font { grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr)); }
+.comando-tema__griglia--sola { grid-template-columns: minmax(0, 1fr); }
+.comando-tema__voce { position: relative; min-width: 0; }
+
+/* Radio vere, fuori dalla vista ma non dalla tastiera: la scheda è la label. */
+.comando-tema__radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  opacity: 0;
+}
+.comando-tema__opzione {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  min-height: 36px;
+  padding: 5px 7px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  cursor: pointer;
+  transition: border-color var(--p-durata-lampo) ease, background-color var(--p-durata-lampo) ease;
+}
+.comando-tema__opzione:hover { border-color: var(--p-linea-viva); background: var(--p-pannello-2); }
+.comando-tema__radio:checked + .comando-tema__opzione {
+  border-color: var(--p-viola);
+  background: var(--p-pannello-2);
+  box-shadow: inset 0 0 0 1px var(--p-viola);
+}
+.comando-tema__radio:focus-visible + .comando-tema__opzione { outline: 2px solid var(--p-ciano); outline-offset: 2px; }
+.comando-tema__opzione--font { flex-direction: column; align-items: stretch; justify-content: center; gap: 3px; }
+.comando-tema__opzione.is-avviso { border-color: var(--p-allerta); }
+
+.comando-tema__testi { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.comando-tema__riga-opzione { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+/* Il nome della scelta vince sul dettaglio: «Strumentazione» intero e
+   «adesso: JetBrains M…» tagliato, non il contrario. */
+.comando-tema__nome-opzione {
+  flex: 0 0 auto;
+  max-width: 100%;
+  font-size: 12.5px;
+  color: var(--p-testo);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.comando-tema__dettaglio {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-family: var(--p-mono);
+  font-size: 10px;
+  color: var(--p-testo-tenue);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.comando-tema__esempio { font-size: 17px; line-height: 1.25; color: var(--p-testo); overflow-wrap: anywhere; }
+
+.comando-tema__libero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+}
+.comando-tema__libero[data-attivo="1"] { border-color: var(--p-viola); box-shadow: inset 0 0 0 1px var(--p-viola); }
+.comando-tema__tavolozza {
+  flex: none;
+  width: 42px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  cursor: pointer;
+}
+.comando-tema__tavolozza::-webkit-color-swatch-wrapper { padding: 0; }
+.comando-tema__tavolozza::-webkit-color-swatch { border: 0; border-radius: 3px; }
+.comando-tema__tavolozza::-moz-color-swatch { border: 0; border-radius: 3px; }
+.comando-tema__codice {
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.comando-tema .comando-tema__esa {
+  flex: 1 1 7em;
+  width: auto;
+  min-width: 0;
+  max-width: 10em;
+  padding: 6px 8px;
+  font-family: var(--p-mono);
+  font-size: 13px;
+  text-transform: lowercase;
+}
+.comando-tema__errore { font-size: 12.5px; color: var(--p-errore); }
+.comando-tema__piccola { font-size: 11.5px; line-height: 1.45; color: var(--p-testo-tenue); }
+.comando-tema__stato { font-size: 12px; color: var(--p-testo-medio); }
+
+/* --------------------------------------------------------------- 5. */
+@container imp (min-width: 540px) {
+  .imp__griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .contrasti__elenco { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .libreria-font__campione { font-size: 26px; }
+}
+
+/* Sotto i 400 px del pannello (il cassetto sui telefoni) le cornici si
+   stringono, e «Elimina» resta a destra anche quando va a capo. */
+@container imp (max-width: 399px) {
+  .libreria-font { padding: 11px; }
+  .libreria-font__carica { padding: 10px; }
+  .libreria-font__voce .btn { margin-left: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .imp__salto,
+  .libreria-font__carica,
+  .comando-tema__apri,
+  .comando-tema__freccia,
+  .comando-tema__opzione {
+    transition: none;
+  }
+}

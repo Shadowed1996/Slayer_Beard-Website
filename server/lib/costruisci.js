@@ -11,6 +11,12 @@
       resa, scrittura atomica, timbro di aggiornamento — fermandosi al
       primo passo che non torna, senza lasciare file a meta.
 
+   Con l'editor unico (CONTRATTO-4 §6) il contesto porta anche l'ordine e
+   la visibilita delle sezioni, il corpo della pagina gia composto e i due
+   CSS dell'editor (stili per elemento e blocchi posizionati), tutti usciti
+   dal generatore condiviso pannello/condivisi/stili.js; e da qui esce anche
+   la pagina per l'anteprima dell'editor.
+
    Nota sulla settimana: le voci escono in ordine italiano (lunedi per
    primo) ma ognuna porta il proprio `indice` con la numerazione di
    JavaScript (0 = domenica), che e quella di config.orari.giorni e quella
@@ -38,6 +44,7 @@ const convalida = require('./convalida');
 const controlli = require('./controlli');
 const testoricco = require('./testoricco.js');
 const tema = require('./tema.js');
+const font = require('./font');
 const backup = require('./backup');
 const schema = require('../../contenuti/schema.js');
 
@@ -322,6 +329,143 @@ function jsonLdPersona(testi, config, social, urlCanale) {
 }
 
 /* ------------------------------------------------------------------ */
+/* SEZIONI, STILI E DISPOSIZIONE (CONTRATTO-4 §6)                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Il generatore condiviso (pannello/condivisi/stili.js, CONTRATTO-4 §8).
+ * Sta sotto pannello/ perche lo stesso file lo carica il browser: l'anteprima
+ * dal vivo del pannello e il sito pubblicato escono dalle stesse funzioni, e
+ * cosi non possono divergere. Il percorso e relativo a questo file e non
+ * alla radice dei contenuti: il collaudo genera in una cartella temporanea
+ * che il pannello non ce l'ha.
+ */
+function generatore() {
+  return require('../../pannello/condivisi/stili.js');
+}
+
+/**
+ * Le opzioni che servono al generatore per i font. `base` e il percorso da
+ * chi carica il CSS alla radice del sito: '' per uno <style> dentro la pagina.
+ */
+function opzioniStili(base) {
+  return {
+    famiglia: (nome) => {
+      const trovata = tema.famigliaCatalogo(nome);
+      return trovata ? { nome: trovata.nome, ripiego: trovata.ripiego } : null;
+    },
+    font: (id) => font.voce(id),
+    base: base
+  };
+}
+
+/**
+ * Ripulisce SUL POSTO i tre rami dell'editor e gli slot dei font del tema,
+ * prima della convalida (CONTRATTO-4 §6.5): un valore sbagliato si scarta
+ * invece di bloccare il salvataggio di tutto il resto. Chi chiama passa un
+ * documento suo (una copia, o quello appena letto dal disco).
+ *
+ * Un ramo assente resta assente: la pulizia non inventa chiavi che lo schema
+ * potrebbe non conoscere. Uno slot del tema che punta a un font caricato e
+ * poi cancellato torna alla famiglia di partenza, che e anche quello che
+ * css/tema.css gli mette gia: cancellare un font in uso richiede una
+ * conferma esplicita, e dopo quella conferma una pubblicazione bloccata da
+ * «font inesistente» sarebbe una trappola.
+ */
+function pulisciEditor(contenuti) {
+  const config = contenuti && contenuti.config;
+  if (!config || typeof config !== 'object') { return contenuti; }
+  const SB = generatore();
+  if (config.sezioni !== undefined) { config.sezioni = SB.pulisciSezioni(config.sezioni); }
+  if (config.stili !== undefined) { config.stili = SB.pulisciStili(config.stili, opzioniStili('')); }
+  if (config.disposizione !== undefined) { config.disposizione = SB.pulisciDisposizione(config.disposizione); }
+
+  const slot = config.tema && config.tema.font;
+  if (slot && typeof slot === 'object') {
+    for (const nome of Object.keys(tema.PREDEFINITO.font)) {
+      const valore = slot[nome];
+      if (typeof valore === 'string' && valore.indexOf(tema.PREFISSO_CARICATO) === 0 &&
+          !font.esiste(valore.slice(tema.PREFISSO_CARICATO.length))) {
+        slot[nome] = tema.PREDEFINITO.font[nome];
+      }
+    }
+  }
+  return contenuti;
+}
+
+/** I nomi del catalogo scelti con `famiglia:<nome>` negli stili: servono all'indirizzo di Google Fonts. */
+function famiglieNegliStili(stili) {
+  const nomi = [];
+  for (const bersaglio of Object.keys(stili || {})) {
+    const dispositivi = stili[bersaglio] || {};
+    for (const dispositivo of Object.keys(dispositivi)) {
+      const valore = dispositivi[dispositivo] && dispositivi[dispositivo].font;
+      if (typeof valore !== 'string' || valore.indexOf('famiglia:') !== 0) { continue; }
+      const nome = valore.slice('famiglia:'.length);
+      if (nomi.indexOf(nome) === -1) { nomi.push(nome); }
+    }
+  }
+  return nomi;
+}
+
+// Gli elementi che non hanno una chiusura: non entrano nella pila.
+const ELEMENTI_VUOTI = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr']);
+
+/**
+ * Quali blocchi ha davvero la pagina, riquadro per riquadro:
+ * { chi: Set(['chi.corpo', …]) }. Un blocco conta solo per il riquadro che
+ * lo contiene piu da vicino — lo stesso `parentElement.closest()` del motore
+ * (CONTRATTO-4 §10): e quello il suo rettangolo di riferimento, e una
+ * posizione misurata su un altro sarebbe sbagliata.
+ *
+ * Non serve un parser HTML: la pagina esce dai modelli, e ogni elemento che
+ * si apre si chiude. Basta una pila dei tag aperti, saltando commenti,
+ * elementi vuoti e contenuto di script e style.
+ */
+function blocchiPresenti(html) {
+  const presenti = Object.create(null);
+  const pila = [];   // { tag, riquadro }: il riquadro piu vicino, ereditato
+  const tag = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
+  let trovato;
+  while ((trovato = tag.exec(html)) !== null) {
+    if (!trovato[2]) { continue; }
+    const nome = trovato[2].toLowerCase();
+    if (trovato[1]) {
+      for (let i = pila.length - 1; i >= 0; i--) {
+        if (pila[i].tag === nome) { pila.length = i; break; }
+      }
+      continue;
+    }
+    const attributi = trovato[3];
+    const sopra = pila.length ? pila[pila.length - 1].riquadro : null;
+    const blocco = /\sdata-sb-blocco="([^"]*)"/.exec(attributi);
+    if (blocco && sopra) {
+      if (!presenti[sopra]) { presenti[sopra] = new Set(); }
+      presenti[sopra].add(blocco[1]);
+    }
+    if (nome === 'script' || nome === 'style') {
+      const chiusura = html.indexOf('</' + nome, tag.lastIndex);
+      tag.lastIndex = chiusura === -1 ? html.length : chiusura;
+      continue;
+    }
+    if (ELEMENTI_VUOTI.has(nome) || /\/\s*$/.test(attributi)) { continue; }
+    const riquadro = /\sdata-sb-riquadro="([^"]*)"/.exec(attributi);
+    pila.push({ tag: nome, riquadro: riquadro ? riquadro[1] : sopra });
+  }
+  return presenti;
+}
+
+/**
+ * Un CSS pronto da mettere dentro uno <style>. Nessuna regola generata ha
+ * bisogno di un `<`, e senza non esiste valore che possa chiudere lo
+ * <style> prima del tempo: \3C e la stessa lettera scritta come escape CSS.
+ */
+function cssInPagina(css) {
+  return String(css || '').replace(/</g, '\\3C ');
+}
+
+/* ------------------------------------------------------------------ */
 /* IL CONTESTO INTERO                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -338,12 +482,25 @@ function costruisciContesto(contenuti, opzioni) {
   const config = archivio.copia(contenuti.config);
   sanificaRicchi(testi, config);
 
-  const cache = new Map();
+  // I tre rami dell'editor si ripuliscono anche qui e non solo prima di
+  // salvare: l'anteprima rende contenuti che nessuno ha convalidato, e un
+  // valore storto deve sparire dalla pagina, non romperla.
+  const SB = generatore();
+  config.sezioni = SB.pulisciSezioni(config.sezioni);
+  config.stili = SB.pulisciStili(config.stili, opzioniStili(''));
+  config.disposizione = SB.pulisciDisposizione(config.disposizione);
+  const attive = config.sezioni.filter((voce) => voce.attiva);
+
+  const cache = scelte.cache || new Map();
   const mancanti = [];
 
   const canale = String((config.twitch && config.twitch.canale) || '');
   const urlCanale = 'https://www.twitch.tv/' + canale;
   const social = elencoVisibile(config.social, cache, mancanti);
+
+  const attiva = {};
+  for (const id of SB.SEZIONI_ORDINABILI) { attiva[id] = false; }
+  for (const voce of attive) { attiva[voce.id] = true; }
 
   const contesto = Object.assign({}, testi, {
     config: config,
@@ -358,18 +515,56 @@ function costruisciContesto(contenuti, opzioni) {
       anno: new Date().getFullYear(),
       generatoIl: scelte.quando || new Date().toISOString(),
       orariTesto: orariTesto(config),
-      // Indirizzo dei font scelti nel gruppo «Aspetto». Vuoto se sono tutti
-      // di sistema: in quel caso testa.html non stampa nessun <link> e la
-      // pagina non contatta Google.
-      fontUrl: tema.urlGoogleFonts(config.tema),
+      // Indirizzo dei font scelti nel gruppo «Aspetto» e di quelli del
+      // catalogo scelti negli stili dei singoli elementi. Vuoto se sono tutti
+      // di sistema o caricati: in quel caso testa.html non stampa nessun
+      // <link> e la pagina non contatta Google.
+      fontUrl: tema.urlGoogleFonts(config.tema, famiglieNegliStili(config.stili)),
       // Il dato strutturato gia serializzato: si stampa con {{{sito.jsonLd}}}.
-      jsonLd: jsonLdPersona(testi, config, social, urlCanale)
+      jsonLd: jsonLdPersona(testi, config, social, urlCanale),
+
+      // CONTRATTO-4 §6.1. Le sezioni accese, nell'ordine scelto nel
+      // Navigatore; `attiva` per i link che puntano a una sezione, cosi una
+      // sezione spenta non lascia ancore morte; `voci` per il binario.
+      sezioni: attive.map((voce) => ({ id: voce.id, attiva: true })),
+      attiva: attiva,
+      voci: attive.map((voce) => ({
+        id: voce.id,
+        chiave: 'nav.' + voce.id,
+        testo: typeof testi['nav.' + voce.id] === 'string' ? testi['nav.' + voce.id] : ''
+      })),
+      corpo: '',
+      cssStili: cssInPagina(SB.stiliCss(config.stili, opzioniStili(''))),
+      cssDisposizione: ''
     }
   });
 
   if (mancanti.length) {
     throw erroreHttp(500, 'Mancano le icone richieste dai contenuti: ' + mancanti.join(', ') +
       '. Sono file dell agente A: senza, le voci resterebbero senza simbolo.');
+  }
+
+  // Il motore dei modelli non ha inclusioni dinamiche, e non gliene serve
+  // una: l'ordine delle sezioni lo decide la generazione, che rende ogni
+  // parziale col contesto della pagina e li unisce. L'a capo fra l'una e
+  // l'altra e quello che modelli/index.html metteva fra un'inclusione e la
+  // successiva, quindi con le sei sezioni nell'ordine di partenza la pagina
+  // e identica a prima.
+  const include = (nome) => modello.rendi('{{> parziali/' + nome + '}}', contesto,
+    { file: 'modelli/index.html', cartella: P.modelli, cache: cache });
+  contesto.sito.corpo = attive.map((voce) => include(voce.id)).join('\n');
+
+  // La disposizione si scrive solo per i blocchi che la pagina ha davvero
+  // (una sezione spenta non li ha): una regola per un blocco assente
+  // allungherebbe il riquadro per niente. I riquadri stanno nelle sezioni e
+  // nel piede, e il piede si rende una volta in piu solo se c'e qualcosa da
+  // posizionare.
+  const blocchi = config.disposizione.blocchi;
+  if (Object.keys(blocchi).some((riquadro) => blocchi[riquadro].length)) {
+    const presenti = blocchiPresenti(contesto.sito.corpo + '\n' + include('piede'));
+    contesto.sito.cssDisposizione = cssInPagina(SB.disposizioneCss(config.disposizione, {
+      presente: (riquadro, id) => !!(presenti[riquadro] && presenti[riquadro].has(id))
+    }));
   }
   return contesto;
 }
@@ -602,8 +797,10 @@ function jsonSicuro(valore) {
 
 /** Rende i tre file in memoria. Non scrive niente su disco. */
 function rendi(contenuti, opzioni) {
-  const contesto = costruisciContesto(contenuti, opzioni);
+  // Una cache sola per il contesto (che rende le sezioni) e per la pagina:
+  // ogni parziale si legge e si analizza una volta.
   const cache = new Map();
+  const contesto = costruisciContesto(contenuti, Object.assign({}, opzioni, { cache: cache }));
 
   if (!eFile(P.modelloIndex)) {
     throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.modelloIndex) + ': senza modello non si genera niente.');
@@ -637,9 +834,88 @@ function anteprimaDi(contenuti) {
   return rendi(contenuti).html;
 }
 
+/**
+ * La pagina per l'editor del pannello (CONTRATTO-4 §6.3). La stessa resa,
+ * con tre ritocchi fatti sull'HTML finito e non nel modello, perche il
+ * modello e quello del sito pubblicato e non deve sapere che esiste
+ * un'anteprima:
+ *
+ * 1. via tutti gli <script src>. L'editor mostra la pagina senza
+ *    JavaScript, che il CONTRATTO §12 dichiara completa: dentro l'editor il
+ *    player di Twitch sarebbe una seconda sessione video della stessa
+ *    persona (CONTRATTO-3 §3.4) e il pollo aprirebbe una socket verso la
+ *    chat a ogni ricarica. Il JSON-LD resta: non ha `src` e non si esegue;
+ * 2. <base href="/"> come primo figlio di <head>: il motore scrive la pagina
+ *    in un iframe del pannello, e senza base css/, img/ e contenuti/ si
+ *    risolverebbero sotto /pannello/. Deve venire prima di qualunque
+ *    elemento con un indirizzo relativo;
+ * 3. i due <style> dell'editor ci sono SEMPRE, anche vuoti: il motore li
+ *    cerca per spegnerli quando inietta i suoi gemelli dal vivo, e un
+ *    elemento che a volte manca vorrebbe dire un ramo in piu in ogni punto
+ *    che lo cerca.
+ */
+function perEditor(html) {
+  let pagina = String(html).replace(/<script\b[^>]*\bsrc\s*=[^>]*>[\s\S]*?<\/script>[^\S\n]*\n?/gi, '');
+  pagina = pagina.replace(/<head\b[^>]*>/i, (testa) => testa + '<base href="/">');
+
+  const vuoto = (id) => '<style id="' + id + '"></style>\n';
+  if (pagina.indexOf('<style id="sb-disposizione">') === -1) {
+    // Prima di sb-stili se c'e gia, come nel modello; altrimenti in fondo al <head>.
+    const dove = pagina.indexOf('<style id="sb-stili">');
+    const punto = dove !== -1 ? dove : pagina.indexOf('</head>');
+    pagina = pagina.slice(0, punto) + vuoto('sb-disposizione') + pagina.slice(punto);
+  }
+  if (pagina.indexOf('<style id="sb-stili">') === -1) {
+    const punto = pagina.indexOf('</head>');
+    pagina = pagina.slice(0, punto) + vuoto('sb-stili') + pagina.slice(punto);
+  }
+  return pagina;
+}
+
+/** L'HTML per l'anteprima dell'editor: contenuti non salvati, niente disco. */
+function anteprimaEditor(contenuti) {
+  return perEditor(rendi(contenuti).html);
+}
+
 /* ------------------------------------------------------------------ */
 /* PUBBLICAZIONE (§6.4)                                                */
 /* ------------------------------------------------------------------ */
+
+// Gli errori con cui Windows rifiuta un rename su un file tenuto aperto da
+// un altro programma: un server statico che mostra il sito, un antivirus,
+// l'editor. A Mobscene93 e successo davvero.
+const FILE_OCCUPATO = new Set(['EPERM', 'EACCES', 'EBUSY']);
+
+/**
+ * Scrittura di un file generato. Di norma e la scrittura atomica di
+ * sempre. Se il file e occupato si riprova qualche volta a breve distanza
+ * e, se resta occupato, si scrive direttamente sul file: non e piu
+ * atomico, ma Pubblica funziona invece di fallire per un programma che ha
+ * solo il file aperto in lettura. Solo se anche quello non va si lancia,
+ * con un messaggio che dice cosa fare.
+ */
+function scriviGenerato(percorso, testo) {
+  let ultimo = null;
+  for (let tentativo = 0; tentativo < 5; tentativo++) {
+    try {
+      scriviAtomico(percorso, testo);
+      return;
+    } catch (e) {
+      if (!e || !FILE_OCCUPATO.has(e.code)) { throw e; }
+      ultimo = e;
+      // Attesa sincrona senza girare a vuoto: la pubblicazione e sincrona
+      // per scelta (vedi genera.js), e un busy-wait scalderebbe la CPU.
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 60 * (tentativo + 1));
+    }
+  }
+  try {
+    fs.writeFileSync(percorso, testo);
+  } catch (e) {
+    throw erroreHttp(500, 'Non riesco a scrivere ' + path.relative(P.radice, percorso) +
+      ': un altro programma lo tiene aperto (' + ((ultimo && ultimo.code) || e.code) +
+      '). Chiudi i programmi che mostrano il sito da questa cartella e riprova.');
+  }
+}
 
 /**
  * L'ordine e quello del contratto e non va cambiato:
@@ -667,6 +943,9 @@ function genera(opzioni) {
 
   const copia = backup.crea();
 
+  // I rami dell'editor si ripuliscono prima della convalida (CONTRATTO-4
+  // §6.5): quello che resta e anche quello che il timbro finale risalva.
+  pulisciEditor(contenuti);
   const errori = convalida.convalida(contenuti);
   if (errori.length) {
     throw erroreHttp(422, 'I contenuti non passano la convalida: ' + convalida.riassumi(errori) +
@@ -677,9 +956,9 @@ function genera(opzioni) {
 
   // scriviAtomico crea da se la cartella che manca: js/ e css/ esistono
   // sempre, ma il collaudo genera anche dentro cartelle temporanee vuote.
-  scriviAtomico(P.indexHtml, reso.html);
-  scriviAtomico(P.datiJs, reso.dati);
-  scriviAtomico(P.temaCss, reso.tema);
+  scriviGenerato(P.indexHtml, reso.html);
+  scriviGenerato(P.datiJs, reso.dati);
+  scriviGenerato(P.temaCss, reso.tema);
 
   const quando = archivio.salva(contenuti);
 
@@ -704,6 +983,7 @@ function genera(opzioni) {
 }
 
 module.exports = {
-  genera, anteprima, anteprimaDi, rendi, costruisciContesto,
+  genera, anteprima, anteprimaDi, anteprimaEditor, rendi, costruisciContesto,
+  pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, jsonSicuro, chiaviRicche
 };

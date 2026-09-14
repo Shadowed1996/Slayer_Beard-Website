@@ -80,6 +80,40 @@ export function idUnico(prefisso = 'x') {
 }
 
 /* ---------------------------------------------------------------------
+   Preferenze del pannello
+
+   Come si guarda il pannello (larghezza, scheda aperta, nomi tecnici), mai
+   i contenuti: quelli stanno sul server. Tutte con lo stesso prefisso, così
+   si riconoscono e si cancellano insieme. In navigazione privata
+   localStorage può lanciare a ogni accesso: ogni guasto vale «predefinito».
+   --------------------------------------------------------------------- */
+
+const PREFISSO_PREFERENZE = 'sb-pannello-';
+
+/** Valore grezzo (stringa) della preferenza, o `predefinito`. */
+export function leggiPreferenza(nome, predefinito = null) {
+  try {
+    const valore = localStorage.getItem(PREFISSO_PREFERENZE + nome);
+    return valore === null ? predefinito : valore;
+  } catch {
+    return predefinito;
+  }
+}
+
+/** Scrive la preferenza come stringa; null o undefined la tolgono. */
+export function scriviPreferenza(nome, valore) {
+  try {
+    if (valore === null || valore === undefined) localStorage.removeItem(PREFISSO_PREFERENZE + nome);
+    else localStorage.setItem(PREFISSO_PREFERENZE + nome, String(valore));
+  } catch { /* pazienza: resta la preferenza di serie */ }
+}
+
+/** Chi ha chiesto meno movimento lo ottiene anche dagli scorrimenti in JS. */
+export function menoMovimento() {
+  return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+/* ---------------------------------------------------------------------
    Formattazioni
    --------------------------------------------------------------------- */
 

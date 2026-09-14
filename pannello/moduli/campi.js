@@ -18,7 +18,10 @@
 import { el, bottone, svuota, idUnico, urlRisorsa } from './dom.js';
 import { creaCampoElenco, creaCampoElencoTesti } from './elenchi.js';
 import { creaCampoRicco, soloTesto } from './ricco.js';
-import { contrasto, etichettaContrasto, precaricaFont } from './tema.js';
+import {
+  contrasto, etichettaContrasto, precaricaFont,
+  fontCaricati, suFontCaricati, famigliaCaricato
+} from './tema.js';
 
 /* Domenica e' 0 nei dati (come in JavaScript), ma la settimana comincia di
    lunedi' perche' e' cosi' che la legge chiunque in Italia. */
@@ -272,6 +275,17 @@ export function erroreLocale(campo, valore) {
       if (/[<>"'{};\\]/.test(String(testo))) {
         return 'Il nome di un carattere può contenere solo lettere, numeri e spazi.';
       }
+      // Un font caricato (CONTRATTO-4 §4.4) non sta nel catalogo. Si boccia
+      // solo la forma sbagliata, che il server rifiuta. Un font che non c'e'
+      // piu' (eliminato, poi Annulla) invece NON e' un errore: il server lo
+      // rimette da solo sul font di partenza prima di convalidare, e
+      // bloccare qui il Salva vorrebbe dire essere piu' severi di lui. Il
+      // campo lo dice comunque, nella riga sotto il menu.
+      const caricato = /^caricato:(.*)$/.exec(String(testo));
+      if (caricato) {
+        if (!/^[0-9a-f]{16}$/.test(caricato[1])) return 'Il font caricato è indicato male: sceglilo di nuovo dal menu.';
+        return null;
+      }
       // Senza catalogo nello schema non si inventa una regola: il server
       // ha il suo elenco per ogni slot e resta lui a dire l'ultima parola.
       const catalogo = Array.isArray(campo.opzioni) ? campo.opzioni.map(valoreOpzione) : null;
@@ -344,7 +358,9 @@ export function attaccaErrore(parti, controllo) {
 function campoTesto(campo, accesso, ctx) {
   const parti = guscio(campo, ctx.opzioni);
   const multiriga = campo.tipo === 'testolungo';
-  const limite = Number(campo.max) > 0 ? Number(campo.max) : null;
+  // Per un numero `max` è il valore più alto, non una lunghezza: contarci
+  // sopra i caratteri scriverebbe «2 / 32» sotto un arrotondamento di 14.
+  const limite = campo.tipo !== 'numero' && Number(campo.max) > 0 ? Number(campo.max) : null;
 
   const tipoHtml = { url: 'url', email: 'email', numero: 'number', orario: 'time' }[campo.tipo] || 'text';
 
@@ -902,6 +918,22 @@ function pilaFont(voce) {
   return '"' + voce.nome.replace(/"/g, '') + '", ' + ripiego;
 }
 
+/* I font caricati da chi amministra (CONTRATTO-4 §4.4) stanno in fondo al
+   menu, con valore «caricato:<id>». L'elenco arriva dal registro di
+   tema.js, che riempie editor/impostazioni.js; se il registro e' ancora
+   vuoto si usa quello che il contesto eventualmente porta. */
+const RE_VALORE_CARICATO = /^caricato:([0-9a-f]{16})$/;
+
+function caricatiPerCampo(ctx) {
+  const registro = fontCaricati();
+  if (registro) return registro;
+  return ctx && Array.isArray(ctx.fontCaricati) ? ctx.fontCaricati : null;
+}
+
+/* Un file che non arriva lascia al suo posto i font di sistema: il nome
+   'sb-<id>' non esiste da nessun'altra parte. */
+const RIPIEGO_CARICATO = 'system-ui, sans-serif';
+
 function campoFont(campo, accesso, ctx) {
   const catalogo = catalogoFont(campo, ctx);
   // Nessun catalogo: meglio una casella di testo che un menu vuoto, che
@@ -909,32 +941,70 @@ function campoFont(campo, accesso, ctx) {
   if (!catalogo.length) return campoTesto({ ...campo, tipo: 'testo' }, accesso, ctx);
 
   const parti = guscio(campo, ctx.opzioni);
-  const attuale = accesso.leggi();
-  const valoreAttuale = attuale === undefined || attuale === null ? '' : String(attuale);
 
   const select = el('select', { id: parti.idCampo, classe: 'campo__scelta font__scelta' });
   parti.principale = select;
 
-  if (!catalogo.some((v) => v.nome === valoreAttuale)) {
-    select.append(el('option', {
-      value: valoreAttuale,
-      testo: valoreAttuale ? valoreAttuale + ' (non è nel catalogo)' : '— non impostato —'
-    }));
-  }
-  for (const voce of catalogo) {
-    const opzione = el('option', {
-      value: voce.nome,
-      testo: voce.nome + (voce.categoria ? ' · ' + voce.categoria : '')
-    });
-    opzione.style.fontFamily = pilaFont(voce);
-    select.append(opzione);
-  }
-  select.value = valoreAttuale;
+  /**
+   * Il menu si riempie qui e non una volta sola: l'elenco dei font
+   * caricati puo' arrivare dopo che il campo e' gia' a video, o cambiare
+   * mentre lo e' (un font caricato o eliminato dalla libreria).
+   */
+  const riempi = () => {
+    const attuale = accesso.leggi();
+    const valoreAttuale = attuale === undefined || attuale === null ? '' : String(attuale);
+    const caricati = caricatiPerCampo(ctx);
+    const idCaricato = (RE_VALORE_CARICATO.exec(valoreAttuale) || [])[1] || '';
+
+    svuota(select);
+    const conosciuto = catalogo.some((v) => v.nome === valoreAttuale) ||
+      Boolean(idCaricato && caricati && caricati.some((v) => v.id === idCaricato));
+    if (!conosciuto) {
+      let testo = valoreAttuale ? valoreAttuale + ' (non è nel catalogo)' : '— non impostato —';
+      if (idCaricato) testo = caricati ? 'Font caricato che non c\'è più' : 'Font caricato (sto leggendo l\'elenco…)';
+      select.append(el('option', { value: valoreAttuale, testo }));
+    }
+
+    // Con dei caricati il menu si divide in due gruppi, cosi' si capisce
+    // quali font vengono da Google e quali dal computer di chi amministra.
+    const suoi = caricati && caricati.length ? caricati : null;
+    const gruppoCatalogo = suoi ? el('optgroup', { label: 'Catalogo' }) : select;
+    for (const voce of catalogo) {
+      const opzione = el('option', {
+        value: voce.nome,
+        testo: voce.nome + (voce.categoria ? ' · ' + voce.categoria : '')
+      });
+      opzione.style.fontFamily = pilaFont(voce);
+      gruppoCatalogo.append(opzione);
+    }
+    if (suoi) {
+      select.append(gruppoCatalogo);
+      const gruppoSuoi = el('optgroup', { label: 'Caricati da te' });
+      for (const voce of suoi) {
+        const opzione = el('option', { value: 'caricato:' + voce.id, testo: voce.etichetta });
+        opzione.style.fontFamily = famigliaCaricato(voce.id) + ', ' + RIPIEGO_CARICATO;
+        gruppoSuoi.append(opzione);
+      }
+      select.append(gruppoSuoi);
+    }
+    select.value = valoreAttuale;
+  };
 
   const anteprima = el('p', { classe: 'font__anteprima', testo: campo.esempio || ANTEPRIMA_FONT });
   const ripiego = el('p', { classe: 'font__ripiego' });
 
   const aggiorna = () => {
+    const idCaricato = (RE_VALORE_CARICATO.exec(select.value) || [])[1] || '';
+    if (idCaricato) {
+      const voce = (caricatiPerCampo(ctx) || []).find((v) => v.id === idCaricato);
+      anteprima.style.fontFamily = famigliaCaricato(idCaricato) + ', ' + RIPIEGO_CARICATO;
+      ripiego.textContent = voce
+        ? 'Font caricato da te («' + voce.etichetta + '»). Se il file non arriva, il sito usa il font di sistema.'
+        : (caricatiPerCampo(ctx)
+          ? 'Questo font caricato non c\'è più: scegline un altro. Se salvi così, il server rimette il font di partenza.'
+          : 'Sto leggendo l\'elenco dei font caricati…');
+      return;
+    }
     const voce = catalogo.find((v) => v.nome === select.value) || voceFont(select.value);
     anteprima.style.fontFamily = pilaFont(voce);
     ripiego.textContent = voce.ripiego
@@ -958,10 +1028,26 @@ function campoFont(campo, accesso, ctx) {
   };
   controllo.fuoco = () => select.focus();
 
+  riempi();
   aggiorna();
   // Le anteprime hanno senso solo se i font ci sono davvero: Google Fonts
   // e' l'unico CDN che il contratto ammette, ed e' esattamente per questo.
   precaricaFont(catalogo).then(aggiorna);
+
+  /* Iscrizione ai cambi dell'elenco dei caricati. Si toglie da sola quando
+     il campo, dopo essere stato in pagina, non c'e' piu': un campo appena
+     costruito non e' ancora appeso a niente, e toglierla subito vorrebbe
+     dire non ricevere mai il primo elenco. */
+  let appeso = false;
+  const togli = suFontCaricati(() => {
+    if (parti.nodo.isConnected) appeso = true;
+    else if (appeso) { togli(); return; }
+    const avevaFuoco = document.activeElement === select;
+    riempi();
+    aggiorna();
+    if (!parti.errore.hidden) controllo.mostraErrore(erroreLocale(campo, select.value) || '');
+    if (avevaFuoco) select.focus();
+  });
 
   parti.nodo.append(el('div', { classe: 'font' }, [select, anteprima, ripiego]), parti.pie);
   return controllo;

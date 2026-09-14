@@ -60,6 +60,22 @@ const SISTEMA = ['versione', 'aggiornatoIl'];
 // che il server si limita a tenere aggiornato se il collegamento c'e.
 const GENERATI = ['config.clip.voci'];
 
+// I rami che scrive l'editor con controlli suoi (CONTRATTO-4 §2.4): ordine
+// e visibilità delle sezioni, stile per elemento, blocchi posizionati. Non
+// sono campi da form: un colore per dispositivo o un rettangolo in unità
+// del riquadro non si scrivono in una casella, si scelgono cliccando
+// l'anteprima. La copertura li salta come GENERATI, e la loro forma la
+// controlla convalida.js con le funzioni di pannello/condivisi/stili.js.
+// A differenza di GENERATI coprono tutto quello che c'è sotto: le chiavi
+// di config.stili contengono punti e due punti, e ogni foglia diventerebbe
+// una chiave «scoperta».
+const EDITOR = ['config.sezioni', 'config.stili', 'config.disposizione'];
+
+/** Vero se la chiave è un ramo dell'editor o sta dentro uno di essi. */
+function diEditor(chiave) {
+  return EDITOR.some((ramo) => chiave === ramo || chiave.startsWith(ramo + '.'));
+}
+
 // Le icone disponibili sono i file in modelli/icone/: se se ne aggiunge una
 // si aggiunge qui il nome, e la generazione la trova da sola.
 const ICONE_SOCIAL = ['twitch', 'youtube', 'instagram', 'tiktok'];
@@ -663,6 +679,8 @@ function verificaCopertura(contenuti) {
     if (dichiarate.has(chiave)) { continue; }
     // I rami riempiti dal server non hanno un campo, ed e voluto.
     if (GENERATI.indexOf(chiave) !== -1) { continue; }
+    // Nemmeno quelli dell'editor, con tutto quello che hanno dentro.
+    if (diEditor(chiave)) { continue; }
     // Un campo che descrive un ramo intero (config.orari) copre le sue foglie.
     let coperta = false;
     if (chiave.startsWith('config.')) {
@@ -688,7 +706,13 @@ function verificaCopertura(contenuti) {
     }
   }
 
+  for (const c of tutti) {
+    if (diEditor(c.chiave)) {
+      problemi.push({ tipo: 'doppia', chiave: c.chiave, messaggio: 'La chiave "' + c.chiave + '" la scrive l\'editor con controlli suoi: un campo nel form sarebbe una seconda strada per la stessa modifica.' });
+    }
+  }
+
   return problemi;
 }
 
-module.exports = { gruppi, TIPI, SISTEMA, GENERATI, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura };
+module.exports = { gruppi, TIPI, SISTEMA, GENERATI, EDITOR, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura };

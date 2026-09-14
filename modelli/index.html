@@ -18,19 +18,20 @@
 <link rel="stylesheet" href="css/pollo.css">
 <link rel="stylesheet" href="css/account.css">
 <link rel="stylesheet" href="css/lurk.css">
-</head>
+{{#se sito.cssDisposizione}}<style id="sb-disposizione">
+{{{sito.cssDisposizione}}}
+</style>
+{{/se}}{{#se sito.cssStili}}<style id="sb-stili">
+{{{sito.cssStili}}}
+</style>
+{{/se}}</head>
 <body>
 <a class="salta" href="#contenuto">Salta al contenuto</a>
 
 {{> parziali/binario}}
 
 <main id="contenuto">
-{{> parziali/regia}}
-{{> parziali/diretta}}
-{{> parziali/settimana}}
-{{> parziali/chi}}
-{{> parziali/supporto}}
-{{> parziali/saluti}}
+{{{sito.corpo}}}
 </main>
 
 {{> parziali/piede}}

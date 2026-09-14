@@ -19,6 +19,16 @@
   <!-- campi.css arriva DOPO: contiene solo i widget nuovi (testo ricco,
        colore, font, interruttore) e deve poter correggere pannello.css. -->
   <link rel="stylesheet" href="campi.css">
+  <!-- La struttura dell'editor, poi i fogli dei moduli che ci si montano
+       dentro. Quelli dei moduli li aggiungono anche i moduli stessi se non
+       li trovano: stanno qui per non far lampeggiare i controlli senza stile
+       al primo disegno. -->
+  <link rel="stylesheet" href="editor/guscio.css">
+  <link rel="stylesheet" href="editor/motore.css">
+  <link rel="stylesheet" href="editor/contenuti.css">
+  <link rel="stylesheet" href="editor/stile.css">
+  <link rel="stylesheet" href="editor/parti.css">
+  <link rel="stylesheet" href="editor/impostazioni.css">
 </head>
 <body data-vista="avvio">
 
@@ -49,6 +59,19 @@
     <symbol id="i-freccia" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5.5 7 6.5-7 6.5"/></symbol>
     <symbol id="i-cerca" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="m15.4 15.4 4.6 4.6"/></symbol>
     <symbol id="i-etichetta" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3.5 11.2V4h7.2l9.3 9.3-7.2 7.2-9.3-9.3Z"/><circle cx="7.6" cy="7.6" r="1.5" fill="currentColor"/></symbol>
+    <!-- icone dell'editor -->
+    <symbol id="i-telefono" viewBox="0 0 24 24"><rect x="7" y="2.8" width="10" height="18.4" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M11 17.6h2"/></symbol>
+    <symbol id="i-tablet" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M11 17.5h2"/></symbol>
+    <symbol id="i-computer" viewBox="0 0 24 24"><rect x="2.8" y="4" width="18.4" height="12.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M8.5 20.5h7M12 16.5v4"/></symbol>
+    <symbol id="i-annulla" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M9 14.5 4.5 10 9 5.5"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M4.5 10H14a5.5 5.5 0 0 1 0 11h-3"/></symbol>
+    <symbol id="i-ripeti" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M15 14.5 19.5 10 15 5.5"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M19.5 10H10a5.5 5.5 0 0 0 0 11h3"/></symbol>
+    <symbol id="i-indietro" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M19.5 12h-15m0 0 6-6m-6 6 6 6"/></symbol>
+    <symbol id="i-pannello" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" d="M9.5 4v16"/></symbol>
+    <symbol id="i-regola" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-struttura" viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="10" width="16" height="4.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="16.5" width="16" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-canale" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m8.5 3 3.5 4 3.5-4"/></symbol>
+    <symbol id="i-mondo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M3.4 12h17.2M12 3.2c2.6 2.6 3.8 5.5 3.8 8.8s-1.2 6.2-3.8 8.8M12 3.2C9.4 5.8 8.2 8.7 8.2 12s1.2 6.2 3.8 8.8"/></symbol>
+    <symbol id="i-chiave" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m11 12 8.5-8.5M16 7l2.5 2.5M18.5 4.5l1.8 1.8"/></symbol>
   </svg>
 
   <!-- =====================================================================
@@ -77,13 +100,13 @@
       </div>
 
       <p class="accesso__intro" data-solo="entra">
-        Da qui si cambiano i testi, i link, gli orari e le immagini del sito.
-        Serve la password del pannello.
+        Da qui si cambiano i testi, i link, gli orari, le immagini e l&rsquo;aspetto del sito,
+        cliccandoli direttamente nell&rsquo;anteprima. Serve la password del pannello.
       </p>
       <p class="accesso__intro" data-solo="crea">
         Il server non ha ancora una password. Scegline una adesso: servir&agrave;
         ogni volta che apri questo pannello. Non si recupera, si pu&ograve; solo
-        cambiare dal computer dove gira il sito.
+        cambiare dal pannello o dal computer dove gira il sito.
       </p>
       <p class="accesso__ripresa" id="accesso-ripresa" hidden>
         La sessione &egrave; scaduta. Le modifiche che avevi in corso sono ancora qui:
@@ -124,30 +147,76 @@
   </main>
 
   <!-- =====================================================================
-       PANNELLO
+       EDITOR — barra alta, pannello laterale, anteprima (CONTRATTO-4 §9.1).
+       Il contenuto del pannello lo disegna editor/guscio.js; l'anteprima la
+       monta editor/motore.js dentro #anteprima.
        ===================================================================== -->
   <div id="app" class="app" hidden>
+    <a class="salta" href="#pannello">Vai al pannello dei controlli</a>
 
-    <header class="barra">
-      <button type="button" class="barra__menu" id="btn-menu" aria-expanded="false" aria-controls="colonna">
-        <svg class="ico" aria-hidden="true"><use href="#i-menu"></use></svg>
-        <span class="sr-only">Apri l&rsquo;elenco delle sezioni</span>
-      </button>
+    <header class="barra" id="barra">
+      <div class="barra__sinistra">
+        <button type="button" class="barra__icona" id="btn-menu" aria-expanded="false" aria-controls="pannello"
+                title="Menu del pannello: impostazioni, immagini, copie di sicurezza, password">
+          <svg class="ico" aria-hidden="true"><use href="#i-menu"></use></svg>
+          <span class="sr-only">Menu del pannello</span>
+        </button>
+        <button type="button" class="barra__icona barra__cassetto" id="btn-cassetto" aria-expanded="false" aria-controls="pannello">
+          <svg class="ico" aria-hidden="true"><use href="#i-pannello"></use></svg>
+          <span class="barra__cassetto-nome">Pannello</span>
+        </button>
 
-      <a class="barra__marchio" href="/" target="_blank" rel="noopener"
-         title="Apri il sito pubblicato in una nuova scheda">
-        <img src="../img/avatar.png" alt="" width="26" height="26">
-        <span>slayer_beard</span>
-      </a>
+        <p class="barra__titolo">
+          <a class="barra__marchio" href="/" target="_blank" rel="noopener"
+             title="Apri il sito pubblicato in una nuova scheda">
+            <img src="../img/avatar.png" alt="" width="24" height="24">
+            <span class="barra__nome">slayer_beard</span>
+          </a>
+          <span class="barra__sep" aria-hidden="true">&middot;</span>
+          <span class="barra__selezione" id="nome-selezione">Pagina</span>
+        </p>
+      </div>
 
-      <p class="stato" id="stato-lavoro" data-stato="pulito" role="status">
-        <span class="stato__spia" aria-hidden="true"></span>
-        <span class="stato__testo">Tutto salvato</span>
-      </p>
+      <div class="barra__centro">
+        <div class="dispositivi" role="group" aria-label="Anteprima per dispositivo">
+          <button type="button" class="dispositivi__btn" data-dispositivo="telefono" aria-pressed="false"
+                  title="Telefono: la pagina larga 375 pixel">
+            <svg class="ico" aria-hidden="true"><use href="#i-telefono"></use></svg>
+            <span class="dispositivi__nome">Telefono</span>
+          </button>
+          <button type="button" class="dispositivi__btn" data-dispositivo="tablet" aria-pressed="false"
+                  title="Tablet: la pagina larga 900 pixel">
+            <svg class="ico" aria-hidden="true"><use href="#i-tablet"></use></svg>
+            <span class="dispositivi__nome">Tablet</span>
+          </button>
+          <button type="button" class="dispositivi__btn" data-dispositivo="computer" aria-pressed="true"
+                  title="Computer: la pagina larga almeno 1100 pixel">
+            <svg class="ico" aria-hidden="true"><use href="#i-computer"></use></svg>
+            <span class="dispositivi__nome">Computer</span>
+          </button>
+        </div>
 
-      <p class="barra__pubblicazione" id="ultima-pubblicazione"></p>
+        <div class="storia" role="group" aria-label="Annulla e ripeti">
+          <button type="button" class="barra__icona" id="btn-annulla" title="Annulla l'ultima modifica (Ctrl+Z)" disabled>
+            <svg class="ico" aria-hidden="true"><use href="#i-annulla"></use></svg>
+            <span class="sr-only">Annulla</span>
+          </button>
+          <button type="button" class="barra__icona" id="btn-ripeti" title="Ripeti la modifica annullata (Ctrl+Y)" disabled>
+            <svg class="ico" aria-hidden="true"><use href="#i-ripeti"></use></svg>
+            <span class="sr-only">Ripeti</span>
+          </button>
+        </div>
+      </div>
 
-      <div class="barra__comandi">
+      <div class="barra__destra">
+        <div class="barra__stato">
+          <p class="stato" id="stato-lavoro" data-stato="pulito" role="status">
+            <span class="stato__spia" aria-hidden="true"></span>
+            <span class="stato__testo">Tutto salvato</span>
+          </p>
+          <p class="barra__pubblicazione" id="ultima-pubblicazione"></p>
+        </div>
+
         <button type="button" class="cmd" id="btn-salva"
                 title="Scrive la bozza sul server (Ctrl+S). Il sito che vede il pubblico resta com'era.">
           <svg class="ico" aria-hidden="true"><use href="#i-salva"></use></svg>
@@ -165,152 +234,22 @@
             <span class="cmd__nota">riscrive il sito</span>
           </span>
         </button>
-
-        <button type="button" class="barra__tondo" id="btn-anteprima" aria-pressed="false" aria-controls="anteprima">
-          <svg class="ico" aria-hidden="true"><use href="#i-occhio"></use></svg>
-          <span class="sr-only">Mostra o nascondi l&rsquo;anteprima</span>
-        </button>
-
-        <button type="button" class="barra__tondo" id="btn-esci">
-          <svg class="ico" aria-hidden="true"><use href="#i-esci"></use></svg>
-          <span class="sr-only">Esci dal pannello</span>
-        </button>
       </div>
     </header>
 
-    <div class="guscio">
-
-      <aside class="colonna" id="colonna">
-
-        <!-- La ricerca sta in cima perche' con quaranta e passa campi e'
-             il modo piu' corto per arrivare a quello che si cerca.
-             Combobox: l'elenco dei risultati e' una listbox, la voce in
-             evidenza si segue con aria-activedescendant. -->
-        <div class="ricerca" role="search">
-          <label class="sr-only" for="campo-ricerca">Cerca un campo per nome</label>
-          <div class="ricerca__riga">
-            <svg class="ico ricerca__ico" aria-hidden="true"><use href="#i-cerca"></use></svg>
-            <input type="search" id="campo-ricerca" class="ricerca__input"
-                   placeholder="Cerca un campo&hellip;" autocomplete="off" spellcheck="false"
-                   role="combobox" aria-expanded="false" aria-controls="ricerca-risultati"
-                   aria-autocomplete="list" aria-describedby="ricerca-aiuto">
-            <button type="button" class="ricerca__pulisci" id="ricerca-pulisci" hidden>
-              <svg class="ico" aria-hidden="true"><use href="#i-chiudi"></use></svg>
-              <span class="sr-only">Svuota la ricerca</span>
-            </button>
-          </div>
-          <p class="ricerca__aiuto" id="ricerca-aiuto">Scorciatoia: <kbd>Ctrl</kbd>+<kbd>K</kbd></p>
-          <ul class="ricerca__risultati" id="ricerca-risultati" role="listbox"
-              aria-label="Campi trovati" hidden></ul>
-        </div>
-
-        <p class="colonna__titolo" id="titolo-sezioni">Sezioni del sito</p>
-        <nav class="colonna__nav" id="elenco-gruppi" aria-labelledby="titolo-sezioni"></nav>
-
-        <p class="colonna__titolo" id="titolo-strumenti">Strumenti</p>
-        <nav class="colonna__nav" aria-labelledby="titolo-strumenti">
-          <button type="button" class="voce-nav" data-vista="media">
-            <svg class="ico" aria-hidden="true"><use href="#i-immagine"></use></svg>
-            <span class="voce-nav__testo">Immagini</span>
-          </button>
-          <button type="button" class="voce-nav" data-vista="backup">
-            <svg class="ico" aria-hidden="true"><use href="#i-backup"></use></svg>
-            <span class="voce-nav__testo">Copie di sicurezza</span>
-          </button>
-        </nav>
-
-        <!-- I quattro passi, sempre sotto gli occhi: il passo che tocca
-             adesso si accende da solo (pannello.js), cosi' la differenza
-             fra «salvato» e «pubblicato» non va spiegata ogni volta. -->
-        <p class="colonna__titolo" id="titolo-percorso">Come si lavora</p>
-        <ol class="percorso" id="percorso" aria-labelledby="titolo-percorso">
-          <li class="percorso__passo" data-passo="modifica">
-            <span class="percorso__num">1</span>
-            <span class="percorso__testo">Modifica i campi</span>
-          </li>
-          <li class="percorso__passo" data-passo="guarda">
-            <span class="percorso__num">2</span>
-            <span class="percorso__testo">Guarda l&rsquo;anteprima
-              <em>si aggiorna mentre scrivi</em>
-            </span>
-          </li>
-          <li class="percorso__passo" data-passo="salva">
-            <span class="percorso__num">3</span>
-            <span class="percorso__testo">Salva la bozza
-              <em>il sito non cambia</em>
-            </span>
-          </li>
-          <li class="percorso__passo" data-passo="pubblica">
-            <span class="percorso__num">4</span>
-            <span class="percorso__testo">Pubblica
-              <em>riscrive il sito: index.html, js/dati.js, css/tema.css</em>
-            </span>
-          </li>
-        </ol>
-
-        <div class="colonna__pie">
-          <button type="button" class="colonna__opzione" id="btn-nomi-tecnici" aria-pressed="false">
-            <svg class="ico ico--mini" aria-hidden="true"><use href="#i-etichetta"></use></svg>
-            <span>Mostra i nomi tecnici dei campi</span>
-          </button>
-          <p>
-            <a href="/" target="_blank" rel="noopener">Apri il sito pubblicato
-              <svg class="ico ico--mini" aria-hidden="true"><use href="#i-esterno"></use></svg>
-            </a>
-          </p>
-        </div>
-      </aside>
-
-      <div class="colonna__velo" id="velo-colonna" hidden></div>
-
-      <main class="lavoro" id="lavoro" tabindex="-1">
-        <div class="lavoro__testa">
-          <h1 class="lavoro__titolo" id="titolo-vista">Contenuti</h1>
-          <p class="lavoro__nota" id="nota-vista"></p>
-        </div>
-
-        <div class="riepilogo" id="riepilogo-errori" role="alert" hidden></div>
-
-        <div class="lavoro__corpo" id="corpo-vista"></div>
-      </main>
-
-      <section class="anteprima" id="anteprima" aria-label="Anteprima del sito" hidden>
-        <header class="anteprima__testa">
-          <h2 class="anteprima__titolo">Anteprima</h2>
-          <div class="anteprima__comandi">
-            <label class="anteprima__auto" for="anteprima-auto"
-                   title="Rigenera l&rsquo;anteprima poco dopo che hai smesso di scrivere">
-              <input type="checkbox" id="anteprima-auto" checked>
-              <span>Automatica</span>
-            </label>
-            <button type="button" class="btn btn--minimo" id="btn-ricarica-anteprima">
-              <svg class="ico" aria-hidden="true"><use href="#i-ricarica"></use></svg>
-              <span>Aggiorna</span>
-            </button>
-            <button type="button" class="btn btn--minimo" id="btn-espandi-anteprima" aria-pressed="false">
-              <svg class="ico" aria-hidden="true"><use href="#i-espandi"></use></svg>
-              <span>A tutta pagina</span>
-            </button>
-            <a class="btn btn--minimo" href="/api/anteprima" target="_blank" rel="noopener"
-               title="Apre la bozza gi&agrave; salvata sul server, in una scheda a parte">
-              <svg class="ico" aria-hidden="true"><use href="#i-esterno"></use></svg>
-              <span>Scheda nuova</span>
-            </a>
-            <button type="button" class="btn btn--minimo btn--solo-icona" id="btn-chiudi-anteprima">
-              <svg class="ico" aria-hidden="true"><use href="#i-chiudi"></use></svg>
-              <span class="sr-only">Chiudi l&rsquo;anteprima</span>
-            </button>
-          </div>
-          <p class="anteprima__nota" id="anteprima-nota" role="status">
-            Mostra le modifiche in corso, anche quelle non salvate.
-          </p>
-          <p class="anteprima__errore" id="anteprima-errore" role="alert" hidden></p>
-        </header>
-        <div class="anteprima__telaio">
-          <iframe id="iframe-anteprima" title="Anteprima del sito con le modifiche in corso" src="about:blank"></iframe>
-        </div>
+    <div class="banco" id="banco">
+      <section class="lato" id="pannello" aria-label="Pannello dei controlli" tabindex="-1">
+        <p class="lato__avvio" role="status">Preparo l&rsquo;editor&hellip;</p>
       </section>
 
+      <div class="maniglia" id="maniglia" role="separator" tabindex="0"
+           aria-orientation="vertical" aria-controls="pannello" aria-label="Larghezza del pannello"
+           aria-valuemin="380" aria-valuemax="760" aria-valuenow="480"
+           title="Trascina per allargare o stringere il pannello (doppio clic: larghezza di partenza)"></div>
+
+      <div class="palco" id="palco">
+        <div class="palco__anteprima" id="anteprima"></div>
+      </div>
     </div>
   </div>
 
@@ -318,6 +257,10 @@
        impilare due (scelta immagine -> conferma di cancellazione). -->
   <div id="avvisi" class="avvisi" role="region" aria-label="Avvisi" aria-live="polite"></div>
 
+  <!-- Il generatore degli stili e' uno script classico (UMD): lo stesso file
+       lo usa il server per il sito pubblicato, e i moduli lo trovano in
+       window.SBStili. Deve arrivare prima del modulo del pannello. -->
+  <script src="condivisi/stili.js"></script>
   <script type="module" src="pannello.js"></script>
 </body>
 </html>
