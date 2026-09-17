@@ -24,7 +24,9 @@
    Il fondale è più presente di prima: era il monitor a dare peso alla parte
    alta, e senza di lui un banner al 22% lasciava la pagina vuota. Sale di
    opacità, e il contrasto del testo si difende con uno scrim che scurisce la
-   sola metà in cui si legge, non tutta l'immagine.
+   sola metà in cui si legge, non tutta l'immagine. Dal CONTRATTO-5 il fondale
+   è la città notturna pulita (img/copertina.webp), senza scritte né mascotte:
+   niente più sfocatura, e l'opacità può salire ancora (§2).
 
    COLORI
    Nessun esadecimale: i valori arrivano da tokens.css (riscritti da tema.css).
@@ -53,11 +55,12 @@
 
 
 /* =============================================================================
-   2. FONDALE — il banner
-   Il banner è già pieno di roba (skyline, nebulosa, lettering, la mascotte):
-   tenerlo a piena forza vorrebbe dire competere con il testo. Resta attenuato,
-   ma meno di prima, e ci si stampa sopra la trama a griglia da 1px che è il
-   segno della sala regia.
+   2. FONDALE — la città notturna
+   Il vecchio banner era pieno di roba (lettering, handle, la mascotte) e andava
+   sfocato perché le scritte non si leggessero sotto al titolo. La città pulita
+   non ha niente da nascondere: skyline e nebulosa restano nitidi e il fondale
+   è attenuato solo quanto basta a non competere con il testo. Sopra ci si
+   stampa la trama a griglia da 1px che è il segno della sala regia.
 
    Il contrasto si difende con uno SCRIM orizzontale (::before) e non abbassando
    ancora l'immagine: il testo sta tutto nella metà sinistra, quindi si scurisce
@@ -73,7 +76,7 @@
   block-size: min(100%, 880px);
   overflow: hidden;
   pointer-events: none;
-  /* Sfuma verso il basso e verso i lati: senza maschera il banner finirebbe con
+  /* Sfuma verso il basso e verso i lati: senza maschera il fondale finirebbe con
      un taglio netto in mezzo alla pagina. Un solo strato radiale con origine in
      alto al centro fa entrambe le cose: due strati richiederebbero
      mask-composite: intersect, e dove non è supportato si sommerebbero invece
@@ -87,17 +90,28 @@
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  /* Si inquadra il lato destro: a sinistra il banner ha il lettering e il pollo,
-     ed è esattamente la metà dove va il titolo. */
-  object-position: 74% 32%;
-  opacity: 0.34;
-  filter: saturate(0.8) contrast(0.94) blur(1.5px);
+  /* L'immagine è 16:9 e il riquadro quasi sempre più stretto, quindi si
+     sceglie cosa tenere. In orizzontale il 30%: sul telefono resta in vista il
+     gruppo dei grattacieli alti e fuori la nebulosa chiara in alto al centro,
+     che finirebbe proprio sotto all'occhiello (misurato a 390px sui pixel dietro
+     il testo, al 99° percentile: occhiello in --testo-tenue 5,3:1 contro 4,4:1
+     con la nebulosa in vista; titolo e sottotitolo restano sopra 7,5:1 a ogni
+     larghezza provata, da 390 a 2560px). Da 900px in su lo scarto è di poche
+     decine di pixel e la nebulosa grande di destra sta dietro al pannello di
+     stato, che ha un fondo suo. In verticale il 60%: sugli schermi larghi,
+     dove l'immagine si taglia sopra e sotto, lo skyline resta dentro e il
+     cielo vuoto esce. */
+  object-position: 30% 60%;
+  opacity: 0.6;
+  /* Solo un filo di saturazione in meno: il viola-indaco della città accanto
+     ai viola del marchio sembrerebbe un colore sbagliato, non un fondale. */
+  filter: saturate(0.9);
 }
 
 /* Scrim. È un pseudo-elemento posizionato, quindi si dipinge sopra all'<img>,
    che nel flusso non lo è. Va da opaco a sinistra a niente all'82%: la colonna
    del testo resta su fondo pieno, e il contrasto verificato in tokens.css vale
-   anche con il banner più acceso. */
+   anche con la città più accesa. */
 .regia__sfondo::before {
   content: "";
   position: absolute;
@@ -111,7 +125,7 @@
 }
 
 /* Trama a griglia: due righe da 1px ripetute. Sta dentro l'elemento già
-   mascherato, quindi si spegne insieme al banner. */
+   mascherato, quindi si spegne insieme al fondale. */
 .regia__sfondo::after {
   content: "";
   position: absolute;
@@ -481,3 +495,4 @@
 @media (prefers-reduced-motion: reduce) {
   .regia__scorri svg { animation: none; }
 }
+

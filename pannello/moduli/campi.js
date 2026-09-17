@@ -13,6 +13,9 @@
 
    Ogni campo restituisce un oggetto di controllo:
      { chiave, campo, nodo, valida(), mostraErrore(t), pulisci(), fuoco() }
+
+   Il tipo «orari» (la schedule della settimana) è un editor intero e sta
+   in moduli/settimana.js (CONTRATTO-5 §8): qui lo si carica e lo si usa.
    ===================================================================== */
 
 import { el, bottone, svuota, idUnico, urlRisorsa } from './dom.js';
@@ -23,19 +26,18 @@ import {
   fontCaricati, suFontCaricati, famigliaCaricato
 } from './tema.js';
 
-/* Domenica e' 0 nei dati (come in JavaScript), ma la settimana comincia di
-   lunedi' perche' e' cosi' che la legge chiunque in Italia. */
-export const GIORNI = [
-  { n: 1, breve: 'Lun', lungo: 'lunedi\'' },
-  { n: 2, breve: 'Mar', lungo: 'martedi\'' },
-  { n: 3, breve: 'Mer', lungo: 'mercoledi\'' },
-  { n: 4, breve: 'Gio', lungo: 'giovedi\'' },
-  { n: 5, breve: 'Ven', lungo: 'venerdi\'' },
-  { n: 6, breve: 'Sab', lungo: 'sabato' },
-  { n: 0, breve: 'Dom', lungo: 'domenica' }
-];
-
-const FUSI_COMUNI = ['Europe/Rome', 'Europe/London', 'UTC', 'America/New_York', 'America/Los_Angeles'];
+/* L'editor della schedule si carica a parte, con import() e non con un
+   import statico: questo file lo importa pannello.js, e un guasto là dentro
+   (o condivisi/orari.js che non arriva) non deve portarsi via il pannello
+   intero. Parte subito, così quando si disegna il primo campo c'è già. */
+let moduloSettimana = null;
+const attesaSettimana = import('./settimana.js').then(
+  (modulo) => { moduloSettimana = modulo; return modulo; },
+  (errore) => {
+    console.error('[campi] moduli/settimana.js non caricato:', errore);
+    return null;
+  }
+);
 
 /* ---------------------------------------------------------------------
    Lettura e scrittura dei dati per chiave.
@@ -111,7 +113,11 @@ export function valoreVuoto(campo) {
   switch (campo.tipo) {
     case 'numero': return typeof campo.min === 'number' ? campo.min : 0;
     case 'orario': return '21:00';
-    case 'orari': return { giorni: [], ora: '21:00', fuso: 'Europe/Rome', durataOre: 1 };
+    // La forma completa e pulita la conosce solo condivisi/orari.js; senza,
+    // restano i valori di serie del canale.
+    case 'orari': return typeof window !== 'undefined' && window.SBOrari
+      ? window.SBOrari.normalizza({})
+      : { giorni: [], ora: '21:00', fuso: 'Europe/Rome', durataOre: 4 };
     case 'scelta':
     case 'font': return Array.isArray(campo.opzioni) && campo.opzioni.length ? valoreOpzione(campo.opzioni[0]) : '';
     case 'elenco':
@@ -548,141 +554,57 @@ function campoImmagine(campo, accesso, ctx) {
 }
 
 /* ---------------------------------------------------------------------
-   Orari: i sette giorni, l'ora, la durata, il fuso.
-   E' un oggetto solo, e si modifica come un oggetto solo: cosi' il campo
-   resta un campo, e nello schema basta una riga.
+   Orari: la schedule della settimana (CONTRATTO-5 §8)
+
+   Il campo vero lo costruisce moduli/settimana.js. Se il modulo è già
+   arrivato (il caso normale: parte appena si carica questo file) lo si
+   usa e basta. Se non è ancora arrivato, il campo nasce come contenitore
+   e si riempie appena c'è, girando all'editor vero le richieste fatte nel
+   frattempo; se non arriva affatto, lo dice al posto dell'editor e il
+   resto del pannello continua a funzionare.
    --------------------------------------------------------------------- */
 
+/* Le richieste che l'editor può ricevere prima di esserci: quelle del
+   contratto dei campi, più quelle con cui le parti aprono la schedule
+   sulla vista giusta. */
+const RICHIESTE_IN_ATTESA = ['mostraErrore', 'pulisci', 'apriVista', 'apriGiorno', 'apriEvento'];
+
 function campoOrari(campo, accesso, ctx) {
+  if (moduloSettimana) return moduloSettimana.creaCampoOrari(campo, accesso, ctx);
+
   const parti = guscio(campo, { ...ctx.opzioni, perInput: false });
+  const stato = el('p', { classe: 'campo__aiuto', role: 'status', testo: 'Carico l\'editor della schedule…' });
+  parti.nodo.append(stato);
+  const nodo = el('div', { classe: 'editor-attesa' }, [parti.nodo]);
 
-  const valore = () => {
-    const v = accesso.leggi();
-    return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+  let vero = null;
+  const richieste = [];
+  const controllo = {
+    chiave: campo.chiave, campo, nodo,
+    valida: () => (vero ? vero.valida() : true),
+    fuoco: () => { if (vero) vero.fuoco(); }
   };
-  const cambia = (pezzo) => {
-    accesso.scrivi({ ...valore(), ...pezzo });
-    ctx.modificato();
-    aggiornaRiassunto();
-  };
-
-  /* --- giorni --- */
-  const giorniAttivi = () => {
-    const g = valore().giorni;
-    return Array.isArray(g) ? g.map(Number).filter((n) => Number.isInteger(n)) : [];
-  };
-  const gruppoGiorni = el('div', { classe: 'giorni', role: 'group', 'aria-label': 'Giorni di diretta' });
-
-  const disegnaGiorni = () => {
-    svuota(gruppoGiorni);
-    const attivi = giorniAttivi();
-    for (const giorno of GIORNI) {
-      const acceso = attivi.includes(giorno.n);
-      gruppoGiorni.append(el('button', {
-        type: 'button',
-        classe: 'giorno',
-        'aria-pressed': String(acceso),
-        'aria-label': giorno.lungo + (acceso ? ': si va in diretta' : ': niente diretta'),
-        testo: giorno.breve,
-        dati: { n: String(giorno.n) },
-        su: {
-          click: () => {
-            const elenco = giorniAttivi().slice();
-            const posizione = elenco.indexOf(giorno.n);
-            // Chi c'era resta dov'era: un giorno tolto e rimesso non
-            // riordina l'array, e la pubblicazione resta identica a se'.
-            if (posizione >= 0) elenco.splice(posizione, 1); else elenco.push(giorno.n);
-            cambia({ giorni: elenco });
-            disegnaGiorni();
-            const rifatto = gruppoGiorni.querySelector('[data-n="' + giorno.n + '"]');
-            if (rifatto) rifatto.focus();
-          }
-        }
-      }));
-    }
-  };
-
-  /* --- ora, durata, fuso --- */
-  const idOra = idUnico('ora');
-  const inputOra = el('input', { id: idOra, classe: 'campo__input campo__input--breve', type: 'time', value: String(valore().ora || '') });
-  inputOra.addEventListener('input', () => cambia({ ora: inputOra.value }));
-
-  const idDurata = idUnico('dur');
-  const durataIniziale = Number(valore().durataOre);
-  const inputDurata = el('input', {
-    id: idDurata, classe: 'campo__input campo__input--breve', type: 'number',
-    min: '0.5', max: '24', step: '0.5', inputmode: 'decimal',
-    value: Number.isFinite(durataIniziale) ? String(durataIniziale) : ''
-  });
-  inputDurata.addEventListener('input', () => {
-    const n = Number(inputDurata.value);
-    cambia({ durataOre: inputDurata.value !== '' && Number.isFinite(n) ? n : inputDurata.value });
-  });
-
-  const idFuso = idUnico('fuso');
-  const listaFusi = el('datalist', { id: idFuso + '-elenco' });
-  let fusi = FUSI_COMUNI;
-  // supportedValuesOf non c'e' su tutti i browser: se manca, restano i fusi
-  // comuni, che coprono il caso reale (il canale e' in Italia).
-  if (typeof Intl.supportedValuesOf === 'function') {
-    try { fusi = Intl.supportedValuesOf('timeZone'); } catch { fusi = FUSI_COMUNI; }
+  for (const nome of RICHIESTE_IN_ATTESA) {
+    controllo[nome] = (...argomenti) => {
+      if (vero) return typeof vero[nome] === 'function' ? vero[nome](...argomenti) : undefined;
+      richieste.push([nome, argomenti]);
+      return undefined;
+    };
   }
-  for (const fuso of fusi) listaFusi.append(el('option', { value: fuso }));
 
-  const inputFuso = el('input', {
-    id: idFuso, classe: 'campo__input', type: 'text', list: listaFusi.id,
-    spellcheck: 'false', autocomplete: 'off', value: String(valore().fuso || '')
-  });
-  inputFuso.addEventListener('input', () => cambia({ fuso: inputFuso.value.trim() }));
-
-  const riassunto = el('p', { classe: 'orari__riassunto' });
-  const aggiornaRiassunto = () => {
-    const attivi = giorniAttivi();
-    const nomi = GIORNI.filter((g) => attivi.includes(g.n)).map((g) => g.lungo);
-    if (!nomi.length) {
-      riassunto.textContent = 'Nessun giorno scelto: il sito non saprebbe quando sei in diretta.';
+  attesaSettimana.then((modulo) => {
+    if (!modulo || typeof modulo.creaCampoOrari !== 'function') {
+      stato.removeAttribute('role');
+      stato.className = 'vuoto';
+      stato.textContent = 'L\'editor della schedule (pannello/moduli/settimana.js) non si è caricato. Ricarica la pagina; il resto del pannello funziona.';
       return;
     }
-    const elenco = nomi.length === 1 ? nomi[0] : nomi.slice(0, -1).join(', ') + ' e ' + nomi[nomi.length - 1];
-    const ora = valore().ora || '—';
-    const durata = Number(valore().durataOre);
-    riassunto.textContent = 'In diretta ' + elenco + ' alle ' + ora +
-      (Number.isFinite(durata) ? ', per circa ' + durata + (durata === 1 ? ' ora' : ' ore') : '') +
-      (valore().fuso ? ' (' + valore().fuso + ')' : '') + '.';
-  };
-
-  const gruppo = el('div', { classe: 'orari', role: 'group', 'aria-labelledby': parti.idEtichetta }, [
-    gruppoGiorni,
-    el('div', { classe: 'orari__riga' }, [
-      el('label', { classe: 'orari__voce', for: idOra }, [el('span', { testo: 'Ora di inizio' }), inputOra]),
-      el('label', { classe: 'orari__voce', for: idDurata }, [el('span', { testo: 'Durata (ore)' }), inputDurata]),
-      el('label', { classe: 'orari__voce', for: idFuso }, [el('span', { testo: 'Fuso orario' }), inputFuso])
-    ]),
-    listaFusi,
-    riassunto
-  ]);
-
-  disegnaGiorni();
-  aggiornaRiassunto();
-  parti.nodo.append(gruppo, parti.pie);
-
-  const controllo = { chiave: campo.chiave, campo, nodo: parti.nodo };
-  attaccaErrore(parti, controllo);
-  controllo.valida = () => {
-    const problemi = [];
-    if (!giorniAttivi().length) problemi.push('scegli almeno un giorno');
-    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(valore().ora || ''))) problemi.push('l\'ora va scritta come 21:00');
-    if (!String(valore().fuso || '').trim()) problemi.push('serve un fuso orario, per esempio Europe/Rome');
-    const durata = Number(valore().durataOre);
-    if (!Number.isFinite(durata) || durata <= 0) problemi.push('la durata dev\'essere un numero di ore maggiore di zero');
-    const messaggio = problemi.length ? problemi.join('; ') + '.' : '';
-    controllo.mostraErrore(messaggio ? messaggio.charAt(0).toUpperCase() + messaggio.slice(1) : '');
-    return !messaggio;
-  };
-  controllo.fuoco = () => {
-    const primo = gruppoGiorni.querySelector('button');
-    if (primo) primo.focus();
-  };
+    vero = modulo.creaCampoOrari(campo, accesso, ctx);
+    nodo.replaceChildren(vero.nodo);
+    for (const [nome, argomenti] of richieste.splice(0)) {
+      if (typeof vero[nome] === 'function') vero[nome](...argomenti);
+    }
+  });
   return controllo;
 }
 

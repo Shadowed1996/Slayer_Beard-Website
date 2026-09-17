@@ -188,7 +188,10 @@
      comandi affiancati diventerebbero due bersagli troppo stretti. */
   .lurk__comandi,
   .lurk__gruppo { flex-direction: column; align-items: stretch; }
-  .lurk__comandi .btn { inline-size: 100%; }
+  /* A tutta larghezza il testo deve poter andare a capo: .btn non lo lascia
+     fare, e «Attiva la modalità lurk» in monospazio spaziato è più largo di
+     un telefono da 390 px, cioè la pagina intera scorreva di lato. */
+  .lurk__comandi .btn { inline-size: 100%; white-space: normal; line-height: 1.3; text-align: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {

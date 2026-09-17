@@ -1,11 +1,12 @@
 /* =============================================================================
    sezioni.css — slayer_beard · le quattro sezioni sotto la copertina
-   Blocchi: .settimana/.nastro, .chi, .supporto/.listino, .saluti/.social/.contatti.
+   Blocchi: .settimana/.nastro/.eventi, .chi, .supporto/.listino, .saluti/.social/.contatti.
 
    L'IDEA
    Ogni sezione ha una forma sua, altrimenti il sito torna a essere un volantino
-   di card impilate. Qui dentro non c'è una sola card:
-     · la settimana è un NASTRO di sette strisce verticali divise da linee da 1px;
+   di card impilate. Qui dentro non c'è una griglia di card:
+     · la settimana è un NASTRO di locandine: sette giorni in fila, le dirette
+       alte come manifesti, i riposi strisce spente, gli eventi speciali sotto;
      · «chi sono» è una PAGINA EDITORIALE — colonna di lettura, margine sticky,
        citazione grande;
      · il supporto è un LISTINO a righe;
@@ -50,11 +51,43 @@
 
 
 /* =============================================================================
-   2. SETTIMANA — il nastro
-   Sette strisce verticali attaccate, non sette card. Le linee da 1px fra una
-   colonna e l'altra sono l'unica cosa che le separa: staccarle con del gap
-   farebbe ricomparire la griglia di card che il contratto vieta.
+   2. SETTIMANA — la schedule
+   Rifatta da capo con il CONTRATTO-5 §6. Tre strati, dal fondo:
+     · il FONDALE (.settimana__sfondo), parente di quello della copertina:
+       immagine velata, sfumata su tutti i bordi, con la trama a griglia;
+     · il NASTRO, sempre sette giorni da lunedì: da 1100px le dirette sono
+       LOCANDINE alte da manifesto e i riposi strisce strette e spente; sotto i
+       1100px una colonna di fasce orizzontali e di righe sottili;
+     · gli EVENTI SPECIALI, dopo il nastro: schede con la data grande stampata
+       sull'immagine, come su un manifesto.
+
+   Le immagini caricate si inquadrano con le variabili che il server scrive
+   nell'attributo style (CONTRATTO-5 §2.2): --fuoco per object-position, --velo
+   (0.3–0.9) per quanto si scurisce l'immagine, --intensita per il fondale. Il
+   pannello le cambia dal vivo sullo stesso elemento, quindi si leggono sempre
+   da lì e non si ricopiano su altri selettori.
+
+   LEGGIBILITÀ SOPRA LE IMMAGINI
+   Il velo da solo non basta: al minimo (0.3) su un'immagine bianca il testo
+   chiaro non reggerebbe. Il testo sta quindi sempre su una sfumatura sua, che
+   parte da un minimo sicuro e cresce con il velo; il velo scurisce anche il
+   resto dell'immagine, ma solo in parte, così l'immagine resta riconoscibile.
+   I conti del contrasto sono accanto alle regole che li decidono.
+
+   RIQUADRO E BLOCCHI (CONTRATTO-4 §5.5)
+   La sezione è il riquadro; testa, nastro, eventi e piede sono i blocchi e
+   restano figli diretti, senza antenati posizionati in mezzo. Il fondale sta
+   sotto con z-index negativo dentro la sezione isolata: così i blocchi non
+   hanno bisogno di position né di z-index per stargli sopra, e l'editor può
+   spostarli senza trovarsi un rettangolo di misura diverso.
    ============================================================================= */
+
+.settimana {
+  position: relative;
+  /* isolation e non uno z-index: lo z-index negativo del fondale resta
+     confinato qui dentro e non finisce sotto al fondo della pagina. */
+  isolation: isolate;
+}
 
 /* Da 900px la testata si apre su due colonne: titolo a sinistra, testo di
    spiegazione a destra, allineato in basso. Sostituisce il display:flex che
@@ -79,140 +112,1006 @@
   }
 }
 
-.nastro {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  border-block: 1px solid var(--linea);
+
+/* --- Fondale ----------------------------------------------------------------
+   Non copre tutta la sezione: sta dietro alla testata e al nastro, dove si
+   guarda per primo. Su una sezione alta (sette fasce al telefono, otto eventi
+   al computer) un object-fit: cover a tutta altezza ingrandirebbe l'immagine
+   fino a renderla una macchia; con un tetto proporzionato alla larghezza resta
+   un'immagine. La maschera la sfuma su tutti e quattro i lati, perché sopra
+   c'è un'altra sezione e un taglio netto si vedrebbe come una riga. --------- */
+
+.settimana__sfondo {
+  position: absolute;
+  z-index: -1;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: min(100%, max(36rem, 72vw));
+  overflow: hidden;
+  pointer-events: none;
+  /* closest-side: i raggi arrivano esattamente ai bordi, quindi lì l'opacità è
+     zero su tutti e quattro i lati. Il centro sta un po' in alto, dove c'è la
+     testata. Code rgba(…, 0) per non passare dal nero nell'interpolazione. */
+  -webkit-mask-image: radial-gradient(closest-side at 50% 42%, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0.6) 72%, rgba(0, 0, 0, 0) 100%);
+  mask-image: radial-gradient(closest-side at 50% 42%, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0.6) 72%, rgba(0, 0, 0, 0) 100%);
 }
 
-.nastro__giorno {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: calc(var(--passo) * 1.25);
-  min-block-size: 128px;
-  padding: var(--passo-3) var(--passo);
-  text-align: center;
+.settimana__sfondo-img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: var(--fuoco, 50% 50%);
+  opacity: var(--intensita, 0.3);
+  /* Un filo più luminosa dell'originale: a intensità 30 una grafica scura
+     sparirebbe nel fondo. Il bianco resta bianco, quindi il conto del velo qui
+     sotto vale lo stesso. */
+  filter: brightness(1.25) saturate(1.05);
 }
 
-/* Divisori interni soltanto: il nastro non ha un bordo esterno verticale,
-   così sembra un unico pezzo e non sette scatole affiancate. */
-.nastro__giorno + .nastro__giorno {
-  border-inline-start: 1px solid var(--linea);
-}
-
-.nastro__abbr {
-  color: var(--testo-tenue);
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: var(--spazio-etichetta);
-}
-
-.nastro__ora {
-  color: var(--testo-tenue);
-  font-family: var(--font-mono);
-  font-size: clamp(0.95rem, 0.86rem + 0.4vw, 1.3rem);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums slashed-zero;
-  line-height: 1;
-}
-
-/* Nei giorni di riposo il generatore lascia l'ora vuota: senza un segno al suo
-   posto le sette colonne si disallineerebbero in verticale. */
-.nastro__ora:empty::before {
-  content: "—";
-  opacity: 0.55;
-}
-
-.nastro__tag {
-  color: var(--testo-tenue);
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: var(--spazio-etichetta);
-}
-
-/* --- Giorno di diretta ------------------------------------------------------ */
-
-.nastro__giorno.is-diretta {
+/* Velo del fondale. Cresce con l'intensità quanto serve e non di più, così a
+   30 l'immagine si vede davvero e a 100 la testata resta leggibile anche con
+   un'immagine bianca. Il conto: sopra il fondo pieno un'immagine bianca
+   all'intensità i, velata di v, schiarisce di i × (1 − v) × 248; perché
+   --testo-tenue resti a 4.5:1 il fondo deve stare sotto rgb(45), cioè
+   i × (1 − v) ≤ 0.153, da cui v = 1 − 0.153 / i (a 30 fa 49%, a 100 fa 85%).
+   In mezzo passa il nastro, che ha un fondo suo, e il titolo degli eventi
+   (--testo, 4.5:1 fino a rgb(110)): lì basta v = 1 − 0.415 / i, che fino a
+   un'intensità di 41 vale zero.
+   Le misure sono in rem e non in percentuale perché la testata ha un'altezza
+   sua, non una quota del fondale: in alto 20rem pieni (a 320px occhiello,
+   titolo e testo ci stanno; da 900px, con la testata su due colonne, ne
+   bastano 13), poi si apre verso il nastro; in fondo si richiude sul testo del
+   piede quando la sezione è più bassa del fondale.
+   z-index 1 serve: l'immagine ha opacity e filter, che la dipingono sullo
+   strato dei posizionati, e senza indice verrebbe dopo il velo, cioè sopra. */
+.settimana__sfondo.con-immagine::before {
+  --scrim-bordo: color-mix(in srgb, var(--fondo) clamp(0%, calc(100% - 15.3% / var(--intensita, 0.3)), 100%), transparent);
+  --scrim-mezzo: color-mix(in srgb, var(--fondo) clamp(0%, calc(100% - 41.5% / var(--intensita, 0.3)), 100%), transparent);
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
   background-image: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--ciano) 8%, transparent),
-    color-mix(in srgb, var(--ciano) 0%, transparent) 72%
+    var(--scrim-bordo) 0,
+    var(--scrim-bordo) var(--scrim-alto, 20rem),
+    var(--scrim-mezzo) calc(var(--scrim-alto, 20rem) + 10rem),
+    var(--scrim-mezzo) calc(100% - 12rem),
+    var(--scrim-bordo) calc(100% - 7rem),
+    var(--scrim-bordo) 100%
   );
 }
 
-.is-diretta .nastro__ora  { color: var(--testo); }
-.is-diretta .nastro__tag  { color: var(--ciano); }
-.is-diretta .nastro__abbr { color: var(--testo-medio); }
+@media (min-width: 900px) {
+  .settimana__sfondo.con-immagine::before { --scrim-alto: 13rem; }
+}
 
-/* --- Oggi (lo marca sito.js) ------------------------------------------------
-   Marcatore in cima alla colonna: una barra piena, il colore raro della palette
-   e l'abbreviazione accesa. Si vede anche se il giorno è di riposo, che è il
-   caso in cui serve di più. --------------------------------------------------- */
-
-.nastro__giorno.is-oggi::before {
+/* La trama a griglia della copertina: è il filo che dice «stessa regia». */
+.settimana__sfondo.con-immagine::after {
   content: "";
   position: absolute;
+  z-index: 1;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(to right,  var(--linea) 0 1px, rgba(0, 0, 0, 0) 1px 72px),
+    repeating-linear-gradient(to bottom, var(--linea) 0 1px, rgba(0, 0, 0, 0) 1px 72px);
+  opacity: 0.7;
+}
+
+
+/* --- Il nastro: impianto da computer ----------------------------------------
+   Flex e non grid: la larghezza di una colonna dipende da che giorno è (una
+   diretta pesa quattro volte un riposo) e la generazione non dice quante
+   dirette ci sono. Con flex-grow i conti tornano da soli con uno, quattro o
+   sette giorni accesi, senza scorrimento laterale. I riposi stanno quasi
+   sempre al loro minimo (3.75rem, dove la data va a capo in «22 / SET»), così
+   la larghezza avanza alle locandine.
+   L'altezza è quella di un manifesto e non di una striscia: fra 21 e 26rem
+   (336–416 px), che con quattro dirette a 1400 px dà locandine di circa
+   2:3. ---------------------------------------------------------------------- */
+
+.nastro {
+  display: flex;
+  gap: var(--passo);
+}
+
+.nastro__giorno {
+  /* Rientro interno, ripreso dalle sfumature che devono arrivare al bordo. */
+  --pad: clamp(10px, 1.05vw, 18px);
+  position: relative;
+  /* isolation: immagine, velo e filigrana usano z-index negativi, e devono
+     restare dentro la locandina invece di finire dietro al fondale. */
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-inline-size: 3.75rem;
+  min-block-size: clamp(21rem, 28vw, 26rem);
+  padding: var(--pad);
+  overflow: hidden;
+  border: 1px solid var(--linea);
+  border-radius: var(--raggio);
+  /* Quasi opaco: un fondale chiaro non deve far diventare grigi i riposi. */
+  background-color: color-mix(in srgb, var(--fondo-2) 80%, transparent);
+  transition:
+    border-color var(--durata) var(--curva),
+    box-shadow   var(--durata) var(--curva);
+}
+
+/* Una settimana senza dirette (solo eventi, o una pausa) non ha locandine da
+   allineare: sette strisce alte da manifesto sarebbero una fila di scatole
+   vuote, e il nastro si abbassa. */
+@media (min-width: 1100px) {
+  .nastro:not(:has(.is-diretta)) .nastro__giorno { min-block-size: 12rem; }
+}
+
+.nastro__giorno.is-diretta {
+  flex-grow: 4;
+  min-inline-size: 0;
+  border-color: var(--linea-forte);
+  background-color: var(--fondo-2);
+}
+
+/* --- Locandina senza immagine -----------------------------------------------
+   È il caso di partenza (nessuno ha ancora caricato niente), quindi deve essere
+   bella da sola. Sotto c'è la città notturna della copertina (img/copertina.webp,
+   la grafica «foto storie» già scaricata per la regia): ogni giorno ne mostra
+   un tratto diverso, da sinistra il lunedì a destra la domenica, così le
+   locandine in fila compongono un panorama. Sopra, il cielo si chiude nel buio
+   in alto, un alone viola sale dal basso e passa la trama della regia; il nome
+   del giorno in filigrana fa da testata tipografica. ------------------------- */
+
+.nastro__giorno.is-diretta:not(.con-immagine) {
+  background-image:
+    linear-gradient(to bottom, color-mix(in srgb, var(--fondo-2) 84%, transparent) 0%, color-mix(in srgb, var(--fondo-2) 22%, transparent) 52%, color-mix(in srgb, var(--fondo-2) 50%, transparent) 100%),
+    radial-gradient(150% 55% at 50% 100%, color-mix(in srgb, var(--viola) 30%, transparent), color-mix(in srgb, var(--viola) 0%, transparent) 72%),
+    repeating-linear-gradient(to right,  var(--linea) 0 1px, rgba(0, 0, 0, 0) 1px 24px),
+    repeating-linear-gradient(to bottom, var(--linea) 0 1px, rgba(0, 0, 0, 0) 1px 24px),
+    url("../img/copertina.webp");
+  background-size: auto, auto, auto, auto, cover;
+  background-position: 0 0, 0 0, 0 0, 0 0, var(--panorama, 50%) 100%;
+  background-repeat: no-repeat, no-repeat, repeat, repeat, no-repeat;
+}
+
+.nastro__giorno[data-giorno="1"] { --panorama: 0%; }
+.nastro__giorno[data-giorno="2"] { --panorama: 16.6%; }
+.nastro__giorno[data-giorno="3"] { --panorama: 33.3%; }
+.nastro__giorno[data-giorno="4"] { --panorama: 50%; }
+.nastro__giorno[data-giorno="5"] { --panorama: 66.6%; }
+.nastro__giorno[data-giorno="6"] { --panorama: 83.3%; }
+.nastro__giorno[data-giorno="0"] { --panorama: 100%; }
+
+/* Filigrana: solo contorno, così non compete con il testo. Scritta in
+   verticale lungo la locandina, da sotto la targa in giù, e sfumata prima di
+   arrivare al corpo: che non si legga tutta è voluto, è un segno grafico e non
+   un'informazione (il nome del giorno è anche nella targa).
+   Attenzione ai nomi: le proprietà logiche seguono la scrittura
+   dell'elemento, che qui è verticale. inline-start è l'alto, block-start è la
+   destra. */
+.nastro__filigrana {
+  position: absolute;
+  z-index: -1;
+  inset-inline-start: calc(var(--pad) + 3.5rem);
+  inset-block-start: calc(var(--pad) * 0.6);
+  writing-mode: vertical-rl;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 30%, rgba(0, 0, 0, 0) 72%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 30%, rgba(0, 0, 0, 0) 72%);
+  color: transparent;
+  font-family: var(--font-titolo);
+  font-size: clamp(3.5rem, 2rem + 3.4vw, 6.5rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--viola-chiaro) 30%, transparent);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* --- Locandina con immagine -------------------------------------------------- */
+
+.nastro__sfondo {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: none;
+  object-fit: cover;
+  object-position: var(--fuoco, 50% 50%);
+  transition: scale var(--durata-lunga) var(--curva);
+}
+
+/* Il velo sull'immagine scende dall'alto verso il basso: quasi niente nella
+   metà alta, dove l'immagine si deve riconoscere (con il velo di serie, 0.6,
+   il 7% in cima e il 13% a metà), e sempre di più verso il testo (il 48% sul
+   fondo). Quanto scurisce lo decide il velo; la leggibilità del testo non
+   dipende da questo strato ma dalla sfumatura del corpo, qui sotto. */
+.nastro__giorno.con-immagine::before,
+.evento.con-immagine .evento__manifesto::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--fondo) calc(var(--velo, 0.6) * 12%), transparent) 0%,
+    color-mix(in srgb, var(--fondo) calc(var(--velo, 0.6) * 22%), transparent) 45%,
+    color-mix(in srgb, var(--fondo) calc(var(--velo, 0.6) * 80%), transparent) 100%
+  );
+}
+
+/* --- Oggi: la barra magenta in cima ------------------------------------------
+   Il colore raro della palette, e solo qui. Una barra dentro il bordo, non un
+   bordo in più: niente si sposta di un pixel quando compare. ------------------ */
+
+.nastro__giorno::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
   inset-block-start: 0;
   inset-inline: 0;
   block-size: 3px;
   background-color: var(--magenta);
+  opacity: 0;
+  transition: opacity var(--durata) var(--curva);
+}
+
+.nastro__giorno.is-oggi::after { opacity: 1; }
+
+/* --- Prossima e in onda: la luce al neon -----------------------------------
+   Un'ombra e il colore del bordo, mai un bordo più spesso: il contenuto resta
+   dov'è. Viola per la prossima (è «la scelta»), rosso della spia per la
+   diretta in corso. La luce respira piano, come un'insegna: è l'unico
+   movimento che si ripete, e con il movimento ridotto resta ferma (vedi il
+   paragrafo 6). Un giorno con un evento ha il bordo appena ciano. ---------- */
+
+.nastro__giorno.ha-evento { border-color: color-mix(in srgb, var(--ciano) 45%, transparent); }
+
+.nastro__giorno.is-prossima,
+.evento.is-prossima { --luce: var(--viola); }
+
+.nastro__giorno.is-in-onda,
+.evento.is-in-onda { --luce: var(--live); }
+
+.nastro__giorno.is-prossima,
+.nastro__giorno.is-in-onda,
+.evento.is-prossima,
+.evento.is-in-onda {
+  border-color: var(--luce);
+  box-shadow: 0 0 0 1px var(--luce), 0 0 22px color-mix(in srgb, var(--luce) 40%, transparent);
+  animation: settimana-respiro 3.6s var(--curva) infinite;
+}
+
+@keyframes settimana-respiro {
+  50% { box-shadow: 0 0 0 1px var(--luce), 0 0 40px color-mix(in srgb, var(--luce) 62%, transparent); }
+}
+
+/* Al passaggio del mouse l'immagine si avvicina appena e il bordo si accende:
+   solo dove il puntatore esiste, e non sui giorni che hanno già una luce. */
+@media (hover: hover) {
+  .nastro__giorno.is-diretta:hover .nastro__sfondo { scale: 1.045; }
+
+  .nastro__giorno.is-diretta:not(.is-prossima):not(.is-in-onda):hover {
+    border-color: color-mix(in srgb, var(--viola-chiaro) 55%, transparent);
+  }
+}
+
+/* --- Testa della locandina: targa e segni -------------------------------------- */
+
+.nastro__testa {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.nastro__targa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--passo);
+  margin: 0;
+  color: var(--testo-medio);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.nastro__abbr { color: var(--testo); }
+
+/* Sull'immagine la targa è una piastrina scura. 92% e non meno: è il minimo in
+   cui anche l'abbreviazione magenta di «oggi» resta sopra 4.5:1 su un'immagine
+   bianca (sfondo composito sotto rgb(28)). */
+.con-immagine .nastro__targa {
+  padding: 3px 7px;
+  border-radius: var(--raggio-s);
+  background-color: color-mix(in srgb, var(--fondo-2) 92%, transparent);
 }
 
 .is-oggi .nastro__abbr { color: var(--magenta); }
 
-/* --- Prossima diretta (la marca sito.js) ------------------------------------
-   Contorno acceso disegnato con un'ombra interna e non con un bordo: un bordo
-   vero sposterebbe di un pixel il contenuto della colonna rispetto alle altre.
-   Nemmeno un outline, che si confonderebbe con il focus da tastiera. */
-.nastro__giorno.is-prossima {
-  box-shadow: inset 0 0 0 1px var(--linea-viva);
-  background-color: color-mix(in srgb, var(--viola) 9%, transparent);
+/* La data la scrive sito.js: senza JavaScript il contenitore resta vuoto e non
+   deve lasciare un buco nella targa. */
+.nastro__data:empty { display: none; }
+
+/* Il nome intero è per chi usa un lettore di schermo: a vista basta «LUN». */
+.nastro__nome {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
-.is-prossima .nastro__tag { color: var(--viola-chiaro); }
+/* I segni li scrive sito.js. Lo spazio di una riga è tenuto da parte anche
+   vuoto: quando compaiono il corpo della locandina, ancorato in basso, non si
+   muove. */
+.nastro__segni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-block-size: 22px;
+  margin: 0;
+}
 
-/* --- Sotto i 780px: il nastro scorre ----------------------------------------
-   Sette colonne leggibili non ci stanno, e comprimerle le rende inutili. Il
-   nastro diventa scorrevole con aggancio: circa tre giorni e mezzo per volta,
-   così il taglio a metà della quarta colonna dice da solo che c'è altro a
-   destra. Il max() è la rete di sicurezza a 320px, dove 100%/3.5 scenderebbe
-   sotto la larghezza di «21:00». --------------------------------------------- */
+/* Le etichette dei segni: una piastrina per ciascuno, stessa forma e colori
+   diversi, come le spie di una consolle. Servono anche agli eventi. */
+.segno {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px;
+  border: 1px solid currentColor;
+  border-radius: var(--raggio-pill);
+  background-color: color-mix(in srgb, var(--fondo-2) 92%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
 
-@media (max-width: 779.98px) {
+.segno--oggi   { color: var(--magenta); }
+.segno--evento { color: var(--ciano); }
+.segno--onda   { color: var(--live); }
+
+/* Pieno di viola: --testo sul viola sta a 4.7:1 qualunque cosa ci sia sotto. */
+.segno--prossima {
+  border-color: var(--viola);
+  background-color: var(--viola);
+  color: var(--testo);
+}
+
+/* La spia della consolle dentro l'etichetta «in onda»: è la stessa .spia di
+   base.css, con la sua pulsazione e il suo movimento ridotto. */
+.segno .spia { --spia-d: 7px; }
+
+/* --- Corpo della locandina ------------------------------------------------- */
+
+.nastro__corpo {
+  position: relative;
+  /* isolation: la sfumatura sta a z-index -1 dentro il corpo, sopra
+     all'immagine e sotto al testo. */
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-block-start: auto;
+  padding-block-start: var(--passo-2);
+}
+
+/* La sfumatura sotto il testo. Parte 32px sopra al corpo, arriva ai bordi
+   della locandina e diventa piena dove comincia il testo: segue la sua altezza,
+   che cambia da un giorno all'altro, invece di coprire una quota fissa.
+   Opacità 80% + 18% del velo: con il velo al minimo (0.3) il fondo sotto il
+   testo è coperto almeno all'85%, cioè sotto rgb(43) anche su bianco pieno,
+   senza contare il velo dell'immagine: --testo 12.6:1, --testo-medio 7.7:1,
+   --testo-tenue 4.8:1. */
+.nastro__giorno.is-diretta .nastro__corpo::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: calc(var(--passo-4) * -1) calc(var(--pad) * -1);
+  inset-inline: calc(var(--pad) * -1);
+  background-image: linear-gradient(
+    to top,
+    var(--velatura) 0%,
+    var(--velatura) calc(100% - var(--passo-4) - var(--passo-2)),
+    color-mix(in srgb, var(--fondo) 0%, transparent) 100%
+  );
+  --velatura: color-mix(in srgb, var(--fondo-2) 86%, transparent);
+}
+
+.nastro__giorno.con-immagine .nastro__corpo::before {
+  --velatura: color-mix(in srgb, var(--fondo) calc(80% + var(--velo, 0.6) * 18%), transparent);
+}
+
+.nastro__quando {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--passo);
+  margin: 0;
+}
+
+/* In una locandina stretta l'etichetta sta sopra l'ora, che così ha tutta la
+   larghezza per crescere. */
+@media (min-width: 1100px) {
+  .nastro__giorno.is-diretta .nastro__quando {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.nastro__tag {
+  color: var(--ciano);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+/* Ora e fine: la fine va a capo tutta intera se la locandina è stretta,
+   non si spezza a metà. */
+.nastro__orario {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 4px;
+  color: var(--testo);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+  line-height: 1.15;
+}
+
+/* L'ora è il dato che si cerca: grande, in monospazio, con un alone ciano
+   appena percepibile che la fa sembrare accesa. */
+.nastro__ora {
+  color: var(--testo);
+  font-size: clamp(1.45rem, 0.85rem + 1.25vw, 2.3rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--ciano) 38%, transparent);
+}
+
+.nastro__fine {
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+  white-space: nowrap;
+}
+
+/* L'ora di chi guarda (sito.js), solo se è diversa da quella del canale. */
+.nastro__locale,
+.evento__locale {
+  margin: 0;
+  color: var(--testo-medio);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-variant-numeric: tabular-nums slashed-zero;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.nastro__titolo {
+  margin: 0;
+  margin-block-start: 2px;
+  color: var(--testo);
+  font-family: var(--font-titolo);
+  font-size: clamp(1.05rem, 0.72rem + 0.66vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.nastro__gioco {
+  margin: 0;
+  color: var(--viola-chiaro);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  overflow-wrap: anywhere;
+}
+
+.nastro__nota {
+  margin: 0;
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* Nelle locandine strette la nota scende di un punto: con sette dirette e note
+   lunghe è quello che tiene le locandine vicine alla loro altezza da manifesto
+   invece di farle crescere. 13px restano sopra la soglia di lettura comoda. */
+@media (min-width: 1100px) {
+  .nastro__giorno.is-diretta .nastro__nota {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+}
+
+/* --- Giorno di riposo al computer -------------------------------------------
+   Una striscia stretta e spenta: abbreviazione e data in cima, la parola
+   «riposo» in verticale fra due filetti. I segni vanno in verticale anche
+   loro, perché «speciale» in orizzontale non ci starebbe in 3.75rem. ------- */
+
+.nastro__giorno:not(.is-diretta) {
+  --pad: 10px;
+  align-items: center;
+  text-align: center;
+}
+
+.nastro__giorno:not(.is-diretta) .nastro__testa { align-items: center; }
+
+.nastro__giorno:not(.is-diretta) .nastro__targa {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.08em;
+}
+
+.nastro__giorno:not(.is-diretta) .nastro__abbr { color: var(--testo-medio); }
+.nastro__giorno.is-oggi:not(.is-diretta) .nastro__abbr { color: var(--magenta); }
+
+.nastro__giorno:not(.is-diretta) .nastro__segni {
+  flex-direction: column;
+  align-items: center;
+}
+
+.nastro__giorno:not(.is-diretta) .segno { writing-mode: vertical-rl; padding: 7px 3px; }
+
+.nastro__giorno:not(.is-diretta) .nastro__corpo {
+  flex: 1 1 auto;
+  align-items: center;
+  margin: 0;
+  padding-block-start: var(--passo-2);
+}
+
+.nastro__giorno:not(.is-diretta) .nastro__quando {
+  flex: 1 1 auto;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--passo-2);
+}
+
+.nastro__giorno:not(.is-diretta) .nastro__quando::before,
+.nastro__giorno:not(.is-diretta) .nastro__quando::after {
+  content: "";
+  flex: 1 1 0;
+  inline-size: 1px;
+  background-color: var(--linea);
+}
+
+.nastro__giorno:not(.is-diretta) .nastro__tag {
+  writing-mode: vertical-rl;
+  color: var(--testo-tenue);
+}
+
+
+/* --- Sotto i 1100px: una colonna ---------------------------------------------
+   Nessuno scorrimento laterale e i giorni in ordine. Le dirette diventano
+   fasce orizzontali: la testa in alto, il corpo in basso e in mezzo uno spazio
+   garantito dove l'immagine si vede senza niente sopra — è quello che la fa
+   riconoscere. I riposi diventano righe sottili. ------------------------------ */
+
+@media (max-width: 1099.98px) {
   .nastro {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--linea-forte) transparent;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .nastro__giorno {
-    flex: 0 0 max(88px, calc(100% / 3.5));
+    --pad: clamp(14px, 2.6vw, 22px);
+    flex: none;
     min-inline-size: 0;
-    scroll-snap-align: start;
+    min-block-size: 0;
   }
 
-  /* Barra sottile e in tinta: il gesto resta possibile, l'ingombro no. */
-  .nastro::-webkit-scrollbar {
-    height: 6px;
+  /* Una fascia e non un riquadro: circa 16:9 al telefono, molto più larga che
+     alta sul tablet. */
+  .nastro__giorno.is-diretta { min-block-size: clamp(11rem, 50vw, 15rem); }
+
+  .nastro__giorno.is-diretta .nastro__testa {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    /* Lo spazio dell'immagine: con testi lunghi la fascia si allunga, ma
+       questa fetta resta libera. */
+    margin-block-end: clamp(2.5rem, 9vw, 4rem);
   }
 
-  .nastro::-webkit-scrollbar-track {
-    background-color: transparent;
+  .nastro__giorno.is-diretta .nastro__segni { min-block-size: 0; }
+
+  .nastro__giorno.is-diretta .nastro__corpo > * { max-inline-size: 40rem; }
+
+  /* Il testo sta a sinistra, entro 40rem: oltre, la sfumatura si alleggerisce
+     in 16rem e sulla destra di una fascia larga l'immagine torna a vedersi.
+     Misure fisse e non percentuali: su una fascia poco più larga del testo
+     una percentuale farebbe la sfumatura in pochi pixel, cioè uno scalino. */
+  .nastro__giorno.is-diretta .nastro__corpo::before {
+    -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) calc(40rem + var(--pad) * 2), rgba(0, 0, 0, 0.3) calc(56rem + var(--pad) * 2));
+    mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) calc(40rem + var(--pad) * 2), rgba(0, 0, 0, 0.3) calc(56rem + var(--pad) * 2));
   }
 
-  .nastro::-webkit-scrollbar-thumb {
-    border-radius: var(--raggio-pill);
-    background-color: var(--linea-forte);
+  /* In orizzontale la filigrana corre lungo la fascia, in alto a destra, e si
+     sfuma verso sinistra, dove comincia il testo. */
+  .nastro__filigrana {
+    inset-inline-start: auto;
+    inset-inline-end: var(--pad);
+    inset-block-start: calc(var(--pad) + 2rem);
+    writing-mode: horizontal-tb;
+    font-size: clamp(3.5rem, 1.4rem + 9vw, 7rem);
+    -webkit-mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 30%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 30%, rgba(0, 0, 0, 0) 100%);
   }
+
+  /* Oggi: la barra passa sul lato d'inizio, dove comincia la lettura della
+     riga. */
+  .nastro__giorno::after {
+    inset-block: 0;
+    inset-inline: 0 auto;
+    inline-size: 3px;
+    block-size: auto;
+  }
+
+  .nastro__giorno:not(.is-diretta) {
+    --pad: var(--passo-2);
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px var(--passo-2);
+    min-block-size: 48px;
+    padding-block: var(--passo);
+    border-radius: var(--raggio-s);
+    text-align: start;
+  }
+
+  .nastro__giorno:not(.is-diretta) .nastro__testa {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--passo);
+  }
+
+  .nastro__giorno:not(.is-diretta) .nastro__targa {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 2px var(--passo);
+    letter-spacing: 0.12em;
+  }
+
+  .nastro__giorno:not(.is-diretta) .nastro__segni {
+    flex-direction: row;
+    min-block-size: 0;
+  }
+
+  .nastro__giorno:not(.is-diretta) .segno {
+    writing-mode: horizontal-tb;
+    padding: 3px 7px;
+  }
+
+  .nastro__giorno:not(.is-diretta) .nastro__corpo {
+    flex: 1 1 6rem;
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .nastro__giorno:not(.is-diretta) .nastro__quando {
+    flex-direction: row;
+    gap: var(--passo-2);
+  }
+
+  .nastro__giorno:not(.is-diretta) .nastro__quando::before {
+    inline-size: auto;
+    block-size: 1px;
+  }
+
+  .nastro__giorno:not(.is-diretta) .nastro__quando::after { content: none; }
+
+  .nastro__giorno:not(.is-diretta) .nastro__tag { writing-mode: horizontal-tb; }
+}
+
+
+/* --- Eventi speciali ----------------------------------------------------------
+   Schede e non righe: sono le serate fuori dal solito, e devono farsi vedere.
+   A sinistra il «manifesto» — immagine, data grande, etichetta — e a destra il
+   testo. Il manifesto ha una larghezza sua (--manifesto) ed è alto almeno 4/3
+   di quella, cioè è una locandina verticale: un'immagine verticale (come la
+   grafica «STARTING» al neon) ci entra quasi intera, una orizzontale si
+   inquadra con il fuoco. Al telefono il manifesto va sopra al testo, in 5:4,
+   ancora abbastanza alto da non ridurre un'immagine verticale a una striscia. ---------------------------------------------------------------------- */
+
+.eventi { margin-block-start: clamp(var(--passo-6), 5vw, var(--passo-8)); }
+
+.eventi__titolo {
+  display: flex;
+  align-items: center;
+  gap: var(--passo-2);
+  margin: 0 0 var(--passo-3);
+  color: var(--testo);
+}
+
+/* Un rombo ciano: il segno di «speciale», lo stesso colore dell'etichetta. */
+.eventi__titolo::before {
+  content: "";
+  flex: none;
+  inline-size: 9px;
+  block-size: 9px;
+  border: 1px solid var(--ciano);
+  background-color: color-mix(in srgb, var(--ciano) 30%, transparent);
+  rotate: 45deg;
+}
+
+.eventi__titolo::after {
+  content: "";
+  flex: 1 1 auto;
+  min-inline-size: var(--passo-3);
+  block-size: 1px;
+  background-image: linear-gradient(
+    to right,
+    var(--linea-forte),
+    color-mix(in srgb, var(--linea-forte) 0%, transparent)
+  );
+}
+
+/* Due colonne quando ce ne stanno due da 27rem (da circa 1000px in su),
+   altrimenti una; mai tre, perché una scheda più stretta della metà schiaccia
+   il testo accanto al manifesto (il max() alza il minimo a mezza riga). L'ultimo
+   di un numero dispari di eventi (uno solo compreso) prende tutta la riga
+   invece di lasciarne mezza vuota. */
+.eventi__elenco {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(27rem, calc((100% - var(--passo-2)) / 2))), 1fr));
+  gap: var(--passo-2);
+}
+
+.evento {
+  --manifesto: clamp(11rem, 18vw, 17rem);
+  display: grid;
+  grid-template-columns: var(--manifesto) minmax(0, 1fr);
+  min-block-size: calc(var(--manifesto) * 4 / 3);
+  overflow: hidden;
+  border: 1px solid var(--linea-forte);
+  border-radius: var(--raggio);
+  /* Fondo opaco sotto il vetro: il fondale non deve trasparire nel testo. */
+  background-color: var(--fondo-2);
+  background-image: var(--grad-pannello);
+  transition:
+    border-color var(--durata) var(--curva),
+    box-shadow   var(--durata) var(--curva);
+}
+
+.evento:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+/* A tutta riga al computer il manifesto cresce: la scheda è larga il doppio. */
+@media (min-width: 1100px) {
+  .evento:last-child:nth-child(odd) { --manifesto: clamp(13rem, 22vw, 21rem); }
+}
+
+.evento__manifesto {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--passo);
+  padding: clamp(14px, 1.6vw, 20px);
+  border-inline-end: 1px solid var(--linea);
+  /* Senza immagine: le due barre di luce dello stinger (la grafica del
+     fondale, già scaricata) velate, con la trama della regia. È il segno
+     «fuori programma»: le locandine regolari hanno la città, gli speciali la
+     luce. */
+  background-color: var(--fondo-2);
+  background-image:
+    linear-gradient(to top, color-mix(in srgb, var(--fondo-2) 88%, transparent) 0%, color-mix(in srgb, var(--fondo-2) 45%, transparent) 60%, color-mix(in srgb, var(--fondo-2) 70%, transparent) 100%),
+    radial-gradient(130% 70% at 0% 100%, color-mix(in srgb, var(--viola) 34%, transparent), color-mix(in srgb, var(--viola) 0%, transparent) 70%),
+    repeating-linear-gradient(to right,  var(--linea) 0 1px, rgba(0, 0, 0, 0) 1px 24px),
+    repeating-linear-gradient(to bottom, var(--linea) 0 1px, rgba(0, 0, 0, 0) 1px 24px),
+    url("../img/settimana-sfondo.webp");
+  background-size: auto, auto, auto, auto, cover;
+  background-position: 0 0, 0 0, 0 0, 0 0, 40% 50%;
+  background-repeat: no-repeat, no-repeat, repeat, repeat, no-repeat;
+}
+
+.evento.con-immagine .evento__manifesto { background-image: none; }
+
+.evento__sfondo {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  max-inline-size: none;
+  object-fit: cover;
+  object-position: var(--fuoco, 50% 50%);
+  transition: scale var(--durata-lunga) var(--curva);
+}
+
+/* Le etichette in alto, la data in basso: nel DOM la data viene prima perché
+   si legge prima, qui si impagina come un manifesto. */
+.evento__segni {
+  grid-row: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+}
+
+.evento__data {
+  position: relative;
+  isolation: isolate;
+  grid-row: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 0;
+  color: var(--testo);
+  line-height: 1;
+}
+
+/* La stessa sfumatura del corpo delle locandine, dietro alla data. */
+.evento.con-immagine .evento__data::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset-block: calc(var(--passo-6) * -1) calc(clamp(14px, 1.6vw, 20px) * -1);
+  inset-inline: calc(clamp(14px, 1.6vw, 20px) * -1);
+  background-image: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--fondo) calc(80% + var(--velo, 0.6) * 18%), transparent) 0%,
+    color-mix(in srgb, var(--fondo) calc(80% + var(--velo, 0.6) * 18%), transparent) calc(100% - var(--passo-6)),
+    color-mix(in srgb, var(--fondo) 0%, transparent) 100%
+  );
+}
+
+.evento__giorno,
+.evento__mese {
+  font-family: var(--font-mono);
+  font-size: var(--t-piccolo);
+  font-weight: 500;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+.evento__giorno { color: var(--ciano); }
+
+.evento__numero {
+  margin-block: 2px 4px;
+  /* Il padding tiene dentro il ritaglio del gradiente la coda dell'ultima
+     cifra, che con la spaziatura negativa sborderebbe. */
+  padding-inline-end: 0.06em;
+  color: var(--testo);
+  font-family: var(--font-titolo);
+  font-size: clamp(4rem, 2.6rem + 3.6vw, 7rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.86;
+  letter-spacing: -0.05em;
+  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--viola) 55%, transparent));
+}
+
+/* La data grande con lo stesso gradiente del titolo della copertina: ogni
+   tono sta sopra 7:1 sul fondo scuro che ha sotto. Solo dove il ritaglio
+   esiste, altrimenti resta bianca. */
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .evento__numero {
+    background-image: var(--grad-titolo);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.evento__corpo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--passo);
+  min-inline-size: 0;
+  padding: clamp(18px, 2.4vw, 32px);
+}
+
+.evento__titolo {
+  margin: 0;
+  color: var(--testo);
+  font-size: clamp(1.35rem, 1.05rem + 1vw, 2rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.evento__quando {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px var(--passo-2);
+  margin: 0;
+}
+
+.evento__giorno-esteso {
+  color: var(--testo-medio);
+  font-size: var(--t-micro);
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.evento__orario {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 4px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+.evento__ora {
+  color: var(--testo);
+  font-size: clamp(1.05rem, 0.9rem + 0.4vw, 1.3rem);
+  font-weight: 500;
+}
+
+.evento__fine {
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+  white-space: nowrap;
+}
+
+.evento__gioco {
+  margin: 0;
+  color: var(--viola-chiaro);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  overflow-wrap: anywhere;
+}
+
+.evento__nota {
+  margin: 0;
+  max-inline-size: 56ch;
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+  line-height: 1.55;
+}
+
+/* Sotto i 760px il manifesto è una fascia sopra al testo. */
+@media (max-width: 759.98px) {
+  .evento {
+    grid-template-columns: minmax(0, 1fr);
+    min-block-size: 0;
+  }
+
+  .evento__manifesto {
+    aspect-ratio: 5 / 4;
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--linea);
+  }
+
+  .evento__numero { font-size: clamp(3.5rem, 2rem + 8vw, 5rem); }
 }
 
 /* --- Piede della sezione ---------------------------------------------------- */
@@ -866,13 +1765,19 @@
 
 /* =============================================================================
    6. MOVIMENTO RIDOTTO
-   In questo foglio non ci sono @keyframes: il movimento è tutto nelle
-   transizioni, che base.css spegne azzerando i token --durata*. Resta lo
-   scorrimento del nastro, che è un gesto dell'utente e non un'animazione: si
-   toglie solo l'aggancio, perché lo scatto automatico è comunque movimento non
-   richiesto.
+   Le transizioni di questo foglio (bordi, contorni, l'immagine che si avvicina,
+   righe del listino e dei social) passano tutte dai token --durata*, che
+   base.css azzera. L'unica animazione che si ripete è della schedule: la luce
+   che respira intorno alla prossima diretta e a quella in onda. Con il
+   movimento ridotto si ferma e resta la luce ferma: il segno si vede lo
+   stesso. La spia «in onda» è la .spia di base.css, che si ferma lì.
    ============================================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-  .nastro { scroll-snap-type: none; }
+  .nastro__giorno.is-prossima,
+  .nastro__giorno.is-in-onda,
+  .evento.is-prossima,
+  .evento.is-in-onda { animation: none; }
+
+  .nastro__giorno.is-diretta:hover .nastro__sfondo { scale: none; }
 }

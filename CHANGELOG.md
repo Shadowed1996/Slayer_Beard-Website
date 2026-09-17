@@ -43,6 +43,119 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   `css/sezioni.css` §3 e i testi `chi.*` in `contenuti.json`. Deroga motivata
   in `CONTRATTO.md` §2.
 
+- **La schedule della settimana, rifatta da capo.** Il nastro era una fila di
+  sette giorni con un'ora sola per tutti: una diretta alle 18:30 del mercoledì
+  non si poteva scrivere, e la sezione non aveva niente da mostrare oltre a un
+  orario. Adesso ogni giorno di diretta è una **locandina** con ora e durata
+  sue, titolo, gioco, nota e un'immagine di sfondo con punto di fuoco e velo; i
+  giorni di riposo restano strisce strette. Sul computer i sette giorni stanno
+  in una riga, sotto i 1100 px vanno uno sotto l'altro, senza scorrimento di
+  lato. La scheda di un giorno spento resta nei dati: riaccendendolo torna
+  com'era. Il ramo è `config.orari` nella forma nuova, le regole sono in
+  `CONTRATTO-5.md`.
+- **Gli eventi speciali**: fino a otto dirette fuori programma con una data
+  precisa — una maratona, uno speciale — con ora, durata fino a 72 ore, titolo,
+  gioco, nota e immagine. Compaiono sotto il nastro, contano per il conto alla
+  rovescia e, finiti, spariscono dal sito da soli: la pagina generata non stampa
+  quelli già passati, e quelli che finiscono dopo la pubblicazione li toglie
+  `js/sito.js`. Il sito non annuncia la maratona di ieri; nel pannello restano,
+  segnati «Passato».
+- **Il fondale della sezione**: un'immagine dietro tutta «La settimana»,
+  sfumata ai bordi e velata come quella della copertina, con il punto di fuoco
+  e un'intensità da 0 a 100. A 0 l'immagine non si stampa nemmeno, invece di
+  farla scaricare per poi disegnarla trasparente.
+- Sul sito, mentre gira: la data della prossima volta sopra ogni giorno, tre
+  segni diversi per oggi, prossima diretta e in onda, «Speciale» sul giorno in
+  cui cade un evento, e l'ora di chi guarda da un altro fuso («Da te 15:00»).
+  Il conto alla rovescia usa l'ora e la durata di ogni giorno e gli eventi.
+  Senza JavaScript la sezione resta completa: mancano solo date, segni e ora
+  locale.
+- `pannello/condivisi/orari.js` (`SBOrari`): le regole della schedule in **un
+  file solo** per server e pannello, come `stili.js` per gli stili. Limiti,
+  forma pulita (`normalizza`, che non lancia mai), messaggi d'errore in italiano
+  (`problemi`), fusi orari e ora legale con `Intl`. Con due copie, prima o poi
+  il pannello accetterebbe una nota che il server rifiuta al salvataggio.
+- `pannello/moduli/settimana.js`, l'editor della schedule: riepilogo, tre
+  linguette (Settimana, Eventi speciali, Fondale), un giorno aperto alla volta,
+  errori accanto alla casella che li causa. Il **blocco immagine** è uguale per
+  giorni, eventi e fondale: libreria, caricamento dal computer o file
+  trascinato, punto di fuoco con il mouse o con la tastiera, ritagli Computer e
+  Telefono, velo o intensità. Un clic su un giorno o su un evento nell'anteprima
+  apre il posto giusto, quello aperto si contorna di ciano, e fuoco, velo e
+  intensità si vedono nell'anteprima subito, prima della ricarica.
+- La parte **Eventi speciali** in `pannello/editor/nomi.js`, e nella parte
+  «stato» della copertina il riepilogo della schedule con il bottone **Modifica
+  la schedule**, invece di un secondo editor intero.
+- Quattro testi nel gruppo «La settimana»: `settimana.titoloEventi`,
+  `settimana.etichettaEvento`, `settimana.etichettaInOnda` e
+  `settimana.etichettaDaTe`.
+- **Le grafiche nuove del canale, e un sito molto più leggero.** Le immagini
+  erano PNG pesanti e vecchi: un banner con la scritta «VOD», un'anteprima
+  social che tagliava a metà il pollo e gli handle, una mascotte con il fondo
+  non trasparente sfumata a forza da una maschera. Adesso ci sono
+  `img/copertina.webp` (la città notturna pulita), `img/avatar.webp`,
+  `img/mascotte.webp` (il pollo scontornato dal banner nuovo, con la
+  trasparenza vera), `img/og.jpg`, `img/favicon.png` a 180×180 e
+  `img/settimana-sfondo.webp` per il fondale. I cinque PNG di prima pesavano
+  2037 kB; le cinque immagini che li sostituiscono pesano 165 kB, 188 kB con il
+  fondale nuovo.
+- Cinque grafiche del canale già pronte nella libreria, in `contenuti/media/`:
+  la città notturna, il banner di Twitch, la fascia della webcam, la locandina
+  verticale «STARTING» e lo stinger, da scegliere per giorni, eventi e fondale.
+- **Il pannello converte in WebP le immagini che carica.** Con
+  `preparaImmagine`, in `pannello/moduli/media.js`, un PNG, JPG o WebP oltre i
+  350 kB o oltre i 2400 pixel di lato viene ridotto e riscritto in WebP nel
+  browser, prima di partire; se il WebP non pesa meno parte l'originale, e SVG
+  e animazioni non si toccano. Una foto presa dal telefono diventava un file da
+  megabyte che il sito faceva scaricare a ogni visita, o si fermava contro il
+  limite dei 4 MB: adesso il limite si controlla dopo la riduzione. Vale per
+  ogni caricamento, dalla libreria, dal blocco immagine o trascinando un file.
+- Sezione 11 del collaudo, *La schedule*: 26 prove su regole e messaggi, ora
+  legale a Roma e in altri fusi, eventi finiti, contesto della pagina,
+  `js/dati.js`, salvataggio in blocco e immagini in uso. In tutto sono 172.
+- `README.md`: i capitoli *La schedule della settimana* e *Le immagini*.
+  `docs/PANNELLO.md`: la schedule nel capitolo 11, le foto alleggerite nel
+  capitolo 8, il modello dei dati e l'editor nel capitolo 28. `CONTRATTO-5.md`.
+- **L'editor unico del pannello.** Il pannello era un elenco di gruppi di campi
+  da sfogliare, e per cambiare un titolo bisognava prima indovinare in quale
+  gruppo stava. Adesso l'anteprima del sito sta al centro, anche con le
+  modifiche non ancora salvate, e si clicca direttamente la cosa da cambiare:
+  un pannello laterale ne mostra i controlli in tre schede, Contenuto, Stile e
+  Avanzate. I testi si scrivono sul posto, le immagini si cambiano
+  cliccandole. Le regole sono in `CONTRATTO-4.md`, la guida in
+  `docs/PANNELLO.md`.
+- **Uno stile per ogni elemento, diverso su Telefono, Tablet e Computer**
+  (`config.stili`): font, dimensione, colori — anche collegati ai colori del
+  tema, così ne seguono i cambi —, sfondo, spazi, bordi, bagliore, opacità,
+  visibilità per dispositivo e larghezza massima.
+- **Blocchi da spostare e ridimensionare** dentro la loro sezione, per
+  dispositivo (`config.disposizione`), e **sezioni da riordinare e nascondere**
+  dal Navigatore (`config.sezioni`). Il menu laterale segue le sezioni da solo,
+  e i link verso una sezione spenta spariscono invece di restare morti.
+- `pannello/condivisi/stili.js`, il generatore degli stili e delle posizioni,
+  usato dal pannello per l'anteprima e dal server per la pagina: il CSS dal vivo
+  e quello pubblicato sono lo stesso testo, al byte.
+- **Font caricati dal computer** — WOFF2, WOFF, TTF e OTF fino a 2 MB,
+  riconosciuti da quello che c'è dentro il file e non dal nome — in
+  `contenuti/font/`, per tutto il sito o per un elemento solo. Li gestiscono
+  `server/lib/font.js` e le rotte `/api/font`.
+- Il menu ☰ con Impostazioni del sito (colori, combinazioni pronte, font,
+  forma), Struttura della pagina, Canale e immagini, Google e social, Immagini,
+  Copie di sicurezza e il **cambio della password** dal pannello
+  (`POST /api/password`), che chiude gli accessi aperti altrove. Annulla e
+  Ripeti, la ricerca dei campi con `Ctrl+K`, il pannello largo a piacere da 380
+  a 760 px e, sugli schermi stretti, il cassetto.
+- L'anteprima dell'editor è la pagina **senza il JavaScript del sito**
+  (`POST /api/anteprima` con `editor: true`): dentro l'editor il player di
+  Twitch sarebbe una seconda sessione video della stessa persona, e il pollo
+  aprirebbe una connessione alla chat a ogni ricarica.
+- Il player di Twitch **non si nasconde, non diventa trasparente, non si
+  rimpicciolisce e non si copre**: per «La diretta» quei controlli non ci sono,
+  e il server scarta i valori vietati arrivati per altre strade. Un player
+  coperto è quello che Twitch tratta come gonfiaggio degli spettatori.
+- I marcatori `data-sb-*` nei modelli (sezioni, riquadri, blocchi, parti,
+  testi, immagini) e `font-src 'self'` nella CSP. Con i valori di partenza la
+  pagina generata resta identica a quella di prima, a parte questi.
 - **Tutte le chiavi in un file solo: `server/dati/chiavi.js`.** Prima il Client
   ID stava scritto in due posti — il campo del pannello, e quindi
   `contenuti.json`, più il file del server insieme al secret — e due copie
@@ -143,6 +256,30 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - La nota in fondo al piede non parla più di come è fatto il sito («Fatto in
   casa, senza framework.») ma del pollo: «Nessun pollo è stato maltrattato
   durante la costruzione di questo sito.»
+- `config.orari` ha la forma nuova: ai quattro valori di sempre (`giorni`,
+  `ora`, `durataOre`, `fuso`) si aggiungono `schede`, `eventi` e `sfondo`. Un
+  `contenuti.json` della forma vecchia resta valido e al primo salvataggio si
+  completa da sé, con il fondale spento. Il campo nel pannello si chiama
+  «Schedule della settimana».
+- **La durata di serie va a passi di mezz'ora**, da 0,5 a 24 ore: prima
+  bastava un numero maggiore di 0. È la regola delle schede e degli eventi:
+  una sola regola per tutte le durate, e le caselle del pannello, che vanno a
+  mezz'ore, arrivano a ogni valore che la convalida accetta. Una durata come
+  `3.75` va riscritta.
+- `config.orari` si salva **in blocco** (`RAMI_IN_BLOCCO` di
+  `server/lib/archivio.js`), come i tre rami dell'editor: con la fusione chiave
+  per chiave un evento cancellato nel pannello rinasceva dal file salvato.
+- La convalida della schedule (`server/lib/convalida.js`) usa
+  `SBOrari.problemi` e indica la casella esatta, per esempio
+  `config.orari.schede.1.ora`, invece di un messaggio solo per tutto il campo.
+- `config.orari` sta nelle parti «nastro» ed «eventi» e non più nella parte
+  «stato»: la ricerca e gli errori del server portano sempre dove c'è l'editor.
+- `config.immagini` punta ai file nuovi, e i quattro `<img>` di copertina, menu
+  laterale, «chi sono» e pollo hanno `decoding="async"`; avatar, ritratto e
+  pollo anche le misure che tengono il posto prima che l'immagine arrivi, e
+  ritratto e pollo, fuori dalla prima schermata, `loading="lazy"`. `css/regia.css` inquadra di nuovo la città della copertina;
+  `css/pollo.css` segue le proporzioni della mascotte nuova, senza più la
+  maschera che ne sfumava il fondo.
 - `README.md`: aggiunti i badge, l'indice della documentazione, le sezioni
   Licenza e Autore. Il resto del documento è rimasto invariato.
 - `.gitignore` esteso con le cartelle degli editor e altri file temporanei.
@@ -157,6 +294,13 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Rimosso
 
+- `img/avatar.png`, `img/banner.png`, `img/mascot.png` e `img/og.png`:
+  sostituiti dalle immagini nuove, nessun file scritto a mano li cita più.
+  L'`index.html` generato li cita finché non si ripubblica: va rigenerato prima
+  di caricare il sito online.
+- Il vecchio editor degli orari (`campoOrari`) e l'export `GIORNI` di
+  `pannello/moduli/campi.js`: il tipo `orari` lo disegna
+  `pannello/moduli/settimana.js`, e nessun altro file li usava.
 - `RIPRENDI-DOMANI.md`: era l'appunto di un lavoro interrotto a metà, e quel
   lavoro adesso è chiuso. Quello che restava da dire è finito nel README, nel
   CONTRATTO-3 e in questo registro; il resto è nella storia del repository.
@@ -170,6 +314,22 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   da 17 a 19px e quella di TikTok (`modelli/icone/tiktok.svg`) è ridisegnata
   con il ricciolo aperto, così si riconosce.
 
+- **La libreria sapeva dove era usata un'immagine, ma non nella schedule.**
+  `usoDi` di `pannello/pannello.js` guardava solo i campi di tipo immagine, e
+  la finestra «Elimino…» proponeva di cancellare la locandina di un giorno come
+  se non servisse a niente. Adesso elenca «Schedule · lunedì», «Schedule ·
+  evento «…»» e «Schedule · fondale della sezione»; il server, dal canto suo,
+  la cancellazione la rifiutava già.
+- L'anteprima dell'editor non ripulisce più come testo ricco un testo semplice
+  che sta dentro un elenco (una riga del listino, per esempio): un «<Quake>»
+  scritto lì spariva dall'anteprima mentre sul sito si leggeva. Adesso si risale
+  al campo che contiene quel testo e si guarda il tipo vero.
+- Un blocco largo quanto il contenuto non salta più a sinistra al primo
+  spostamento, nemmeno se lo si muove solo in verticale o con le frecce: il
+  limite a destra partiva da una misura presa sul bordo sbagliato.
+- La mascotte aveva la cresta tagliata e il fondo non trasparente; l'anteprima
+  social tagliava a metà il pollo e gli handle. Le immagini nuove li tengono
+  interi.
 - Il resoconto delle clip distingue i due motivi per cui può essere spento —
   manca il collegamento, oppure la vetrina non è accesa nel pannello — invece
   di mandare a controllare il posto sbagliato.

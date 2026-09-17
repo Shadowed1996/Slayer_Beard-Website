@@ -11,8 +11,18 @@
    quel momento e fresco per tutti, senza che il sito pubblicato debba
    chiamare nessuno.
 
-   Dalla stessa porta passano FOLLOWER E ABBONATI, che pero vogliono un
-   token utente: la loro sezione, qui sotto, spiega perche e come.
+   Sulla stessa strada viaggia il NUMERO DEI FOLLOWER: helix/channels/followers
+   con un app token non da la lista di chi segue (quella vuole un token
+   del broadcaster con lo scope moderator:read:followers) ma da sempre il
+   totale, ed e il totale che la pagina stampa. Finisce in
+   config.dati.follower, e da li nella copertina e in «Chi sono».
+
+   Dalla stessa porta passano FOLLOWER E ABBONATI insieme, che pero
+   vogliono un token utente: la loro sezione, qui sotto, spiega perche e
+   come. Le due strade non litigano — quella col token utente porta anche
+   gli abbonati e vince quando c'e l'autorizzazione del canale, quella con
+   l'app token continua a tenere fresco il numero dei follower quando
+   l'autorizzazione non c'e.
 
    Sulla stessa strada viaggiano le CLIP: la vetrina della sezione
    «diretta» e un elenco calcolato qui e stampato dentro l'HTML, non un
@@ -292,6 +302,81 @@ async function aggiornaUltimaDiretta() {
   return { stato: 'aggiornato', titolo: esito.titolo, precedente: precedente, fonte: esito.fonte };
 }
 
+/* --- FOLLOWER -------------------------------------------------------- */
+
+/**
+ * Il totale dei follower dalla risposta di helix/channels/followers.
+ * Ritorna un intero >= 0, oppure null se la risposta non lo porta: null
+ * e «non lo so», che e diverso da zero.
+ */
+function totaleFollower(risposta) {
+  if (!risposta || typeof risposta !== 'object') { return null; }
+  // Number(null) e 0: un totale assente non deve diventare «zero follower».
+  if (risposta.total === null || risposta.total === undefined || risposta.total === '') { return null; }
+  const totale = Number(risposta.total);
+  if (!Number.isFinite(totale) || totale < 0) { return null; }
+  return Math.round(totale);
+}
+
+/** Il numero dei follower del canale, chiesto a Twitch. */
+async function contaFollower(idUtente) {
+  const id = encodeURIComponent(String(idUtente));
+  // first=1: la lista non serve (e con un app token arriva comunque vuota),
+  // conta solo `total`.
+  return totaleFollower(await helix('/channels/followers?broadcaster_id=' + id + '&first=1'));
+}
+
+/**
+ * Aggiorna config.dati.follower in contenuti.json, se si puo.
+ * Stessa invariante di aggiornaUltimaDiretta(): NON LANCIA MAI e non
+ * tocca il numero che c'e gia se Twitch non ne da uno buono. Stessi stati.
+ */
+async function aggiornaFollower() {
+  let chiavi;
+  try {
+    chiavi = credenziali();
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+  if (!chiavi) { return { stato: 'spento' }; }
+
+  let contenuti;
+  let idUtente;
+  try {
+    contenuti = archivio.leggi();
+    const twitch = (contenuti.config && contenuti.config.twitch) || {};
+    idUtente = typeof twitch.idUtente === 'string' ? twitch.idUtente.trim() : '';
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+  if (!idUtente) { return { stato: 'senzaCanale' }; }
+
+  let totale;
+  try {
+    totale = await contaFollower(idUtente);
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+
+  const dati = (contenuti.config && contenuti.config.dati) || {};
+  const precedente = Number.isFinite(Number(dati.follower)) ? Math.round(Number(dati.follower)) : 0;
+  if (totale === null) { return { stato: 'vuoto', precedente: precedente }; }
+  if (totale === precedente) { return { stato: 'invariato', totale: totale }; }
+
+  // Si rilegge il documento per lo stesso motivo di aggiornaUltimaDiretta():
+  // nel frattempo il pannello puo aver salvato.
+  try {
+    const fresco = archivio.leggi();
+    if (!fresco.config.dati || typeof fresco.config.dati !== 'object') { fresco.config.dati = {}; }
+    fresco.config.dati.follower = totale;
+    archivio.salva(fresco);
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+
+  return { stato: 'aggiornato', totale: totale, precedente: precedente };
+}
+
 /* --- CLIP ----------------------------------------------------------- */
 
 /** I giorni indietro di ogni periodo. `sempre` non mette nessun limite. */
@@ -454,12 +539,16 @@ async function aggiornaClip() {
 // nessuno: basta che il token sia di una persona.
 const SCOPE_ACCESSO = 'channel:read:subscriptions';
 
-// I campi di testo che mostrano i due numeri in pagina. Si riscrivono solo
-// se contengono un numero e nient'altro: chi nel pannello ci ha messo
-// «3,6K» o ha cambiato del tutto il senso della casella non se lo vede
-// sovrascrivere ogni dieci minuti.
+// I campi di testo che mostrano un numero in pagina. Si riscrivono solo se
+// contengono un numero e nient'altro: chi nel pannello ci ha messo «3,6K» o
+// ha cambiato del tutto il senso della casella non se lo vede sovrascrivere
+// ogni dieci minuti.
+//
+// I follower non sono qui perche non passano da una casella di testo: la
+// pagina li stampa da config.dati.follower (`{{sito.follower}}`, i nodi
+// marcati data-follower), che applicaNumeri() scrive comunque. Gli abbonati
+// invece stanno ancora in un campo che si puo scrivere a mano.
 const CAMPI_NUMERI = {
-  follower: ['deck.dato1Valore', 'chi.dato1Valore'],
   abbonati: ['chi.dato2Valore']
 };
 
@@ -684,6 +773,8 @@ function applicaNumeri(documento, numeri) {
     const valore = numeri[nome];
     if (valore === null || valore === undefined || !Number.isFinite(Number(valore))) { continue; }
     if (dati[nome] !== valore) { dati[nome] = valore; cambiate.push('config.dati.' + nome); }
+    // I follower non hanno caselle di testo: si fermano a config.dati.
+    if (!CAMPI_NUMERI[nome]) { continue; }
 
     const scritto = formattaNumero(valore);
     for (const chiave of CAMPI_NUMERI[nome]) {
@@ -790,6 +881,27 @@ function racconta(esito) {
   }
 }
 
+/** Lo stesso, per i follower. */
+function raccontaFollower(esito) {
+  if (!esito || !esito.stato) { return ''; }
+  switch (esito.stato) {
+    case 'spento':
+      return 'Follower: presi dai contenuti (il collegamento con Twitch non e configurato).';
+    case 'senzaCanale':
+      return 'Follower: manca l ID del canale (campo config.twitch.idUtente), non ho chiesto niente a Twitch.';
+    case 'aggiornato':
+      return 'Follower: aggiornati da Twitch — ' + esito.totale + ' (prima ' + esito.precedente + ').';
+    case 'invariato':
+      return 'Follower: gia aggiornati — ' + esito.totale + '.';
+    case 'vuoto':
+      return 'Follower: Twitch non ha dato nessun totale, tengo ' + esito.precedente + '.';
+    case 'fallito':
+      return 'Follower: non sono riuscito a chiederli a Twitch (' + esito.motivo + '). Tengo il numero che c era.';
+    default:
+      return '';
+  }
+}
+
 /** Lo stesso, per le clip. */
 function raccontaClip(esito) {
   if (!esito || !esito.stato) { return ''; }
@@ -820,6 +932,7 @@ function raccontaClip(esito) {
 module.exports = {
   credenziali, configurato, appToken, dimenticaToken, helix,
   titoloUltimaDiretta, aggiornaUltimaDiretta, racconta,
+  totaleFollower, contaFollower, aggiornaFollower, raccontaFollower,
   clipMigliori, aggiornaClip, raccontaClip,
   collegato, scollega, iniziaCollegamento, completaCollegamento, numeriCanale,
   applicaNumeri, aggiornaNumeri, raccontaNumeri, formattaNumero, eNumeroNudo,

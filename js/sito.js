@@ -2,8 +2,9 @@
    sito.js — AGENTE D · comportamenti della pagina
 
    Tutto ciò che non è il player e non è il pollo: voce di navigazione
-   attiva, conto alla rovescia, nastro della settimana, copia dell'email.
-   Zero dipendenze, nessun import, un solo IIFE.
+   attiva, conto alla rovescia, schedule della settimana (nastro ed eventi
+   speciali), copia dell'email. Zero dipendenze, nessun import, un solo
+   IIFE.
 
    La mascotte non sta più qui. Era un'immagine dietro al telaio del
    monitor con dodici pixel di parallasse; adesso è un pulsante vivo
@@ -15,7 +16,8 @@
 
    1. Ogni blocco si disinnesca da solo se i suoi elementi non ci sono.
       La pagina deve reggere anche incompleta: senza JS si perdono conto
-      alla rovescia, player e voce attiva, e nient'altro.
+      alla rovescia, player e voce attiva, e sul nastro le date, i segni
+      e l'ora di chi guarda. Orari, titoli e immagini sono già nell'HTML.
    2. Lo stato «in onda» NON si legge dal DOM: lo dice window.Player con
       suStato(). Il player è l'unico che lo conosce davvero.
    ===================================================================== */
@@ -30,21 +32,72 @@
   const GIORNI = Array.isArray(ORARI.giorni) && ORARI.giorni.length
     ? ORARI.giorni.filter(function (g) { return typeof g === 'number' && g >= 0 && g <= 6; })
     : [];
-  const ORA_DIRETTA = orologio(ORARI.ora);
+  const ORA_DIRETTA = orologio(ORARI.ora, { ora: 21, minuto: 0 });
+  // Quattro ore è la durata dei dati reali del canale (CONTRATTO §11): vale
+  // solo se dati.js non ne porta una, cioè mai con una generazione recente.
+  const DURATA_SERIE = durata(ORARI.durataOre, 4);
+  const EVENTI = eventiDi(ORARI.eventi);
+
+  const ORA_MS = 3600000;
+  const GIORNO_MS = 86400000;
+  const MESI = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+  const GIORNI_BREVI = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+
+  // Le etichette dei segni. I ripieghi sono i valori di partenza dello
+  // schema (CONTRATTO-5 §4): servono solo con un dati.js più vecchio.
+  const ETICHETTE = {
+    onda: frase(TESTI.etichettaInOnda, 'In onda'),
+    oggi: frase(TESTI.etichettaOggi, 'Oggi'),
+    prossima: frase(TESTI.etichettaProssima, 'Prossima'),
+    evento: frase(TESTI.etichettaEvento, 'Speciale')
+  };
+  const DA_TE = frase(TESTI.etichettaDaTe, 'Da te');
 
   function frase(valore, ripiego) {
     return (typeof valore === 'string' && valore.trim()) ? valore.trim() : ripiego;
   }
 
-  // "21:00" -> { ora: 21, minuto: 0 }. Qualunque forma strana ricade sulle 21.
-  function orologio(testo) {
-    const parti = frase(testo, '21:00').split(':');
+  // "21:00" -> { ora: 21, minuto: 0 }. Qualunque forma strana ricade sul
+  // ripiego: per un giorno è l'ora di serie, per l'ora di serie le 21.
+  function orologio(testo, ripiego) {
+    const parti = frase(testo, '').split(':');
     const h = parseInt(parti[0], 10);
     const m = parseInt(parti[1], 10);
-    return {
-      ora: (h >= 0 && h <= 23) ? h : 21,
-      minuto: (m >= 0 && m <= 59) ? m : 0
-    };
+    if (parti.length !== 2 || !(h >= 0 && h <= 23) || !(m >= 0 && m <= 59)) { return ripiego; }
+    return { ora: h, minuto: m };
+  }
+
+  function durata(valore, ripiego) {
+    const n = Number(valore);
+    return (isFinite(n) && n > 0) ? n : ripiego;
+  }
+
+  // Ora e durata EFFETTIVE di un giorno acceso: dati.js le porta già
+  // risolte (ore, durate); un giorno che non c'è vale quelle di serie.
+  function oraDi(giorno) {
+    return orologio(ORARI.ore && ORARI.ore[String(giorno)], ORA_DIRETTA);
+  }
+
+  function durataDi(giorno) {
+    return durata(ORARI.durate && ORARI.durate[String(giorno)], DURATA_SERIE);
+  }
+
+  // Gli eventi speciali come istanti: quelli illeggibili si scartano invece
+  // di fermare il conto alla rovescia. `indice` è la posizione in
+  // config.orari.eventi, la stessa di li.evento[data-evento]; `data` è il
+  // giorno di calendario del canale, già calcolato dalla generazione.
+  function eventiDi(elenco) {
+    return (Array.isArray(elenco) ? elenco : [])
+      .map(function (e) {
+        return {
+          indice: e && typeof e.indice === 'number' ? e.indice : null,
+          data: e && typeof e.data === 'string' ? e.data : '',
+          inizio: Date.parse(e && e.inizio),
+          termine: Date.parse(e && e.termine)
+        };
+      })
+      .filter(function (e) { return isFinite(e.inizio) && isFinite(e.termine) && e.termine > e.inizio; })
+      .sort(function (a, b) { return a.inizio - b.inizio; });
   }
 
   function due(n) { return n < 10 ? '0' + n : String(n); }
@@ -163,25 +216,29 @@
 
   // hourCycle 'h23' e non hour12:false: con hour12 alcuni motori usano il
   // ciclo h24 e restituiscono «24» a mezzanotte, che poi sfalsa i conti.
-  const FORMATO = new Intl.DateTimeFormat('en-GB', {
-    timeZone: FUSO,
+  const CAMPI = {
     hourCycle: 'h23',
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
     weekday: 'short'
-  });
+  };
+  const FORMATO = new Intl.DateTimeFormat('en-GB', Object.assign({ timeZone: FUSO }, CAMPI));
+  // Lo stesso senza fuso: è l'orologio di chi guarda, per «Da te 15:00».
+  const FORMATO_LOCALE = new Intl.DateTimeFormat('en-GB', CAMPI);
 
   const SETTIMANA = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
-  // Componenti dell'orologio da parete di Roma per un dato istante.
-  function partiFuso(data) {
-    const parti = { giornoSettimana: 0 };
-    FORMATO.formatToParts(data).forEach(function (p) {
-      if (p.type === 'weekday') { parti.giornoSettimana = SETTIMANA[p.value] || 0; }
-      else if (p.type !== 'literal') { parti[p.type] = parseInt(p.value, 10); }
+  // Componenti dell'orologio da parete per un dato istante.
+  function parti(formato, data) {
+    const esito = { giornoSettimana: 0 };
+    formato.formatToParts(data).forEach(function (p) {
+      if (p.type === 'weekday') { esito.giornoSettimana = SETTIMANA[p.value] || 0; }
+      else if (p.type !== 'literal') { esito[p.type] = parseInt(p.value, 10); }
     });
-    return parti;   // { year, month, day, hour, minute, second, giornoSettimana }
+    return esito;   // { year, month, day, hour, minute, second, giornoSettimana }
   }
+
+  function partiFuso(data) { return parti(FORMATO, data); }
 
   // Offset del fuso in millisecondi per quell'istante (positivo a est).
   function scartoFuso(data) {
@@ -200,26 +257,6 @@
     let ts = nominale - scartoFuso(new Date(nominale));
     ts = nominale - scartoFuso(new Date(ts));
     return ts;
-  }
-
-  // Prima diretta successiva all'istante dato: { ts, giorno } oppure null.
-  function prossimaDiretta(adesso) {
-    if (!GIORNI.length) { return null; }
-    const p = partiFuso(adesso);
-    const oggiUtc = Date.UTC(p.year, p.month - 1, p.day);
-
-    for (let salto = 0; salto <= 8; salto++) {
-      // Aritmetica sul calendario UTC, che non ha ora legale: sommare
-      // 86.400.000 ms all'ora locale sbaglierebbe nei giorni da 23 o 25 ore.
-      const g = new Date(oggiUtc + salto * 86400000);
-      const giorno = g.getUTCDay();
-      if (GIORNI.indexOf(giorno) === -1) { continue; }
-
-      const ts = istanteFuso(g.getUTCFullYear(), g.getUTCMonth() + 1, g.getUTCDate(),
-                             ORA_DIRETTA.ora, ORA_DIRETTA.minuto);
-      if (ts > adesso.getTime()) { return { ts: ts, giorno: giorno }; }
-    }
-    return null;
   }
 
   // "2g 04:31:07" · sotto il giorno si lascia cadere il "0g".
@@ -255,43 +292,287 @@
            segno + due(Math.floor(minuti / 60)) + ':' + due(minuti % 60);
   }
 
+  function chiaveData(anno, mese, giorno) {
+    return anno + '-' + due(mese) + '-' + due(giorno);
+  }
+
   /* ===================================================================
-     3. CONTO ALLA ROVESCIA + NASTRO DELLA SETTIMANA
+     3. LA SETTIMANA IN UN ISTANTE
      ===================================================================
-     Stanno insieme perché guardano lo stesso calcolo: la prossima diretta
-     serve al conto e serve a marcare .is-prossima sul nastro. Il tempo
-     scorre in un solo timer da un secondo, e il DOM si tocca solo quando
-     un valore cambia davvero.
+     Tutto quello che conto alla rovescia, nastro ed eventi devono sapere
+     esce da un calcolo solo, fatto su un istante: così i tre non possono
+     contraddirsi (il nastro che segna «prossima» un giorno e il conto che
+     conta verso un altro).
+
+     Le dirette regolari si guardano come FINESTRE, inizio e fine, da ieri a
+     fra sette giorni. Ieri serve per la diretta cominciata prima di
+     mezzanotte e non ancora finita: alle 00:30 di martedì la diretta del
+     lunedì sera è ancora in corso, e la sua data è ancora quella di lunedì.
+     Il calendario si scorre in UTC, che non ha ora legale: sommare
+     86.400.000 ms all'ora locale sbaglierebbe nei giorni da 23 o 25 ore.
      =================================================================== */
-  function tempo() {
-    const conto = document.getElementById('conto');
-    const giorni = document.querySelectorAll('#nastro .nastro__giorno[data-giorno]');
-    if (!conto && !giorni.length) { return; }
+  function calcola(adesso) {
+    const p = partiFuso(new Date(adesso));
+    const oggiUtc = Date.UTC(p.year, p.month - 1, p.day);
 
-    const statoLive = frase(TESTI.statoLive, 'In onda adesso');
-    let inOnda = false;
-    let ultimoBersaglio = null;
-    let ultimoOggi = null;
-
-    function segnaNastro(oggi, prossimo) {
-      if (!giorni.length || (oggi === ultimoOggi && prossimo === ultimoBersaglio)) { return; }
-      giorni.forEach(function (li) {
-        const indice = parseInt(li.getAttribute('data-giorno'), 10);
-        li.classList.toggle('is-oggi', indice === oggi);
-        li.classList.toggle('is-prossima', prossimo !== null && indice === prossimo);
+    const finestre = [];
+    for (let salto = -1; salto <= 7; salto++) {
+      const d = new Date(oggiUtc + salto * GIORNO_MS);
+      const giorno = d.getUTCDay();
+      if (GIORNI.indexOf(giorno) === -1) { continue; }
+      const o = oraDi(giorno);
+      const inizio = istanteFuso(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), o.ora, o.minuto);
+      finestre.push({
+        giorno: giorno,
+        data: chiaveData(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()),
+        testo: d.getUTCDate() + ' ' + MESI[d.getUTCMonth()],
+        inizio: inizio,
+        termine: inizio + durataDi(giorno) * ORA_MS
       });
     }
 
+    // Le finestre escono già in ordine di inizio: i giorni sono in ordine e
+    // un'ora del giorno dopo viene sempre dopo, qualunque sia la durata.
+    let prossimaRegolare = null;
+    let inCorso = null;
+    finestre.forEach(function (f) {
+      if (!prossimaRegolare && f.inizio > adesso) { prossimaRegolare = f; }
+      if (f.inizio <= adesso && adesso < f.termine) { inCorso = f; }
+    });
+
+    const vivi = EVENTI.filter(function (e) { return e.termine > adesso; });
+    let prossimoEvento = null;
+    vivi.forEach(function (e) { if (!prossimoEvento && e.inizio > adesso) { prossimoEvento = e; } });
+
+    // La partenza più vicina fra giorni ed eventi. A pari istante vince
+    // l'evento: se cade sull'ora di una diretta regolare, è quella serata
+    // a essere speciale.
+    let prossima = null;
+    if (prossimaRegolare) { prossima = { ts: prossimaRegolare.inizio, giorno: prossimaRegolare.giorno, evento: null }; }
+    if (prossimoEvento && (!prossima || prossimoEvento.inizio <= prossima.ts)) {
+      prossima = { ts: prossimoEvento.inizio, giorno: null, evento: prossimoEvento };
+    }
+
+    // La prossima occorrenza di ogni giorno. Un giorno acceso è la sua
+    // prima finestra non ancora finita (oggi conta finché la diretta di oggi
+    // non è finita); un giorno di riposo è la prossima data con quel nome,
+    // oggi compreso.
+    const occorrenze = [];
+    for (let g = 0; g < 7; g++) {
+      if (GIORNI.indexOf(g) !== -1) {
+        let trovata = null;
+        finestre.forEach(function (f) { if (!trovata && f.giorno === g && f.termine > adesso) { trovata = f; } });
+        occorrenze[g] = trovata;
+      } else {
+        const d = new Date(oggiUtc + ((g - p.giornoSettimana + 7) % 7) * GIORNO_MS);
+        occorrenze[g] = {
+          giorno: g,
+          data: chiaveData(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()),
+          testo: d.getUTCDate() + ' ' + MESI[d.getUTCMonth()],
+          inizio: null
+        };
+      }
+    }
+
+    // La data di ogni evento non finito, nel fuso del canale: quella della
+    // generazione se c'è, altrimenti si ricava dall'istante.
+    const dateEventi = vivi.map(function (e) {
+      if (/^d{4}-d{2}-d{2}$/.test(e.data)) { return e.data; }
+      const q = partiFuso(new Date(e.inizio));
+      return chiaveData(q.year, q.month, q.day);
+    });
+
+    return {
+      adesso: adesso,
+      oggi: p.giornoSettimana,
+      prossima: prossima,
+      inCorso: inCorso,
+      occorrenze: occorrenze,
+      dateEventi: dateEventi
+    };
+  }
+
+  // L'ora di chi guarda, se è diversa da quella del canale: «15:00», oppure
+  // «mar 04:00» quando da lui è già un altro giorno. '' se coincide.
+  function oraLocale(ts) {
+    const qui = parti(FORMATO_LOCALE, new Date(ts));
+    const la = partiFuso(new Date(ts));
+    if (qui.hour === la.hour && qui.minute === la.minute) { return ''; }
+    const ora = due(qui.hour) + ':' + due(qui.minute);
+    return qui.day === la.day ? ora : GIORNI_BREVI[qui.giornoSettimana] + ' ' + ora;
+  }
+
+  /* ===================================================================
+     4. SCRITTURA NEL DOM — solo quando un valore cambia
+     ===================================================================
+     Il battito è ogni secondo, ma date, segni e ora locale cambiano poche
+     volte al giorno: ogni scrittura confronta prima con quello che c'è già,
+     così il browser non ricalcola l'impaginazione di sette locandine a ogni
+     tic. =============================================================== */
+  function metti(elemento, classe, acceso) {
+    if (elemento.classList.contains(classe) !== acceso) { elemento.classList.toggle(classe, acceso); }
+  }
+
+  function scrivi(nodo, testo) {
+    if (nodo && nodo.textContent !== testo) { nodo.textContent = testo; }
+  }
+
+  // Le etichette dei segni. La memoria tiene la firma dell'ultima scrittura:
+  // uguale, non si tocca niente. Quelle scritte qui hanno js-segno, così
+  // l'etichetta fissa «Speciale» degli eventi, che viene dal modello, resta.
+  function segni(contenitore, memoria, tipi) {
+    if (!contenitore) { return; }
+    const firma = tipi.join('|');
+    if (memoria.firma === firma) { return; }
+    memoria.firma = firma;
+    contenitore.querySelectorAll('.js-segno').forEach(function (n) { n.remove(); });
+    tipi.forEach(function (tipo) {
+      const segno = document.createElement('span');
+      segno.className = 'segno segno--' + tipo + ' js-segno';
+      if (tipo === 'onda') {
+        const spia = document.createElement('span');
+        spia.className = 'spia is-live';
+        spia.setAttribute('aria-hidden', 'true');
+        segno.appendChild(spia);
+      }
+      segno.appendChild(document.createTextNode(ETICHETTE[tipo]));
+      contenitore.appendChild(segno);
+    });
+  }
+
+  // «Da te 15:00» subito dopo la riga dell'orario; il paragrafo nasce la
+  // prima volta che serve e poi si nasconde e si riaccende.
+  function scriviLocale(dopo, classe, memoria, ts) {
+    if (!dopo) { return; }
+    const ora = ts === null ? '' : oraLocale(ts);
+    if (memoria.locale === ora) { return; }
+    memoria.locale = ora;
+    if (!ora) {
+      if (memoria.nodoLocale) { memoria.nodoLocale.hidden = true; }
+      return;
+    }
+    if (!memoria.nodoLocale) {
+      memoria.nodoLocale = document.createElement('p');
+      memoria.nodoLocale.className = classe;
+      dopo.insertAdjacentElement('afterend', memoria.nodoLocale);
+    }
+    memoria.nodoLocale.hidden = false;
+    memoria.nodoLocale.textContent = DA_TE + ' ' + ora;
+  }
+
+  /* ===================================================================
+     5. CONTO ALLA ROVESCIA + NASTRO + EVENTI
+     ===================================================================
+     Un solo timer da un secondo per tutti e tre.
+
+     Nastro: is-oggi sul giorno di oggi nel fuso del canale; is-prossima sul
+     giorno della prossima partenza se è una diretta regolare (se è un
+     evento va sul suo li.evento); is-in-onda quando il player dice acceso,
+     sul giorno della finestra in corso — la diretta di lunedì che sfora
+     dopo mezzanotte resta di lunedì — e, fuori da ogni finestra, su oggi.
+     Un giorno la cui prossima occorrenza cade nella data di un evento
+     prende ha-evento.
+
+     Eventi: quello finito si toglie, e se non ne resta nessuno si nasconde
+     tutto il blocco.
+     =================================================================== */
+  function tempo() {
+    const conto = document.getElementById('conto');
+    const giorni = Array.prototype.map.call(
+      document.querySelectorAll('#nastro .nastro__giorno[data-giorno]'),
+      function (li) {
+        return {
+          li: li,
+          giorno: parseInt(li.getAttribute('data-giorno'), 10),
+          data: li.querySelector('.nastro__data'),
+          segni: li.querySelector('.nastro__segni'),
+          quando: li.querySelector('.nastro__quando')
+        };
+      }
+    );
+    const bloccoEventi = document.querySelector('.eventi[data-sb-parte="eventi"]');
+    const eventi = Array.prototype.map.call(
+      document.querySelectorAll('.eventi li.evento[data-inizio][data-fine]'),
+      function (li) {
+        return {
+          li: li,
+          indice: parseInt(li.getAttribute('data-evento'), 10),
+          inizio: Date.parse(li.getAttribute('data-inizio')),
+          termine: Date.parse(li.getAttribute('data-fine')),
+          segni: li.querySelector('.evento__segni'),
+          quando: li.querySelector('.evento__quando'),
+          tolto: false
+        };
+      }
+    );
+    if (!conto && !giorni.length && !eventi.length) { return; }
+
+    const statoLive = frase(TESTI.statoLive, 'In onda adesso');
+    let inOnda = false;
+
+    function nastro(stato) {
+      giorni.forEach(function (v) {
+        const g = v.giorno;
+        const occorrenza = stato.occorrenze[g] || null;
+        const oggi = g === stato.oggi;
+        const prossima = !!stato.prossima && stato.prossima.evento === null && stato.prossima.giorno === g;
+        const inOndaQui = inOnda && (stato.inCorso ? stato.inCorso.giorno === g : oggi);
+        const haEvento = !!occorrenza && stato.dateEventi.indexOf(occorrenza.data) !== -1;
+
+        metti(v.li, 'is-oggi', oggi);
+        metti(v.li, 'is-prossima', prossima);
+        metti(v.li, 'is-in-onda', inOndaQui);
+        metti(v.li, 'ha-evento', haEvento);
+        scrivi(v.data, occorrenza ? occorrenza.testo : '');
+
+        const tipi = [];
+        if (inOndaQui) { tipi.push('onda'); }
+        if (oggi) { tipi.push('oggi'); }
+        if (prossima) { tipi.push('prossima'); }
+        if (haEvento) { tipi.push('evento'); }
+        segni(v.segni, v, tipi);
+
+        scriviLocale(v.quando, 'nastro__locale', v, occorrenza && occorrenza.inizio !== null ? occorrenza.inizio : null);
+      });
+    }
+
+    function speciali(stato) {
+      let restano = 0;
+      eventi.forEach(function (v) {
+        if (v.tolto) { return; }
+        // Un data-fine illeggibile non fa sparire l'evento: meglio uno
+        // speciale di troppo che uno cancellato per un errore.
+        if (isFinite(v.termine) && v.termine <= stato.adesso) {
+          v.li.remove();
+          v.tolto = true;
+          return;
+        }
+        restano++;
+        const evento = stato.prossima && stato.prossima.evento;
+        // Si riconosce dall'indice; con un dati.js che non lo porta, dall'istante.
+        const prossima = !!evento && (evento.indice !== null ? evento.indice === v.indice : evento.inizio === v.inizio);
+        const inOndaQui = inOnda && v.inizio <= stato.adesso && stato.adesso < v.termine;
+        metti(v.li, 'is-prossima', prossima);
+        metti(v.li, 'is-in-onda', inOndaQui);
+        const tipi = [];
+        if (inOndaQui) { tipi.push('onda'); }
+        if (prossima) { tipi.push('prossima'); }
+        segni(v.segni, v, tipi);
+        scriviLocale(v.quando, 'evento__locale', v, isFinite(v.inizio) ? v.inizio : null);
+      });
+      if (bloccoEventi && eventi.length && bloccoEventi.hidden !== (restano === 0)) {
+        bloccoEventi.hidden = restano === 0;
+      }
+    }
+
     function battito() {
-      const adesso = new Date();
-      const prossima = prossimaDiretta(adesso);
+      const adesso = Date.now();
+      const stato = calcola(adesso);
 
       // Il nastro si aggiorna anche in diretta: «oggi» cambia a mezzanotte
       // di Roma, non a quella del visitatore.
-      const oggi = partiFuso(adesso).giornoSettimana;
-      segnaNastro(oggi, prossima ? prossima.giorno : null);
-      ultimoOggi = oggi;
-      ultimoBersaglio = prossima ? prossima.giorno : null;
+      if (giorni.length) { nastro(stato); }
+      if (eventi.length) { speciali(stato); }
 
       if (!conto) { return; }
 
@@ -299,17 +580,20 @@
         // In onda il conto non ha senso: al suo posto va lo stato, e
         // l'attributo datetime porta comunque un istante leggibile.
         if (conto.textContent !== statoLive) { conto.textContent = statoLive; }
-        if (prossima) { conto.setAttribute('datetime', istanteIso(prossima.ts)); }
+        if (stato.prossima) {
+          const iso = istanteIso(stato.prossima.ts);
+          if (conto.getAttribute('datetime') !== iso) { conto.setAttribute('datetime', iso); }
+        }
         return;
       }
 
-      if (!prossima) {
-        // Nessun giorno di diretta configurato: si lascia in pagina il
-        // testo degli orari già scritto dalla generazione.
+      if (!stato.prossima) {
+        // Nessun giorno di diretta e nessun evento in arrivo: si lascia in
+        // pagina il testo degli orari già scritto dalla generazione.
         return;
       }
 
-      const restano = prossima.ts - adesso.getTime();
+      const restano = stato.prossima.ts - adesso;
       const testo = conta(restano);
       if (conto.textContent !== testo) { conto.textContent = testo; }
       conto.setAttribute('datetime', durataIso(restano));
@@ -336,7 +620,7 @@
   }
 
   /* ===================================================================
-     4. COPIA DELL'EMAIL
+     6. COPIA DELL'EMAIL
      ===================================================================
      navigator.clipboard esiste solo in contesto sicuro (https o
      localhost): aprendo il file con doppio clic non c'è, e serve il
@@ -396,7 +680,7 @@
   }
 
   /* ===================================================================
-     5. Avvio
+     7. Avvio
      ===================================================================
      Ogni blocco è isolato: se uno lancia, gli altri devono partire lo
      stesso. Un errore in un dettaglio decorativo non può portarsi via il

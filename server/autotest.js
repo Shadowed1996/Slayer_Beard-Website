@@ -39,6 +39,10 @@ const schema = require('../contenuti/schema.js');
 
 /* --- MINIMO INDISPENSABILE PER PROVARE ------------------------------ */
 
+// La password del server di prova: la crea la sezione 8 al primo avvio, e la
+// sezione 11 la usa per rientrare con un server suo.
+const PASSWORD_COLLAUDO = 'pollaio-viola-' + crypto.randomInt(1000, 9999);
+
 const esiti = [];
 let sezione = '';
 
@@ -1303,7 +1307,7 @@ async function proveApi(costruisci) {
   const server = creaServer();
   await new Promise((risolvi) => server.listen(0, '127.0.0.1', risolvi));
   const porta = server.address().port;
-  const PASSWORD = 'pollaio-viola-' + crypto.randomInt(1000, 9999);
+  const PASSWORD = PASSWORD_COLLAUDO;
   let biscotto = null;
 
   try {
@@ -1742,6 +1746,86 @@ async function proveTwitch(costruisci, archivio) {
     }
   });
 
+  await prova('il totale dei follower si legge dalla risposta, e null e «non lo so»', () => {
+    // Con un app token helix/channels/followers da la lista vuota ma il
+    // totale pieno: e il totale l unica cosa che si legge. Zero e un
+    // numero (un canale senza follower), null e una risposta senza numero.
+    esigiUguale(twitch.totaleFollower({ total: 3619, data: [], pagination: {} }), 3619, 'totale intero');
+    esigiUguale(twitch.totaleFollower({ total: '4021', data: [] }), 4021, 'totale come testo');
+    esigiUguale(twitch.totaleFollower({ total: 0, data: [] }), 0, 'zero e zero');
+    for (const storto of [null, undefined, {}, { data: [] }, { total: 'tanti' }, { total: -5 }, { total: null }]) {
+      esigiUguale(twitch.totaleFollower(storto), null, 'totaleFollower(' + JSON.stringify(storto) + ')');
+    }
+  });
+
+  await prova('i follower seguono le stesse regole di «Ultima diretta»: mai un lancio, mai un numero perso', async () => {
+    const followerSalvati = () => archivio.leggi().config.dati.follower;
+    const prima = followerSalvati();
+    esigi(typeof prima === 'number' && prima > 0, 'nei contenuti di prova manca un numero di follower');
+
+    // Senza credenziali: spento, e i contenuti non si toccano.
+    togliCredenziali();
+    let esito = await twitch.aggiornaFollower();
+    esigiUguale(esito.stato, 'spento', 'senza credenziali');
+    esigiUguale(followerSalvati(), prima, 'ha toccato i follower senza credenziali');
+
+    // File rotto: fallito, detto, e i contenuti non si toccano.
+    scriviCredenziali('module.exports = { questo non e javascript');
+    esito = await twitch.aggiornaFollower();
+    esigiUguale(esito.stato, 'fallito', 'file rotto');
+    esigiUguale(followerSalvati(), prima, 'ha toccato i follower con il file rotto');
+    togliCredenziali();
+
+    // Senza ID del canale non parte nessuna richiesta.
+    scriviCredenziali({ clientId: 'abcdef1234567890abcdef', clientSecret: 'unsegretolungoabbastanza' });
+    const documento = archivio.leggi();
+    const idVero = documento.config.twitch.idUtente;
+    documento.config.twitch.idUtente = '';
+    archivio.salva(documento);
+    try {
+      esito = await twitch.aggiornaFollower();
+      esigiUguale(esito.stato, 'senzaCanale', 'senza canale');
+      esigiUguale(followerSalvati(), prima, 'ha toccato i follower senza canale');
+    } finally {
+      const rimesso = archivio.leggi();
+      rimesso.config.twitch.idUtente = idVero;
+      archivio.salva(rimesso);
+      togliCredenziali();
+    }
+  });
+
+  await prova('ogni stato dei follower ha la sua riga, e raccontaFollower() non lancia mai', () => {
+    for (const stato of ['spento', 'senzaCanale', 'aggiornato', 'invariato', 'vuoto', 'fallito']) {
+      const riga = twitch.raccontaFollower({ stato: stato, totale: 3700, precedente: 3619, motivo: 'un motivo' });
+      esigi(typeof riga === 'string' && riga.length > 0, 'nessuna riga per lo stato ' + stato);
+    }
+    esigiDentro(twitch.raccontaFollower({ stato: 'aggiornato', totale: 3700, precedente: 3619 }), '3700', 'il totale nuovo nella riga');
+    for (const storto of [null, undefined, {}, { stato: 'inventato' }]) {
+      esigiUguale(twitch.raccontaFollower(storto), '', 'raccontaFollower(' + JSON.stringify(storto) + ')');
+    }
+  });
+
+  await prova('il numero dei follower stampato in pagina e quello dei contenuti, con il punto delle migliaia', () => {
+    // Il valore non si scrive piu a mano in due posti (deck.dato1Valore e
+    // chi.dato1Valore non esistono piu): la pagina lo prende da
+    // config.dati.follower, una volta in copertina e una in «Chi sono».
+    const documento = archivio.leggi();
+    const originale = documento.config.dati.follower;
+    try {
+      documento.config.dati.follower = 1234567;
+      archivio.salva(documento);
+      const reso = costruisci.rendi(archivio.leggi());
+      const trovati = reso.html.match(/data-follower>([^<]*)</g) || [];
+      esigiUguale(trovati.length, 2, 'nodi data-follower in pagina');
+      esigi(trovati.every((x) => x === 'data-follower>1.234.567<'), 'numero stampato: ' + trovati.join(' | '));
+      esigi(reso.html.indexOf('deck.dato1Valore') === -1 && reso.html.indexOf('chi.dato1Valore') === -1, 'il valore scritto a mano e ancora in pagina');
+    } finally {
+      const rimesso = archivio.leggi();
+      rimesso.config.dati.follower = originale;
+      archivio.salva(rimesso);
+    }
+  });
+
   await prova('l aggiornamento automatico non parte senza collegamento', () => {
     // E la domanda che si fa chi guarda «Ultima diretta» ferma da una
     // settimana: il server deve dirlo all avvio invece di tacere, e non
@@ -1810,19 +1894,24 @@ async function proveTwitch(costruisci, archivio) {
 
   await prova('i numeri riscrivono solo le caselle che contengono un numero', () => {
     const documento = {
-      testi: { 'deck.dato1Valore': '3.619', 'chi.dato1Valore': '3,6K', 'chi.dato2Valore': '90' },
+      testi: { 'chi.dato2Valore': '90' },
       config: { dati: { follower: 3619, abbonati: 90 } }
     };
-    const cambiate = twitch.applicaNumeri(documento, { follower: 3624, abbonati: null });
-    esigiUguale(documento.testi['deck.dato1Valore'], '3.624', 'la casella col numero');
-    // Chi ha scritto «3,6K» nel pannello l ha fatto apposta.
-    esigiUguale(documento.testi['chi.dato1Valore'], '3,6K', 'la casella scritta a mano');
-    // Abbonati non letti: non si svuota niente.
-    esigiUguale(documento.testi['chi.dato2Valore'], '90', 'abbonati non letti');
-    esigiUguale(documento.config.dati.abbonati, 90, 'config.dati.abbonati');
-    esigiUguale(cambiate.join(','), 'config.dati.follower,deck.dato1Valore', 'chiavi cambiate');
+    const cambiate = twitch.applicaNumeri(documento, { follower: 3624, abbonati: 96 });
+    // I follower non passano da una casella: la pagina li stampa da qui.
+    esigiUguale(documento.config.dati.follower, 3624, 'config.dati.follower');
+    esigiUguale(documento.testi['chi.dato2Valore'], '96', 'la casella col numero');
+    esigiUguale(documento.config.dati.abbonati, 96, 'config.dati.abbonati');
+    esigiUguale(cambiate.join(','), 'config.dati.follower,config.dati.abbonati,chi.dato2Valore', 'chiavi cambiate');
     // Due giri di fila non cambiano niente la seconda volta.
-    esigiUguale(twitch.applicaNumeri(documento, { follower: 3624, abbonati: null }).length, 0, 'secondo giro');
+    esigiUguale(twitch.applicaNumeri(documento, { follower: 3624, abbonati: 96 }).length, 0, 'secondo giro');
+    // Abbonati non letti: non si svuota niente.
+    esigiUguale(twitch.applicaNumeri(documento, { follower: 3624, abbonati: null }).length, 0, 'abbonati non letti');
+    esigiUguale(documento.testi['chi.dato2Valore'], '96', 'la casella resta');
+    // Chi ha scritto «3,6K» nel pannello l ha fatto apposta.
+    const aMano = { testi: { 'chi.dato2Valore': '3,6K' }, config: { dati: {} } };
+    twitch.applicaNumeri(aMano, { follower: 3624, abbonati: 96 });
+    esigiUguale(aMano.testi['chi.dato2Valore'], '3,6K', 'la casella scritta a mano');
   });
 
   await prova('le caselle dei numeri esistono davvero nei contenuti e nello schema', () => {
@@ -2132,6 +2221,562 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
   });
 }
 
+/* --- 11. LA SCHEDULE (CONTRATTO-5) ------------------------------------ */
+
+/*
+   La schedule rifatta ha tre strati, e qui si provano tutti e tre:
+   - pannello/condivisi/orari.js, le regole pure (forma pulita, problemi,
+     conti con i fusi orari). Lo stesso file gira nel pannello: se qui una
+     regola cambia, cambia anche accanto alle caselle;
+   - la generazione: il contesto della sezione, gli eventi ancora da venire,
+     il fondale, il testo degli orari e il ramo `orari` di js/dati.js;
+   - il salvataggio: convalida, unione in blocco, immagini in uso e percorsi
+     esterni, passando dalle API vere come fa il pannello.
+   Gli istanti sono sempre fissati a mano: un collaudo che dipende dal
+   giorno in cui gira un giorno fallisce per conto suo.
+*/
+async function proveSchedule(contenutiVeri, costruisci, archivio) {
+  apriSezione('11. La schedule (CONTRATTO-5)');
+
+  const O = require('../pannello/condivisi/orari.js');
+  const copia = (valore) => JSON.parse(JSON.stringify(valore));
+  const percorsiDi = (orari) => O.problemi(orari).map((p) => p.percorso);
+  const ISO = (ms) => new Date(ms).toISOString();
+
+  /** Un ramo orari valido e completo, da sporcare una prova alla volta. */
+  const orariBuoni = () => ({
+    giorni: [1, 3, 5, 0], ora: '21:00', durataOre: 4, fuso: 'Europe/Rome',
+    schede: [0, 1, 2, 3, 4, 5, 6].map(() => O.schedaVuota()),
+    eventi: [],
+    sfondo: { immagine: 'img/settimana-sfondo.webp', fuoco: { x: 50, y: 50 }, intensita: 30 }
+  });
+  /** Un evento valido, con le aggiunte che servono alla prova. */
+  const evento = (aggiunte) => Object.assign(O.eventoVuoto(), { data: '2026-09-27', ora: '15:00', durataOre: 12, titolo: 'Maratona' }, aggiunte || {});
+  /** Esige che problemi() segnali proprio quel percorso, e niente altro. */
+  const soloSu = (orari, percorso, cosa) => {
+    const trovati = percorsiDi(orari);
+    esigi(trovati.length === 1 && trovati[0] === percorso,
+      (cosa || percorso) + ': atteso un problema solo su ' + percorso + ', avuti ' + JSON.stringify(trovati));
+  };
+  const nessuno = (orari, cosa) => {
+    const trovati = O.problemi(orari);
+    esigi(trovati.length === 0, (cosa || 'valore buono') + ': problemi inattesi ' + JSON.stringify(trovati));
+  };
+
+  /* --- le regole pure ------------------------------------------------ */
+
+  await prova('orari.js: tabelle congelate, giorni da domenica, lettura da lunedi, limiti del contratto', () => {
+    esigiUguale(O.GIORNI.length, 7, 'giorni');
+    esigiUguale(O.GIORNI[0].abbr + ' ' + O.GIORNI[1].nome + ' ' + O.GIORNI[3].minuscolo, 'DOM Lunedì mercoledì', 'nomi dei giorni');
+    esigiUguale(O.ORDINE.join(','), '1,2,3,4,5,6,0', 'ordine di lettura');
+    const L = O.LIMITI;
+    esigiUguale([L.titolo, L.gioco, L.nota, L.notaEvento, L.eventi, L.veloMin, L.veloMax, L.velo, L.intensita, L.durataMin, L.durataMax, L.durataEventoMax].join(','),
+      '40,40,120,160,8,30,90,60,30,0.5,24,72', 'limiti');
+    for (const tabella of [O.LIMITI, O.GIORNI, O.GIORNI[2], O.ORDINE, O.MESI]) {
+      esigi(Object.isFrozen(tabella), 'una tabella condivisa non e congelata');
+    }
+    esigiUguale(JSON.stringify(O.schedaVuota()), JSON.stringify({ ora: '', durataOre: null, titolo: '', gioco: '', nota: '', immagine: '', fuoco: { x: 50, y: 50 }, velo: 60 }), 'scheda vuota');
+    esigi(O.schedaVuota() !== O.schedaVuota() && O.schedaVuota().fuoco !== O.schedaVuota().fuoco, 'i valori vuoti devono essere oggetti nuovi a ogni chiamata');
+  });
+
+  await prova('normalizza: la forma di prima (senza schede, eventi e fondale) diventa completa senza cambiare niente', () => {
+    const vecchio = { giorni: [1, 3, 5, 0], ora: '21:00', fuso: 'Europe/Rome', durataOre: 4 };
+    const pulito = O.normalizza(vecchio);
+    esigiUguale(Object.keys(pulito).join(','), 'giorni,ora,durataOre,fuso,schede,eventi,sfondo', 'chiavi del ramo');
+    esigiUguale(pulito.giorni.join(','), '1,3,5,0', 'giorni (ordine compreso)');
+    esigiUguale(pulito.ora + ' ' + pulito.durataOre + ' ' + pulito.fuso, '21:00 4 Europe/Rome', 'valori di serie');
+    esigiUguale(pulito.schede.length, 7, 'schede');
+    esigi(pulito.schede.every((s) => JSON.stringify(s) === JSON.stringify(O.schedaVuota())), 'le schede aggiunte non sono vuote');
+    esigiUguale(JSON.stringify(pulito.eventi) + JSON.stringify(pulito.sfondo), '[]' + JSON.stringify(O.sfondoVuoto()), 'eventi e fondale');
+    esigiUguale(JSON.stringify(O.normalizza(pulito)), JSON.stringify(pulito), 'normalizzare due volte cambia il ramo');
+    esigiUguale(JSON.stringify(vecchio), JSON.stringify({ giorni: [1, 3, 5, 0], ora: '21:00', fuso: 'Europe/Rome', durataOre: 4 }), 'il valore passato e stato modificato');
+  });
+
+  await prova('normalizza: valori sporchi stretti al bordo, testi su una riga e tagliati, e non lancia mai', () => {
+    for (const cosa of [undefined, null, 'orari', 42, [], { schede: 'x', eventi: {}, sfondo: [] }, { schede: [null, 3, 'x'], eventi: [null, 7] }]) {
+      const n = O.normalizza(cosa);
+      esigi(n.schede.length === 7 && Array.isArray(n.eventi) && n.sfondo && typeof n.ora === 'string', 'forma incompleta per ' + JSON.stringify(cosa));
+    }
+    const emoji = String.fromCodePoint(0x1f414);
+    const n = O.normalizza({
+      giorni: [1, '3', 3, 9, -1, 2.5], ora: ' 18:30 ', durataOre: 30, fuso: 'Marte/Base',
+      schede: [null, {
+        ora: '9:00', durataOre: 2.3, titolo: 'Horror\n  di  notte', gioco: 7, nota: 'x'.repeat(200),
+        immagine: 'https://altrosito.it/a.png', fuoco: { x: 120, y: -3.4 }, velo: 10
+      }, { durataOre: 0.1, immagine: ' contenuti/media/locandina.webp ', fuoco: { x: '30', y: 20.6 }, velo: 95 }],
+      eventi: [5, { data: '2026-02-30', ora: '15:00', durataOre: 100, titolo: emoji.repeat(30), immagine: 'contenuti/media/../server/dati/auth.json' }]
+        .concat([1, 2, 3, 4, 5, 6, 7, 8].map((i) => evento({ titolo: 'E' + i }))),
+      sfondo: { immagine: 'img/a b.png', fuoco: null, intensita: 200 }
+    });
+    esigiUguale(n.giorni.join(','), '1,3', 'giorni ripuliti e senza doppioni');
+    esigiUguale(n.ora + ' ' + n.durataOre + ' ' + n.fuso, '18:30 24 Europe/Rome', 'ora ripulita, durata stretta, fuso sconosciuto');
+    const lun = n.schede[1];
+    esigiUguale(lun.ora, '', 'ora storta di una scheda');
+    esigiUguale(lun.durataOre, 2.5, 'durata arrotondata alla mezz ora');
+    esigiUguale(lun.titolo, 'Horror di notte', 'titolo su una riga');
+    esigiUguale(lun.gioco, '', 'un numero non e un testo');
+    esigiUguale(lun.nota.length, 120, 'nota tagliata');
+    esigiUguale(lun.immagine, '', 'indirizzo esterno');
+    esigiUguale(lun.fuoco.x + ',' + lun.fuoco.y + ',' + lun.velo, '100,0,30', 'fuoco e velo stretti');
+    const mar = n.schede[2];
+    esigiUguale(mar.durataOre + ' ' + mar.immagine + ' ' + mar.fuoco.x + ',' + mar.fuoco.y + ' ' + mar.velo,
+      '0.5 contenuti/media/locandina.webp 30,21 90', 'secondo giro di valori');
+    esigiUguale(n.eventi.length, 8, 'eventi oltre il tetto');
+    esigiUguale(JSON.stringify(n.eventi[0]), JSON.stringify(O.eventoVuoto()), 'un evento non oggetto resta al suo posto, vuoto');
+    const rotto = n.eventi[1];
+    esigiUguale(rotto.data + '|' + rotto.durataOre + '|' + rotto.immagine, '|72|', 'data inesistente, durata stretta, risalita');
+    esigiUguale(rotto.titolo.length, 40, 'titolo tagliato');
+    const ultimo = rotto.titolo.charCodeAt(rotto.titolo.length - 1);
+    esigi(!(ultimo >= 0xd800 && ultimo <= 0xdbff), 'il taglio ha spezzato un emoji a meta');
+    esigiUguale(n.eventi[7].titolo, 'E6', 'gli eventi restano nell ordine in cui sono');
+    esigiUguale(n.sfondo.immagine + '|' + n.sfondo.fuoco.x + '|' + n.sfondo.intensita, '|50|100', 'fondale');
+  });
+
+  await prova('problemi: il ramo intero e le regole di sempre (giorni, ora, durata, fuso)', () => {
+    nessuno(orariBuoni(), 'ramo buono');
+    esigiUguale(JSON.stringify(percorsiDi(null)), '[""]', 'ramo non oggetto');
+    const casi = [
+      [{ giorni: [] }, 'giorni'], [{ giorni: [1, 1] }, 'giorni'], [{ giorni: [7] }, 'giorni'], [{ giorni: ['1'] }, 'giorni'],
+      [{ ora: '21.00' }, 'ora'], [{ ora: undefined }, 'ora'],
+      [{ durataOre: 0 }, 'durataOre'], [{ durataOre: 24.5 }, 'durataOre'], [{ durataOre: 2.3 }, 'durataOre'], [{ durataOre: '4' }, 'durataOre'],
+      [{ fuso: '' }, 'fuso'], [{ fuso: 'Marte/Base' }, 'fuso']
+    ];
+    for (const [modifica, percorso] of casi) {
+      soloSu(Object.assign(orariBuoni(), modifica), percorso, JSON.stringify(modifica));
+    }
+    nessuno(Object.assign(orariBuoni(), { durataOre: 0.5 }), 'durata minima');
+    nessuno(Object.assign(orariBuoni(), { durataOre: 2.5, giorni: [6] }), 'mezz ora e un giorno solo');
+    const fuso = O.problemi(Object.assign(orariBuoni(), { fuso: 'Marte/Base' }))[0].messaggio;
+    esigiUguale(fuso, 'Il fuso orario «Marte/Base» non esiste: usa un nome come Europe/Rome.', 'messaggio del fuso');
+    esigiUguale(O.problemi(Object.assign(orariBuoni(), { giorni: [3, 3] }))[0].messaggio, 'Il giorno mercoledì è ripetuto due volte.', 'messaggio con gli accenti');
+  });
+
+  await prova('problemi: ogni regola della scheda di un giorno', () => {
+    const conScheda = (n, modifica) => {
+      const orari = orariBuoni();
+      Object.assign(orari.schede[n], modifica);
+      return orari;
+    };
+    soloSu(conScheda(1, { ora: '9:00' }), 'schede.1.ora');
+    esigiUguale(O.problemi(conScheda(1, { ora: '9:00' }))[0].messaggio, 'L\'ora di lunedì va scritta come 21:00.', 'messaggio dell ora');
+    nessuno(conScheda(1, { ora: '' }), 'ora vuota = quella di serie');
+    nessuno(conScheda(1, { ora: '00:00', durataOre: 24 }), 'ora e durata ai bordi');
+    for (const durata of [0, 0.4, 24.5, 1.3, '2', false]) { soloSu(conScheda(2, { durataOre: durata }), 'schede.2.durataOre', 'durata ' + JSON.stringify(durata)); }
+    nessuno(conScheda(2, { durataOre: null }), 'durata vuota = quella di serie');
+    for (const [campo, massimo] of [['titolo', 40], ['gioco', 40], ['nota', 120]]) {
+      nessuno(conScheda(3, { [campo]: 'a'.repeat(massimo) }), campo + ' al massimo');
+      soloSu(conScheda(3, { [campo]: 'a'.repeat(massimo + 1) }), 'schede.3.' + campo, campo + ' oltre il massimo');
+      soloSu(conScheda(3, { [campo]: 'riga\naltra' }), 'schede.3.' + campo, campo + ' con un a capo');
+      soloSu(conScheda(3, { [campo]: 12 }), 'schede.3.' + campo, campo + ' non testo');
+    }
+    esigiUguale(O.problemi(conScheda(0, { titolo: 'a'.repeat(45) }))[0].messaggio, 'Il titolo di domenica supera i 40 caratteri: adesso sono 45.', 'messaggio del titolo');
+    for (const percorso of ['https://altrosito.it/a.png', 'img/../server/a.png', 'img/a b.png', 'img/a.gif', 'javascript:alert(1)', '/img/a.png', 'altro/a.png']) {
+      soloSu(conScheda(4, { immagine: percorso }), 'schede.4.immagine', percorso);
+    }
+    nessuno(conScheda(4, { immagine: 'contenuti/media/locandina-1.webp' }), 'immagine della libreria');
+    nessuno(conScheda(4, { immagine: 'img/sotto/cartella/a.jpeg' }), 'immagine in una sottocartella');
+    for (const fuoco of [{ x: 50.5, y: 50 }, { x: 50 }, { x: -1, y: 0 }, { x: 0, y: 101 }, null, [50, 50]]) {
+      soloSu(conScheda(5, { fuoco: fuoco }), 'schede.5.fuoco', 'fuoco ' + JSON.stringify(fuoco));
+    }
+    nessuno(conScheda(5, { fuoco: { x: 0, y: 100 } }), 'fuoco ai bordi');
+    for (const velo of [29, 91, 60.5, '60']) { soloSu(conScheda(6, { velo: velo }), 'schede.6.velo', 'velo ' + JSON.stringify(velo)); }
+    nessuno(conScheda(6, { velo: 30 }), 'velo minimo');
+    nessuno(conScheda(6, { velo: 90 }), 'velo massimo');
+    const senzaCampi = orariBuoni();
+    senzaCampi.schede[1] = { titolo: 'Solo il titolo' };
+    nessuno(senzaCampi, 'una scheda con i soli campi scritti vale coi valori di serie');
+    const corte = orariBuoni();
+    corte.schede.pop();
+    soloSu(corte, 'schede', 'sei schede');
+    const nulla = orariBuoni();
+    nulla.schede[2] = null;
+    soloSu(nulla, 'schede.2', 'scheda non compilata');
+    soloSu(Object.assign(orariBuoni(), { schede: {} }), 'schede', 'schede non elenco');
+  });
+
+  await prova('problemi: ogni regola di un evento speciale, e un evento passato va bene', () => {
+    const conEvento = (modifica) => Object.assign(orariBuoni(), { eventi: [evento(modifica)] });
+    nessuno(conEvento({}), 'evento buono');
+    nessuno(conEvento({ data: '2020-01-01' }), 'evento passato');
+    nessuno(conEvento({ data: '2028-02-29', durataOre: 72 }), 'anno bisestile e durata massima');
+    for (const data of ['', '2026-9-27', '27/09/2026', '2026-02-29', '2026-13-01', '2026-04-31', 20260927]) {
+      soloSu(conEvento({ data: data }), 'eventi.0.data', 'data ' + JSON.stringify(data));
+    }
+    esigiUguale(O.problemi(conEvento({ data: '2026-02-29' }))[0].messaggio, 'La data dell\'evento «Maratona» non esiste nel calendario: 2026-02-29.', 'messaggio della data');
+    for (const ora of ['', '25:00', '9:00']) { soloSu(conEvento({ ora: ora }), 'eventi.0.ora', 'ora ' + JSON.stringify(ora)); }
+    for (const durata of [null, 0, 0.3, 72.5, 73, 1.25]) { soloSu(conEvento({ durataOre: durata }), 'eventi.0.durataOre', 'durata ' + JSON.stringify(durata)); }
+    for (const titolo of ['', '   ', 'a'.repeat(41), 'uno\ndue']) { soloSu(conEvento({ titolo: titolo }), 'eventi.0.titolo', 'titolo ' + JSON.stringify(titolo)); }
+    esigiUguale(O.problemi(conEvento({ titolo: '' }))[0].messaggio, 'Il titolo dell\'evento numero 1 non può restare vuoto.', 'messaggio del titolo vuoto');
+    soloSu(conEvento({ gioco: 'g'.repeat(41) }), 'eventi.0.gioco');
+    nessuno(conEvento({ nota: 'n'.repeat(160) }), 'nota di 160');
+    soloSu(conEvento({ nota: 'n'.repeat(161) }), 'eventi.0.nota');
+    soloSu(conEvento({ immagine: 'https://altrosito.it/a.png' }), 'eventi.0.immagine');
+    soloSu(conEvento({ fuoco: { x: 'a', y: 1 } }), 'eventi.0.fuoco');
+    soloSu(conEvento({ velo: 100 }), 'eventi.0.velo');
+    const manca = Object.assign(orariBuoni(), { eventi: [{ titolo: 'Senza quando' }] });
+    esigiUguale(percorsiDi(manca).join(','), 'eventi.0.data,eventi.0.ora,eventi.0.durataOre', 'data, ora e durata obbligatorie');
+    const nove = Object.assign(orariBuoni(), { eventi: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => evento({ titolo: 'E' + i })) });
+    soloSu(nove, 'eventi', 'nove eventi');
+    soloSu(Object.assign(orariBuoni(), { eventi: {} }), 'eventi', 'eventi non elenco');
+    soloSu(Object.assign(orariBuoni(), { eventi: [evento(), 'x'] }), 'eventi.1', 'evento non compilato');
+  });
+
+  await prova('problemi: il fondale (immagine, fuoco, intensita) e le assenze tollerate', () => {
+    const conSfondo = (modifica) => {
+      const orari = orariBuoni();
+      Object.assign(orari.sfondo, modifica);
+      return orari;
+    };
+    for (const intensita of [-1, 101, 30.5, '30']) { soloSu(conSfondo({ intensita: intensita }), 'sfondo.intensita', 'intensita ' + JSON.stringify(intensita)); }
+    nessuno(conSfondo({ intensita: 0, immagine: '' }), 'fondale spento');
+    nessuno(conSfondo({ intensita: 100 }), 'intensita piena');
+    soloSu(conSfondo({ immagine: 'data:image/png;base64,AAAA' }), 'sfondo.immagine');
+    soloSu(conSfondo({ fuoco: { x: 1 } }), 'sfondo.fuoco');
+    soloSu(Object.assign(orariBuoni(), { sfondo: 'img/a.png' }), 'sfondo', 'fondale non oggetto');
+    esigiUguale(O.problemi(conSfondo({ intensita: 101 }))[0].messaggio, 'L\'intensità del fondale deve essere un numero intero da 0 a 100.', 'messaggio con l accento');
+    nessuno({ giorni: [1], ora: '21:00', fuso: 'Europe/Rome', durataOre: 4 }, 'ramo senza schede, eventi e fondale');
+    nessuno(O.normalizza(orariBuoni()), 'un ramo valido resta valido dopo normalizza');
+  });
+
+  await prova('percorsoValido: solo file del sito, niente esterni, spazi, schemi o risalite', () => {
+    for (const buono of ['img/a.png', 'img/a.jpg', 'img/a.jpeg', 'img/a.webp', 'img/a.avif', 'img/a.svg', 'contenuti/media/a_b-c.1.webp', 'img/x/y.png']) {
+      esigi(O.percorsoValido(buono), 'doveva passare ' + buono);
+    }
+    for (const cattivo of ['', ' img/a.png', 'img/a.gif', 'img/a.PNG', 'img/..png', 'img/../a.png', 'contenuti/a.png', 'server/dati/a.png',
+      'https://x.it/img/a.png', '//x.it/a.png', 'img/a.png?x=1', 'img/a"b.png', 'img/a).png', 'img\\a.png', null, 3]) {
+      esigi(!O.percorsoValido(cattivo), 'doveva essere rifiutato: ' + JSON.stringify(cattivo));
+    }
+  });
+
+  await prova('istante: l ora legale del 29 marzo e del 25 ottobre 2026 a Roma', () => {
+    esigiUguale(ISO(O.istante('2026-09-27', '15:00', 'Europe/Rome')), '2026-09-27T13:00:00.000Z', 'ora legale');
+    esigiUguale(ISO(O.istante('2026-12-01', '21:00', 'Europe/Rome')), '2026-12-01T20:00:00.000Z', 'ora solare');
+    esigiUguale(ISO(O.istante('2026-12-01', '21:00')), '2026-12-01T20:00:00.000Z', 'senza fuso vale Europe/Rome');
+    // 29 marzo: alle 02:00 si salta alle 03:00.
+    esigiUguale(ISO(O.istante('2026-03-29', '01:59', 'Europe/Rome')), '2026-03-29T00:59:00.000Z', 'un minuto prima del salto');
+    esigiUguale(ISO(O.istante('2026-03-29', '02:30', 'Europe/Rome')), '2026-03-29T01:30:00.000Z', 'l ora che non esiste scivola alle 03:30');
+    esigiUguale(ISO(O.istante('2026-03-29', '03:00', 'Europe/Rome')), '2026-03-29T01:00:00.000Z', 'subito dopo il salto');
+    esigiUguale(ISO(O.istante('2026-03-29', '21:00', 'Europe/Rome')), '2026-03-29T19:00:00.000Z', 'la sera del 29 marzo');
+    esigiUguale(ISO(O.istante('2026-03-28', '21:00', 'Europe/Rome')), '2026-03-28T20:00:00.000Z', 'la sera prima');
+    // 25 ottobre: alle 03:00 si torna alle 02:00, e le 02:30 esistono due volte.
+    esigiUguale(ISO(O.istante('2026-10-25', '02:30', 'Europe/Rome')), '2026-10-25T00:30:00.000Z', 'l ora doppia e la prima');
+    esigiUguale(ISO(O.istante('2026-10-25', '03:00', 'Europe/Rome')), '2026-10-25T02:00:00.000Z', 'dopo il ritorno');
+    esigiUguale(ISO(O.istante('2026-10-25', '21:00', 'Europe/Rome')), '2026-10-25T20:00:00.000Z', 'la sera del 25 ottobre');
+    esigiUguale(ISO(O.istante('2026-10-24', '21:00', 'Europe/Rome')), '2026-10-24T19:00:00.000Z', 'la sera prima');
+    // Altri fusi: mezz'ora, quarto d'ora, emisfero sud.
+    esigiUguale(ISO(O.istante('2026-01-01', '00:00', 'Asia/Kolkata')), '2025-12-31T18:30:00.000Z', 'Kolkata');
+    esigiUguale(ISO(O.istante('2026-06-01', '12:00', 'Pacific/Chatham')), '2026-05-31T23:15:00.000Z', 'Chatham');
+    esigiUguale(ISO(O.istante('2026-03-08', '02:30', 'America/New_York')), '2026-03-08T07:30:00.000Z', 'New York, ora saltata');
+    for (const [data, ora, fuso] of [['2026-02-30', '12:00', 'Europe/Rome'], ['2026-01-01', '24:00', 'Europe/Rome'], ['2026-01-01', '12:00', 'Marte/Base'], [null, '12:00', 'UTC']]) {
+      esigi(Number.isNaN(O.istante(data, ora, fuso)), 'doveva dare NaN: ' + JSON.stringify([data, ora, fuso]));
+    }
+  });
+
+  await prova('fine: a cavallo della mezzanotte, a mezz ora, e sull orologio vero per gli eventi', () => {
+    esigiUguale(O.fine('21:00', 4), '01:00', '21 + 4');
+    esigiUguale(O.fine('23:30', 1.5), '01:00', '23:30 + 1,5');
+    esigiUguale(O.fine('22:00', 2), '00:00', 'fino a mezzanotte');
+    esigiUguale(O.fine('21:30', 2.5), '00:00', 'mezz ore');
+    esigiUguale(O.fine('10:00', 24), '10:00', 'un giorno intero');
+    esigiUguale(O.fine('15:00', 72), '15:00', 'tre giorni');
+    esigiUguale(O.fine('9', 1) + O.fine('21:00', 'x'), '', 'valori che non si leggono');
+    // Una maratona che parte a mezzanotte del 25 ottobre: quattro ore dopo,
+    // col ritorno all'ora solare, l'orologio segna le 03:00 e non le 04:00.
+    const inizio = O.istante('2026-10-25', '00:00', 'Europe/Rome');
+    esigiUguale(O.oraNelFuso(inizio + 4 * 3600000, 'Europe/Rome'), '03:00', 'fine a cavallo del cambio d ora');
+    esigiUguale(O.oraNelFuso(NaN, 'Europe/Rome'), '', 'istante non valido');
+  });
+
+  await prova('oraDi e durataDi: la scheda vince, vuota vale quella di serie', () => {
+    const orari = orariBuoni();
+    Object.assign(orari.schede[3], { ora: '18:30', durataOre: 2.5 });
+    Object.assign(orari.schede[5], { ora: 'boh', durataOre: 'x' });
+    esigiUguale(O.oraDi(orari, 3) + ' ' + O.durataDi(orari, 3), '18:30 2.5', 'scheda propria');
+    esigiUguale(O.oraDi(orari, 1) + ' ' + O.durataDi(orari, 1), '21:00 4', 'scheda vuota');
+    esigiUguale(O.oraDi(orari, 5) + ' ' + O.durataDi(orari, 5), '21:00 4', 'scheda storta');
+    esigiUguale(O.oraDi({ giorni: [1], ora: '20:00', durataOre: 3 }, 1) + ' ' + O.durataDi({ giorni: [1], ora: '20:00', durataOre: 3 }, 1), '20:00 3', 'forma di prima');
+    esigiUguale(O.oraDi(null, 9) + ' ' + O.durataDi(undefined, 'x'), '21:00 4', 'niente di leggibile');
+    esigiUguale(O.giornoDellaSettimana('2026-09-27') + ',' + O.giornoDellaSettimana('2026-09-28') + ',' + O.giornoDellaSettimana('2026-02-30'), '0,1,-1', 'giorno della settimana');
+  });
+
+  await prova('eventiFuturi: via quelli finiti, dentro quelli in corso, per inizio, con l indice vero', () => {
+    const adesso = Date.parse('2026-09-20T10:00:00.000Z');
+    const orari = Object.assign(orariBuoni(), {
+      eventi: [
+        evento({ data: '2026-10-03', ora: '21:00', durataOre: 3, titolo: 'Dopo' }),
+        evento({ data: '2026-09-01', ora: '15:00', durataOre: 4, titolo: 'Finito' }),
+        evento({ data: '2026-09-27', ora: '15:00', durataOre: 12, titolo: 'Maratona' }),
+        evento({ data: '2026-09-20', ora: '09:00', durataOre: 4, titolo: 'In corso' }),
+        evento({ data: '2026-09-20', ora: '11:00', durataOre: 1, titolo: 'Finito da poco' }),
+        { titolo: 'Senza data' }
+      ]
+    });
+    const futuri = O.eventiFuturi(orari, adesso);
+    esigiUguale(futuri.map((e) => e.indice + ':' + e.titolo).join(', '), '3:In corso, 2:Maratona, 0:Dopo', 'eventi e ordine');
+    esigiUguale(ISO(futuri[1].inizio) + ' ' + ISO(futuri[1].termine), '2026-09-27T13:00:00.000Z 2026-09-28T01:00:00.000Z', 'istanti della maratona');
+    esigiUguale(futuri[1].data + ' ' + futuri[1].ora + ' ' + futuri[1].durataOre, '2026-09-27 15:00 12', 'campi dell evento');
+    // L'evento finisce proprio adesso: finito vuol dire termine <= adesso.
+    esigiUguale(O.eventiFuturi(orari, Date.parse('2026-09-20T10:00:00.000Z')).some((e) => e.titolo === 'Finito da poco'), false, 'finito all istante');
+    esigiUguale(O.eventiFuturi({ eventi: 'x' }, adesso).length, 0, 'eventi non elenco');
+  });
+
+  /* --- convalida del server ------------------------------------------ */
+
+  await prova('convalida: gli errori della schedule portano la chiave della casella e i messaggi di orari.js', () => {
+    const documento = copia(contenutiVeri);
+    documento.config.orari.schede[1].ora = '9:00';
+    documento.config.orari.eventi = [evento({ data: '2026-02-30' })];
+    documento.config.orari.sfondo.intensita = 150;
+    const errori = convalida.convalida(documento);
+    esigiUguale(errori.map((e) => e.chiave).join(', '), 'config.orari.schede.1.ora, config.orari.eventi.0.data, config.orari.sfondo.intensita', 'chiavi');
+    esigiUguale(errori.map((e) => e.percorso).join(', '), 'schede.1.ora, eventi.0.data, sfondo.intensita', 'percorsi');
+    const attesi = O.problemi(documento.config.orari).map((p) => p.messaggio);
+    esigiUguale(JSON.stringify(errori.map((e) => e.messaggio)), JSON.stringify(attesi), 'i messaggi non sono quelli di orari.js');
+    const vecchio = copia(contenutiVeri);
+    vecchio.config.orari = { giorni: [1, 3, 5, 0], ora: '21:00', fuso: 'Europe/Rome', durataOre: 4 };
+    esigiUguale(convalida.convalida(vecchio).length, 0, 'un contenuti.json con la schedule di prima');
+    esigiUguale(convalida.convalidaCampo('config.orari', 'x')[0].chiave, 'config.orari', 'errore del ramo intero');
+  });
+
+  /* --- generazione --------------------------------------------------- */
+
+  /** I contenuti veri con una schedule ricca: ore diverse, immagini, un giorno spento con dei dati. */
+  const documentoRicco = () => {
+    const documento = copia(contenutiVeri);
+    const orari = documento.config.orari;
+    orari.giorni = [1, 3, 0];
+    Object.assign(orari.schede[1], { ora: '', titolo: 'Horror', gioco: 'Silent Hill f', immagine: 'contenuti/media/locandina.webp', fuoco: { x: 30, y: 20 }, velo: 45 });
+    Object.assign(orari.schede[3], { ora: '18:30', durataOre: 2.5, nota: 'Co-op con la chat' });
+    Object.assign(orari.schede[0], { ora: '16:00', durataOre: 6 });
+    Object.assign(orari.schede[2], { ora: '10:00', titolo: 'Spento', immagine: 'img/spento.webp' });
+    orari.eventi = [
+      evento({ data: '2026-10-03', ora: '21:00', durataOre: 3, titolo: 'Speciale ottobre', gioco: 'Quiz' }),
+      evento({ data: '2026-09-01', ora: '15:00', durataOre: 4, titolo: 'Finito' }),
+      evento({ data: '2026-09-27', ora: '15:00', durataOre: 12, titolo: 'Maratona', nota: 'Dodici ore', immagine: 'contenuti/media/spoiler-maratona.webp', fuoco: { x: 50, y: 10 } })
+    ];
+    orari.sfondo = { immagine: 'img/settimana-sfondo.webp', fuoco: { x: 40, y: 60 }, intensita: 25 };
+    return documento;
+  };
+  const ADESSO = Date.parse('2026-09-20T10:00:00.000Z');
+
+  await prova('contesto settimana: ora e fine per giorno, riposo senza contenuti, stile solo con l immagine', () => {
+    const contesto = costruisci.costruisciContesto(documentoRicco(), { adesso: ADESSO });
+    const per = {};
+    for (const voce of contesto.settimana) { per[voce.indice] = voce; }
+    esigiUguale(contesto.settimana.map((v) => v.indice).join(','), '1,2,3,4,5,6,0', 'ordine');
+    const chiavi = 'indice,abbr,nome,diretta,ora,fine,tag,titolo,gioco,nota,contenuto,immagine,stile';
+    esigi(contesto.settimana.every((v) => Object.keys(v).join(',') === chiavi), 'le voci non hanno i nomi del contratto');
+    const lun = per[1];
+    esigiUguale([lun.diretta, lun.ora, lun.fine, lun.tag, lun.titolo, lun.gioco, lun.contenuto, lun.immagine, lun.stile].join('|'),
+      'true|21:00|01:00|Diretta|Horror|Silent Hill f|true|contenuti/media/locandina.webp|--fuoco: 30% 20%; --velo: 0.45', 'lunedi');
+    const mer = per[3];
+    esigiUguale([mer.ora, mer.fine, mer.nota, mer.contenuto, mer.immagine, mer.stile].join('|'), '18:30|21:00|Co-op con la chat|true||', 'mercoledi senza immagine');
+    const dom = per[0];
+    esigiUguale([dom.ora, dom.fine, dom.contenuto, dom.stile].join('|'), '16:00|22:00|false|', 'domenica senza testi');
+    const mar = per[2];
+    esigiUguale([mar.diretta, mar.ora, mar.fine, mar.tag, mar.titolo, mar.contenuto, mar.immagine, mar.stile].join('|'),
+      'false|||Riposo||false||', 'un giorno spento non stampa la sua scheda');
+    esigiUguale(contesto.config.orari.schede.length, 7, 'config.orari del contesto e normalizzato');
+  });
+
+  await prova('sito.eventi: il passato non c e, gli altri per inizio, con la data in italiano e gli istanti in UTC', () => {
+    const contesto = costruisci.costruisciContesto(documentoRicco(), { adesso: ADESSO });
+    const eventi = contesto.sito.eventi;
+    esigiUguale(contesto.sito.haEventi, true, 'haEventi');
+    esigiUguale(eventi.map((e) => e.indice + ':' + e.titolo).join(', '), '2:Maratona, 0:Speciale ottobre', 'eventi e ordine');
+    const m = eventi[0];
+    esigiUguale(Object.keys(m).join(','), 'indice,data,ora,fine,abbr,giorno,numero,mese,dataTesto,inizio,termine,titolo,gioco,nota,contenuto,immagine,stile', 'nomi del contratto');
+    esigiUguale([m.data, m.ora, m.fine, m.abbr, m.giorno, m.numero, m.mese, m.dataTesto].join('|'),
+      '2026-09-27|15:00|03:00|DOM|Domenica|27|set|domenica 27 settembre', 'data della maratona');
+    esigiUguale(m.inizio + ' ' + m.termine, '2026-09-27T13:00:00.000Z 2026-09-28T01:00:00.000Z', 'istanti');
+    esigiUguale([m.contenuto, m.immagine, m.stile].join('|'), 'true|contenuti/media/spoiler-maratona.webp|--fuoco: 50% 10%; --velo: 0.6', 'contenuto e immagine');
+    const s = eventi[1];
+    esigiUguale([s.numero, s.mese, s.dataTesto, s.contenuto, s.stile].join('|'), '3|ott|sabato 3 ottobre|true|', 'numero senza zero e niente stile senza immagine');
+    const tutti = costruisci.costruisciContesto(documentoRicco(), { adesso: Date.parse('2027-01-01T00:00:00Z') });
+    esigiUguale(tutti.sito.haEventi + ' ' + tutti.sito.eventi.length, 'false 0', 'a eventi tutti passati');
+    // Con `quando` (il timbro della generazione) l'istante e lo stesso.
+    const conQuando = costruisci.costruisciContesto(documentoRicco(), { quando: '2026-09-28T00:30:00.000Z' });
+    esigiUguale(conQuando.sito.eventi.map((e) => e.titolo).join(','), 'Maratona,Speciale ottobre', 'maratona ancora in corso alle 02:30');
+  });
+
+  await prova('sito.settimanaSfondo: stile con intensita, spento a 0 o senza immagine', () => {
+    const documento = documentoRicco();
+    esigiUguale(JSON.stringify(costruisci.costruisciContesto(documento, { adesso: ADESSO }).sito.settimanaSfondo),
+      JSON.stringify({ immagine: 'img/settimana-sfondo.webp', stile: '--fuoco: 40% 60%; --intensita: 0.25' }), 'fondale acceso');
+    documento.config.orari.sfondo.intensita = 0;
+    esigiUguale(JSON.stringify(costruisci.costruisciContesto(documento, { adesso: ADESSO }).sito.settimanaSfondo),
+      JSON.stringify({ immagine: '', stile: '' }), 'intensita 0');
+    documento.config.orari.sfondo = { immagine: '', fuoco: { x: 1, y: 2 }, intensita: 80 };
+    esigiUguale(costruisci.costruisciContesto(documento, { adesso: ADESSO }).sito.settimanaSfondo.immagine, '', 'senza immagine');
+    delete documento.config.orari.sfondo;
+    esigiUguale(costruisci.costruisciContesto(documento, { adesso: ADESSO }).sito.settimanaSfondo.stile, '', 'ramo senza fondale');
+  });
+
+  await prova('sito.orariTesto: stessa ora in una frase, ore diverse giorno per giorno', () => {
+    const documento = documentoRicco();
+    esigiUguale(costruisci.orariTesto(documento.config), 'Lunedì alle 21:00, mercoledì alle 18:30 e domenica alle 16:00', 'ore diverse');
+    documento.config.orari.schede[3].ora = '21:00';
+    documento.config.orari.schede[0].ora = '';
+    esigiUguale(costruisci.orariTesto(documento.config), 'Lunedì, mercoledì e domenica alle 21:00', 'la stessa ora scritta anche nella scheda');
+    documento.config.orari.giorni = [5];
+    esigiUguale(costruisci.orariTesto(documento.config), 'Venerdì alle 21:00', 'un giorno solo');
+    documento.config.orari.giorni = [6, 2];
+    documento.config.orari.schede[2].ora = '10:00';
+    esigiUguale(costruisci.orariTesto(documento.config), 'Martedì alle 10:00 e sabato alle 21:00', 'due giorni, ordine da lunedi');
+  });
+
+  await prova('js/dati.js: ore, durate ed eventi futuri per il conto alla rovescia, e i testi nuovi', () => {
+    const reso = costruisci.rendi(documentoRicco(), { adesso: ADESSO });
+    const dati = JSON.parse(reso.dati.slice(reso.dati.indexOf('{'), reso.dati.lastIndexOf('}') + 1));
+    const o = dati.orari;
+    esigiUguale(Object.keys(o).join(','), 'giorni,ora,fuso,durataOre,ore,durate,eventi', 'chiavi del ramo orari');
+    esigiUguale(o.giorni.join(',') + ' ' + o.ora + ' ' + o.fuso + ' ' + o.durataOre, '1,3,0 21:00 Europe/Rome 4', 'i quattro campi di sempre');
+    esigiUguale(JSON.stringify(o.ore), JSON.stringify({ 0: '16:00', 1: '21:00', 3: '18:30' }), 'ore');
+    esigiUguale(JSON.stringify(o.durate), JSON.stringify({ 0: 6, 1: 4, 3: 2.5 }), 'durate');
+    esigiUguale(JSON.stringify(o.eventi), JSON.stringify([
+      { indice: 2, data: '2026-09-27', inizio: '2026-09-27T13:00:00.000Z', termine: '2026-09-28T01:00:00.000Z', titolo: 'Maratona' },
+      { indice: 0, data: '2026-10-03', inizio: '2026-10-03T19:00:00.000Z', termine: '2026-10-03T22:00:00.000Z', titolo: 'Speciale ottobre' }
+    ]), 'eventi');
+    esigiUguale([dati.testi.etichettaInOnda, dati.testi.etichettaDaTe, dati.testi.etichettaEvento].join('|'), 'In onda|Da te|Speciale', 'testi nuovi');
+    // Lo stesso istante vale per la pagina: gli eventi della pagina e di dati.js coincidono.
+    esigiUguale(reso.contesto.sito.eventi.map((e) => e.inizio).join(','), o.eventi.map((e) => e.inizio).join(','), 'pagina e dati.js');
+  });
+
+  await prova('la pagina si rende con una schedule piena, con una a meta e senza immagini esterne', () => {
+    const piena = costruisci.rendi(documentoRicco(), { adesso: ADESSO });
+    esigi(piena.html.indexOf('{{') === -1, 'segnaposto rimasti nella pagina');
+    esigiDentro(piena.html, 'id="settimana"', 'la sezione');
+    esigiUguale((piena.html.match(/data-giorno="\d"/g) || []).length, 7, 'sette giorni');
+    const storta = copia(contenutiVeri);
+    storta.config.orari = {
+      giorni: 'tutti', ora: 'presto', fuso: 42, schede: [{ titolo: '<script>alert(1)</script>', immagine: 'javascript:alert(1)' }, 'x'],
+      eventi: [{ data: '2026-09-27', ora: '15:00', durataOre: 3, titolo: 'Evento <b>', immagine: 'https://altrosito.it/a.png' }],
+      sfondo: { immagine: '"><img src=x onerror=alert(1)>', intensita: 'tanta' }
+    };
+    const resa = costruisci.rendi(storta, { adesso: ADESSO });
+    esigi(resa.html.indexOf('altrosito.it') === -1 && resa.dati.indexOf('altrosito.it') === -1, 'un indirizzo esterno e arrivato nella pagina');
+    esigi(resa.html.indexOf('javascript:alert') === -1, 'uno schema javascript: e arrivato nella pagina');
+    esigi(resa.html.indexOf('onerror') === -1, 'un attributo e uscito dal fondale');
+    esigi(resa.html.indexOf('<script>alert(1)') === -1, 'un testo della schedule e arrivato senza escape');
+    esigiUguale(convalida.convalida(storta).some((e) => e.chiave.indexOf('config.orari') === 0), true, 'la convalida doveva fermare la schedule storta');
+  });
+
+  await prova('pulisciEditor completa una schedule valida e lascia quella sbagliata alla convalida', () => {
+    const buono = copia(contenutiVeri);
+    buono.config.orari = { giorni: [1], ora: '21:00', fuso: 'Europe/Rome', durataOre: 4 };
+    costruisci.pulisciEditor(buono);
+    esigiUguale(buono.config.orari.schede.length + ' ' + buono.config.orari.eventi.length + ' ' + typeof buono.config.orari.sfondo, '7 0 object', 'schedule completata');
+    const sbagliato = copia(contenutiVeri);
+    sbagliato.config.orari.schede[1].titolo = 't'.repeat(45);
+    costruisci.pulisciEditor(sbagliato);
+    esigiUguale(sbagliato.config.orari.schede[1].titolo.length, 45, 'un titolo lungo e stato tagliato di nascosto invece di essere detto');
+  });
+
+  /* --- salvataggio ---------------------------------------------------- */
+
+  await prova('unisci: config.orari si sostituisce in blocco, un evento cancellato non rinasce', () => {
+    esigi(archivio.RAMI_IN_BLOCCO.indexOf('orari') !== -1, 'orari non e fra i rami in blocco');
+    const salvato = { testi: {}, config: { orari: Object.assign(orariBuoni(), { eventi: [evento({ titolo: 'A' }), evento({ titolo: 'B' })] }) } };
+    const arrivo = { config: { orari: { giorni: [2], ora: '20:00', durataOre: 3, fuso: 'Europe/Rome', eventi: [evento({ titolo: 'A' })], sfondo: { immagine: '' } } } };
+    const unito = archivio.unisci(salvato, arrivo).config.orari;
+    esigiUguale(unito.eventi.map((e) => e.titolo).join(','), 'A', 'eventi');
+    esigiUguale(JSON.stringify(unito.sfondo), '{"immagine":""}', 'il fondale e stato fuso con quello salvato');
+    esigiUguale(unito.schede, undefined, 'le schede salvate sono rinate');
+    esigiUguale(salvato.config.orari.eventi.length, 2, 'unisci ha toccato il documento salvato');
+  });
+
+  // Da qui in giu si passa dal server vero, come il pannello. I contenuti di
+  // partenza si rimettono prima e dopo: le sezioni precedenti ne hanno
+  // salvati e ripristinati di loro.
+  fs.copyFileSync(path.join(RADICE_VERA, 'contenuti', 'contenuti.json'), P.contenutiJson);
+  const { creaServer } = require('./server.js');
+  const server = creaServer();
+  await new Promise((risolvi) => server.listen(0, '127.0.0.1', risolvi));
+  const porta = server.address().port;
+  const biscotto = biscottoDa(await chiama(porta, 'POST', '/api/entra', { json: { password: PASSWORD_COLLAUDO } }));
+  const scrivi = (orari) => chiama(porta, 'PUT', '/api/contenuti', { biscotto: biscotto, json: { config: { orari: orari } } });
+
+  try {
+    await prova('PUT /api/contenuti rifiuta una schedule sbagliata con la chiave e il messaggio giusti', async () => {
+      esigi(biscotto, 'accesso al server di prova non riuscito');
+      const prima = fs.readFileSync(P.contenutiJson, 'utf8');
+      const orari = orariBuoni();
+      orari.schede[1].ora = '9:00';
+      orari.schede[5].nota = 'n'.repeat(121);
+      orari.eventi = [evento({ data: '2026-02-30', titolo: '' })];
+      orari.sfondo.intensita = 150;
+      const r = await scrivi(orari);
+      esigiUguale(r.stato, 422, 'stato');
+      const trovati = r.dati.errori.map((e) => e.chiave + ' = ' + e.messaggio);
+      const attesi = [
+        'config.orari.schede.1.ora = L\'ora di lunedì va scritta come 21:00.',
+        'config.orari.schede.5.nota = La nota di venerdì supera i 120 caratteri: adesso sono 121.',
+        'config.orari.eventi.0.data = La data dell\'evento numero 1 non esiste nel calendario: 2026-02-30.',
+        'config.orari.eventi.0.titolo = Il titolo dell\'evento numero 1 non può restare vuoto.',
+        'config.orari.sfondo.intensita = L\'intensità del fondale deve essere un numero intero da 0 a 100.'
+      ];
+      esigiUguale(JSON.stringify(trovati), JSON.stringify(attesi), 'errori');
+      esigiUguale(fs.readFileSync(P.contenutiJson, 'utf8'), prima, 'contenuti.json e stato toccato');
+    });
+
+    await prova('PUT /api/contenuti rifiuta un percorso esterno nella schedule', async () => {
+      const orari = orariBuoni();
+      orari.schede[3].immagine = 'https://altrosito.it/locandina.png';
+      orari.eventi = [evento({ immagine: '../server/dati/auth.json' })];
+      orari.sfondo.immagine = 'img/../../fuori.png';
+      const r = await scrivi(orari);
+      esigiUguale(r.stato, 422, 'stato');
+      esigiUguale(r.dati.errori.map((e) => e.chiave).join(', '), 'config.orari.schede.3.immagine, config.orari.eventi.0.immagine, config.orari.sfondo.immagine', 'chiavi');
+      esigi(fs.readFileSync(P.contenutiJson, 'utf8').indexOf('altrosito.it') === -1, 'il percorso esterno e finito su disco');
+    });
+
+    await prova('PUT /api/contenuti completa una schedule di prima e tiene un evento passato', async () => {
+      const r = await scrivi({ giorni: [1, 3], ora: '20:30', fuso: 'Europe/Rome', durataOre: 3.5, eventi: [evento({ data: '2020-05-01', titolo: 'Vecchio' })] });
+      esigiUguale(r.stato, 200, 'stato');
+      const salvato = JSON.parse(fs.readFileSync(P.contenutiJson, 'utf8')).config.orari;
+      esigiUguale(Object.keys(salvato).join(','), 'giorni,ora,durataOre,fuso,schede,eventi,sfondo', 'forma salvata');
+      esigiUguale(salvato.schede.length + ' ' + salvato.eventi.length + ' ' + salvato.eventi[0].titolo, '7 1 Vecchio', 'schede ed evento passato');
+      esigiUguale(salvato.sfondo.immagine, '', 'un fondale mai mandato non rinasce dal disco');
+      const pagina = await chiama(porta, 'GET', '/api/anteprima', { biscotto: biscotto });
+      esigi(pagina.testo.indexOf('Vecchio') === -1, 'un evento passato compare nella pagina');
+    });
+
+    await prova('un immagine usata in una scheda, in un evento o nel fondale non si cancella', async () => {
+      fs.mkdirSync(P.media, { recursive: true });
+      const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex');
+      for (const nome of ['giorno.png', 'evento.png', 'fondale.png']) { fs.writeFileSync(path.join(P.media, nome), png); }
+      const orari = orariBuoni();
+      orari.schede[5].immagine = 'contenuti/media/giorno.png';
+      orari.eventi = [evento({ immagine: 'contenuti/media/evento.png' })];
+      orari.sfondo.immagine = 'contenuti/media/fondale.png';
+      esigiUguale((await scrivi(orari)).stato, 200, 'salvataggio della schedule con le immagini');
+      const attese = { 'giorno.png': 'config.orari.schede.5.immagine', 'evento.png': 'config.orari.eventi.0.immagine', 'fondale.png': 'config.orari.sfondo.immagine' };
+      for (const nome of Object.keys(attese)) {
+        const r = await chiama(porta, 'DELETE', '/api/media/' + nome, { biscotto: biscotto });
+        esigiUguale(r.stato, 409, 'stato per ' + nome);
+        esigi(Array.isArray(r.dati.usatoDa) && r.dati.usatoDa.indexOf(attese[nome]) !== -1, nome + ': non dice che la usa ' + attese[nome]);
+        esigi(fs.existsSync(path.join(P.media, nome)), nome + ' e stata cancellata lo stesso');
+      }
+      // Tolta dalla schedule, la stessa immagine si cancella.
+      orari.schede[5].immagine = '';
+      esigiUguale((await scrivi(orari)).stato, 200, 'salvataggio senza l immagine del giorno');
+      esigiUguale((await chiama(porta, 'DELETE', '/api/media/giorno.png', { biscotto: biscotto })).stato, 200, 'cancellazione dopo averla tolta');
+    });
+
+    await prova('POST /api/anteprima rende la schedule non salvata, senza indirizzi esterni', async () => {
+      const orari = orariBuoni();
+      orari.schede[1] = Object.assign(O.schedaVuota(), { titolo: 'Locandina di prova', immagine: 'https://altrosito.it/x.png' });
+      const r = await chiama(porta, 'POST', '/api/anteprima', { biscotto: biscotto, json: { editor: true, contenuti: { config: { orari: orari } } } });
+      esigiUguale(r.stato, 200, 'stato');
+      esigi(r.testo.indexOf('altrosito.it') === -1, 'l indirizzo esterno e arrivato nell anteprima');
+      esigiDentro(r.testo, '<base href="/">', 'pagina per l editor');
+    });
+  } finally {
+    await new Promise((risolvi) => server.close(risolvi));
+    fs.copyFileSync(path.join(RADICE_VERA, 'contenuti', 'contenuti.json'), P.contenutiJson);
+  }
+}
+
 /* --- ESECUZIONE ------------------------------------------------------ */
 
 async function esegui() {
@@ -2164,6 +2809,7 @@ async function esegui() {
     await proveApi(costruisci);
     await proveTwitch(costruisci, archivio);
     await proveClip(contenutiVeri, costruisci, archivio);
+    await proveSchedule(contenutiVeri, costruisci, archivio);
   } finally {
     percorsi.imposta(RADICE_VERA);
     try { fs.rmSync(temporanea, { recursive: true, force: true }); } catch (e) { /* su Windows a volte il file e ancora aperto */ }

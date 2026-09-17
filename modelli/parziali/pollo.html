@@ -7,13 +7,13 @@
 
      L'immagine è decorativa due volte (alt vuoto + aria-hidden): il bottone che
      la contiene ha già un nome accessibile, ripeterlo dentro sarebbe rumore.
-     Il fondo viola di mascot.png non è trasparente: lo sfuma css/pollo.css con
-     una maschera, qui non serve nessun accorgimento. -->
+     mascotte.webp ha la trasparenza vera: css/pollo.css non la maschera più, e
+     width e height (le misure del file) tengono il posto prima che arrivi. -->
 <div id="pollo" class="pollo" data-stato="riposo" data-sb-parte="pollo">
   <div id="pollo-fumetto" class="pollo__fumetto" aria-hidden="true" hidden><span class="pollo__testo"></span></div>
 
   <button id="pollo-bottone" class="pollo__bottone" type="button" aria-label="{{pollo.etichetta}}">
-    <img class="pollo__img" src="{{config.immagini.mascotte}}" alt="" aria-hidden="true" data-sb-immagine="config.immagini.mascotte">
+    <img class="pollo__img" src="{{config.immagini.mascotte}}" alt="" aria-hidden="true" width="386" height="556" loading="lazy" decoding="async" data-sb-immagine="config.immagini.mascotte">
   </button>
 
   <!-- La croce è disegnata dal CSS con due barrette: il DOM resta quello del

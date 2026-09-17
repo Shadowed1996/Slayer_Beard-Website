@@ -48,6 +48,8 @@ async function esegui() {
 
   const daTwitch = await twitch.aggiornaUltimaDiretta();
   if (daTwitch.stato !== 'spento') { console.log('  ' + twitch.racconta(daTwitch)); }
+  const iFollower = await twitch.aggiornaFollower();
+  if (iFollower.stato !== 'spento') { console.log('  ' + twitch.raccontaFollower(iFollower)); }
   const leClip = await twitch.aggiornaClip();
   if (leClip.stato !== 'spento') { console.log('  ' + twitch.raccontaClip(leClip)); }
   const iNumeri = await twitch.aggiornaNumeri();

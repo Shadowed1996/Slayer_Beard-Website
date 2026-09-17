@@ -42,7 +42,7 @@ const SEZIONI = {
   },
   settimana: {
     nome: 'La settimana',
-    descrizione: 'Il nastro dei sette giorni con quelli di diretta accesi, e la nota con il bottone in fondo.'
+    descrizione: 'I sette giorni come locandine, con titolo, gioco e immagine di ogni diretta; gli eventi speciali con la loro data; il fondale dietro la sezione; la nota con il bottone in fondo.'
   },
   chi: {
     nome: 'Chi sono',
@@ -71,7 +71,7 @@ const PARTI = {
   },
   stato: {
     nome: 'Riquadro di stato',
-    descrizione: 'Le spie della copertina: «in onda» o «fuori onda», la prossima diretta con il conto alla rovescia e il titolo dell\'ultima. Il sito le aggiorna da solo mentre gira: qui scegli le parole.'
+    descrizione: 'Le spie della copertina: «in onda» o «fuori onda», la prossima diretta con il conto alla rovescia e il titolo dell\'ultima. Il sito le aggiorna da solo mentre gira: qui scegli le parole. Giorni e ore del conto alla rovescia vengono dalla schedule, che si cambia dal nastro della settimana.'
   },
   monitor: {
     nome: 'Monitor del player',
@@ -95,7 +95,11 @@ const PARTI = {
   },
   nastro: {
     nome: 'Nastro della settimana',
-    descrizione: 'I sette giorni in fila: da qui scegli i giorni e l\'ora delle dirette, e le parole scritte sotto a ogni giorno.'
+    descrizione: 'La schedule: i sette giorni con le loro locandine (ora, titolo, gioco, nota, immagine), gli eventi speciali e il fondale della sezione. Più giù, le etichette scritte sui giorni.'
+  },
+  eventi: {
+    nome: 'Eventi speciali',
+    descrizione: 'Le dirette fuori programma con una data precisa, come una maratona o uno speciale: data, ora, durata, titolo e immagine. Un evento finito sparisce dal sito da solo. Più giù, il titolo del riquadro e l\'etichetta di ogni evento.'
   },
   listino: {
     nome: 'Listino del supporto',
@@ -114,6 +118,7 @@ const BLOCCHI = {
 
   'settimana.testa': 'Titolo e introduzione',
   'settimana.nastro': 'Nastro dei sette giorni',
+  'settimana.eventi': 'Eventi speciali',
   'settimana.piede': 'Nota e bottone',
 
   'chi.corpo': 'Racconto',
@@ -193,15 +198,18 @@ export function nomeBlocco(id) {
  * id», e si espande con lo schema in mano: così un campo aggiunto al
  * gruppo del pollo compare nella parte del pollo senza toccare questo file.
  *
- * `config.orari` sta in due parti (stato e nastro) perché si vede in due
- * punti: il conto alla rovescia della copertina e il nastro. È voluto.
+ * `config.orari` sta nel nastro e negli eventi, dove c'è il suo editor
+ * (CONTRATTO-5 §8). Nella parte `stato` la schedule si vede solo come
+ * riepilogo con il bottone «Modifica la schedule» (lo disegna parti.js):
+ * tenerla anche lì nel registro porterebbe la ricerca e gli errori del
+ * server su una parte dove l'editor non c'è.
  */
 export const REGISTRO_PARTI = Object.freeze({
   social: Object.freeze({ chiavi: Object.freeze(['config.social']) }),
   stato: Object.freeze({
     chiavi: Object.freeze([
       'deck.etichettaStato', 'deck.statoVerifica', 'deck.statoLive', 'deck.statoOffline',
-      'deck.etichettaProssima', 'deck.etichettaUltima', 'config.ultimaDiretta', 'config.orari'
+      'deck.etichettaProssima', 'deck.etichettaUltima', 'config.ultimaDiretta'
     ])
   }),
   monitor: Object.freeze({
@@ -214,8 +222,12 @@ export const REGISTRO_PARTI = Object.freeze({
   nastro: Object.freeze({
     chiavi: Object.freeze([
       'config.orari', 'settimana.etichettaDiretta', 'settimana.etichettaRiposo',
-      'settimana.etichettaOggi', 'settimana.etichettaProssima'
+      'settimana.etichettaOggi', 'settimana.etichettaProssima',
+      'settimana.etichettaInOnda', 'settimana.etichettaDaTe'
     ])
+  }),
+  eventi: Object.freeze({
+    chiavi: Object.freeze(['config.orari', 'settimana.titoloEventi', 'settimana.etichettaEvento'])
   }),
   listino: Object.freeze({ chiavi: Object.freeze(['config.supporto']) })
 });
@@ -243,7 +255,7 @@ export function chiaviParte(nome, schema) {
 /**
  * Le parti da cui si modifica una chiave, anche profonda
  * («config.social.2.url» sta in `social`). Più di una quando il campo si
- * vede in più punti (`config.orari` -> ['stato', 'nastro']). [] se nessuna.
+ * vede in più punti (`config.orari` -> ['nastro', 'eventi']). [] se nessuna.
  */
 export function partiDellaChiave(chiave, schema) {
   const cercata = String(chiave || '').replace(/\[(\d+)\]/g, '.$1');

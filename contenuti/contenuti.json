@@ -29,7 +29,6 @@
     "deck.chatApri": "Mostra la chat",
     "deck.chatChiudi": "Nascondi la chat",
     "deck.notaPlayer": "Il player è incorporato da Twitch: se il browser blocca i cookie di terze parti può non partire.",
-    "deck.dato1Valore": "3.624",
     "deck.dato1Etichetta": "Follower",
     "deck.dato2Valore": "4",
     "deck.dato2Etichetta": "Dirette a settimana",
@@ -88,6 +87,10 @@
     "settimana.etichettaRiposo": "Riposo",
     "settimana.etichettaProssima": "Prossima",
     "settimana.etichettaDiretta": "Diretta",
+    "settimana.etichettaInOnda": "In onda",
+    "settimana.etichettaDaTe": "Da te",
+    "settimana.titoloEventi": "Fuori programma",
+    "settimana.etichettaEvento": "Speciale",
     "settimana.cta": "Vai al canale",
     "chi.occhiello": "slayer_beard",
     "chi.titolo": "Chi sono",
@@ -108,7 +111,6 @@
     "chi.tag5": "ITA / ENG",
     "chi.tag6": "Twitch Affiliate",
     "chi.cta": "Vieni a trovarmi su Twitch",
-    "chi.dato1Valore": "3.624",
     "chi.dato1Etichetta": "follower",
     "chi.dato2Valore": "90",
     "chi.dato2Etichetta": "abbonati",
@@ -149,8 +151,110 @@
         0
       ],
       "ora": "21:00",
+      "durataOre": 4,
       "fuso": "Europe/Rome",
-      "durataOre": 4
+      "schede": [
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        }
+      ],
+      "eventi": [],
+      "sfondo": {
+        "immagine": "img/settimana-sfondo.webp",
+        "fuoco": {
+          "x": 50,
+          "y": 50
+        },
+        "intensita": 30
+      }
     },
     "dati": {
       "follower": 3624,
@@ -162,10 +266,10 @@
       "prefissoEmote": "slayer156"
     },
     "immagini": {
-      "avatar": "img/avatar.png",
-      "banner": "img/banner.png",
-      "mascotte": "img/mascot.png",
-      "og": "img/og.png",
+      "avatar": "img/avatar.webp",
+      "banner": "img/copertina.webp",
+      "mascotte": "img/mascotte.webp",
+      "og": "img/og.jpg",
       "favicon": "img/favicon.png"
     },
     "tema": {

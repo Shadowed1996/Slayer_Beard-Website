@@ -211,9 +211,9 @@ export async function copiaTesto(testo) {
 
 /**
  * Percorso di una risorsa del sito visto dal pannello.
- * Nei contenuti le immagini stanno relative alla radice ("img/avatar.png"),
+ * Nei contenuti le immagini stanno relative alla radice ("img/avatar.webp"),
  * ma il pannello vive sotto /pannello/: senza questa riga l'anteprima
- * cercherebbe /pannello/img/avatar.png e non troverebbe niente.
+ * cercherebbe /pannello/img/avatar.webp e non troverebbe niente.
  */
 export function urlRisorsa(percorso) {
   const v = String(percorso || '').trim();

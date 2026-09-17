@@ -21,15 +21,16 @@
    invece di farlo sparire di scatto. È aria-hidden dal markup, quindi resta
    invisibile allo screen reader in entrambi gli stati.
 
-   LA MASCHERA — non è decorazione, è necessaria
-   Il fondo viola di img/mascot.png NON è trasparente. Senza maschera comparirebbe
-   un rettangolo viola pieno accanto al monitor. Un radiale morbido tiene opaco
-   il corpo del pollo e sfuma il perimetro: quel poco di viola che resta legge
-   come un alone, non come un ritaglio. Stessa tecnica di regia.css §6.
+   NIENTE MASCHERA
+   Il vecchio ritaglio in PNG era grezzo, con aloni del fondo viola e la
+   cresta tagliata, e andava sfumato con un mask-image radiale. img/mascotte.webp
+   è il pollo scontornato dal banner nuovo con la trasparenza vera, intero e con
+   il suo contorno nero: la sagoma basta da sola, e drop-shadow le disegna
+   l'alone attorno. Una maschera adesso taglierebbe la cresta e il gomito.
 
    COLORI
    Nessun esadecimale: solo token di tokens.css e color-mix(). I neri con alpha
-   dentro le maschere e le ombre non sono colori del tema, sono canali alpha.
+   dentro i gradienti non sono colori del tema, sono canali alpha.
    ============================================================================= */
 
 
@@ -153,26 +154,31 @@
 .pollo__img {
   inline-size: 100%;
   block-size: auto;
-  /* Le proporzioni vere di img/mascot.png (337×421): dichiararle qui evita che
-     la riga salti fra il layout e il caricamento dell'immagine. */
-  aspect-ratio: 337 / 421;
-  -webkit-mask-image: radial-gradient(78% 72% at 50% 46%, rgba(0, 0, 0, 1) 58%, rgba(0, 0, 0, 0) 100%);
-  mask-image: radial-gradient(78% 72% at 50% 46%, rgba(0, 0, 0, 1) 58%, rgba(0, 0, 0, 0) 100%);
-  /* drop-shadow lavora sulla sagoma già mascherata: l'alone segue il pollo e
-     non il rettangolo dell'immagine. */
+  /* Le proporzioni di img/mascotte.webp (386×556), ripetute anche negli
+     attributi width e height del modello: tengono il posto prima che
+     l'immagine arrivi, e la riga non salta. «auto» davanti lascia vincere le
+     proporzioni vere del file appena è caricato, così una mascotte diversa
+     scelta dal pannello non esce stirata. */
+  aspect-ratio: auto 386 / 556;
+  /* drop-shadow segue il canale alfa: l'alone viola abbraccia la sagoma del
+     pollo, non il rettangolo dell'immagine. */
   filter: drop-shadow(0 8px 20px color-mix(in srgb, var(--viola) 45%, transparent));
-  transform-origin: 50% 92%;
+  /* Il perno delle oscillazioni è il gomito, il punto più basso del disegno:
+     il pollo dondola come appoggiato lì, senza staccarsi dal fondo. */
+  transform-origin: 50% 97%;
 }
 
 /* La cresta che si accende quando il canale è in onda. È un alone ciano dietro
    la testa, non un ritaglio della cresta vera: l'immagine è una sola e non si
    può illuminarne un pezzo. `is-onda` è indipendente da data-stato apposta,
-   altrimenti la cresta si spegnerebbe ogni volta che il pollo parla. */
+   altrimenti la cresta si spegnerebbe ogni volta che il pollo parla. Il 46% è
+   il centro della testa nella mascotte: becco e pollice sporgono a destra e
+   spostano il centro del disegno, non quello della testa. */
 .pollo__bottone::after {
   content: "";
   position: absolute;
   inset-block-start: -8%;
-  inset-inline-start: 50%;
+  inset-inline-start: 46%;
   inline-size: 66%;
   aspect-ratio: 1;
   translate: -50% 0;

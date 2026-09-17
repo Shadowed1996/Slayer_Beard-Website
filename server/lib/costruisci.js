@@ -20,7 +20,10 @@
    Nota sulla settimana: le voci escono in ordine italiano (lunedi per
    primo) ma ognuna porta il proprio `indice` con la numerazione di
    JavaScript (0 = domenica), che e quella di config.orari.giorni e quella
-   che finisce in data-giorno per il JS del sito.
+   che finisce in data-giorno per il JS del sito. Con la schedule rifatta
+   (CONTRATTO-5 §5) config.orari passa SEMPRE da SBOrari.normalizza() prima
+   di arrivare al modello e a js/dati.js: l'anteprima rende anche contenuti
+   a meta, e un'ora scritta a meta non deve rompere la pagina.
 
    Nota sul testo ricco (CONTRATTO-2 §7): i valori dei campi che lo schema
    dichiara `tipo: 'ricco'` entrano nel contesto GIA sanificati. E qui il
@@ -47,11 +50,11 @@ const tema = require('./tema.js');
 const font = require('./font');
 const backup = require('./backup');
 const schema = require('../../contenuti/schema.js');
-
-const NOMI = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
-const ABBR = ['DOM', 'LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB'];
-// Ordine di lettura italiano: il nastro parte da lunedi e finisce di domenica.
-const ORDINE = [1, 2, 3, 4, 5, 6, 0];
+/* Le regole della schedule (CONTRATTO-5 §3.5). Sta sotto pannello/ perche
+   lo stesso file lo carica il pannello: i giorni, i limiti e i conti con i
+   fusi orari del sito generato e dell'editor escono dalle stesse funzioni.
+   Il percorso e relativo a questo file, come per stili.js. */
+const SBOrari = require('../../pannello/condivisi/orari.js');
 
 /* ------------------------------------------------------------------ */
 /* PEZZI DEL CONTESTO                                                  */
@@ -89,25 +92,132 @@ function elencoVisibile(voci, cache, mancanti) {
   return fuori;
 }
 
-/** I sette giorni, sempre tutti, calcolati da config.orari. */
+/* ------------------------------------------------------------------ */
+/* LA SCHEDULE (CONTRATTO-5 §5)                                        */
+/* ------------------------------------------------------------------ */
+
+/** Il ramo orari pulito, da config intera. normalizza() e idempotente: passarci due volte non cambia niente. */
+function orariDi(config) {
+  return SBOrari.normalizza(config && config.orari);
+}
+
+/**
+ * L'istante della generazione, in ms. Gli eventi finiti si scartano
+ * rispetto a questo momento: `adesso` (ms) lo fissa il collaudo, `quando`
+ * (ISO) e quello che finisce anche nel timbro di js/dati.js, cosi pagina e
+ * timbro raccontano lo stesso istante.
+ */
+function momentoDi(scelte) {
+  if (scelte && typeof scelte.adesso === 'number' && Number.isFinite(scelte.adesso)) { return scelte.adesso; }
+  const letto = scelte && typeof scelte.quando === 'string' ? Date.parse(scelte.quando) : NaN;
+  return Number.isFinite(letto) ? letto : Date.now();
+}
+
+/* Numeri per l'attributo style (CONTRATTO-5 §2.2). Arrivano gia stretti da
+   normalizza(), ma qui si ristringono lo stesso: nell'attributo esce solo
+   quello che questi tre calcoli producono, cifre, punto e segno di
+   percento, e nessun valore scritto da chi amministra ci passa accanto. */
+function percento(n) {
+  return Math.min(100, Math.max(0, Math.round(Number(n) || 0)));
+}
+
+function frazione(n) {
+  return String(percento(n) / 100);
+}
+
+/** «--fuoco: 30% 20%; --velo: 0.6», oppure '' se non c'e un'immagine da inquadrare. */
+function stileImmagine(immagine, fuoco, nome, valore) {
+  if (!immagine) { return ''; }
+  const f = fuoco || {};
+  return '--fuoco: ' + percento(f.x) + '% ' + percento(f.y) + '%; --' + nome + ': ' + frazione(valore);
+}
+
+/**
+ * I sette giorni, sempre tutti, nell'ordine di lettura italiano.
+ *
+ * `giorni` resta l'unica fonte di «oggi c'e diretta»: la scheda di un giorno
+ * spento resta nei dati ma qui non esce niente di suo (ne ora, ne testi, ne
+ * immagine), cosi riaccendendolo torna com'era senza che nel frattempo il
+ * sito mostri una locandina di un giorno di riposo.
+ */
 function settimanaDi(config, testi) {
-  const giorni = (config.orari && Array.isArray(config.orari.giorni)) ? config.orari.giorni : [];
-  const ora = (config.orari && config.orari.ora) || '';
-  return ORDINE.map((indice) => {
-    const diretta = giorni.indexOf(indice) !== -1;
+  const orari = orariDi(config);
+  return SBOrari.ORDINE.map((indice) => {
+    const giorno = SBOrari.GIORNI[indice];
+    const diretta = orari.giorni.indexOf(indice) !== -1;
+    const scheda = orari.schede[indice];
+    const ora = diretta ? SBOrari.oraDi(orari, indice) : '';
+    const titolo = diretta ? scheda.titolo : '';
+    const gioco = diretta ? scheda.gioco : '';
+    const nota = diretta ? scheda.nota : '';
+    const immagine = diretta ? scheda.immagine : '';
     return {
       indice: indice,
-      abbr: ABBR[indice],
-      nome: NOMI[indice],
+      abbr: giorno.abbr,
+      nome: giorno.nome,
       diretta: diretta,
-      ora: diretta ? ora : '',
-      tag: diretta ? (testi['settimana.etichettaDiretta'] || '') : (testi['settimana.etichettaRiposo'] || '')
+      ora: ora,
+      fine: diretta ? SBOrari.fine(ora, SBOrari.durataDi(orari, indice)) : '',
+      tag: diretta ? (testi['settimana.etichettaDiretta'] || '') : (testi['settimana.etichettaRiposo'] || ''),
+      titolo: titolo,
+      gioco: gioco,
+      nota: nota,
+      // Il modello non sa fare «se c'e almeno uno di tre»: gli arriva deciso.
+      contenuto: !!(titolo || gioco || nota),
+      immagine: immagine,
+      stile: stileImmagine(immagine, scheda.fuoco, 'velo', scheda.velo)
     };
   });
 }
 
-const MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
-  'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+/**
+ * Gli eventi speciali non ancora finiti all'istante `adesso`, dal primo che
+ * parte. Uno finito resta in contenuti.json (il pannello lo segna «Passato»)
+ * ma qui non esce: la pagina generata non annuncia una maratona di ieri, e
+ * quello che scade dopo la generazione lo toglie js/sito.js.
+ *
+ * `fine` e letta sull'orologio del canale all'istante di termine, non
+ * sommata a mano: una maratona a cavallo del cambio d'ora finisce all'ora
+ * vera. `inizio` e `termine` sono ISO in UTC, per data-inizio e data-fine.
+ */
+function eventiDi(orari, adesso) {
+  return SBOrari.eventiFuturi(orari, adesso).map((evento) => {
+    const d = evento.data.split('-').map(Number);
+    const giorno = SBOrari.GIORNI[SBOrari.giornoDellaSettimana(evento.data)];
+    const mese = SBOrari.MESI[d[1] - 1];
+    return {
+      indice: evento.indice,
+      data: evento.data,
+      ora: evento.ora,
+      fine: SBOrari.oraNelFuso(evento.termine, orari.fuso),
+      abbr: giorno.abbr,
+      giorno: giorno.nome,
+      numero: String(d[2]),
+      mese: mese.abbr,
+      dataTesto: giorno.minuscolo + ' ' + d[2] + ' ' + mese.nome,
+      inizio: new Date(evento.inizio).toISOString(),
+      termine: new Date(evento.termine).toISOString(),
+      titolo: evento.titolo,
+      gioco: evento.gioco,
+      nota: evento.nota,
+      contenuto: !!(evento.gioco || evento.nota),
+      immagine: evento.immagine,
+      stile: stileImmagine(evento.immagine, evento.fuoco, 'velo', evento.velo)
+    };
+  });
+}
+
+/**
+ * Il fondale della sezione. Con intensita 0 e spento: l'immagine non si
+ * stampa affatto, invece di scaricarla per poi disegnarla trasparente.
+ */
+function sfondoDi(orari) {
+  const sfondo = orari.sfondo;
+  const immagine = sfondo.intensita > 0 ? sfondo.immagine : '';
+  return { immagine: immagine, stile: stileImmagine(immagine, sfondo.fuoco, 'intensita', sfondo.intensita) };
+}
+
+const MESI = SBOrari.MESI.map((mese) => mese.nome);
 
 /** m:ss. Le clip di Twitch stanno fra 5 e 60 secondi, ma non si scommette. */
 function durataTesto(secondi) {
@@ -253,18 +363,30 @@ function sanificaRicchi(testi, config) {
   }
 }
 
-/** «Lunedì, mercoledì, venerdì e domenica alle 21:00». */
+/** «a, b e c»: l'elenco all'italiana, senza virgola prima della «e». */
+function elencoItaliano(voci) {
+  return voci.length === 1 ? voci[0] : voci.slice(0, -1).join(', ') + ' e ' + voci[voci.length - 1];
+}
+
+/**
+ * «Lunedì, mercoledì, venerdì e domenica alle 21:00» se tutti i giorni
+ * partono alla stessa ora; altrimenti l'ora va detta giorno per giorno,
+ * «Lunedì alle 21:00, mercoledì alle 18:30 e domenica alle 16:00». Nessun
+ * raggruppamento a meta («lunedì e mercoledì alle 21:00, domenica…»): e un
+ * testo che si legge ad alta voce (aria-label del nastro) e nel conto alla
+ * rovescia senza JavaScript, e una forma sola si capisce meglio.
+ */
 function orariTesto(config) {
-  const giorni = (config.orari && Array.isArray(config.orari.giorni)) ? config.orari.giorni : [];
-  const ordinati = ORDINE.filter((g) => giorni.indexOf(g) !== -1);
+  const orari = orariDi(config);
+  const ordinati = SBOrari.ORDINE.filter((g) => orari.giorni.indexOf(g) !== -1);
   if (!ordinati.length) { return ''; }
 
-  const nomi = ordinati.map((g, i) => (i === 0 ? NOMI[g] : NOMI[g].toLowerCase()));
-  const elenco = nomi.length === 1
-    ? nomi[0]
-    : nomi.slice(0, -1).join(', ') + ' e ' + nomi[nomi.length - 1];
-  const ora = (config.orari && config.orari.ora) || '';
-  return ora ? elenco + ' alle ' + ora : elenco;
+  const nome = (g, i) => (i === 0 ? SBOrari.GIORNI[g].nome : SBOrari.GIORNI[g].minuscolo);
+  const ore = ordinati.map((g) => SBOrari.oraDi(orari, g));
+  if (ore.every((ora) => ora === ore[0])) {
+    return elencoItaliano(ordinati.map(nome)) + ' alle ' + ore[0];
+  }
+  return elencoItaliano(ordinati.map((g, i) => nome(g, i) + ' alle ' + ore[i]));
 }
 
 /* ------------------------------------------------------------------ */
@@ -380,6 +502,17 @@ function pulisciEditor(contenuti) {
   if (config.stili !== undefined) { config.stili = SB.pulisciStili(config.stili, opzioniStili('')); }
   if (config.disposizione !== undefined) { config.disposizione = SB.pulisciDisposizione(config.disposizione); }
 
+  /* La schedule (CONTRATTO-5 §5.3) e diversa dai tre rami qui sopra: i suoi
+     valori li scrive chi amministra in caselle vere, e un titolo di 45
+     caratteri va detto, non tagliato di nascosto. Quindi si ripulisce SOLO
+     se e gia valida: allora normalizza() non cambia niente di quello che si
+     vede, e mette solo la forma completa (sette schede, eventi e fondale
+     anche in un contenuti.json di prima). Se non e valida resta com'e, e la
+     convalida che viene dopo dice che cosa non va. */
+  if (config.orari !== undefined && SBOrari.problemi(config.orari).length === 0) {
+    config.orari = SBOrari.normalizza(config.orari);
+  }
+
   const slot = config.tema && config.tema.font;
   if (slot && typeof slot === 'object') {
     for (const nome of Object.keys(tema.PREDEFINITO.font)) {
@@ -490,6 +623,11 @@ function costruisciContesto(contenuti, opzioni) {
   config.stili = SB.pulisciStili(config.stili, opzioniStili(''));
   config.disposizione = SB.pulisciDisposizione(config.disposizione);
   const attive = config.sezioni.filter((voce) => voce.attiva);
+  // Stessa ragione per la schedule: da qui in giu `config.orari` e sempre
+  // completo e pulito, anche per {{config.orari.ora}} della copertina.
+  config.orari = orariDi(config);
+  const adesso = momentoDi(scelte);
+  const eventi = eventiDi(config.orari, adesso);
 
   const cache = scelte.cache || new Map();
   const mancanti = [];
@@ -513,8 +651,17 @@ function costruisciContesto(contenuti, opzioni) {
       urlChat: 'https://www.twitch.tv/popout/' + canale + '/chat',
       mailto: 'mailto:' + String(config.email || ''),
       anno: new Date().getFullYear(),
-      generatoIl: scelte.quando || new Date().toISOString(),
+      generatoIl: scelte.quando || new Date(adesso).toISOString(),
       orariTesto: orariTesto(config),
+      // Il numero dei follower, con il punto delle migliaia: e l unico dei
+      // numeri della copertina e di «Chi sono» che non si scrive a mano,
+      // perche la pubblicazione lo chiede a Twitch (server/lib/twitch.js).
+      follower: numeroTesto((config.dati || {}).follower),
+      // CONTRATTO-5 §5.1: gli eventi ancora da finire, e il fondale della
+      // sezione con lo stile gia costruito dai numeri puliti.
+      eventi: eventi,
+      haEventi: eventi.length > 0,
+      settimanaSfondo: sfondoDi(config.orari),
       // Indirizzo dei font scelti nel gruppo «Aspetto» e di quelli del
       // catalogo scelti negli stili dei singoli elementi. Vuoto se sono tutti
       // di sistema o caricati: in quel caso testa.html non stampa nessun
@@ -736,8 +883,49 @@ function lurkDi(config, testi, account) {
   };
 }
 
-/** L'oggetto window.DATI, nella forma esatta del §6.3 e del CONTRATTO-2 §6.3. */
-function oggettoDati(contenuti) {
+/**
+ * Il ramo `orari` di window.DATI (CONTRATTO-5 §5.2), che legge js/sito.js
+ * per il conto alla rovescia, il nastro e gli eventi.
+ *
+ * I quattro campi di sempre restano uguali e nello stesso ordine; `ore` e
+ * `durate` portano gia i ripieghi di serie, cosi il browser non deve
+ * conoscere le regole delle schede: per lui un giorno acceso ha un'ora e
+ * una durata, punto. Gli eventi sono solo quelli non ancora finiti alla
+ * generazione, con gli istanti in UTC: il fuso l'ha gia risolto il server,
+ * ora legale compresa. `indice` e `data` in piu servono a ritrovare il
+ * li.evento e il giorno del nastro su cui cade.
+ */
+function orariDati(config, adesso) {
+  const orari = orariDi(config);
+  const ore = {};
+  const durate = {};
+  for (const giorno of orari.giorni) {
+    ore[giorno] = SBOrari.oraDi(orari, giorno);
+    durate[giorno] = SBOrari.durataDi(orari, giorno);
+  }
+  return {
+    giorni: orari.giorni.slice(),
+    ora: orari.ora,
+    fuso: orari.fuso,
+    durataOre: orari.durataOre,
+    ore: ore,
+    durate: durate,
+    eventi: SBOrari.eventiFuturi(orari, adesso).map((evento) => ({
+      indice: evento.indice,
+      data: evento.data,
+      inizio: new Date(evento.inizio).toISOString(),
+      termine: new Date(evento.termine).toISOString(),
+      titolo: evento.titolo
+    }))
+  };
+}
+
+/**
+ * L'oggetto window.DATI, nella forma esatta del §6.3 e del CONTRATTO-2 §6.3.
+ * `opzioni` e quella di rendi(): serve solo l'istante (adesso o quando) per
+ * scartare gli eventi gia finiti.
+ */
+function oggettoDati(contenuti, opzioni) {
   const config = contenuti.config;
   const testi = contenuti.testi;
   const twitch = config.twitch || {};
@@ -753,12 +941,7 @@ function oggettoDati(contenuti) {
 
   return {
     twitch: { canale: String(twitch.canale || ''), idUtente: String(twitch.idUtente || ''), domini: domini },
-    orari: {
-      giorni: (config.orari && Array.isArray(config.orari.giorni)) ? config.orari.giorni.slice() : [],
-      ora: (config.orari && config.orari.ora) || '',
-      fuso: (config.orari && config.orari.fuso) || 'Europe/Rome',
-      durataOre: (config.orari && config.orari.durataOre) || 0
-    },
+    orari: orariDati(config, momentoDi(opzioni)),
     email: String(config.email || ''),
     ultimaDiretta: String(config.ultimaDiretta || ''),
     testi: {
@@ -771,6 +954,12 @@ function oggettoDati(contenuti) {
       // usa per marcare oggi e la prossima diretta.
       etichettaOggi: testi['settimana.etichettaOggi'] || '',
       etichettaProssima: testi['settimana.etichettaProssima'] || '',
+      // Le tre della schedule rifatta (CONTRATTO-5 §5.2): il segno «in onda»
+      // sul giorno di oggi, l'ora nel fuso di chi guarda e il bollino degli
+      // eventi, che js/sito.js mette anche sul giorno in cui un evento cade.
+      etichettaInOnda: testi['settimana.etichettaInOnda'] || '',
+      etichettaDaTe: testi['settimana.etichettaDaTe'] || '',
+      etichettaEvento: testi['settimana.etichettaEvento'] || '',
       copiaBtn: testi['saluti.copiaBtn'] || '',
       copiaFatto: testi['saluti.copiaFatto'] || ''
     },
@@ -800,7 +989,11 @@ function rendi(contenuti, opzioni) {
   // Una cache sola per il contesto (che rende le sezioni) e per la pagina:
   // ogni parziale si legge e si analizza una volta.
   const cache = new Map();
-  const contesto = costruisciContesto(contenuti, Object.assign({}, opzioni, { cache: cache }));
+  // Un istante solo per la pagina e per js/dati.js: un evento che finisce
+  // proprio mentre si genera non deve esserci in uno e mancare nell'altro.
+  const scelte = Object.assign({}, opzioni, { cache: cache });
+  scelte.adesso = momentoDi(scelte);
+  const contesto = costruisciContesto(contenuti, scelte);
 
   if (!eFile(P.modelloIndex)) {
     throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.modelloIndex) + ': senza modello non si genera niente.');
@@ -810,7 +1003,7 @@ function rendi(contenuti, opzioni) {
   }
 
   const html = modello.rendiFile(P.modelloIndex, contesto, { file: 'modelli/index.html', cartella: P.modelli, cache: cache });
-  const dati = modello.rendiFile(P.modelloDati, Object.assign({ dati: jsonSicuro(oggettoDati(contenuti)) }, contesto),
+  const dati = modello.rendiFile(P.modelloDati, Object.assign({ dati: jsonSicuro(oggettoDati(contenuti, scelte)) }, contesto),
     { file: 'server/modelli/dati.js.tpl', cartella: P.modelli, cache: cache });
   // Il foglio del tema non passa dal motore di template: e calcolato, non
   // riempito. tema.css() non lancia mai, nemmeno con un tema mezzo scritto.
@@ -985,5 +1178,6 @@ function genera(opzioni) {
 module.exports = {
   genera, anteprima, anteprimaDi, anteprimaEditor, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
-  oggettoDati, orariTesto, settimanaDi, clipDi, jsonSicuro, chiaviRicche
+  oggettoDati, orariTesto, settimanaDi, clipDi, jsonSicuro, chiaviRicche,
+  orariDi, orariDati, eventiDi, sfondoDi
 };

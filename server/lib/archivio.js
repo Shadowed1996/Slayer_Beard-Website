@@ -90,8 +90,15 @@ function fondi(base, modifiche) {
    uno stile tolto nel pannello rinascerebbe dal salvato: il pannello manda
    config.stili senza «testo:deck.titolo», la fusione tiene quello del disco,
    e chi amministra vede tornare il colore che ha appena cancellato.
+
+   La schedule (CONTRATTO-5 §2.4) si sostituisce in blocco anche lei. Le
+   schede e gli eventi sono elenchi e si sostituirebbero comunque, ma il
+   resto del ramo no: un fondale mandato senza una chiave si vedrebbe
+   rimettere dal disco il valore di prima, e il ramo salvato non sarebbe
+   piu quello che il pannello ha appena controllato con SBOrari.problemi.
+   Mandato intero, quello che si convalida e quello che si salva.
 */
-const RAMI_IN_BLOCCO = ['sezioni', 'stili', 'disposizione'];
+const RAMI_IN_BLOCCO = ['sezioni', 'stili', 'disposizione', 'orari'];
 
 /** Applica al documento salvato quello che arriva dal pannello. */
 function unisci(documento, arrivo) {

@@ -18,8 +18,15 @@
                            Se il canale non tiene i VOD si ripiega su
                            helix/channels, che dà comunque l'ultimo
                            titolo impostato.
+     GET helix/channels/followers
+                        →  quanti seguono il canale. Senza lo scope da
+                           moderatore la lista arriva vuota ma `total`
+                           c'è sempre, ed è l'unica cosa che serve: va
+                           nei numeri della copertina e di «Chi sono»,
+                           che la pubblicazione ha già riempito col
+                           valore preso dal server.
 
-   NIENTE SCOPE IN PIÙ. Tutt'e tre rispondono a qualunque token utente
+   NIENTE SCOPE IN PIÙ. Tutt'e quattro rispondono a qualunque token utente
    valido e danno soltanto dati già pubblici sulla pagina del canale.
    Chi non si è collegato non perde niente di quello che aveva prima: il
    player continua a dedurre lo stato, e «Ultima diretta» resta il valore
@@ -48,6 +55,7 @@
     inOnda: null,      // null = non lo sappiamo ancora (o non lo sapremo mai)
     titolo: '',        // titolo della diretta in corso
     ultima: '',        // titolo dell'ultima diretta registrata
+    follower: null,    // quanti seguono il canale (null = non ancora chiesto)
     quando: 0          // quando è arrivata l'ultima risposta buona
   };
 
@@ -81,8 +89,8 @@
     });
   }
 
-  /** Una GET a Helix col token di chi si è collegato. Risolve a null se non va. */
-  function chiedi(percorso) {
+  /** Una GET a Helix col token di chi si è collegato: la risposta intera, o null se non va. */
+  function chiediGrezzo(percorso) {
     const A = account();
     if (!A) { return Promise.resolve(null); }
     const token = A.token();
@@ -99,10 +107,29 @@
     }, function () {
       return null;
     }).then(function (d) {
-      return (d && Array.isArray(d.data)) ? d.data : null;
+      return (d && typeof d === 'object') ? d : null;
     }, function () {
       return null;
     });
+  }
+
+  /** La stessa GET, ma risolve al solo elenco `data` (null se non va). */
+  function chiedi(percorso) {
+    return chiediGrezzo(percorso).then(function (d) {
+      return (d && Array.isArray(d.data)) ? d.data : null;
+    });
+  }
+
+  /** «3.619»: il punto delle migliaia a mano, come fa la generazione, così i due non divergono. */
+  function numeroTesto(valore) {
+    const n = Math.max(0, Math.round(Number(valore) || 0));
+    const cifre = String(n);
+    let fuori = '';
+    for (let i = 0; i < cifre.length; i++) {
+      if (i > 0 && (cifre.length - i) % 3 === 0) { fuori += '.'; }
+      fuori += cifre[i];
+    }
+    return fuori;
   }
 
   /* --- Le tre domande ------------------------------------------------- */
@@ -155,6 +182,34 @@
   }
 
   /**
+   * Quanti seguono il canale. `total` arriva anche senza scope: con un token
+   * qualsiasi la lista è vuota, ma il totale c'è. Un totale che non si legge
+   * lascia in pagina il numero pubblicato: è vecchio di una pubblicazione,
+   * non sbagliato.
+   */
+  function chiediFollower() {
+    return chiediGrezzo('channels/followers?broadcaster_id=' + encodeURIComponent(CANALE) + '&first=1')
+      .then(function (d) {
+        // Number(null) è 0: un totale assente non deve diventare «zero follower».
+        const totale = (d && d.total !== null && d.total !== undefined && d.total !== '') ? Number(d.total) : NaN;
+        if (!isFinite(totale) || totale < 0) { return; }
+        const tondo = Math.round(totale);
+        if (tondo === vivo.follower) { return; }
+        vivo.follower = tondo;
+        scriviFollower(tondo);
+      });
+  }
+
+  /** I numeri marcati data-follower: uno in copertina, uno in «Chi sono». */
+  function scriviFollower(totale) {
+    const testo = numeroTesto(totale);
+    for (let i = 0; i < nodi.follower.length; i++) {
+      nodi.follower[i].textContent = testo;
+      nodi.follower[i].setAttribute('data-fonte', 'twitch');
+    }
+  }
+
+  /**
    * La riga «Ultima diretta» del quadro comandi. La scrive anche js/player.js
    * all'avvio, col valore pubblicato: qui si sovrascrive con quello vero, e
    * solo quando è arrivato davvero. Un valore vecchio è meglio di un buco.
@@ -185,10 +240,10 @@
       .then(function (ok) {
         if (!ok) { return null; }
         return chiediDiretta().then(function (andata) {
-          // Se la prima richiesta non è nemmeno partita, la seconda non parte:
+          // Se la prima richiesta non è nemmeno partita, le altre non partono:
           // è quasi sempre la stessa rete che non c'è.
           if (!andata) { return null; }
-          return chiediUltima();
+          return chiediUltima().then(chiediFollower);
         });
       })
       .then(null, function (err) { console.warn('[canale] giro non riuscito:', err); })
@@ -201,6 +256,7 @@
   function avvia() {
     if (!CANALE) { return; }
     nodi.ultima = document.getElementById('ultima');
+    nodi.follower = Array.prototype.slice.call(document.querySelectorAll('[data-follower]'));
 
     const A = account();
     if (!A) { return; }   // profilo spento: qui non c'è niente da fare

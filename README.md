@@ -7,7 +7,7 @@
 
 Sito del canale Twitch [slayer_beard](https://www.twitch.tv/slayer_beard), con dietro un piccolo
 CMS per modificarne ogni testo, numero, link, immagine, colore e carattere senza aprire un editor
-di codice.
+di codice: si clicca la cosa da cambiare direttamente nell'anteprima del sito.
 
 Due cose da tenere a mente, perché spiegano tutto il resto:
 
@@ -64,7 +64,7 @@ video non parte. Serve un server, anche banale.
 | `node server/imposta-password.js` | crea o cambia la password del pannello |
 | `node server/imposta-twitch.js <clientId> <secret>` | scrive `server/dati/chiavi.js`, l'unico file in cui stanno le chiavi (facoltativo, vedi sotto) |
 | `node server/imposta-twitch.js --prova` | chiede subito il titolo a Twitch e dice com'è andata, senza scrivere niente |
-| `node server/autotest.js` | collaudo: motore dei modelli, convalida, testo ricco, tema, generazione, API, modalità lurk, collegamento con Twitch, vetrina delle clip |
+| `node server/autotest.js` | collaudo: motore dei modelli, convalida, testo ricco, tema, generazione, API, modalità lurk, collegamento con Twitch, vetrina delle clip, schedule |
 
 La porta si cambia con la variabile d'ambiente `SB_PORTA` (per esempio
 `SB_PORTA=4174 node server/server.js`). Il collaudo lavora in una cartella temporanea e non
@@ -81,7 +81,7 @@ sito/
 ├─ js/
 │  ├─ dati.js            ← GENERATO. Configurazione letta dal front-end.
 │  ├─ player.js          player Twitch: embed, stato in onda, chat
-│  ├─ sito.js            navigazione, conto alla rovescia, settimana, copia email
+│  ├─ sito.js            navigazione, conto alla rovescia, schedule (date, segni, eventi), copia email
 │  ├─ account.js         il profilo del sito: login con Twitch, tessera, revoca
 │  ├─ canale.js          per chi è collegato: stato del canale e titolo dell'ultima diretta
 │  ├─ lurk.js            la modalità lurk: sorveglia il video e lo fa ripartire
@@ -99,15 +99,20 @@ sito/
 │  ├─ clip.css           la vetrina delle clip, in fondo alla «diretta»
 │  ├─ account.css        la tessera di chi si è collegato con Twitch
 │  └─ lurk.css           il pannello della modalità lurk, sotto al monitor
-├─ img/                  avatar, mascotte, banner, anteprima social, favicon
+├─ img/                  le immagini fisse: avatar, mascotte, copertina, anteprima
+│                        social, favicon, fondale della schedule (capitolo «Le immagini»)
 │
 ├─ contenuti/
-│  ├─ contenuti.json     ← LA VERITÀ: testi e configurazione
+│  ├─ contenuti.json     ← LA VERITÀ: testi e configurazione, compresi ordine delle
+│  │                       sezioni, stili degli elementi e posizioni dei blocchi
 │  ├─ schema.js          descrive i campi: il pannello si costruisce da qui
-│  └─ media/             immagini caricate dal pannello
+│  ├─ media/             la libreria del pannello: le immagini caricate e le cinque
+│  │                     grafiche del canale già pronte
+│  └─ font/              font caricati dal pannello, con elenco.json
 ├─ modelli/
-│  ├─ index.html         la struttura della pagina, con i {{segnaposto}}
-│  ├─ parziali/          le sezioni, incluse con {{> parziali/nome}}
+│  ├─ index.html         la struttura della pagina, con i {{segnaposto}}; le sezioni
+│  │                     di <main> le mette la generazione, nell'ordine scelto
+│  ├─ parziali/          le sezioni e i pezzi della pagina, con i marcatori data-sb-*
 │  │  ├─ lurk.html       il pannello della modalità lurk, dentro «diretta»
 │  │  └─ clip.html       la vetrina delle clip, in fondo a «diretta»
 │  └─ icone/             le icone SVG, una per file
@@ -115,25 +120,39 @@ sito/
 │  ├─ lib/controlli.js   i controlli d'insieme: avvertimenti, mai errori
 │  ├─ lib/chiavi.js      LE CHIAVI: un file solo, e da lì le prende tutto
 │  ├─ lib/twitch.js      l'unico punto in cui il server locale chiama Twitch
+│  ├─ lib/font.js        i font caricati: formato, limite di 2 MB, elenco, dove sono usati
 │  ├─ modelli/chiavi.esempio.js  il modello da copiare, con le istruzioni
 │  └─ dati/              password del pannello e chiavi.js. Non si carica
 │                        online e non sta nel controllo di versione.
-├─ pannello/             l'interfaccia di amministrazione
+├─ pannello/             l'interfaccia di amministrazione: l'editor unico
+│  ├─ index.html         barra alta, pannello laterale, anteprima al centro
+│  ├─ pannello.js        la base: accesso, bozza, Salva, Pubblica, convalida
+│  ├─ editor/            i moduli dell'editor: guscio, ponte, motore (anteprima,
+│  │                     selezione, blocchi), contenuti, stile, parti, nomi, impostazioni
+│  ├─ condivisi/stili.js il generatore degli stili e delle posizioni, lo stesso file
+│  │                     per il pannello e per il server
+│  ├─ condivisi/orari.js le regole della schedule: limiti, forma pulita, errori, fusi
+│  │                     orari. Anche lui un file solo per pannello e server
+│  └─ moduli/            i mattoni comuni: API, campi dallo schema, testo ricco, media
+│                        (con la riduzione in WebP), backup, l'editor della schedule
 ├─ docs/PANNELLO.md      guida per chi amministra il sito
 ├─ docs/PRESENZA-TWITCH.md  studio su presenza, lurk e login Twitch: come Twitch conta
 │                           davvero gli spettatori, e cosa consente il regolamento
 ├─ CONTRATTO.md          le regole con cui è stato costruito
 ├─ CONTRATTO-2.md        l'addendum della seconda fase: diretta, pollo, tema, testo ricco
 ├─ CONTRATTO-3.md        l'addendum della terza fase: la modalità lurk
+├─ CONTRATTO-4.md        l'addendum della quarta fase: l'editor unico del pannello
+├─ CONTRATTO-5.md        l'addendum della quinta fase: la schedule rifatta e le grafiche nuove
 └─ Cattura.PNG           cattura della pagina del canale su Twitch — banner, riquadro
                          fuori onda, handle social. Non è un'anteprima di questo sito.
 ```
 
-Le sezioni della pagina, nell'ordine: **regia** (la copertina), **diretta** (il player, grande,
-con la chat e il pollo accanto, e in fondo la vetrina delle clip), **settimana**, **chi sono**,
-**supporto**, **saluti**. Il binario laterale ha quindi sei voci — e resta a sei: la vetrina delle
-clip sta dentro «diretta» proprio per non chiederne una settima, che sotto i 400 px non ci
-starebbe.
+Le sezioni della pagina, nell'ordine di partenza: **regia** (la copertina), **diretta** (il player,
+grande, con la chat e il pollo accanto, e in fondo la vetrina delle clip), **settimana**, **chi
+sono**, **supporto**, **saluti**. Dal pannello si possono riordinare e nascondere (la copertina
+resta sempre prima e accesa); il binario laterale e il piede ci sono sempre. Il binario ha una
+voce per ogni sezione accesa, quindi al massimo sei — e resta a sei: la vetrina delle clip sta
+dentro «diretta» proprio per non chiederne una settima, che sotto i 400 px non ci starebbe.
 
 La versione precedente del sito è conservata in `Desktop/sito-backup/`: serve solo come
 riferimento storico, non è collegata a niente.
@@ -145,6 +164,25 @@ riferimento storico, non è collegata a niente.
 ### Il modo normale: il pannello
 
 Avvia il server, apri **http://localhost:4173/pannello/**, entra con la password, modifica.
+La prima volta, se la password non c'è ancora, il pannello la fa creare lui.
+
+Il pannello è un **editor unico**, sul modello di quelli per costruire siti: l'anteprima del sito
+sta al centro, e si clicca direttamente la cosa da cambiare. A sinistra un pannello laterale,
+largo quanto vuoi, mostra i controlli dell'elemento scelto in tre schede:
+
+- **Contenuto** — il testo (che si scrive anche direttamente sulla pagina, con doppio clic),
+  l'immagine, i dati di una parte (social, listino, schedule della settimana, pollo, lurk,
+  clip, profilo), l'interruttore di una sezione;
+- **Stile** — font, dimensione, colori (anche collegati ai colori del tema), sfondo, spazi,
+  bordi, bagliore, opacità, **diversi per Telefono, Tablet e Computer**;
+- **Avanzate** — nascondere un elemento su un dispositivo, larghezza massima, **posizione dei
+  blocchi**, che si trascinano dentro la loro sezione.
+
+Le sezioni si riordinano e si nascondono dal Navigatore (il menu laterale del sito le segue da
+solo), e dal menu ☰ si arriva a colori, combinazioni pronte e font del sito — **anche caricati
+dal computer** —, alla libreria delle immagini, alle copie di sicurezza e al cambio della
+password. Ci sono Annulla e Ripeti, la ricerca dei campi con `Ctrl+K`, e sugli schermi stretti il
+pannello diventa un cassetto.
 
 Ci sono due bottoni distinti, e la differenza conta:
 
@@ -154,11 +192,15 @@ Ci sono due bottoni distinti, e la differenza conta:
   è cambiato.
 
 L'anteprima nel pannello mostra anche le modifiche **non ancora salvate**: la pagina viene resa
-al volo dal server e buttata via, senza toccare niente sul disco.
+al volo dal server e buttata via, senza toccare niente sul disco. È la pagina **senza il
+JavaScript del sito** — dentro l'editor il player di Twitch sarebbe una seconda sessione video
+della stessa persona, e il pollo aprirebbe una connessione alla chat a ogni ricarica — quindi lì
+non ci sono player né chat: testi, immagini, colori, stili e posizioni si vedono invece come sul
+sito.
 
 Prima di pubblicare, ogni pubblicazione mette una copia dei file in `server/backup/` (i tre file
-generati più `contenuti.json`), e dal pannello si torna indietro con un clic. La guida completa
-è in [`docs/PANNELLO.md`](docs/PANNELLO.md).
+generati più `contenuti.json`), e dal pannello si torna indietro con un clic. La guida completa,
+limiti compresi, è in [`docs/PANNELLO.md`](docs/PANNELLO.md).
 
 ### Il modo diretto: a mano
 
@@ -176,8 +218,46 @@ Tre passi, in tre file diversi:
 Il pannello lo mostrerà da solo: non si tocca una riga di `pannello/`. Se salti il terzo passo,
 il controllo di copertura te lo dice all'avvio invece di lasciartelo scoprire fra sei mesi.
 
+Perché il testo **si possa cliccare nell'anteprima**, c'è un quarto passo facoltativo: sull'elemento
+che contiene solo quel segnaposto aggiungi `data-sb-testo="la.tua.chiave"`, in coda al tag. Senza,
+il campo si cambia lo stesso, dall'elenco *Testi che non si vedono in pagina* della sua sezione. I
+marcatori `data-sb-*`, le parti, i blocchi e le altre regole dell'editor sono in
+[`CONTRATTO-4.md`](CONTRATTO-4.md); la mappa dei file è nell'ultimo capitolo di
+[`docs/PANNELLO.md`](docs/PANNELLO.md).
+
 I tipi di campo sono: `testo`, `testolungo`, `ricco`, `url`, `email`, `numero`, `immagine`,
 `orario`, `orari`, `scelta`, `colore`, `font`, `interruttore`, `elencoTesti`, `elenco`.
+
+### I tre rami dell'editor
+
+Tre rami di `contenuti.json` non hanno un campo nello schema, perché li scrive l'editor con
+controlli suoi: `config.sezioni` (ordine e visibilità delle sezioni), `config.stili` (lo stile di
+ogni elemento, per dispositivo) e `config.disposizione` (le posizioni dei blocchi). Sono elencati in
+`EDITOR` dentro `contenuti/schema.js`, saltati dalla copertura come `GENERATI`.
+
+Il CSS che ne esce lo scrive **un solo file**, `pannello/condivisi/stili.js`, usato sia dal pannello
+per l'anteprima sia dal server per la pagina pubblicata: anteprima e sito non possono dire due cose
+diverse. Nella pagina finisce in `<style id="sb-disposizione">` e `<style id="sb-stili">`, e solo se
+c'è qualcosa da scrivere. Il server ripulisce i tre rami prima di convalidarli: un valore storto si
+scarta, non blocca il salvataggio del resto. Con i valori di partenza la pagina generata è identica a
+quella di prima dell'editor, a parte gli attributi `data-sb-*` e `font-src 'self'` nella CSP.
+
+### La schedule, vista dal codice
+
+La sezione «La settimana» nasce da un campo solo, **«Schedule della settimana»** (`config.orari`,
+tipo `orari`), che nel pannello ha un editor tutto suo: `pannello/moduli/settimana.js`. Dentro ci
+sono i giorni di diretta con ora, durata e fuso di serie, sette schede (una per giorno, 0 =
+domenica), fino a otto eventi speciali con una data e il fondale della sezione.
+
+Le regole — limiti, forma pulita, messaggi d'errore, conti con i fusi orari e l'ora legale — stanno
+in **un file solo**, `pannello/condivisi/orari.js`, che usano sia il pannello per gli errori accanto
+alle caselle sia il server per convalidare e generare: il pannello non può accettare una nota che il
+salvataggio poi rifiuta. Come i tre rami qui sopra, `config.orari` si salva **in blocco**: con la
+fusione chiave per chiave un evento cancellato nel pannello rinascerebbe dal file salvato.
+
+Come si usa è nel capitolo *La schedule della settimana* qui sotto; il modello dei dati con i suoi
+limiti, cosa arriva alla pagina e a `js/dati.js` e la compatibilità con il formato di prima sono
+nell'ultimo capitolo di [`docs/PANNELLO.md`](docs/PANNELLO.md).
 
 ### Testo con grassetto, corsivo e link
 
@@ -189,6 +269,126 @@ I campi di tipo `ricco` accettano un po' di HTML: `b strong i em u s br small ma
 
 Restano testo semplice, senza HTML, tutte le chiavi che finiscono dentro un attributo o dentro
 `js/dati.js`: lì il markup non verrebbe interpretato, verrebbe stampato.
+
+---
+
+## La schedule della settimana
+
+La sezione «La settimana» mostra i sette giorni come **locandine**: i giorni di diretta con ora,
+titolo, gioco, una nota e, se vuoi, un'immagine; i giorni di riposo come strisce strette e spente.
+Sotto il nastro possono comparire gli **eventi speciali** — una maratona, una serata fuori
+programma — ognuno con la sua data, e dietro tutta la sezione c'è un **fondale**, un'immagine
+sfumata ai bordi e velata. Dagli stessi dati nascono il conto alla rovescia della copertina e gli
+orari scritti nella pagina.
+
+Si cambia tutto dal pannello, senza aprire file. Gli orari sono sempre quelli del fuso del canale
+(di serie `Europe/Rome`); chi guarda da un altro fuso vede sotto l'ora anche la sua, con «Da te»
+davanti.
+
+### Aprire l'editor
+
+1. Avvia il server e apri **http://localhost:4173/pannello/** (capitolo *Avvio rapido*).
+2. Nell'anteprima scendi alla sezione «La settimana» e **clicca un giorno**. Il pannello a sinistra
+   apre l'editor della schedule proprio su quel giorno. Un clic su un evento speciale apre
+   quell'evento.
+
+Ci si arriva anche in altri due modi: clicca il riquadro delle spie nella copertina e premi
+**Modifica la schedule**, oppure premi `Ctrl+K` e scrivi «schedule».
+
+In cima all'editor c'è un **riepilogo**: quante dirette a settimana, ora e durata di serie, fuso,
+eventi in arrivo, e i sette giorni in miniatura (un clic su un giorno lo apre). Sotto ci sono tre
+linguette: **Settimana**, **Eventi speciali** e **Fondale**.
+
+### Cambiare giorni e orari: linguetta «Settimana»
+
+1. In alto ci sono **Ora di serie** (scritta come `21:00`), **Durata di serie** (in ore, a passi di
+   mezz'ora: `4`, `2,5`) e **Fuso orario**. Valgono per ogni giorno che non ha un orario suo.
+2. Sotto ci sono i sette giorni, da lunedì a domenica. L'**interruttore** accanto al nome accende o
+   spegne la diretta di quel giorno.
+3. Clicca il nome di un giorno acceso per aprire la sua scheda. Se ne apre uno alla volta.
+   - **Ora di inizio** e **Durata (ore)**: lasciale vuote e valgono quelle di serie (le caselle vuote
+     te le ricordano). Scrivile solo se quel giorno è diverso. L'ora si può battere anche come
+     `2130`: uscendo dalla casella diventa `21:30`. Sotto, una riga rilegge il risultato, per esempio
+     «In onda dalle 21:00 alle 01:00 del giorno dopo · 4 h».
+   - **Titolo** (fino a 40 caratteri), **Gioco** (40) e **Nota** (120): facoltativi, su una riga
+     sola, con il contatore.
+   - **Immagine di sfondo**: la locandina di quel giorno (qui sotto).
+4. **Salva**, guarda l'anteprima, **Pubblica**.
+
+Un giorno spento **tiene la sua scheda**: sul sito non si vede niente di suo, ma riaccendendolo
+ritrovi titolo, gioco, nota e immagine com'erano.
+
+Se una casella è sbagliata — un'ora come `25:00`, una durata di 30 ore — l'errore compare accanto
+alla casella appena ne esci, la riga del giorno dice quanti errori ha, e il salvataggio non passa
+finché non li correggi.
+
+### Aggiungere un evento speciale: linguetta «Eventi speciali»
+
+Un evento è una diretta **fuori programma con una data precisa**.
+
+1. Premi **Aggiungi evento**. Nasce già aperto, con la data di oggi e l'ora e la durata di serie.
+2. Scrivi il **Titolo** (obbligatorio, fino a 40 caratteri) e sistema **Data**, **Ora di inizio** e
+   **Durata (ore)** (fino a 72 ore, a passi di mezz'ora). Se vuoi aggiungi **Gioco** (40), **Nota**
+   (160) e un'immagine.
+3. **Salva** e **Pubblica**.
+
+Sul sito l'evento compare sotto il nastro, con la data grande e l'etichetta «Speciale»; se cade in
+uno dei giorni che il nastro sta mostrando, anche quel giorno prende lo stesso segno. Il conto alla
+rovescia della copertina lo conta come una diretta: se viene prima della prossima serata normale,
+conta verso l'evento.
+
+Gli eventi sono **al massimo otto**. Un evento **finito** resta nel pannello, in fondo all'elenco
+sotto «Passati», ma dal sito **sparisce da solo**, anche senza ripubblicare. Per fare posto a uno
+nuovo si elimina un evento passato con **Elimina evento**, che chiede conferma.
+
+### Mettere un'immagine di sfondo
+
+Il **blocco immagine** è lo stesso in tre posti: nella scheda di un giorno, in un evento e nella
+linguetta **Fondale**, che è l'immagine dietro tutta la sezione.
+
+1. Apri il giorno, l'evento o la linguetta **Fondale**.
+2. Scegli l'immagine in uno di tre modi:
+   - **Scegli dalla libreria** — le immagini già caricate, comprese le cinque grafiche del canale
+     che ci sono di partenza (capitolo *Le immagini*);
+   - **Carica dal computer** — un file PNG, JPG, WEBP o SVG;
+   - **trascina un file** direttamente sul riquadro dell'immagine.
+3. Sistema il **punto di fuoco** e il **Velo** (per il fondale, l'**Intensità**): qui sotto cosa
+   sono. Quello che cambi si vede subito anche nell'anteprima.
+4. **Salva** e **Pubblica**.
+
+**Togli** toglie l'immagine da quel posto; il file resta nella libreria. Una locandina senza
+immagine sul sito si disegna lo stesso, con un tratto della città notturna e il nome del giorno in
+filigrana.
+
+Non serve preparare la foto prima: una foto grande **il pannello la rimpicciolisce e la converte in
+WebP da solo**, prima di caricarla (capitolo *Le immagini*).
+
+### Il fuoco, il velo e l'intensità
+
+- **Il fuoco** è il punto dell'immagine che deve restare **sempre in vista**. La stessa immagine sul
+  computer riempie una locandina verticale e sul telefono una fascia orizzontale: qualcosa si taglia
+  per forza, e il fuoco dice che cosa tenere — una faccia, una scritta. Si sceglie cliccando o
+  trascinando sull'immagine, dove compare un mirino; da tastiera con le frecce (`Maiusc` + frecce
+  per passi di 10) e con `Inizio` o il bottone **Centra** per tornare al centro. Accanto, due
+  ritagli piccoli, **Computer** e **Telefono**, fanno vedere che cosa resta in vista sull'uno e
+  sull'altro. Un'immagine appena scelta riparte sempre dal centro.
+- **Il velo** (giorni ed eventi, da 30 a 90, di serie 60) è quanto si scurisce l'immagine sotto le
+  scritte. Più velo vuol dire testo più leggibile e immagine più scura; le scritte restano leggibili
+  anche al minimo, perché hanno una sfumatura loro.
+- **L'intensità** (solo il fondale, da 0 a 100, di serie 30) è quanto si vede il fondale dietro la
+  sezione. A **0 è spento**: sul sito l'immagine non viene nemmeno scaricata, e la linguetta dice
+  «Spento».
+
+### Cosa vedi nell'anteprima, e cosa no
+
+L'anteprima del pannello mostra la sezione con giorni, orari, titoli, immagini, eventi e fondale, e
+il giorno o l'evento che hai aperto ha un contorno ciano. Non mostra le **date** sui giorni, i segni
+**Oggi**, **Prossima** e **In onda** e l'ora di chi guarda: li aggiunge il JavaScript del sito mentre
+gira, e nell'anteprima il JavaScript del sito non c'è (capitolo *Modificare il sito*). Per vederli,
+**Pubblica** e apri il sito.
+
+La guida completa dell'editor, con tutti i casi, è nel capitolo 11 di
+[`docs/PANNELLO.md`](docs/PANNELLO.md).
 
 ---
 
@@ -209,12 +409,12 @@ prosa, in questo file, e la prosa non parla.
 
 ## Cose da fare quando il sito va online
 
-1. **Domini di Twitch.** Nel pannello, gruppo «Canale, contatti e immagini», aggiungi il dominio
-   di produzione con e senza `www` (per esempio `slayerbeard.it` e `www.slayerbeard.it`). Senza,
-   il player non parte: `localhost` e `127.0.0.1` sono già inclusi da soli.
-2. **Indirizzo pubblico del sito.** Nello stesso gruppo: riempie il `<link rel="canonical">` e
+1. **Domini di Twitch.** Nel pannello, menu ☰ → «Canale, contatti e immagini», aggiungi il
+   dominio di produzione con e senza `www` (per esempio `slayerbeard.it` e `www.slayerbeard.it`).
+   Senza, il player non parte: `localhost` e `127.0.0.1` sono già inclusi da soli.
+2. **Indirizzo pubblico del sito.** Nella stessa vista: riempie il `<link rel="canonical">` e
    l'`og:url`. Lasciato vuoto, la pagina usa `./` e funziona lo stesso, ma le anteprime social
-   sono più fragili. I testi delle anteprime stanno nel gruppo «Scheda della pagina».
+   sono più fragili. I testi delle anteprime stanno in menu ☰ → «Google e social».
 3. **«Ultima diretta», se vuoi che si aggiorni da sé.** È facoltativo e si fa una volta sola:
    `node server/imposta-twitch.js <clientId> <clientSecret>`, con le due chiavi di un'app
    registrata su [dev.twitch.tv](https://dev.twitch.tv/console/apps) — può essere la stessa del
@@ -223,10 +423,14 @@ prosa, in questo file, e la prosa non parla.
    nessun account. Senza, quel campo resta una casella da riempire a mano, e il sito funziona
    esattamente come prima. Il capitolo qui sotto spiega il resto.
 4. **Pubblica**, poi **carica online** il contenuto della cartella: `index.html`, `css/`, `js/`,
-   `img/`, e `contenuti/media/` se hai caricato immagini dal pannello.
+   `img/`, **`contenuti/media/`** se il sito usa un'immagine della libreria (una caricata dal
+   pannello, o una delle grafiche del canale scelta per un giorno, un evento o il fondale) e
+   **`contenuti/font/`** se hai caricato font (bastano i file dei font: `elenco.json` serve solo al
+   pannello).
    Attenzione: i file generati sono tre — `index.html`, `js/dati.js` e **`css/tema.css`**. Se
    carichi solo l'HTML, il sito online resta con i colori e i caratteri di `tokens.css` e non si
-   capisce perché.
+   capisce perché. E se l'hosting aggiunge una Content-Security-Policy sua, deve permettere i font
+   del sito stesso (`font-src 'self'`), come fa quella della pagina.
    Non serve caricare `server/`, `pannello/`, `modelli/`, né il resto di `contenuti/`: sono gli
    attrezzi, non il sito. Se il tuo hosting è pubblico, **è meglio non caricarli affatto**.
 
@@ -440,16 +644,18 @@ collaudo controlla che le voci restino sei.
 stesso app token che aggiorna «Ultima diretta». Senza, la vetrina resta spenta e nel pannello si
 può accendere quanto si vuole senza che compaia niente — non ci sarebbe niente da mostrare.
 
-Dal pannello, gruppo **«Le clip»**, si scelgono tre cose: se mostrarla, **quante** clip (da 1 a
+Dal pannello — si clicca la vetrina nell'anteprima, parte **«Le clip»**; da spenta si accende
+dalla sezione «La diretta» — si scelgono tre cose: se mostrarla, **quante** clip (da 1 a
 12) e **di quale periodo** — ultima settimana, ultimo mese, ultimo anno, o da sempre. Twitch le
 ordina per visualizzazioni, dalla più vista in giù. Periodo stretto significa vetrina che cambia
 spesso ma che può restare vuota nelle settimane fiacche; «da sempre» significa vetrina sempre
 piena e sempre uguale.
 
-L'elenco vero sta in `config.clip.voci` ed è **l'unico ramo di `contenuti.json` che non ha un
-campo nello schema**: lo riempie il server a ogni pubblicazione, e una casella nel pannello
-sarebbe una casella riscritta sotto le dita di chi la compila. La copertura dello schema lo salta
-apposta (`GENERATI` in `contenuti/schema.js`) e il collaudo verifica tutte e due le cose.
+L'elenco vero sta in `config.clip.voci` ed è **l'unico ramo di `contenuti.json` che riempie il
+server**, senza un campo nello schema: una casella nel pannello sarebbe una casella riscritta
+sotto le dita di chi la compila. La copertura dello schema lo salta apposta (`GENERATI` in
+`contenuti/schema.js`) e il collaudo verifica tutte e due le cose. Gli altri rami senza campo sono
+i tre dell'editor (`EDITOR`), che invece scrive il pannello: capitolo *Modificare il sito*.
 
 **Le anteprime.** Le serve Twitch da `clips-media-assets2.twitch.tv` (e da
 `clips-media-assets.twitch.tv`, per le clip vecchie): sono i due host che si sono aggiunti a
@@ -469,16 +675,24 @@ periodo scelto, l'elenco **non** viene svuotato.
 
 ## Colori e caratteri
 
-**Non si toccano più a mano.** Si cambiano dal pannello, gruppo «Aspetto»: dodici colori, tre
-caratteri, l'arrotondamento degli angoli, la larghezza massima, l'unità di spaziatura e
-l'intensità degli aloni dello sfondo. Alla pubblicazione quella configurazione diventa
-`css/tema.css`, che viene caricato subito dopo `css/tokens.css` e ne riscrive i token.
+**Non si toccano più a mano.** Si cambiano dal pannello, menu ☰ → «Impostazioni del sito» (nello
+schema è il gruppo «Aspetto»): dodici colori, tre caratteri, l'arrotondamento degli angoli, la
+larghezza massima, l'unità di spaziatura e l'intensità degli aloni dello sfondo, più cinque
+combinazioni pronte. Alla pubblicazione quella configurazione diventa `css/tema.css`, che viene
+caricato subito dopo `css/tokens.css` e ne riscrive i token.
 
 - `css/tokens.css` è il **punto di partenza**: definisce tutti i token con i valori originali.
   Se `tema.css` manca, il sito è comunque completo e nessuno se ne accorge.
 - `css/tema.css` è **generato**: ha in testa l'avvertenza «non si modifica a mano», e qualunque
   modifica fatta lì dentro sparisce alla generazione successiva.
-- Nessun altro foglio di stile contiene un valore esadecimale.
+- Nessun altro foglio di stile contiene un valore esadecimale. L'unica eccezione è il CSS che
+  scrive l'editor in `<style id="sb-stili">`, e solo quando nella scheda Stile si sceglie un
+  colore libero: i colori del tema escono come `var(--token)` e seguono il tema.
+
+Oltre al tema, ogni elemento della pagina può avere **uno stile suo**, per Telefono, Tablet e
+Computer (scheda Stile del pannello, `config.stili`). Quelle regole stanno nella pagina, in
+`<style id="sb-stili">`, e battono i fogli del sito con `!important`: è l'unico posto dove il
+progetto lo ammette, perché lì c'è una scelta esplicita su un elemento preciso.
 
 I token derivati — vetri, veli, linee, gradienti, aloni, bagliori, i due raggi minori — non si
 scelgono: si **calcolano** dai dodici colori e dai tre numeri, in `server/lib/tema.js`. E la
@@ -498,10 +712,84 @@ altrui e resta quello di `tokens.css`.
 
 ## Le immagini
 
-Le immagini in `img/` sono copie locali degli asset del canale Twitch, scelta voluta: gli URL del
-CDN di Twitch cambiano a ogni modifica del profilo. Se lo streamer cambia avatar o banner, vanno
-riscaricate e sostituite tenendo gli stessi nomi. Attenzione a `mascot.png`: il fondo viola
-**non è trasparente**, nel CSS è sfumato con `mask-image` e non va messo su fondi chiari.
+Le immagini del sito sono **file locali**, non indirizzi del CDN di Twitch, ed è una scelta voluta:
+quegli indirizzi cambiano a ogni modifica del profilo, e un'immagine che sparisce da sola è peggio
+di una da aggiornare a mano. Stanno in due cartelle.
+
+### Le immagini fisse: `img/`
+
+Sono ricavate dalle grafiche del canale e alleggerite una per una, guardando il risultato alle misure
+in cui si vedono davvero.
+
+| File | Misure · peso | Dove si vede | Dove si cambia nel pannello |
+|---|---|---|---|
+| `img/copertina.webp` | 1920×1080 · 44 kB | il fondale della copertina: la città notturna, senza scritte | menu ☰ → «Canale, contatti e immagini» → *Banner della copertina* |
+| `img/avatar.webp` | 256×256 · 7 kB | il menu laterale, il ritratto di «Chi sono» e i dati strutturati per Google | un clic sull'avatar o sul ritratto nell'anteprima, oppure *Avatar* nella stessa vista |
+| `img/mascotte.webp` | 386×556 · 22 kB | il pollo accanto al player | un clic sul pollo nell'anteprima, oppure *Mascotte* |
+| `img/og.jpg` | 1200×630 · 77 kB | l'anteprima del link quando viene condiviso | *Immagine di anteprima per i social* |
+| `img/favicon.png` | 180×180 · 16 kB | la linguetta del browser e l'icona sulla schermata dell'iPhone | *Icona della linguetta* |
+| `img/settimana-sfondo.webp` | 1920×927 · 23 kB | il fondale della sezione «La settimana» | editor della schedule, linguetta **Fondale** |
+
+Prima erano cinque PNG da 2037 kB in tutto (`avatar.png`, `banner.png`, `mascot.png`, `og.png`,
+`favicon.png`); le cinque immagini che li sostituiscono pesano 165 kB, e 188 kB contando anche il
+fondale nuovo della schedule. I PNG vecchi non ci sono più.
+
+Qualche cosa da sapere prima di cambiarle:
+
+- **La mascotte ha la trasparenza vera.** Il pollo è scontornato, con la cresta e il contorno interi,
+  e sta bene su qualunque fondo. Se la cambi, usa un'immagine con lo sfondo trasparente e
+  proporzioni simili: posizione e oscillazioni in `css/pollo.css` sono tarate su questa.
+- **L'icona della linguetta resta un PNG**, perché la pagina la dichiara così
+  (`type="image/png"`). Un PNG piccolo come quello si carica com'è, senza conversione (qui sotto).
+- **L'anteprima social conviene lasciarla in JPG** da 1200×630 e sotto i 350 kB: così parte com'è.
+  Un file più pesante verrebbe riscritto in WebP, e non tutti i servizi che disegnano le anteprime
+  dei link lo sanno leggere.
+- **`copertina.webp` e `settimana-sfondo.webp` le usa anche `css/sezioni.css`**, come trama delle
+  locandine e degli eventi senza immagine. Sostituendo il file con lo stesso nome cambiano anche
+  quelle; rinominandolo, vanno aggiornati i due `url()` del foglio.
+
+Scegliere un'immagine nuova dal pannello **non cancella il file vecchio**: il campo punta alla nuova,
+che sta nella libreria, e quello di prima resta in `img/` senza essere usato. Chi preferisce può
+anche sostituire a mano un file di `img/` tenendo lo stesso nome, estensione compresa.
+
+### La libreria: `contenuti/media/`
+
+È la cartella della **libreria del pannello** (menu ☰ → **Immagini**): ci finiscono le immagini
+caricate dal pannello, e di partenza ci sono già cinque grafiche del canale, pronte da scegliere per
+i giorni, gli eventi e il fondale della schedule.
+
+| File | Misure · peso | Cos'è |
+|---|---|---|
+| `citta-notturna.webp` | 1920×1080 · 65 kB | la città notturna pulita: cielo stellato, grattacieli, nebbia viola |
+| `banner-twitch.webp` | 1200×480 · 36 kB | il banner del canale, con il pollo e gli handle social |
+| `overlay-cam.webp` | 1920×278 · 30 kB | la fascia della webcam con la scritta «SLAYER_BEARD» |
+| `spoiler-maratona.webp` | 996×1413 · 26 kB | verticale, «STARTING» al neon sulla città: fatta per un evento |
+| `stinger.webp` | 1920×927 · 27 kB | la città sfocata con due barre di luce diagonali |
+
+Nella libreria ogni immagine dice dove è usata, schedule compresa («Schedule · lunedì», «Schedule ·
+fondale della sezione»), e un'immagine ancora in uso non si può cancellare.
+
+### Il caricamento: il pannello converte in WebP
+
+Una foto presa dal telefono o un PNG esportato a 4K pesano megabyte, e il sito li farebbe scaricare a
+ogni visita. Per questo **ogni immagine caricata dal pannello** — dalla libreria, dal blocco immagine
+della schedule o trascinata sopra — passa prima dal browser, che la prepara:
+
+- un **PNG, JPG o WEBP** che pesa più di **350 kB**, o che ha il lato lungo oltre i **2400 pixel**,
+  viene rimpicciolito a 2400 pixel al massimo e riscritto in **WebP**, con lo stesso nome e
+  l'estensione `.webp`;
+- se il WebP non pesa meno dell'originale, o se il browser non sa scrivere WebP, parte l'originale;
+- sotto soglia l'immagine parte com'è: ricodificare un file già leggero toglie qualità per
+  risparmiare poco;
+- gli **SVG** e le **animazioni** (PNG e WebP animati) non si toccano; le GIF non si caricano;
+- un file che si chiama `.png` ma dentro non è un'immagine viene fermato subito, con un messaggio,
+  senza spedire niente;
+- il limite dei **4 MB** vale **dopo** la preparazione: una foto da 9 MB che diventa un WebP da
+  600 kB si carica.
+
+L'avviso a fine caricamento dice com'è andata, con il peso di prima e di dopo. Il server scrive poi
+il nome in minuscolo, con i trattini al posto degli spazi, e se il nome è già preso aggiunge `-2`,
+`-3`: una «Foto Storie.png» grande diventa `contenuti/media/foto-storie.webp`.
 
 ---
 
@@ -658,8 +946,9 @@ tastiera, skip link, landmark ARIA, rispetto di `prefers-reduced-motion`. Regge 
 2560 px senza scroll orizzontale.
 
 Senza JavaScript la pagina resta leggibile e completa: si perdono solo il player, il conto alla
-rovescia, l'evidenziazione della sezione corrente e il pollo. I contenuti, gli orari e i link
-sono già nell'HTML generato.
+rovescia, l'evidenziazione della sezione corrente, il pollo e, sul nastro della settimana, le date,
+i segni «oggi», «prossima» e «in onda» e l'ora di chi guarda. I contenuti, gli orari, le immagini
+della schedule, gli eventi speciali e i link sono già nell'HTML generato.
 
 Browser: versioni correnti di Chrome, Edge, Firefox e Safari.
 
@@ -677,12 +966,14 @@ d'ingresso: qui sotto c'è cosa leggere e quando.
 | [`CONTRATTO.md`](CONTRATTO.md) | Le regole con cui il sito è stato costruito: niente npm, niente framework, niente CDN, tutto in italiano. Vale ancora, tranne i tre punti superati dall'addendum. |
 | [`CONTRATTO-2.md`](CONTRATTO-2.md) | L'addendum della seconda fase: la sezione «diretta», il pollo, il tema modificabile e il testo ricco. |
 | [`CONTRATTO-3.md`](CONTRATTO-3.md) | L'addendum della terza fase: la modalità lurk e il collegamento con Twitch. |
+| [`CONTRATTO-4.md`](CONTRATTO-4.md) | L'addendum della quarta fase: l'editor unico del pannello, con i marcatori `data-sb-*`, le parti, i blocchi e i tre rami dell'editor. |
+| [`CONTRATTO-5.md`](CONTRATTO-5.md) | L'addendum della quinta fase: la schedule rifatta (`config.orari` con schede, eventi speciali e fondale) e le grafiche nuove del sito. |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Come si lavora al codice: flusso di lavoro, convenzione dei commit, stile, checklist prima di una pull request. |
 | [`SECURITY.md`](SECURITY.md) | Come segnalare una vulnerabilità, i punti sensibili noti e i casi fuori ambito. |
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Il codice di condotta della comunità. |
 | [`CHANGELOG.md`](CHANGELOG.md) | Il registro delle modifiche, versione per versione. |
 
-`node server/autotest.js` passa per intero: **146 prove su 146**. Il collaudo non
+`node server/autotest.js` passa per intero: **172 prove su 172**. Il collaudo non
 tocca la rete nemmeno nella sezione sul collegamento con Twitch — quello che si
 prova lì è che una pubblicazione regga quando Twitch non risponde, e un collaudo
 che dipendesse da Twitch sarebbe rosso proprio il giorno in cui deve dimostrarlo.
@@ -712,8 +1003,9 @@ soggetti esterni, e vale la pena sapere quali:
   Twitch, gli altri due le anteprime delle clip. Sono tutti host di sole
   immagini: non eseguono niente, e nessun'altra cosa della pagina viene da lì.
 
-Le immagini in `img/` e la cattura `Cattura.PNG` ritraggono materiale grafico
-del canale slayer_beard e non sono coperte dalla licenza di questo progetto.
+Le immagini in `img/` e in `contenuti/media/` e la cattura `Cattura.PNG`
+ritraggono materiale grafico del canale slayer_beard e non sono coperte dalla
+licenza di questo progetto.
 
 ---
 

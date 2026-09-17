@@ -3,7 +3,8 @@
 
    Qui dentro stanno SOLO le classi che nascono con i tipi di campo
    aggiunti dal CONTRATTO-2 §5: testo ricco, colore, font, interruttore,
-   piu' la barra delle combinazioni pronte. Niente di pannello.css viene
+   piu' la barra delle combinazioni pronte, e l'editor della schedule del
+   CONTRATTO-5 §8 (tipo «orari»). Niente di pannello.css viene
    ridefinito: quel foglio ha un altro proprietario, e le sue variabili
    (--p-*) qui si usano e basta. Si carica dopo, cosi' l'ordine e' chiaro
    anche a chi legge il sorgente della pagina.
@@ -19,6 +20,8 @@
      4. interruttore            (.interruttore__*)
      5. barra delle combinazioni (.tema-barra, .preset*)
      6. schermi stretti e prefers-reduced-motion
+     7. la schedule della settimana (.palinsesto*, CONTRATTO-5 §8),
+        con il suo movimento ridotto in fondo
    ===================================================================== */
 
 /* --------------------------------------------------------------- 1. */
@@ -340,6 +343,651 @@
   .interruttore,
   .interruttore__pallina,
   .preset {
+    transition: none;
+  }
+}
+
+/* --------------------------------------------------------------- 7. */
+/* La schedule della settimana (moduli/settimana.js).
+
+   Parla la lingua della regia come il resto del pannello: linee da 1 px,
+   etichette in monospazio maiuscolo, viola per ciò che è scelto (la vista,
+   il giorno aperto), ciano per ciò che è acceso (i giorni di diretta, il
+   fuoco, l'orario in onda). Il pannello va da 380 a 760 px: quello che
+   dipende dalla larghezza passa da container query sull'editor stesso,
+   così sta bene anche in una vista del menu. */
+
+.palinsesto-campo-radice { gap: 10px; }
+
+.palinsesto {
+  container: palinsesto / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.palinsesto__etichetta {
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.palinsesto__obbligo { letter-spacing: .06em; }
+
+.palinsesto__nota { font-size: 13px; line-height: 1.5; color: var(--p-testo-medio); }
+
+.palinsesto__titoletto {
+  margin: 0;
+  font-family: var(--p-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo);
+}
+
+/* --- riepilogo ------------------------------------------------------ */
+.palinsesto-riepilogo {
+  container: riepilogo / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+}
+
+/* Quattro strumenti divisi da linee da 1 px: la griglia ha il colore della
+   linea e le celle il colore del fondo, come i quadri della copertina. */
+.palinsesto-riepilogo__strumenti {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  border: 1px solid var(--p-linea);
+  background: var(--p-linea);
+}
+.palinsesto-riepilogo__strumento {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 9px;
+  background: var(--p-pannello);
+}
+.palinsesto-riepilogo__nome {
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+.palinsesto-riepilogo__valore {
+  margin: 0;
+  font-size: 14px;
+  color: var(--p-testo);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.palinsesto-riepilogo__nastro {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.palinsesto-riepilogo__cella {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 100%;
+  padding: 6px 0 7px;
+  border: 1px solid var(--p-linea);
+  border-radius: 4px;
+  background: var(--p-fondo-2);
+  color: var(--p-testo-tenue);
+  font: inherit;
+  line-height: 1.2;
+}
+button.palinsesto-riepilogo__cella { cursor: pointer; transition: border-color var(--p-durata-lampo) ease; }
+button.palinsesto-riepilogo__cella:hover { border-color: var(--p-linea-viva); }
+.palinsesto-riepilogo__cella[data-acceso="1"] {
+  border-color: var(--p-ciano-bordo);
+  background: var(--p-ciano-velo);
+  color: var(--p-ciano);
+}
+button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--p-ciano); }
+.palinsesto-riepilogo__cella { overflow: hidden; isolation: isolate; }
+/* La locandina del giorno in trasparenza sotto nome e ora, come sul nastro
+   vero; l'ombra del testo lo tiene leggibile anche su un'immagine chiara. */
+.palinsesto-riepilogo__foto { position: absolute; inset: 0; z-index: -1; }
+.palinsesto-riepilogo__foto img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: .4; }
+.palinsesto-riepilogo__cella[data-immagine="1"] { text-shadow: 0 1px 2px var(--p-nero); }
+.palinsesto-riepilogo__abbr { font-family: var(--p-mono); font-size: 10px; letter-spacing: .06em; }
+.palinsesto-riepilogo__ora { font-family: var(--p-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.palinsesto-riepilogo__prossimo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--p-linea);
+}
+.palinsesto-riepilogo__evento { font-size: 13px; color: var(--p-testo); overflow-wrap: anywhere; }
+
+@container riepilogo (min-width: 500px) {
+  .palinsesto-riepilogo__strumenti { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .palinsesto-riepilogo__ora { font-size: 12px; }
+}
+
+/* --- viste ---------------------------------------------------------- */
+.palinsesto__linguette {
+  display: flex;
+  border-bottom: 1px solid var(--p-linea);
+}
+.palinsesto__linguetta {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: -1px;
+  padding: 8px 4px 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--p-testo-tenue);
+  font-family: var(--p-mono);
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  line-height: 1.25;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--p-durata-lampo) ease, border-color var(--p-durata-lampo) ease;
+}
+.palinsesto__linguetta:hover { color: var(--p-testo-medio); }
+.palinsesto__linguetta[aria-selected="true"] { color: var(--p-testo); border-bottom-color: var(--p-viola); }
+.palinsesto__linguetta:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: -2px; border-radius: 3px; }
+/* Una vista con errori a video lo dice anche da chiusa. */
+.palinsesto__linguetta[data-errori="1"] > span:first-child::after { content: " ●"; color: var(--p-errore); }
+
+.palinsesto__badge {
+  padding: 1px 7px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: .04em;
+  color: var(--p-testo-medio);
+  font-variant-numeric: tabular-nums;
+}
+.palinsesto__badge[data-acceso="1"] { border-color: var(--p-ciano-bordo); color: var(--p-ciano); }
+
+@container palinsesto (min-width: 540px) {
+  .palinsesto__linguetta { flex-direction: row; justify-content: center; gap: 8px; font-size: 11px; letter-spacing: .12em; }
+}
+
+.palinsesto__pannello { min-width: 0; }
+.palinsesto__vista { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.palinsesto__intesta { display: flex; flex-direction: column; gap: 6px; }
+
+/* --- caselle -------------------------------------------------------- */
+.palinsesto__griglia {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+/* Orario di serie: ora e durata affiancate, il fuso (lungo) sotto. */
+.palinsesto__griglia--serie > :nth-child(3) { grid-column: 1 / -1; }
+/* Evento: la data prende la riga intera, il calendario nativo è largo. */
+.palinsesto__griglia--evento > :first-child { grid-column: 1 / -1; }
+@container palinsesto (min-width: 600px) {
+  .palinsesto__griglia--serie { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr); }
+  .palinsesto__griglia--serie > :nth-child(3) { grid-column: auto; }
+}
+
+.palinsesto-campo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.palinsesto-campo__input { width: 100%; min-width: 0; }
+/* Il segnaposto dice il valore di serie o un esempio: non deve sembrare
+   scritto, altrimenti una casella vuota pare già compilata. */
+.palinsesto-campo__input::placeholder { color: var(--p-testo-tenue); opacity: 1; }
+.palinsesto-campo__aiuto { font-size: 12px; line-height: 1.4; color: var(--p-testo-tenue); }
+.palinsesto-campo .campo__contatore { flex: none; white-space: nowrap; }
+/* La riga sotto la casella c'è solo se ha qualcosa da dire. */
+.palinsesto-campo .campo__pie:not(:has(.campo__contatore)):has(.campo__errore[hidden]) { display: none; }
+.palinsesto-campo.is-errato .campo__input { border-color: var(--p-errore); }
+.palinsesto-campo.is-errato .palinsesto__etichetta { color: var(--p-errore); }
+
+.palinsesto__serie {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-fondo-2);
+}
+
+/* L'orario vero del giorno o dell'evento, in ciano: è quello che va in onda.
+   Un evento finito non va più in onda, e si spegne. */
+.palinsesto__fine {
+  font-family: var(--p-mono);
+  font-size: 11.5px;
+  letter-spacing: .02em;
+  line-height: 1.45;
+  color: var(--p-ciano);
+}
+.palinsesto__fine[data-passato="1"] { color: var(--p-testo-tenue); }
+
+/* --- righe dei giorni e degli eventi -------------------------------- */
+.palinsesto__giorni,
+.palinsesto__eventi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.palinsesto-giorno,
+.palinsesto-evento {
+  min-width: 0;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+  transition: border-color var(--p-durata-lampo) ease;
+}
+.palinsesto-giorno[data-aperto="1"],
+.palinsesto-evento[data-aperto="1"] { border-color: var(--p-viola-bordo); }
+.palinsesto-giorno[data-errori="1"],
+.palinsesto-evento[data-errori="1"] { border-color: var(--p-errore-bordo); }
+/* Raggiunta da un clic nell'anteprima: un contorno che dice «sei qui». */
+.palinsesto-giorno.is-trovato,
+.palinsesto-evento.is-trovato { outline: 2px solid var(--p-ciano); outline-offset: 2px; }
+
+.palinsesto-giorno__testa { display: flex; align-items: center; gap: 6px; padding: 5px 5px 5px 10px; }
+
+.palinsesto-giorno__apri,
+.palinsesto-evento__apri {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--p-raggio-s);
+  background: transparent;
+  color: var(--p-testo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--p-durata-lampo) ease;
+}
+.palinsesto-evento__apri { width: 100%; padding: 8px 10px 8px 8px; }
+.palinsesto-giorno__apri:hover:not(:disabled),
+.palinsesto-evento__apri:hover { background: var(--p-pannello-2); }
+.palinsesto-giorno__apri:disabled { cursor: default; }
+.palinsesto-giorno__apri:focus-visible,
+.palinsesto-evento__apri:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: -2px; }
+
+.palinsesto-giorno__abbr {
+  flex: none;
+  width: 3em;
+  font-family: var(--p-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--p-testo-tenue);
+}
+.palinsesto-giorno[data-acceso="1"] .palinsesto-giorno__abbr { color: var(--p-ciano); }
+
+.palinsesto-giorno__testo,
+.palinsesto-evento__testo { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.palinsesto-giorno__nome { font-size: 14px; font-weight: 600; color: var(--p-testo); }
+.palinsesto-giorno[data-acceso="0"] .palinsesto-giorno__nome { font-weight: 500; color: var(--p-testo-medio); }
+.palinsesto-giorno__riassunto,
+.palinsesto-evento__quando {
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--p-testo-medio);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.palinsesto-giorno[data-acceso="0"] .palinsesto-giorno__riassunto { color: var(--p-testo-tenue); }
+.palinsesto-giorno__segni { display: contents; }
+
+.palinsesto__segno,
+.palinsesto__errori {
+  flex: none;
+  padding: 2px 6px;
+  border: 1px solid var(--p-viola-bordo);
+  border-radius: 999px;
+  background: var(--p-pannello);
+  font-family: var(--p-mono);
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--p-viola-chiaro);
+}
+.palinsesto__errori { border-color: var(--p-errore-bordo); color: var(--p-errore); }
+
+/* Con un'immagine la riga si porta dietro la sua locandina, sfumata da
+   destra verso il testo: la settimana si riconosce a colpo d'occhio anche
+   con tutti i giorni chiusi, come sul nastro vero. Sta sotto al contenuto
+   del bottone (isolation), e la maschera la spegne dove c'è da leggere. */
+.palinsesto-giorno__apri,
+.palinsesto-evento__apri { position: relative; isolation: isolate; overflow: hidden; }
+.palinsesto__mini {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  display: block;
+  width: 62%;
+  opacity: .5;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent, var(--p-nero) 80%);
+  mask-image: linear-gradient(to right, transparent, var(--p-nero) 80%);
+  transition: opacity var(--p-durata-lampo) ease;
+}
+.palinsesto__mini[data-pieno="0"] { display: none; }
+.palinsesto__mini img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.palinsesto-giorno__apri:hover .palinsesto__mini,
+.palinsesto-evento__apri:hover .palinsesto__mini,
+[aria-expanded="true"] > .palinsesto__mini { opacity: .7; }
+
+.palinsesto__freccia {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--p-testo-tenue);
+  transition: transform var(--p-durata) ease;
+}
+[aria-expanded="true"] > .palinsesto__freccia { transform: rotate(90deg); color: var(--p-viola-chiaro); }
+.palinsesto-giorno__apri:disabled > .palinsesto__freccia { opacity: .3; }
+
+/* In poco spazio la riga tiene l'essenziale: giorno, orario, stato. */
+@container palinsesto (max-width: 400px) {
+  .palinsesto__segno:not(.palinsesto-evento__stato) { display: none; }
+}
+
+.palinsesto-giorno__corpo,
+.palinsesto-evento__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 12px 14px;
+  border-top: 1px solid var(--p-linea);
+  background: var(--p-fondo-2);
+}
+
+/* Largo abbastanza, le caselle a sinistra e l'immagine a destra. */
+.palinsesto__due { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.palinsesto__colonna { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+@container palinsesto (min-width: 640px) {
+  .palinsesto__due { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 20px; }
+}
+
+/* --- eventi --------------------------------------------------------- */
+.palinsesto__azioni { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.palinsesto__conta { font-family: var(--p-mono); font-size: 12px; color: var(--p-testo-medio); font-variant-numeric: tabular-nums; }
+.palinsesto__limite {
+  padding: 8px 10px;
+  border: 1px solid var(--p-allerta-bordo);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-allerta-velo);
+  font-size: 13px;
+  color: var(--p-allerta);
+}
+.palinsesto__vuoto {
+  padding: 16px;
+  border: 1px dashed var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  font-size: 13.5px;
+  text-align: center;
+  color: var(--p-testo-medio);
+}
+.palinsesto__separatore {
+  padding: 8px 2px 0;
+  font-family: var(--p-mono);
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--p-testo-tenue);
+}
+
+/* La data come un foglio di calendario: numero grande, mese in ciano. */
+.palinsesto-evento__data {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 46px;
+  padding: 4px 0 5px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 4px;
+  background: var(--p-fondo-2);
+  line-height: 1.1;
+}
+.palinsesto-evento__numero { font-size: 19px; font-weight: 700; color: var(--p-testo); font-variant-numeric: tabular-nums; }
+.palinsesto-evento__mese { font-family: var(--p-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--p-ciano); }
+.palinsesto-evento__giorno { font-family: var(--p-mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--p-testo-tenue); }
+.palinsesto-evento__titolo {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.palinsesto-evento[data-senza-titolo="1"] .palinsesto-evento__titolo { font-style: italic; font-weight: 500; color: var(--p-testo-tenue); }
+.palinsesto-evento[data-passato="1"] .palinsesto-evento__data,
+.palinsesto-evento[data-passato="1"] .palinsesto-evento__testo { opacity: .55; }
+.palinsesto-evento[data-passato="1"] .palinsesto__mini { opacity: .25; }
+.palinsesto-evento[data-passato="1"] .palinsesto-evento__mese { color: var(--p-testo-tenue); }
+.palinsesto-evento__stato[data-tipo="passato"] { border-color: var(--p-linea-forte); color: var(--p-testo-tenue); }
+.palinsesto-evento__stato[data-tipo="onda"] { border-color: var(--p-ciano-bordo); color: var(--p-ciano); }
+
+.palinsesto-evento__piede {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid var(--p-linea);
+}
+
+/* --- blocco immagine ------------------------------------------------ */
+.palinsesto-img { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.palinsesto-img__testa { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.palinsesto-img__file {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--p-mono);
+  font-size: 11px;
+  color: var(--p-testo-medio);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palinsesto-img__palco {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  padding: 10px;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-nero);
+  transition: border-color var(--p-durata-lampo) ease, background-color var(--p-durata-lampo) ease;
+}
+.palinsesto-img[data-vuoto="1"] .palinsesto-img__palco { border-style: dashed; background: var(--p-pannello); }
+.palinsesto-img .palinsesto-img__palco[data-sopra="1"] { border-style: solid; border-color: var(--p-ciano); background: var(--p-ciano-velo); }
+.palinsesto-img.is-errato .palinsesto-img__palco { border-color: var(--p-errore); }
+
+/* L'immagine intera, non ritagliata: il fuoco si sceglie guardando tutto. */
+.palinsesto-img__foto {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.palinsesto-img__foto:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 4px; border-radius: 2px; }
+.palinsesto-img__img { display: block; width: auto; max-width: 100%; height: auto; max-height: 240px; }
+@container palinsesto (min-width: 520px) {
+  .palinsesto-img__img { max-height: 300px; }
+}
+
+/* La velatura del sito: il nero sale dal basso, dove sta il testo, e il
+   cursore «Velo» ne decide la forza attraverso --velo (0,3–0,9). */
+.palinsesto-img__velo {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--p-nero) 0%, transparent 75%);
+  opacity: var(--velo, .6);
+  pointer-events: none;
+}
+/* Con l'intensità (il fondale) non c'è testo sopra e quindi niente
+   velatura: nei ritagli l'immagine si vede con la sua opacità, nel riquadro
+   grande resta piena, per mirare bene. */
+/* Anche a 0 (spento) resta un filo di immagine: il ritaglio serve a mirare, e
+   «spento» lo dicono già il cursore e la linguetta. */
+.palinsesto-img--intensita .palinsesto-img__cornice img { opacity: max(.15, var(--intensita, .3)); }
+
+.palinsesto-img__mirino {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 2px solid var(--p-ciano);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--p-nero) 70%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--p-nero) 70%, transparent);
+  pointer-events: none;
+}
+.palinsesto-img__mirino::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: var(--p-ciano);
+}
+.palinsesto-img[data-trascina="1"] .palinsesto-img__mirino {
+  box-shadow: 0 0 0 5px var(--p-ciano-velo), 0 0 0 6px color-mix(in srgb, var(--p-nero) 70%, transparent);
+}
+
+.palinsesto-img__vuoto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  text-align: center;
+  color: var(--p-testo-medio);
+}
+.palinsesto-img__ico { width: 26px; height: 26px; color: var(--p-testo-tenue); }
+.palinsesto-img__vuoto-titolo { font-family: var(--p-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--p-testo); }
+.palinsesto-img__vuoto-nota { max-width: 36ch; font-size: 12.5px; }
+.palinsesto-img__rotto { padding: 8px; font-size: 13px; text-align: center; color: var(--p-allerta); }
+.palinsesto-img__attesa {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-radius: inherit;
+  background: var(--p-velo);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--p-ciano);
+}
+.palinsesto-img__aiuto { font-size: 12px; line-height: 1.4; color: var(--p-testo-tenue); }
+
+/* I ritagli (la locandina del computer, la fascia del telefono…), con la
+   stessa velatura e due righe finte al posto del testo. Ognuno cresce in
+   proporzione al suo rapporto (flex-grow e aspect-ratio li mette il
+   modulo): con la base a 0 le altezze tornano tutte uguali. */
+.palinsesto-img__ritagli { display: flex; align-items: flex-end; gap: 10px; width: 100%; }
+.palinsesto-img__ritaglio { display: flex; flex: 1 1 0; flex-direction: column; gap: 4px; min-width: 0; margin: 0; }
+.palinsesto-img__ritaglio figcaption { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.palinsesto-img__cornice {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--p-linea-forte);
+  border-radius: 4px;
+  background: var(--p-nero);
+}
+.palinsesto-img__cornice img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.palinsesto-img__righe {
+  position: absolute;
+  left: 9%;
+  right: 30%;
+  bottom: 9%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.palinsesto-img__righe span { display: block; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--p-testo) 85%, transparent); }
+.palinsesto-img__righe span + span { width: 60%; opacity: .55; }
+
+.palinsesto-img__riga { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; }
+.palinsesto-img__lettura {
+  font-family: var(--p-mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--p-ciano);
+  font-variant-numeric: tabular-nums;
+}
+.palinsesto-img__azioni { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.palinsesto-img__cursore { display: flex; flex-direction: column; gap: 4px; }
+.palinsesto-img__cursore-testa { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.palinsesto-img__uscita { font-family: var(--p-mono); font-size: 12px; color: var(--p-testo); font-variant-numeric: tabular-nums; }
+.palinsesto-img__cursore-input { width: 100%; margin: 4px 0; accent-color: var(--p-viola); cursor: pointer; }
+.palinsesto-img__cursore-input:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 3px; }
+
+/* --- la schedule nella parte «stato» -------------------------------- */
+.parti__schedule .parti__azioni { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .palinsesto__linguetta,
+  .palinsesto-giorno,
+  .palinsesto-evento,
+  .palinsesto-giorno__apri,
+  .palinsesto-evento__apri,
+  .palinsesto__freccia,
+  .palinsesto__mini,
+  .palinsesto-img__palco,
+  button.palinsesto-riepilogo__cella {
     transition: none;
   }
 }

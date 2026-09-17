@@ -36,14 +36,15 @@
       </div>
 
       <ul class="chi__dati">
-        <li><b data-sb-testo="chi.dato1Valore">{{chi.dato1Valore}}</b><span data-sb-testo="chi.dato1Etichetta">{{chi.dato1Etichetta}}</span></li>
+        <!-- Il primo numero e quello dei follower, vero: viene da config.dati.follower come nella copertina. -->
+        <li><b data-follower>{{sito.follower}}</b><span data-sb-testo="chi.dato1Etichetta">{{chi.dato1Etichetta}}</span></li>
         <li><b data-sb-testo="chi.dato2Valore">{{chi.dato2Valore}}</b><span data-sb-testo="chi.dato2Etichetta">{{chi.dato2Etichetta}}</span></li>
         <li><b data-sb-testo="chi.dato3Valore">{{chi.dato3Valore}}</b><span data-sb-testo="chi.dato3Etichetta">{{chi.dato3Etichetta}}</span></li>
       </ul>
     </aside>
 
     <figure class="chi__ritratto" data-sb-blocco="chi.ritratto">
-      <img src="{{config.immagini.avatar}}" alt="{{chi.ritrattoAlt}}" data-sb-immagine="config.immagini.avatar" data-sb-alt="chi.ritrattoAlt">
+      <img src="{{config.immagini.avatar}}" alt="{{chi.ritrattoAlt}}" width="84" height="84" loading="lazy" decoding="async" data-sb-immagine="config.immagini.avatar" data-sb-alt="chi.ritrattoAlt">
       <figcaption>{{marchio.nome}} — {{marchio.ruolo}}</figcaption>
     </figure>
   </div>
