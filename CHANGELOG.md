@@ -110,6 +110,9 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Modificato
 
+- Follower aggiornati a 3.624 (erano 3.619). Il numero è scritto a mano in tre
+  punti di `contenuti.json` — `deck.dato1Valore`, `chi.dato1Valore` e
+  `config.dati.follower` — e non arriva da Twitch: va ritoccato ogni tanto.
 - L'affiliazione è dal 2020, non dal 2013: corretta la riga del marchio
   («Twitch Affiliate · dal 2020»), che compare sotto l'avatar di «Chi sono» e
   nella scheda per i motori di ricerca.

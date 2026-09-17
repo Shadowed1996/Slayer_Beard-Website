@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-17T09:10:45.088Z",
+  "aggiornatoIl": "2026-09-17T09:11:24.205Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -29,7 +29,7 @@
     "deck.chatApri": "Mostra la chat",
     "deck.chatChiudi": "Nascondi la chat",
     "deck.notaPlayer": "Il player è incorporato da Twitch: se il browser blocca i cookie di terze parti può non partire.",
-    "deck.dato1Valore": "3.619",
+    "deck.dato1Valore": "3.624",
     "deck.dato1Etichetta": "Follower",
     "deck.dato2Valore": "4",
     "deck.dato2Etichetta": "Dirette a settimana",
@@ -108,7 +108,7 @@
     "chi.tag5": "ITA / ENG",
     "chi.tag6": "Twitch Affiliate",
     "chi.cta": "Vieni a trovarmi su Twitch",
-    "chi.dato1Valore": "3.619",
+    "chi.dato1Valore": "3.624",
     "chi.dato1Etichetta": "follower",
     "chi.dato2Valore": "90",
     "chi.dato2Etichetta": "abbonati",
@@ -153,7 +153,7 @@
       "durataOre": 4
     },
     "dati": {
-      "follower": 3619,
+      "follower": 3624,
       "abbonati": 90,
       "spettatoriMedi": 25,
       "dal": 2013,
