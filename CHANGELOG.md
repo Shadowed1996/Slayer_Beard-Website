@@ -110,6 +110,10 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Modificato
 
+- «Chi sono» ha i testi scritti da slayer_beard: le live da agosto 2020 nate
+  come sfida personale, la citazione sul sorriso e i giochi della settimana.
+  Il titolo della sezione diventa «Chi sono» e l'occhiello sopra passa a
+  «slayer_beard», per non ripetere la stessa parola due volte.
 - La nota in fondo al piede non parla più di come è fatto il sito («Fatto in
   casa, senza framework.») ma del pollo: «Nessun pollo è stato maltrattato
   durante la costruzione di questo sito.»
