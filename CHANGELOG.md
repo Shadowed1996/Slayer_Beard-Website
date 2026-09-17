@@ -15,6 +15,80 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Il progetto è pronto per un hosting con Node.** Finora sito e pannello
+  nascevano per girare in locale (`127.0.0.1:4173`, avviati a mano); adesso lo
+  stesso progetto si carica su un hosting con Node — il caso di partenza è un
+  pannello Plesk con Passenger — e parte senza modifiche a mano. Le regole di
+  questa fase stanno in `CONTRATTO-6.md`.
+- **`app.js`**, il file d'avvio che l'hosting deve conoscere: imposta
+  `TZ=Europe/Rome` prima di qualunque `require` (gli orari della schedule sono
+  italiani, e un hosting in UTC farebbe cadere il lunedì sera di domenica),
+  legge la porta da `PORT` e poi da `SB_PORTA`, ascolta su `0.0.0.0` a meno che
+  `SB_HOST` non dica altro, e stampa una riga sola invece del riquadro d'avvio,
+  perché dall'altra parte c'è un file di log e non un terminale. Poi avvia lo
+  stesso server di `server/server.js`: stesse rotte, stesse API, stesso
+  pannello. In locale non cambia niente.
+- **`package.json`**: `npm start` per l'avvio, più gli script per generare e per
+  il collaudo, `engines.node >= 18.17`, `private: true`. **Nessuna dipendenza e
+  nessun `npm install`**: la regola del progetto resta quella.
+- **Le impostazioni passano dalle variabili d'ambiente**, tutte facoltative e
+  senza cambiare niente quando non ci sono, elencate in `.env.esempio`:
+  `PORT`/`SB_PORTA` e `SB_HOST` per l'ascolto, `SB_DATI` e `SB_BACKUP` per
+  tenere la password del pannello, `chiavi.js` e i backup **fuori dalla cartella
+  pubblica** — la protezione che non dipende da come è configurato il server
+  web — e `SB_SITO` per l'indirizzo pubblico del sito.
+- **L'indirizzo pubblico può arrivare dall'ambiente.** Se il campo del pannello
+  è vuoto ma c'è `SB_SITO`, la pubblicazione lo usa per il link canonico e per
+  le anteprime social, e ne aggiunge l'host — con e senza `www` — ai domini del
+  player Twitch: il player funziona appena il sito è online, senza dover aprire
+  il pannello. Se il campo del pannello è pieno, vince il campo; e
+  l'avvertimento «manca l'indirizzo pubblico» non compare più quando
+  l'indirizzo c'è, anche se arriva da lì.
+- **`.htaccess`**: le protezioni che Node applica da sé riscritte per il server
+  web, che i file esistenti li consegna da solo senza passare da Node. Nega
+  `server/`, `contenuti/contenuti.json`, `modelli/`, `docs/`, i `*.md`,
+  `package.json`, `.env*`, `app.js` e i file di git, lasciando fuori dal divieto
+  le immagini della libreria e i font, che al sito servono; poi compressione,
+  cache (`index.html` sempre rivalidato, immagini e font a vita lunga),
+  intestazioni di sicurezza, `http` → `https` senza nominare nessun dominio, e
+  una sezione per il `www` da scommentare il giorno in cui il dominio si sa.
+  Ogni direttiva sta dentro un `<IfModule>`: su un hosting condiviso un modulo
+  che manca non deve buttare giù il sito.
+- **`robots.txt`**: tutto aperto tranne `/pannello/` e `/api/`. La riga
+  `Sitemap:` la scrive la pubblicazione quando l'indirizzo del sito è noto.
+- **`docs/HOSTING.md`**, la guida della messa online per chi non programma:
+  cosa caricare e dove, i campi da compilare nell'estensione Node, le variabili
+  d'ambiente una per una, il primo accesso al pannello online, l'avviso su nginx
+  che serve i file statici saltando `.htaccess`, cosa fare quando il dominio si
+  sa e cosa non caricare mai (`server/dati/`, i backup).
+- **La prima password non se la sceglie chi passa di lì.** Finché la password
+  non esiste, il pannello la fa creare a chi arriva: sul computer di casa va
+  benissimo, su un sito pubblico vuol dire che fra l'avvio dell'applicazione e
+  il primo accesso del proprietario la porta è aperta, e `/pannello/` è uno dei
+  percorsi che i bot provano di serie. Adesso la creazione è libera solo da un
+  indirizzo locale; da fuori serve `SB_PRIMO_ACCESSO=1` fra le variabili
+  dell'applicazione — si accende, si crea la password, si spegne — e chi bussa
+  senza si prende un 403 che dice esattamente questo. Basta la **presenza** di
+  `X-Forwarded-For` perché la richiesta non conti come locale: dietro un proxy
+  che sta sulla stessa macchina ogni visitatore sembrerebbe `127.0.0.1`, e chi
+  ha dimenticato di dichiarare il proxy non deve ritrovarsi la porta aperta.
+  A password creata il controllo non esiste più, quindi una variabile lasciata
+  accesa per distrazione non apre niente.
+- **`sitemap.xml`**, scritta nella radice dalla pubblicazione quando l'indirizzo
+  del sito è noto: una pagina sola, perché il sito è una pagina sola, con la
+  data dell'ultima pubblicazione. Nello stesso momento la riga `Sitemap:` entra
+  in fondo a `robots.txt` — se c'era già si sostituisce dov'è, invece di
+  aggiungerne una seconda. Senza indirizzo non si scrive niente e nessuno si
+  lamenta: una sitemap che dichiara «./» sarebbe peggio di nessuna sitemap.
+- **I tre tempi di pazienza del server**: 30 secondi per mandare le
+  intestazioni, 3 minuti per l'intera richiesta (il corpo più grosso che il
+  server accetta è un'immagine da 4 MB) e 15 secondi di attesa fra due
+  richieste sulla stessa connessione. In locale non servivano a niente; su
+  internet aprire connessioni e non parlare è la forma di disturbo più antica e
+  più economica che ci sia.
+- `README.md`: la sezione della messa online rimanda alla guida e dice cosa
+  cambia per chi lavora in locale (cioè quasi niente).
+
 - **Follower e abbonati si aggiornano da soli.** Il server li chiede a Twitch
   (`helix/channels/followers` e `helix/subscriptions`) a ogni pubblicazione e,
   col server acceso, ogni dieci minuti, e li scrive in `config.dati` e nelle
@@ -240,6 +314,55 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - `.editorconfig` e `.gitattributes` allineati alle convenzioni del progetto.
 
 ### Modificato
+
+- **Il sito ha un dominio: `slayerbeard.com`.** `config.sitoUrl` nei contenuti è
+  `https://slayerbeard.com`, e da lì la pubblicazione prende il link canonico,
+  l'`og:url` delle anteprime social, il `<loc>` della sitemap e la riga
+  `Sitemap:` di `robots.txt`. L'indirizzo buono è **senza `www`**:
+  `www.slayerbeard.com` funziona, ma `.htaccess` lo manda lì sopra con un 301.
+  Il marchio invece resta `slayer_beard`, con l'underscore: in un dominio non ci
+  può stare, ed è il motivo per cui i due si scrivono diversi.
+- I domini autorizzati per il player si scrivono nel pannello —
+  `slayerbeard.com` e `www.slayerbeard.com`, che per Twitch sono due nomi
+  diversi. La pubblicazione li aggiunge da sé **solo** quando l'indirizzo arriva
+  da `SB_SITO`; quando è scritto nel pannello, come adesso, la lista è quella
+  che c'è scritta. La pagina, per suo conto, dichiara sempre `localhost`,
+  `127.0.0.1` e l'indirizzo da cui è stata aperta.
+
+- **Del committente non resta niente nei file.** Il titolare del copyright in
+  `LICENSE` è `slayer_beard` e non una persona con nome e cognome; `README.md`,
+  `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` e i template delle
+  issue non fanno più il nome di nessuno e, dove serve un contatto, mandano al
+  repository del progetto su GitHub — **mai** a un indirizzo di posta; nei
+  `CONTRATTO*.md` i percorsi del computer di chi ha commissionato il lavoro
+  sono diventati neutri (`<cartella di lavoro>\…`), senza cambiare il senso
+  delle frasi. L'indirizzo di posta che resta nel sito è quello pubblico del
+  canale, che è un contenuto e ci deve stare.
+
+- **La pagina pubblicata esce senza nemmeno un commento HTML.** I commenti
+  restano nei modelli, che sono il sorgente e devono restare spiegati: si
+  tolgono in uscita, sulla pagina già composta, scorrendola un pezzo per volta
+  invece che con una sostituzione cieca. Quello che sta dentro un attributo,
+  uno `<script>` o un `<pre>` non viene nemmeno guardato, i commenti
+  condizionali restano (dentro c'è marcatura vera) e lo spazio si comporta come
+  prima, così due tag che erano separati non si ritrovano attaccati. Del
+  vecchio `<!-- … -->` non resta neanche la riga vuota.
+
+- **Il pannello è pronto a stare su internet.** `X-Forwarded-For` non si crede
+  più sulla parola: il freno ai tentativi di password guardava il **primo**
+  valore dell'intestazione, cioè quello che scrive chi bussa, e bastava
+  cambiarlo a ogni richiesta per non essere frenati mai. Adesso l'intestazione
+  si guarda solo se chi installa dichiara di stare dietro un proxy
+  (`SB_DIETRO_PROXY=1`) e si prende l'**ultimo** salto; senza dichiarazione vale
+  l'indirizzo della connessione. Stesso ragionamento per `X-Forwarded-Proto` e
+  il cookie `Secure`. In locale non cambia niente.
+- Le rotte che scrivono hanno un freno per indirizzo IP, leggero: chi prova a
+  caso non fa lavorare il server gratis.
+- `server/lib/statico.js` nega le stesse cose di `.htaccess` anche quando è Node
+  a servire i file — i documenti (`*.md`), `package.json`, `.env*`, `app.js`,
+  `.git*`, `modelli/` e `docs/` — lasciando fuori dal divieto la libreria di
+  immagini e i font, che al sito servono. Non è un doppione: se `.htaccess`
+  manca, o se nginx lo scavalca, questo è l'ultimo rimasto a dire di no.
 
 - «Chi sono» si apre con il nome: «Sono Michele, in arte slayer_beard.»
 - Il primo adesivo di «Chi sono» dice «Variety streamer» invece di «Un po' di tutto».

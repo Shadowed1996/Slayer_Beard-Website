@@ -615,6 +615,19 @@ function costruisciContesto(contenuti, opzioni) {
   const config = archivio.copia(contenuti.config);
   sanificaRicchi(testi, config);
 
+  // L'indirizzo pubblico in forma buona (CONTRATTO-6 §4.2): quello scritto
+  // nel pannello se c'e, altrimenti SB_SITO, e in tutti e due i casi passato
+  // dalla stessa normalizzazione — cosi «https://slayerbeard.com» e
+  // «https://slayerbeard.com/» danno la stessa pagina.
+  //
+  // Si scrive nella COPIA, che e quella che va al modello: il link canonico
+  // e le anteprime social lo trovano dove l'hanno sempre trovato e
+  // testa.html non cambia di una riga. Su contenuti.json non finisce niente
+  // — il documento vero e quello che il pannello risalva, e ne un valore
+  // dell'ambiente ne una barra aggiunta da noi devono entrarci di nascosto.
+  const sito = controlli.indirizzoSito(config);
+  config.sitoUrl = sito.indirizzo;
+
   // I tre rami dell'editor si ripuliscono anche qui e non solo prima di
   // salvare: l'anteprima rende contenuti che nessuno ha convalidato, e un
   // valore storto deve sparire dalla pagina, non romperla.
@@ -933,8 +946,20 @@ function oggettoDati(contenuti, opzioni) {
 
   // Il player accetta l'embed solo se il dominio e fra i "parent": in locale
   // servono sempre questi due, e il JS aggiunge da se location.hostname.
+  //
+  // All'elenco si aggiunge sempre l'host del sito, con e senza www
+  // (CONTRATTO-6 §4.2): per Twitch sono due `parent` diversi, e chi arriva
+  // da www.slayerbeard.com vedrebbe un riquadro nero se ci fosse solo
+  // l'altro. Si fa da qualunque parte arrivi l'indirizzo — dal campo del
+  // pannello o da SB_SITO — perche la ragione e la stessa: il sito si vede
+  // a quel nome, quindi il player deve saperlo. L'elenco scritto a mano
+  // resta per gli altri nomi, quelli che solo chi amministra conosce.
+  const sito = controlli.indirizzoSito(config);
+  const delSito = sito.host ? [sito.host, 'www.' + sito.host] : [];
+
   const domini = [];
-  for (const dominio of (Array.isArray(twitch.domini) ? twitch.domini : []).concat(['localhost', '127.0.0.1'])) {
+  for (const dominio of (Array.isArray(twitch.domini) ? twitch.domini : [])
+    .concat(delSito).concat(['localhost', '127.0.0.1'])) {
     const pulito = String(dominio || '').trim();
     if (pulito && domini.indexOf(pulito) === -1) { domini.push(pulito); }
   }
@@ -981,6 +1006,161 @@ function jsonSicuro(valore) {
 }
 
 /* ------------------------------------------------------------------ */
+/* LA PAGINA SENZA COMMENTI (CONTRATTO-6 §4.1)                         */
+/* ------------------------------------------------------------------ */
+
+/* Gli elementi dentro i quali un «<!--» non e un commento da togliere.
+   - script e style: il loro contenuto e testo grezzo per il parser HTML.
+     Li dentro sta il JSON-LD e stanno i due fogli dell'editor, e una
+     sequenza del genere in mezzo a una stringa non apre nessun commento;
+   - textarea e title: stesso discorso, e testo e non marcatura;
+   - pre: li il commento sarebbe un commento vero, ma lo spazio bianco si
+     VEDE, e togliere una riga sposterebbe tutto quello che sta sotto. Il
+     testo ricco ammette <pre> (server/lib/testoricco.js, elenco dei tag
+     permessi), quindi il caso non e teorico.
+   Dentro questi elementi non si tocca niente: ne i commenti ne le righe. */
+const NIENTE_COMMENTI_DENTRO = new Set(['script', 'style', 'textarea', 'title', 'pre']);
+
+/**
+ * Dove finisce il tag che comincia a `apre`, tenendo conto delle
+ * virgolette: in `<img alt="3 > 2">` il primo `>` non chiude niente, e in
+ * `<div title="<!-- ciao -->">` non c'e nessun commento da togliere.
+ * Ritorna l'indice del primo carattere DOPO il `>`.
+ */
+function fineDelTag(testo, apre) {
+  let virgoletta = '';
+  for (let i = apre + 1; i < testo.length; i++) {
+    const c = testo[i];
+    if (virgoletta) {
+      if (c === virgoletta) { virgoletta = ''; }
+    } else if (c === '"' || c === '\'') {
+      virgoletta = c;
+    } else if (c === '>') {
+      return i + 1;
+    }
+  }
+  return testo.length;   // tag non chiuso: si tratta come se arrivasse in fondo
+}
+
+/**
+ * Le righe rimaste vuote dopo un commento tolto: tre o piu a capo di fila
+ * tornano due, e l'indentazione della riga che segue resta dov'era.
+ *
+ * Si puo fare senza rischi perche fuori da <pre> una sequenza di spazi, a
+ * capo e tabulazioni vale come UN solo spazio per il browser: accorciarla
+ * non sposta niente di quello che si vede. Nessuna regola del progetto usa
+ * `white-space: pre` o `pre-wrap` (sono tutte `nowrap` o `normal`, che
+ * condensano lo spazio), e il testo dentro <pre> non passa di qui.
+ */
+function righeVuote(pezzo) {
+  return pezzo.replace(/\n(?:[ \t\r]*\n){2,}([ \t]*)/g, '\n\n$1');
+}
+
+/**
+ * Vero se `pezzo` finisce a inizio riga, cioe con un a capo seguito al
+ * massimo da spazi. Si guarda indietro carattere per carattere e ci si
+ * ferma al primo a capo: costa quanto l'indentazione, non quanto la pagina.
+ */
+function aCapoAperto(pezzo) {
+  for (let i = pezzo.length - 1; i >= 0; i--) {
+    const c = pezzo[i];
+    if (c === '\n') { return true; }
+    if (c !== ' ' && c !== '\t' && c !== '\r') { return false; }
+  }
+  return true;   // solo spazi dall'inizio: e comunque l'inizio di una riga
+}
+
+/**
+ * La pagina senza nemmeno un commento HTML (CONTRATTO-6 §1.5 e §4.1).
+ *
+ * I commenti restano nei modelli, che sono il sorgente e devono restare
+ * spiegati: si tolgono QUI, in uscita, sul testo della pagina gia composta.
+ * Non basta una sostituzione con espressione regolare sull'intero testo —
+ * quella toglierebbe anche un «<!-- -->» scritto dentro un attributo o
+ * dentro uno <script> — quindi la pagina si scorre un pezzo per volta:
+ *
+ *   - i tag si saltano interi, virgolette comprese, e quello che sta in un
+ *     attributo non viene nemmeno guardato;
+ *   - gli elementi di NIENTE_COMMENTI_DENTRO si saltano fino alla loro
+ *     chiusura;
+ *   - i commenti condizionali («<!--[if lt IE 9]> … <![endif]-->») restano:
+ *     dentro c'e marcatura vera, e toglierli toglierebbe quella.
+ *
+ * Lo spazio bianco: se il commento ha per se una riga intera se ne va anche
+ * la riga, altrimenti se ne va soltanto il commento e lo spazio che aveva
+ * intorno resta dov'era. E la regola che tiene separati due tag che erano
+ * separati — `</span> <!-- x --> <span>` diventa `</span>  <span>`, cioe
+ * uno spazio come prima, e non `</span><span>`, che sarebbe una parola
+ * attaccata all'altra.
+ */
+function togliCommenti(html) {
+  const testo = String(html);
+  const basso = testo.toLowerCase();
+  let fuori = '';        // la pagina finita
+  let normale = '';      // i tratti «normali» di fila, in attesa di righeVuote()
+  let tenutoDa = 0;      // primo carattere non ancora messo da parte
+  let i = 0;
+
+  // Un tratto dentro cui le righe non si toccano (uno <script>, un <pre>)
+  // chiude il pezzo normale che lo precede e passa in uscita tale e quale.
+  const intoccabile = (da, a) => {
+    normale += testo.slice(tenutoDa, da);
+    fuori += righeVuote(normale) + testo.slice(da, a);
+    normale = '';
+    tenutoDa = a;
+  };
+
+  while (i < testo.length) {
+    const apre = testo.indexOf('<', i);
+    if (apre === -1) { break; }
+
+    if (basso.startsWith('<!--', apre)) {
+      const chiude = testo.indexOf('-->', apre + 4);
+      if (chiude === -1) {
+        // Commento mai chiuso: per il browser da li in poi e tutto commento.
+        // Non e roba da aggiustare in uscita, e toccarla farebbe solo danni.
+        i = apre + 4;
+        continue;
+      }
+      const fine = chiude + 3;
+      if (/^<!--\s*\[\s*if\b/i.test(testo.slice(apre, fine))) { i = fine; continue; }
+
+      // Riga tutta sua? «Prima» si guarda su quello che e gia uscito, non
+      // sull'originale: due commenti di fila sulla stessa riga lasciano la
+      // riga vuota, e il secondo deve accorgersi che il primo se n'e andato.
+      normale += testo.slice(tenutoDa, apre);
+      const inizioRiga = normale === '' ? fuori === '' : aCapoAperto(normale);
+      let a = fine;
+      while (a < testo.length && (testo[a] === ' ' || testo[a] === '\t' || testo[a] === '\r')) { a++; }
+      if (inizioRiga && testo[a] === '\n') {
+        normale = normale.replace(/[ \t]*$/, '');   // via l'indentazione rimasta
+        a++;                                        // e via l'a capo: la riga sparisce
+      } else {
+        a = fine;                 // in mezzo ad altro: via il commento e basta
+      }
+      tenutoDa = a;
+      i = a;
+      continue;
+    }
+
+    const nome = /^<(\/?)([a-zA-Z][a-zA-Z0-9-]*)/.exec(basso.slice(apre, apre + 40));
+    if (!nome) { i = apre + 1; continue; }   // <!doctype, <?…, un < solitario
+
+    const dopoIlTag = fineDelTag(testo, apre);
+    if (!nome[1] && NIENTE_COMMENTI_DENTRO.has(nome[2]) && testo[dopoIlTag - 2] !== '/') {
+      const chiusura = basso.indexOf('</' + nome[2], dopoIlTag);
+      intoccabile(apre, chiusura === -1 ? testo.length : chiusura);
+      i = tenutoDa;
+      continue;
+    }
+    i = dopoIlTag;
+  }
+
+  normale += testo.slice(tenutoDa);
+  return fuori + righeVuote(normale);
+}
+
+/* ------------------------------------------------------------------ */
 /* RESA                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -1002,7 +1182,12 @@ function rendi(contenuti, opzioni) {
     throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.modelloDati) + ': e il modello di js/dati.js.');
   }
 
-  const html = modello.rendiFile(P.modelloIndex, contesto, { file: 'modelli/index.html', cartella: P.modelli, cache: cache });
+  // I commenti si tolgono qui, sulla pagina intera gia composta, e non nei
+  // modelli: i modelli sono il sorgente e restano spiegati (CONTRATTO-6
+  // §4.1). Vale per la pagina pubblicata come per le due anteprime, che
+  // sono la stessa pagina.
+  const html = togliCommenti(modello.rendiFile(P.modelloIndex, contesto,
+    { file: 'modelli/index.html', cartella: P.modelli, cache: cache }));
   const dati = modello.rendiFile(P.modelloDati, Object.assign({ dati: jsonSicuro(oggettoDati(contenuti, scelte)) }, contesto),
     { file: 'server/modelli/dati.js.tpl', cartella: P.modelli, cache: cache });
   // Il foglio del tema non passa dal motore di template: e calcolato, non
@@ -1110,6 +1295,114 @@ function scriviGenerato(percorso, testo) {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* SITEMAP E robots.txt (CONTRATTO-6 §4.3)                             */
+/* ------------------------------------------------------------------ */
+
+/** Il poco che in un indirizzo puo dare fastidio dentro un XML. */
+function xml(valore) {
+  return String(valore)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+/**
+ * La sitemap: una pagina sola, perche il sito e una pagina sola. Non e un
+ * elenco di ancore — `#chi` e `#supporto` non sono indirizzi diversi per un
+ * motore di ricerca — e non ha senso gonfiarla.
+ *
+ * `lastmod` e la data dell'ultima pubblicazione, cioe il timbro che la
+ * generazione mette su contenuti.json: la sola data, senza l'ora, perche e
+ * quello che serve a un motore di ricerca e perche cosi due pubblicazioni
+ * nello stesso giorno non producono due file diversi per niente.
+ */
+function sitemapXml(indirizzo, quando) {
+  const letta = new Date(quando);
+  const giorno = (Number.isFinite(letta.getTime()) ? letta : new Date()).toISOString().slice(0, 10);
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    '  <url>\n' +
+    '    <loc>' + xml(indirizzo) + '</loc>\n' +
+    '    <lastmod>' + giorno + '</lastmod>\n' +
+    '  </url>\n' +
+    '</urlset>\n';
+}
+
+/**
+ * La riga `Sitemap:` in fondo a robots.txt, una sola e sempre l'ultima.
+ *
+ * robots.txt non e un file della generazione: lo scrive chi prepara
+ * l'hosting, e qui si aggiunge soltanto la riga che dipende dall'indirizzo.
+ * Se il file non c'e (non e ancora stato creato, oppure sul server non lo si
+ * e caricato) non si crea e non si protesta: la pubblicazione non deve
+ * fallire per un file che non le appartiene. Lo stesso se non si riesce a
+ * scriverlo.
+ */
+function aggiornaRobots(indirizzo) {
+  const file = path.join(P.radice, 'robots.txt');
+  let prima;
+  try {
+    prima = fs.readFileSync(file, 'utf8');
+  } catch (e) {
+    return 'non c\'e';
+  }
+  const riga = 'Sitemap: ' + indirizzo + 'sitemap.xml';
+  // Se una riga Sitemap c'e gia si sostituisce dov'e, senza spostarla:
+  // due pubblicazioni di fila non devono lasciare due righe, e un cambio di
+  // dominio non deve lasciare in giro quello vecchio. Se non c'e, si accoda
+  // in fondo. Le eventuali righe in piu — un file gia sporco — se ne vanno.
+  let dopo;
+  if (/^[ \t]*Sitemap[ \t]*:.*$/im.test(prima)) {
+    let laPrima = true;
+    dopo = prima.replace(/^[ \t]*Sitemap[ \t]*:.*(\r?\n?)/gim, (tutta, aCapo) => {
+      if (!laPrima) { return ''; }
+      laPrima = false;
+      return riga + (aCapo || '\n');
+    });
+  } else {
+    const testa = prima.replace(/\s*$/, '');
+    dopo = (testa ? testa + '\n' : '') + riga + '\n';
+  }
+  if (dopo === prima) { return 'gia a posto'; }
+  try {
+    scriviGenerato(file, dopo);
+  } catch (e) {
+    return 'non scritto';
+  }
+  return 'aggiornato';
+}
+
+/**
+ * Scrive sitemap.xml nella radice e la riga in robots.txt, ma solo se
+ * l'indirizzo del sito si sa (dal pannello o da SB_SITO). Senza indirizzo
+ * non scrive niente e non si lamenta: un sito senza dominio non ha una
+ * sitemap da dichiarare, e una con dentro «./» sarebbe peggio di niente.
+ *
+ * Ritorna null quando non c'e niente da scrivere, altrimenti il resoconto
+ * di cosa e stato scritto — che genera.js stampa e il pannello puo mostrare.
+ */
+function scriviSitemap(sito, quando) {
+  if (!sito || !sito.indirizzo) { return null; }
+  const testo = sitemapXml(sito.indirizzo, quando);
+  try {
+    scriviGenerato(path.join(P.radice, 'sitemap.xml'), testo);
+  } catch (e) {
+    // La sitemap e un di piu: il sito e gia stato pubblicato e non si butta
+    // via una pubblicazione riuscita per un file di contorno.
+    return { file: 'sitemap.xml', byte: 0, indirizzo: sito.indirizzo, robots: 'non provato',
+      errore: (e && e.message) ? e.message : String(e) };
+  }
+  return {
+    file: 'sitemap.xml',
+    byte: Buffer.byteLength(testo, 'utf8'),
+    indirizzo: sito.indirizzo,
+    robots: aggiornaRobots(sito.indirizzo)
+  };
+}
+
 /**
  * L'ordine e quello del contratto e non va cambiato:
  *   0. copertura dello schema   (se lo schema mente, tutto il resto mente)
@@ -1155,11 +1448,18 @@ function genera(opzioni) {
 
   const quando = archivio.salva(contenuti);
 
+  // La sitemap dopo il timbro, non prima: `lastmod` e la data dell'ultima
+  // pubblicazione, e la pubblicazione e questa. Resta fuori da `scritti`
+  // perche quello e l'elenco dei tre file generati, che e sempre lo stesso
+  // e su cui si appoggiano il pannello e il collaudo.
+  const mappa = scriviSitemap(controlli.indirizzoSito(contenuti.config), quando);
+
   return {
     ok: true,
     backup: copia,
     durataMs: Date.now() - inizio,
     aggiornatoIl: quando,
+    sitemap: mappa,
     scritti: [
       { file: 'index.html', byte: Buffer.byteLength(reso.html, 'utf8') },
       { file: 'js/dati.js', byte: Buffer.byteLength(reso.dati, 'utf8') },
@@ -1179,5 +1479,9 @@ module.exports = {
   genera, anteprima, anteprimaDi, anteprimaEditor, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, jsonSicuro, chiaviRicche,
-  orariDi, orariDati, eventiDi, sfondoDi
+  orariDi, orariDati, eventiDi, sfondoDi,
+  // togliCommenti si esporta per il collaudo: e una funzione di testo pura
+  // e i casi da provare (l'attributo, lo <script>, il <pre>) si provano
+  // meglio su di lei che su una generazione intera.
+  togliCommenti
 };

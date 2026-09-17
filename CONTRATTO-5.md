@@ -16,7 +16,7 @@ e lo si usa come proposto.
 ## 0. Cosa ha chiesto il committente
 
 1. **Rivedere tutte le immagini del sito e adeguarle in modo ottimale**, usando le grafiche nuove che
-   stanno in `C:\Users\Filippo\Desktop\grafiche` (sola lettura: non si scrive lì dentro).
+   stanno in `<cartella locale>\grafiche` (sola lettura: non si scrive lì dentro).
 2. **Rifare da capo la schedule** (la sezione «La settimana» e il suo editor nel pannello): ottimale,
    funzionante con il pannello admin, **con la possibilità di caricare immagini di sfondo**.
 
@@ -29,7 +29,7 @@ esiste più e non va recuperato.
 
 ## 1. Le grafiche nuove
 
-| file in `Desktop\grafiche` | misure | cos'è |
+| file in `grafiche\` | misure | cos'è |
 |---|---|---|
 | `Twitch profile Banner.png` | 1200×480 | il banner del canale: pollo a sinistra, città notturna, handle YouTube / TikTok / Instagram a destra |
 | `foto storie canva.png` | 1920×1080 | la città notturna pulita, senza scritte: cielo stellato, grattacieli, nebbia viola |
@@ -415,7 +415,7 @@ richiesta a un altro agente va nelle proprie decisioni con `→ AGENTE:` davanti
 
 ## 10. Convivenza
 
-Cartella di lavoro: `C:\Users\Filippo\AppData\Local\Temp\claude\C--Users-Filippo\18112d71-7f59-4092-9ad8-e21a85bb75df\scratchpad\slayer\`
+Cartella di lavoro: la scratchpad della sessione, `<cartella di lavoro>\slayer\`
 (qui `LAVORO\`). La repository è `LAVORO\repo\`.
 
 - **Niente git**: nessuno usa stash, checkout, reset, commit, push. Committa l'integratore.

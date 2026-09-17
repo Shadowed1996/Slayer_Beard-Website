@@ -36,7 +36,14 @@ function testo(res, stato, contenuto, tipo) {
   res.writeHead(stato, {
     'Content-Type': tipo || 'text/html; charset=utf-8',
     'Content-Length': String(buf.length),
-    'Cache-Control': 'no-store'
+    'Cache-Control': 'no-store',
+    // Queste due mancavano, e qui contano piu che altrove: l'anteprima e
+    // l'unica risposta HTML che nasce da quello che si sta battendo nel
+    // pannello. `nosniff` tiene il browser sul tipo dichiarato, SAMEORIGIN
+    // impedisce che finisca dentro l'iframe di un altro sito — quello
+    // dell'editor, che e di casa, resta permesso.
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN'
   });
   if (res.req && res.req.method === 'HEAD') { res.end(); return; }
   res.end(buf);

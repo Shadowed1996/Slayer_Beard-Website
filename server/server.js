@@ -14,6 +14,10 @@
    Avvio:  node server/server.js            (porta 4173, o SB_PORTA)
            node server/server.js --guarda   rigenera a ogni modifica
 
+   Questo e l'avvio in locale, con le sue righe nel terminale. Su un hosting
+   il file d'avvio e app.js nella radice: chiama lo stesso `avvia()`, ma in
+   silenzio e su 0.0.0.0, e prende la porta da PORT (vedi docs/HOSTING.md).
+
    Se le chiavi ci sono (server/dati/chiavi.js),
    finche questo processo gira tiene fresche da se «Ultima diretta», la
    vetrina delle clip e — se slayer_beard ha autorizzato il server con
@@ -39,7 +43,12 @@ const chiavi = require('./lib/chiavi');
 const twitch = require('./lib/twitch');
 const schema = require('../contenuti/schema.js');
 
-const PORTA = Number(process.env.SB_PORTA) || 4173;
+// PORT prima di SB_PORTA: e la variabile che passa l hosting (Plesk con
+// Passenger la imposta da se e non si puo scegliere), mentre SB_PORTA e la
+// porta che si cambia a mano in locale. Se PORT non e un numero — certe
+// versioni di Passenger ci mettono il percorso di un socket, e in quel caso
+// la porta la decide comunque Passenger — si torna a SB_PORTA e poi a 4173.
+const PORTA = Number(process.env.PORT) || Number(process.env.SB_PORTA) || 4173;
 const HOST = process.env.SB_HOST || '127.0.0.1';
 const ANTIRIMBALZO_MS = 250;
 
@@ -156,7 +165,7 @@ function gestisciErrore(res, err) {
 }
 
 function creaServer() {
-  return http.createServer((req, res) => {
+  const server = http.createServer((req, res) => {
     // `res.req` serve agli aiuti in risposte.js per riconoscere le HEAD.
     res.req = req;
 
@@ -188,6 +197,79 @@ function creaServer() {
       gestisciErrore(res, err);
     }
   });
+
+  /*
+     I TEMPI DI PAZIENZA. In locale non servivano: le connessioni le apriva
+     un browser sulla stessa macchina. Su internet si, e la forma piu antica
+     di disturbo e anche la piu economica — aprire connessioni e non parlare:
+     costano niente a chi le apre e un posto in tabella a chi le riceve.
+
+     I numeri sono quelli di un pannello di amministrazione, dove chi bussa
+     sono una persona e il suo browser, non un'API con mille clienti.
+  */
+
+  // Trenta secondi per arrivare a una richiesta completa. Sono gia
+  // tantissimi: un browser manda le intestazioni nello stesso momento in cui
+  // apre la connessione. Chi ci mette di piu non sta chiedendo una pagina.
+  const ATTESA_RICHIESTA_MS = 30 * 1000;
+
+  server.headersTimeout = ATTESA_RICHIESTA_MS;
+
+  // Tre minuti per l'intera richiesta, corpo compreso. Il corpo piu grosso
+  // che questo server accetta e un'immagine da 4 MB (api.js, MAX_FILE): tre
+  // minuti vogliono dire 23 kB al secondo, sotto i quali non c e una
+  // connessione lenta, c e un guasto. Di serie Node darebbe 5 minuti.
+  server.requestTimeout = 3 * 60 * 1000;
+
+  // Quindici secondi fra una richiesta e la successiva sulla stessa
+  // connessione. Il pannello ne fa a raffica mentre si lavora (salva,
+  // anteprima, elenco dei media) e riaprire la connessione ogni volta
+  // sarebbe uno spreco; quindici secondi di silenzio, invece, vogliono dire
+  // che si e passati ad altro. Resta sotto ai trenta di sopra apposta: una
+  // connessione tenuta aperta fra due richieste deve morire per il tempo
+  // suo, non per quello delle intestazioni.
+  server.keepAliveTimeout = 15 * 1000;
+
+  // Node controlla i due tempi di sopra a intervalli, e di serie l'intervallo
+  // e di 30 secondi: vorrebbe dire scadenze in ritardo fino a mezzo minuto.
+  server.connectionsCheckingInterval = 5 * 1000;
+
+  /*
+     LA CONNESSIONE CHE NON DICE NIENTE.
+
+     `headersTimeout` comincia a contare dal primo byte della richiesta: chi
+     apre la connessione e poi tace non lo sveglia, perche per Node non ha
+     ancora cominciato nessun messaggio. Provato su questa macchina: una
+     connessione muta resta aperta finche qualcuno non la chiude — cioe mai,
+     ed e esattamente il caso da cui ci si voleva difendere.
+
+     Quindi la sveglia ce la mettiamo noi, con lo stesso tempo delle
+     intestazioni: se entro ATTESA_RICHIESTA_MS da quando si e presentata la
+     connessione non e arrivata una richiesta intera, si chiude. Niente 408:
+     a chi non ha nemmeno finito di chiedere non si deve una risposta.
+
+     Si spegne alla prima richiesta e non piu: da li in poi la connessione e
+     di una persona che sta lavorando, e i tempi buoni sono gli altri due.
+  */
+  const SPIA = Symbol('attesa della prima richiesta');
+
+  server.on('connection', (presa) => {
+    const spia = setTimeout(() => presa.destroy(), ATTESA_RICHIESTA_MS);
+    // unref: una connessione muta non deve tenere vivo il processo.
+    spia.unref();
+    presa[SPIA] = spia;
+    presa.on('close', () => clearTimeout(spia));
+  });
+
+  server.on('request', (req) => {
+    const spia = req.socket && req.socket[SPIA];
+    if (spia) {
+      clearTimeout(spia);
+      req.socket[SPIA] = null;
+    }
+  });
+
+  return server;
 }
 
 /* --- SORVEGLIANZA (--guarda) ---------------------------------------- */
@@ -386,14 +468,29 @@ function aggiornamentoAutomatico(opzioni) {
 
 function avvia(opzioni) {
   const scelte = opzioni || {};
+  // Con `silenzioso` non si stampa niente: le righe d'avvio e il riquadro
+  // della password parlano a chi ha appena lanciato un comando e guarda il
+  // terminale. Su un hosting non c e nessun terminale — c e un file di log —
+  // e «Apri http://localhost:4173/» sarebbe per giunta un indirizzo falso.
+  // La riga che serve la stampa app.js, una sola.
+  const zitto = scelte.silenzioso === true;
   const server = creaServer();
 
-  console.log('');
-  console.log('  slayer_beard - server di amministrazione');
-  console.log('  radice del progetto: ' + P.radice);
-  console.log('');
+  if (!zitto) {
+    console.log('');
+    console.log('  slayer_beard - server di amministrazione');
+    console.log('  radice del progetto: ' + P.radice);
+    console.log('');
+  }
 
-  controlliIniziali();
+  // I controlli iniziali leggono contenuti.json e stampano: sono un servizio
+  // a chi guarda, non una condizione per stare in piedi. Se contenuti.json e
+  // rotto — o se lo stdout non c e piu, che sotto Passenger capita — il
+  // pannello deve comunque partire, perche e li che quel guasto si ripara.
+  if (!zitto) {
+    try { controlliIniziali(); }
+    catch (err) { console.error('  Controlli iniziali saltati: ' + (err && err.message ? err.message : err)); }
+  }
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
@@ -406,17 +503,21 @@ function avvia(opzioni) {
   });
 
   server.listen(PORTA, HOST, () => {
-    console.log('  Sito     ->  http://localhost:' + PORTA + '/');
-    console.log('  Pannello ->  http://localhost:' + PORTA + '/pannello/');
-    console.log('');
+    if (!zitto) {
+      console.log('  Sito     ->  http://localhost:' + PORTA + '/');
+      console.log('  Pannello ->  http://localhost:' + PORTA + '/pannello/');
+      console.log('');
+    }
     if (scelte.guarda) { sorveglia(); }
     aggiornamentoAutomatico({ guarda: scelte.guarda === true });
-    console.log('  Ctrl+C per fermare.');
-    console.log('');
+    if (!zitto) {
+      console.log('  Ctrl+C per fermare.');
+      console.log('');
+    }
   });
 
   const ferma = (segnale) => {
-    console.log('\n  Ricevuto ' + segnale + ': chiusura del server.');
+    if (!zitto) { console.log('\n  Ricevuto ' + segnale + ': chiusura del server.'); }
     server.close(() => process.exit(0));
     // Se qualche connessione resta appesa non si aspetta all infinito.
     setTimeout(() => process.exit(0), 2000).unref();
@@ -436,4 +537,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { creaServer, avvia, sorveglia, aggiornamentoAutomatico, PORTA, AGGIORNA_MIN };
+module.exports = { creaServer, avvia, sorveglia, aggiornamentoAutomatico, PORTA, HOST, AGGIORNA_MIN };

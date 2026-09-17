@@ -16,13 +16,15 @@
    A `twitch.domini` la generazione aggiunge sempre localhost e 127.0.0.1;
    il player ci mette da sé location.hostname.
 
-   Generato il 2026-09-17T09:23:24.385Z.
+   Generato il 2026-09-17T21:40:17.256Z.
    ===================================================================== */
 window.DATI = {
   "twitch": {
     "canale": "slayer_beard",
     "idUtente": "47738247",
     "domini": [
+      "slayerbeard.com",
+      "www.slayerbeard.com",
       "localhost",
       "127.0.0.1"
     ]
@@ -36,7 +38,20 @@ window.DATI = {
     ],
     "ora": "21:00",
     "fuso": "Europe/Rome",
-    "durataOre": 4
+    "durataOre": 4,
+    "ore": {
+      "0": "21:00",
+      "1": "21:00",
+      "3": "21:00",
+      "5": "21:00"
+    },
+    "durate": {
+      "0": 4,
+      "1": 4,
+      "3": 4,
+      "5": 4
+    },
+    "eventi": []
   },
   "email": "slayerbeard@gmail.com",
   "ultimaDiretta": "Little Nightmares 3 w/ @Mobscene93",
@@ -48,6 +63,9 @@ window.DATI = {
     "chatChiudi": "Nascondi la chat",
     "etichettaOggi": "Oggi",
     "etichettaProssima": "Prossima",
+    "etichettaInOnda": "In onda",
+    "etichettaDaTe": "Da te",
+    "etichettaEvento": "Speciale",
     "copiaBtn": "Copia l'email",
     "copiaFatto": "Copiata"
   },
@@ -109,7 +127,7 @@ window.DATI = {
     "attivo": true,
     "motivo": "",
     "clientId": "07tj3erjzmn4y2d91k0sd3ub6uxq6b",
-    "urlRitorno": "http://localhost:4173/",
+    "urlRitorno": "https://slayerbeard.com/",
     "testi": {
       "entra": "Collegati con Twitch",
       "esci": "Scollega e revoca",

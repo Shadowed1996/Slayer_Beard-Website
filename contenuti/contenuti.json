@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-17T09:23:24.392Z",
+  "aggiornatoIl": "2026-09-17T21:40:17.282Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -138,9 +138,12 @@
     "twitch": {
       "canale": "slayer_beard",
       "idUtente": "47738247",
-      "domini": []
+      "domini": [
+        "slayerbeard.com",
+        "www.slayerbeard.com"
+      ]
     },
-    "sitoUrl": "",
+    "sitoUrl": "https://slayerbeard.com",
     "email": "slayerbeard@gmail.com",
     "ultimaDiretta": "Little Nightmares 3 w/ @Mobscene93",
     "orari": {
@@ -304,7 +307,7 @@
     "account": {
       "attivo": true,
       "clientId": "07tj3erjzmn4y2d91k0sd3ub6uxq6b",
-      "urlRitorno": "http://localhost:4173/"
+      "urlRitorno": "https://slayerbeard.com/"
     },
     "lurk": {
       "attivo": true,

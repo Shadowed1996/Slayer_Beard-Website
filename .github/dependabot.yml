@@ -1,5 +1,6 @@
-# Il progetto non ha un gestore di pacchetti: nessun package.json, nessuna
-# dipendenza esterna, solo i moduli interni di Node.js (CONTRATTO §0).
+# Il progetto non ha dipendenze esterne: solo i moduli interni di Node.js
+# (CONTRATTO §0). Il `package.json` c'è per l'avvio su un hosting con Node e
+# per i metadati, e non elenca nessun pacchetto: non c'è niente da aggiornare.
 # Resta quindi il solo ecosistema delle GitHub Actions usate dai workflow.
 version: 2
 updates:

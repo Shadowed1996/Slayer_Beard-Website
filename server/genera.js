@@ -21,6 +21,17 @@ const costruisci = require('./lib/costruisci');
 const chiavi = require('./lib/chiavi');
 const twitch = require('./lib/twitch');
 
+/* Cosa e successo alla riga «Sitemap:» di robots.txt, detto in italiano.
+   Il file non e della generazione: lo prepara chi mette in piedi l'hosting,
+   e qui si aggiunge soltanto quella riga. Se manca non e un guaio. */
+const ROBOTS = {
+  'aggiornato': 'riga Sitemap: aggiunta in fondo a robots.txt',
+  'gia a posto': 'robots.txt aveva gia la riga Sitemap: giusta',
+  'non c\'e': 'robots.txt non c\'e: la riga Sitemap: va aggiunta a mano quando ci sara',
+  'non scritto': 'robots.txt non si e potuto scrivere: la riga Sitemap: va aggiunta a mano',
+  'non provato': 'robots.txt non toccato'
+};
+
 function byteLeggibili(n) {
   if (n < 1024) { return n + ' B'; }
   if (n < 1024 * 1024) { return (n / 1024).toFixed(1) + ' kB'; }
@@ -61,6 +72,20 @@ async function esegui() {
   for (const scritto of esito.scritti) {
     console.log('  scritto   ' + scritto.file.padEnd(14) + byteLeggibili(scritto.byte));
   }
+
+  // La sitemap si scrive solo quando l'indirizzo del sito e noto — dal
+  // pannello o da SB_SITO (CONTRATTO-6 §4.3) — e va detto in tutti e due i
+  // casi: chi pubblica deve sapere se il file c'e, e se non c'e, perche.
+  const mappa = esito.sitemap;
+  if (mappa && mappa.byte) {
+    console.log('  scritto   ' + mappa.file.padEnd(14) + byteLeggibili(mappa.byte) + '   ' + mappa.indirizzo);
+    console.log('  robots    ' + (ROBOTS[mappa.robots] || mappa.robots));
+  } else if (mappa) {
+    console.log('  sitemap   non scritta: ' + mappa.errore);
+  } else {
+    console.log('  sitemap   niente: manca l indirizzo pubblico (campo del pannello o SB_SITO)');
+  }
+
   console.log('  backup    ' + esito.backup);
   console.log('  elenchi   ' + esito.social + ' social, ' + esito.supporto + ' righe di supporto (le voci senza link restano fuori)');
   console.log('');

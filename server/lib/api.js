@@ -14,7 +14,14 @@
      una pagina di terzi che provasse a pilotare il pannello dal browser
      di chi e gia collegato;
    - il corpo JSON si ferma a 1 MB, il caricamento di un'immagine a 4 MB,
-     quello di un font a 2 MB;
+     quello di un font a 2 MB; il limite si controlla mentre il corpo
+     arriva, non dal Content-Length dichiarato, che chi chiama puo mentire;
+   - chi scrive senza una sessione valida ha un tetto per indirizzo
+     (CONTRATTO-6 §4.2): il pannello esposto a internet non deve lavorare
+     gratis per chi prova a caso;
+   - al primo avvio la password si crea dal browser solo da un indirizzo
+     locale, o con SB_PRIMO_ACCESSO=1 acceso apposta: vedi il commento sopra
+     primoAccessoPermesso();
    - ogni errore e { errore: "…" } in italiano, con lo stato HTTP giusto.
    ===================================================================== */
 
@@ -92,12 +99,66 @@ function origineEstranea(req) {
   if (!origine) { return false; }
   let host;
   try { host = new URL(origine).host; } catch (e) { return true; }
-  return host !== req.headers.host;
+  // In minuscolo tutti e due: new URL() abbassa l'host da se, l'intestazione
+  // Host no. In locale l'host e sempre "127.0.0.1:4173" e non si vede
+  // differenza; con un dominio vero un Host scritto «Dominio.it» farebbe
+  // rifiutare al pannello ogni salvataggio, e nessuno capirebbe perche.
+  return host !== String(req.headers.host || '').toLowerCase();
 }
 
 function durataLeggibile(ms) {
   const minuti = Math.ceil(ms / 60000);
   return minuti <= 1 ? 'meno di un minuto' : minuti + ' minuti';
+}
+
+/* --- IL PRIMO ACCESSO ----------------------------------------------- */
+
+/*
+   Finche server/dati/auth.json non esiste, POST /api/entra non controlla la
+   password: la crea. In locale e la cosa giusta — chi apre il pannello sul
+   proprio computer e il proprietario, e non c e nessun altro.
+
+   Su un sito pubblico no. Fra il momento in cui Plesk avvia l applicazione e
+   il momento in cui il proprietario apre il pannello passa del tempo,
+   /pannello/ e uno dei percorsi che i bot provano di serie, e chi arriva
+   primo si sceglie la password e si prende il sito. Non e un rischio
+   teorico: e una porta aperta con un cartello sopra.
+
+   Quindi, da CONTRATTO-6:
+   - da un indirizzo locale (lo stesso computer, la stessa rete di casa o
+     d ufficio) la creazione resta libera: in locale non cambia niente;
+   - da fuori serve che chi amministra abbia acceso SB_PRIMO_ACCESSO=1 nelle
+     variabili dell applicazione. Si accende, si crea la password, si
+     spegne: e un interruttore, non una porta di servizio.
+
+   Dietro Plesk il proxy sta spesso sulla stessa macchina, e senza
+   SB_DIETRO_PROXY=1 ogni visitatore sembrerebbe 127.0.0.1: e il motivo per
+   cui la regola «locale» da sola non basterebbe e serve l interruttore.
+   Per questo qui, e solo qui, conta anche la semplice PRESENZA di
+   X-Forwarded-For: se c e, la richiesta e passata da qualche parte prima di
+   arrivare, quindi non e un accesso locale, e chi ha dimenticato di
+   dichiarare il proxy non si ritrova comunque la porta aperta. Falsificare
+   quell intestazione non serve a niente: l unica cosa che se ne ottiene e
+   essere rifiutati. Vale la stessa regola del freno ai tentativi — quello
+   che scrive chi chiama non gli puo mai far guadagnare qualcosa.
+
+   A password creata questo controllo non esiste piu — sta dentro il ramo del
+   primo avvio — quindi una variabile lasciata accesa per dimenticanza non
+   apre proprio niente.
+
+   Il 403 non racconta niente che non si sappia gia: GET /api/sessione dice
+   da sempre `primoAvvio`, e il pannello ne ha bisogno per mostrare la
+   schermata di creazione.
+*/
+const MESSAGGIO_PRIMO_ACCESSO = 'Il pannello non ha ancora una password e questo non è un accesso locale. ' +
+  'Chi amministra il sito deve accendere SB_PRIMO_ACCESSO=1 nelle variabili dell\'applicazione, ' +
+  'creare la password, e poi spegnerla.';
+
+function primoAccessoPermesso(req) {
+  const acceso = String(process.env.SB_PRIMO_ACCESSO || '').trim().toLowerCase();
+  if (acceso === '1' || acceso === 'si' || acceso === 'true') { return true; }
+  if (req.headers['x-forwarded-for'] !== undefined) { return false; }
+  return auth.richiestaLocale(req);
 }
 
 /* --- SESSIONE ------------------------------------------------------ */
@@ -119,6 +180,10 @@ async function rottaEntra(req, res) {
   // Primo avvio: la stessa rotta crea la password invece di controllarla.
   // Il pannello mostra la schermata di creazione quando primoAvvio e vero.
   if (!auth.esistePassword()) {
+    if (!primoAccessoPermesso(req)) {
+      errore(res, 403, MESSAGGIO_PRIMO_ACCESSO);
+      return;
+    }
     auth.impostaPassword(password);
     json(res, 201, { ok: true, creata: true }, { 'Set-Cookie': auth.cookieSessione(req, auth.creaSessione()) });
     return;
@@ -408,12 +473,26 @@ function decodifica(pezzo) {
 async function gestisci(req, res, percorso) {
   const metodo = req.method === 'HEAD' ? 'GET' : req.method;
   const modifica = metodo === 'POST' || metodo === 'PUT' || metodo === 'DELETE';
+  const conSessione = auth.autenticato(req);
+
+  // Il freno per indirizzo (CONTRATTO-6 §4.2) sta prima di tutto il resto:
+  // e il controllo che costa meno, e chi sta martellando non deve nemmeno
+  // farci leggere un Origin. Vale solo per chi scrive senza una sessione
+  // valida — il perche, e il perche di 120 al minuto, e in
+  // autenticazione.js, accanto al contatore.
+  if (modifica && !conSessione) {
+    const attesa = auth.frenoScritture(req);
+    if (attesa > 0) {
+      errore(res, 429, 'Troppe richieste da questo indirizzo. Riprova fra ' + durataLeggibile(attesa) + '.');
+      return;
+    }
+  }
 
   if (modifica && origineEstranea(req)) {
     errore(res, 403, 'Richiesta rifiutata: arriva da un altro sito.');
     return;
   }
-  if (!SENZA_SESSIONE.has(percorso) && !auth.autenticato(req)) {
+  if (!SENZA_SESSIONE.has(percorso) && !conSessione) {
     errore(res, 401, 'Sessione assente o scaduta: rientra nel pannello.');
     return;
   }

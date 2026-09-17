@@ -1,0 +1,26 @@
+# robots.txt - slayer_beard
+#
+# Cosa i motori di ricerca possono guardare. Il sito e tutto aperto: le
+# uniche due cose chiuse sono gli attrezzi, che non sono pagine e non
+# hanno niente da mostrare a nessuno.
+#
+# Questo file NON e una protezione: dice ai robot educati dove non
+# andare, non impedisce a nessuno di provarci. Chi difende davvero il
+# pannello e la password, e chi difende i file del server sono .htaccess
+# e la variabile SB_DATI (vedi docs/HOSTING.md).
+
+User-agent: *
+Allow: /
+Disallow: /pannello/
+Disallow: /api/
+
+# La riga "Sitemap:" qui sotto NON si scrive a mano: la mette da se la
+# pubblicazione, prendendo l'indirizzo dal campo "Indirizzo pubblico del
+# sito" del pannello (o dalla variabile d'ambiente SB_SITO, se si vuole
+# forzarne un altro). Scritta a mano resterebbe ferma il giorno in cui
+# l'indirizzo cambia, e si finirebbe con due righe Sitemap che dicono due
+# cose diverse.
+#
+# Se qui sotto non c'e niente, vuol dire soltanto che non e ancora stata
+# premuta Pubblica dopo aver messo l'indirizzo del sito.
+Sitemap: https://slayerbeard.com/sitemap.xml

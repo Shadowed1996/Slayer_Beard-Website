@@ -19,6 +19,10 @@ const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
 const crypto = require('node:crypto');
+// Serve alla sezione 12: la porta, l'indirizzo e il fuso di un avvio da
+// hosting si decidono al caricamento dei moduli, e per provarli davvero ci
+// vuole un processo nuovo — figlio, non questo.
+const { spawnSync } = require('node:child_process');
 
 const percorsi = require('./lib/percorsi');
 const { P } = percorsi;
@@ -251,32 +255,67 @@ async function proveConvalida(contenutiVeri) {
 
   await prova('controlli: il sito configurato per la produzione non segnala niente', () => {
     const documento = JSON.parse(JSON.stringify(contenutiVeri));
-    documento.config.sitoUrl = 'https://slayerbeard.it/';
-    documento.config.twitch.domini = ['slayerbeard.it'];
+    documento.config.sitoUrl = 'https://slayerbeard.com/';
+    documento.config.twitch.domini = ['slayerbeard.com'];
     documento.config.lurk.messaggioAttivo = true;
     documento.config.account.attivo = true;
     documento.config.account.clientId = 'k3j9x2q7w1m5v8b4n6z0c7t2y5r8p3';
-    documento.config.account.urlRitorno = 'https://slayerbeard.it/';
+    documento.config.account.urlRitorno = 'https://slayerbeard.com/';
     const avvertimenti = controlli.controlli(documento);
     esigiUguale(avvertimenti.length, 0,
       'avvertimenti inattesi: ' + avvertimenti.map((a) => a.chiave).join(', '));
   });
 
-  await prova('controlli: il dominio del player mancante viene detto', () => {
-    const documento = JSON.parse(JSON.stringify(contenutiVeri));
-    documento.config.sitoUrl = 'https://slayerbeard.it/';
-    documento.config.twitch.domini = [];
-    const avvertimenti = controlli.controlli(documento);
-    esigi(avvertimenti.some((a) => a.chiave === 'config.twitch.domini'),
-      'nessun avvertimento sui domini, e online il player non partirebbe');
+  await prova('controlli: senza indirizzo e senza domini il player viene detto', () => {
+    // Con un indirizzo pubblico il dominio del player non manca mai: ce lo
+    // mette la pubblicazione, host e www (CONTRATTO-6 §4.2, costruisci.js
+    // oggettoDati). Il caso che resta da dire e quello di un sito senza
+    // indirizzo e senza domini scritti: li il player parte solo da
+    // localhost, e online sarebbe un rettangolo nero.
+    const sbSito = process.env.SB_SITO;
+    // Senza questo l'indirizzo arriverebbe dall'ambiente e la prova
+    // diventerebbe rossa proprio sull'hosting, dove SB_SITO c'e per davvero
+    // ed e il posto in cui il collaudo serve di piu.
+    delete process.env.SB_SITO;
+    try {
+      const documento = JSON.parse(JSON.stringify(contenutiVeri));
+      documento.config.sitoUrl = '';
+      documento.config.twitch.domini = [];
+      const avvertimenti = controlli.controlli(documento);
+      esigi(avvertimenti.some((a) => a.chiave === 'config.twitch.domini'),
+        'nessun avvertimento sui domini, e online il player non partirebbe');
+      esigi(avvertimenti.some((a) => a.chiave === 'config.sitoUrl'),
+        'nessun avvertimento sull indirizzo pubblico mancante');
+    } finally {
+      if (sbSito !== undefined) { process.env.SB_SITO = sbSito; }
+    }
+  });
+
+  await prova('controlli: con l indirizzo in SB_SITO i due avvertimenti tacciono', () => {
+    // CONTRATTO-6 §4.4: se l'indirizzo arriva dall'ambiente, «manca
+    // l'indirizzo pubblico» non ha piu motivo di comparire — e nemmeno
+    // quello sui domini del player, perche la pubblicazione ci mette l'host
+    // da qualunque parte l'indirizzo arrivi.
+    const sbSito = process.env.SB_SITO;
+    process.env.SB_SITO = 'https://slayerbeard.com';
+    try {
+      const documento = JSON.parse(JSON.stringify(contenutiVeri));
+      documento.config.sitoUrl = '';
+      documento.config.twitch.domini = [];
+      const chiavi = controlli.controlli(documento).map((a) => a.chiave);
+      esigi(chiavi.indexOf('config.sitoUrl') === -1, 'avvertimento sull indirizzo con SB_SITO impostata');
+      esigi(chiavi.indexOf('config.twitch.domini') === -1, 'avvertimento sui domini con SB_SITO impostata');
+    } finally {
+      if (sbSito === undefined) { delete process.env.SB_SITO; } else { process.env.SB_SITO = sbSito; }
+    }
   });
 
   await prova('controlli: l indirizzo di ritorno che punta altrove viene detto', () => {
     // La trappola vera: due valori leciti presi da soli, un login rotto per
     // tutti i visitatori quando stanno insieme.
     const documento = JSON.parse(JSON.stringify(contenutiVeri));
-    documento.config.sitoUrl = 'https://slayerbeard.it/';
-    documento.config.twitch.domini = ['slayerbeard.it'];
+    documento.config.sitoUrl = 'https://slayerbeard.com/';
+    documento.config.twitch.domini = ['slayerbeard.com'];
     documento.config.lurk.messaggioAttivo = true;
     documento.config.account.attivo = true;
     documento.config.account.clientId = 'k3j9x2q7w1m5v8b4n6z0c7t2y5r8p3';
@@ -892,9 +931,9 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
      uno con l interruttore spento e uno acceso ma senza app registrata.
      Gli ultimi due devono produrre lo stesso effetto sul messaggio in
      chat — spento — per strade diverse. */
-  const profiloSano = { attivo: true, clientId: 'abcdef1234567890abcdef', urlRitorno: 'https://slayerbeard.it/' };
-  const profiloSpento = { attivo: false, clientId: 'abcdef1234567890abcdef', urlRitorno: 'https://slayerbeard.it/' };
-  const profiloSenzaClientId = { attivo: true, clientId: '', urlRitorno: 'https://slayerbeard.it/' };
+  const profiloSano = { attivo: true, clientId: 'abcdef1234567890abcdef', urlRitorno: 'https://slayerbeard.com/' };
+  const profiloSpento = { attivo: false, clientId: 'abcdef1234567890abcdef', urlRitorno: 'https://slayerbeard.com/' };
+  const profiloSenzaClientId = { attivo: true, clientId: '', urlRitorno: 'https://slayerbeard.com/' };
 
   /** Mette lurk e account dentro una copia dei contenuti veri. */
   function documentoCon(lurk, account) {
@@ -926,7 +965,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
   /** Una config.lurk sana, da sporcare un pezzo per volta. */
   const sana = (aggiunte) => Object.assign({
     attivo: true, tieniSchermoAcceso: false, oreMax: 3,
-    messaggioAttivo: true, clientId: 'abcdef1234567890abcdef', urlRitorno: 'https://slayerbeard.it/',
+    messaggioAttivo: true, clientId: 'abcdef1234567890abcdef', urlRitorno: 'https://slayerbeard.com/',
     frasi: ['Hey! Lurko dal sito.']
   }, aggiunte || {});
 
@@ -1035,7 +1074,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigiUguale(lurk.messaggio.frasi.join('|'), 'Hey! Lurko dal sito.', 'frasi nel ramo');
     // Il Client ID sta di la, nel ramo che lo possiede.
     esigiUguale(ramoAccount().clientId, 'abcdef1234567890abcdef', 'client id nel ramo account');
-    esigiUguale(ramoAccount().urlRitorno, 'https://slayerbeard.it/', 'url di ritorno nel ramo account');
+    esigiUguale(ramoAccount().urlRitorno, 'https://slayerbeard.com/', 'url di ritorno nel ramo account');
     // Con l interruttore spento non basta avere tutto il resto in ordine.
     esigiUguale(ramo(sana({ messaggioAttivo: false })).messaggio.attivo, false, 'interruttore spento');
   });
@@ -2777,6 +2816,671 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
   }
 }
 
+/* --- 12. AVVIO SU UN HOSTING (CONTRATTO-6 §4, agente NODO) ----------- */
+
+/*
+   Fra «node server/server.js sul proprio computer» e «un hosting che lancia
+   app.js» cambiano cinque cose, e sono tutte qui: la porta la passa
+   l'hosting (PORT), l'indirizzo di ascolto diventa 0.0.0.0, il fuso lo
+   impone app.js prima di ogni require, i segreti possono uscire dalla
+   document root (SB_DATI, SB_BACKUP) e le connessioni che non parlano si
+   chiudono da sole.
+
+   Le prime tre si leggono da costanti calcolate al caricamento del modulo:
+   per provarne la precedenza serve un processo nuovo a ogni caso, e serve
+   che sia FIGLIO — un `delete require.cache` qui dentro cambierebbe sotto i
+   piedi il server.js che le sezioni 8-11 hanno gia in mano.
+*/
+
+/** Lancia un processo figlio e ne riporta uscita, stampe ed errori. */
+function lanciaFiglio(script, argomenti, ambiente) {
+  const env = Object.assign({}, process.env);
+  for (const nome of Object.keys(ambiente || {})) {
+    if (ambiente[nome] === undefined) { delete env[nome]; } else { env[nome] = String(ambiente[nome]); }
+  }
+  const esito = spawnSync(process.execPath, [script].concat(argomenti || []),
+    { env: env, encoding: 'utf8', timeout: 30000 });
+  const righe = String(esito.stdout || '').trim().split(/\r?\n/).filter(Boolean);
+  return {
+    stato: esito.status,
+    fuori: String(esito.stdout || ''),
+    errori: String(esito.stderr || ''),
+    ultima: righe.length ? righe[righe.length - 1] : ''
+  };
+}
+
+async function proveHosting(cartella) {
+  apriSezione('12. Avvio su un hosting (CONTRATTO-6, agente NODO)');
+
+  const APP_JS = path.join(RADICE_VERA, 'app.js');
+  const SERVER_JS = path.join(RADICE_VERA, 'server', 'server.js');
+
+  // Due scarabocchi usa e getta nella cartella temporanea. Il primo ricarica
+  // server.js caso per caso; il secondo carica app.js come farebbe Passenger
+  // e riferisce cosa ne e uscito.
+  const scriptPorte = path.join(cartella, 'figlio-porte.js');
+  fs.writeFileSync(scriptPorte, [
+    "'use strict';",
+    '/* PORTA e HOST sono costanti calcolate al caricamento: per provarne la',
+    '   precedenza il modulo va ricaricato a ogni caso. */',
+    'const dove = process.argv[2];',
+    'const casi = JSON.parse(process.argv[3]);',
+    'const fuori = [];',
+    'for (const caso of casi) {',
+    "  for (const nome of ['PORT', 'SB_PORTA', 'SB_HOST']) { delete process.env[nome]; }",
+    '  Object.assign(process.env, caso.env);',
+    '  delete require.cache[require.resolve(dove)];',
+    '  const modulo = require(dove);',
+    '  fuori.push({ nome: caso.nome, porta: modulo.PORTA, host: modulo.HOST });',
+    '}',
+    'console.log(JSON.stringify(fuori));',
+    ''
+  ].join('\n'), 'utf8');
+
+  const scriptAvvio = path.join(cartella, 'figlio-avvio.js');
+  fs.writeFileSync(scriptAvvio, [
+    "'use strict';",
+    '/* Carica app.js come lo caricherebbe Passenger e dice che fuso e che',
+    "   indirizzo ne sono usciti. L'ascolto e asincrono: si esce prima che",
+    '   cominci, quindi nessuna porta resta occupata. */',
+    'require(process.argv[2]);',
+    'const giugno = new Date(Date.UTC(2026, 5, 15, 12, 0, 0));',
+    "console.log(JSON.stringify({ tz: process.env.TZ || '', ore: giugno.getHours(), host: process.env.SB_HOST || '' }));",
+    'process.exit(0);',
+    ''
+  ].join('\n'), 'utf8');
+
+  await prova('la porta: PORT vince su SB_PORTA, e una PORT non numerica non vince niente', () => {
+    const casi = [
+      { nome: 'niente', env: {} },
+      { nome: 'solo SB_PORTA', env: { SB_PORTA: '4174' } },
+      { nome: 'PORT e SB_PORTA', env: { PORT: '5000', SB_PORTA: '4174' } },
+      // Certe versioni di Passenger mettono in PORT il percorso di un socket:
+      // li la porta la decide comunque lui, e noi non dobbiamo ascoltare su
+      // NaN. Si torna a SB_PORTA.
+      { nome: 'PORT non numerica', env: { PORT: '/tmp/passenger.sock', SB_PORTA: '4174' } },
+      { nome: 'indirizzo da SB_HOST', env: { SB_HOST: '0.0.0.0' } }
+    ];
+    const esito = lanciaFiglio(scriptPorte, [SERVER_JS, JSON.stringify(casi)],
+      { PORT: undefined, SB_PORTA: undefined, SB_HOST: undefined, SB_DATI: undefined, SB_BACKUP: undefined });
+    esigiUguale(esito.stato, 0, 'il figlio e uscito male: ' + esito.errori);
+    const letti = JSON.parse(esito.ultima);
+    const atteso = [[4173, '127.0.0.1'], [4174, '127.0.0.1'], [5000, '127.0.0.1'], [4174, '127.0.0.1'], [4173, '0.0.0.0']];
+    for (let i = 0; i < casi.length; i++) {
+      esigiUguale(letti[i].porta, atteso[i][0], 'porta nel caso «' + casi[i].nome + '»');
+      esigiUguale(letti[i].host, atteso[i][1], 'indirizzo nel caso «' + casi[i].nome + '»');
+    }
+  });
+
+  await prova('app.js impone Europe/Rome e 0.0.0.0, ma non sopra a chi ha gia scelto', () => {
+    // Il fuso va impostato prima di ogni require, perche Node lo legge una
+    // volta sola: gli orari di questo sito sono italiani e un hosting in UTC
+    // farebbe cadere il lunedi sera di domenica.
+    const senzaFuso = lanciaFiglio(scriptAvvio, [APP_JS],
+      { TZ: undefined, SB_HOST: undefined, PORT: '4299', SB_DATI: undefined, SB_BACKUP: undefined });
+    esigiUguale(senzaFuso.stato, 0, 'il figlio e uscito male: ' + senzaFuso.errori);
+    const primo = JSON.parse(senzaFuso.ultima);
+    esigiUguale(primo.tz, 'Europe/Rome', 'fuso di partenza');
+    // Il 15 giugno a mezzogiorno UTC in Italia sono le 14: se il fuso fosse
+    // arrivato dopo il primo require, qui si leggerebbero le 12.
+    esigiUguale(primo.ore, 14, 'ora italiana del 15 giugno 2026, mezzogiorno UTC');
+    esigiUguale(primo.host, '0.0.0.0', 'indirizzo di ascolto di partenza da app.js');
+
+    const conFuso = lanciaFiglio(scriptAvvio, [APP_JS],
+      { TZ: 'UTC', SB_HOST: '127.0.0.1', PORT: '4299', SB_DATI: undefined, SB_BACKUP: undefined });
+    esigiUguale(conFuso.stato, 0, 'il figlio e uscito male: ' + conFuso.errori);
+    const secondo = JSON.parse(conFuso.ultima);
+    esigiUguale(secondo.tz, 'UTC', 'il fuso di chi lo ha scelto deve vincere');
+    esigiUguale(secondo.ore, 12, 'ora UTC');
+    esigiUguale(secondo.host, '127.0.0.1', 'SB_HOST scritta a mano deve vincere');
+  });
+
+  await prova('SB_DATI e SB_BACKUP portano password, chiavi e backup fuori dal sito', () => {
+    // E la seconda serratura del CONTRATTO-6 §3, quella che non dipende dal
+    // server web: se un giorno .htaccess non viene letto, i segreti non sono
+    // comunque sotto la document root.
+    const fuori = path.join(cartella, 'segreti-fuori');
+    const copie = path.join(cartella, 'backup-fuori');
+    const prima = { dati: 'x', auth: 'x', chiavi: 'x', accessoTwitch: 'x', backup: 'x' };
+    const sbDati = process.env.SB_DATI;
+    const sbBackup = process.env.SB_BACKUP;
+    try {
+      process.env.SB_DATI = fuori;
+      process.env.SB_BACKUP = copie;
+      const dopo = percorsi.applicaAmbiente(Object.assign({}, prima));
+      esigiUguale(dopo.dati, path.resolve(fuori), 'cartella dei dati');
+      esigiUguale(dopo.auth, path.join(path.resolve(fuori), 'auth.json'), 'auth.json');
+      esigiUguale(dopo.chiavi, path.join(path.resolve(fuori), 'chiavi.js'), 'chiavi.js');
+      esigiUguale(dopo.accessoTwitch, path.join(path.resolve(fuori), 'twitch-accesso.json'), 'twitch-accesso.json');
+      esigiUguale(dopo.backup, path.resolve(copie), 'cartella dei backup');
+      // Le cartelle si creano al primo uso: senza, il primo salvataggio
+      // fallirebbe proprio nel momento in cui si sceglie la password.
+      esigi(fs.existsSync(fuori) && fs.existsSync(copie), 'le cartelle indicate non sono state create');
+      // Senza le due variabili non cambia una virgola.
+      delete process.env.SB_DATI;
+      delete process.env.SB_BACKUP;
+      esigiUguale(JSON.stringify(percorsi.applicaAmbiente(Object.assign({}, prima))), JSON.stringify(prima),
+        'senza le variabili qualcosa si e mosso lo stesso');
+    } finally {
+      if (sbDati === undefined) { delete process.env.SB_DATI; } else { process.env.SB_DATI = sbDati; }
+      if (sbBackup === undefined) { delete process.env.SB_BACKUP; } else { process.env.SB_BACKUP = sbBackup; }
+    }
+  });
+
+  await prova('una SB_DATI che non si puo creare ferma l avvio invece di ripiegare in silenzio', () => {
+    // Ripiegare su server/dati/ vorrebbe dire rimettere i segreti dentro il
+    // sito proprio mentre chi lo configura crede di averli portati fuori.
+    const finto = path.join(cartella, 'non-una-cartella.txt');
+    fs.writeFileSync(finto, 'sono un file', 'utf8');
+    const impossibile = path.join(finto, 'dentro');
+    const sbDati = process.env.SB_DATI;
+    try {
+      process.env.SB_DATI = impossibile;
+      const err = esigiErrore(() => percorsi.applicaAmbiente({}), 'SB_DATI', 'la cartella impossibile');
+      esigiUguale(err.codice, 'SB_CARTELLA', 'codice dell errore');
+      esigiDentro(err.message, impossibile, 'il messaggio deve dire quale percorso');
+    } finally {
+      if (sbDati === undefined) { delete process.env.SB_DATI; } else { process.env.SB_DATI = sbDati; }
+    }
+
+    // E dal vivo: l'applicazione non parte, lo dice in italiano nel log ed
+    // esce con 1, cosi Passenger smette di riprovare all infinito.
+    const figlio = lanciaFiglio(scriptAvvio, [APP_JS],
+      { SB_DATI: impossibile, SB_BACKUP: undefined, PORT: '4299', SB_HOST: '127.0.0.1' });
+    esigiUguale(figlio.stato, 1, 'l avvio doveva fallire');
+    esigiDentro(figlio.errori, 'avvio non riuscito', 'il log deve dirlo in chiaro');
+    esigiDentro(figlio.errori, 'SB_DATI', 'il log deve nominare la variabile');
+  });
+
+  await prova('percorsi.imposta() NON applica SB_DATI: il collaudo non tocca l auth.json vero', () => {
+    // Voluto, e delicato: imposta() la usa questo collaudo per rinchiudersi
+    // in una cartella temporanea, e scrive davvero una password di prova. Se
+    // rispettasse SB_DATI, un `node server/autotest.js` lanciato sull hosting
+    // cancellerebbe la password vera del pannello.
+    const radiceLavoro = P.radice;
+    const fuori = path.join(cartella, 'segreti-da-non-usare');
+    const sbDati = process.env.SB_DATI;
+    try {
+      process.env.SB_DATI = fuori;
+      percorsi.imposta(radiceLavoro);
+      esigiUguale(P.auth, path.join(radiceLavoro, 'server', 'dati', 'auth.json'), 'auth.json dopo imposta()');
+      esigiUguale(P.backup, path.join(radiceLavoro, 'server', 'backup'), 'backup dopo imposta()');
+    } finally {
+      if (sbDati === undefined) { delete process.env.SB_DATI; } else { process.env.SB_DATI = sbDati; }
+      percorsi.imposta(radiceLavoro);
+    }
+  });
+
+  await prova('creaServer: i tempi di pazienza e la sveglia sulla connessione muta', () => {
+    const { creaServer } = require('./server.js');
+    const server = creaServer();
+    try {
+      esigiUguale(server.headersTimeout, 30 * 1000, 'headersTimeout');
+      esigiUguale(server.requestTimeout, 3 * 60 * 1000, 'requestTimeout');
+      esigiUguale(server.keepAliveTimeout, 15 * 1000, 'keepAliveTimeout');
+      esigiUguale(server.connectionsCheckingInterval, 5 * 1000, 'connectionsCheckingInterval');
+      // Una connessione tenuta aperta fra due richieste deve morire per il
+      // tempo suo, non per quello delle intestazioni.
+      esigi(server.keepAliveTimeout < server.headersTimeout, 'il keep-alive non sta sotto alle intestazioni');
+      // La sveglia scritta a mano: headersTimeout comincia a contare dal
+      // primo byte, quindi chi apre e tace non lo sveglierebbe mai. Qui si
+      // guarda che i due ascoltatori ci siano; che la connessione muta venga
+      // davvero chiusa lo misura prova-timeout.js, che ci mette mezzo minuto
+      // per caso e non puo stare in un collaudo che deve restare svelto.
+      esigi(server.listenerCount('connection') >= 1, 'nessuna sveglia sulla connessione');
+      esigi(server.listenerCount('request') >= 1, 'nessuno spegne la sveglia alla prima richiesta');
+    } finally {
+      server.close(() => {});
+    }
+  });
+}
+
+/* --- 13. LA PAGINA PULITA E L INDIRIZZO (CONTRATTO-6 §4, USCITA) ----- */
+
+async function proveUscita(costruisci, archivio) {
+  apriSezione('13. Pagina pulita e indirizzo del sito (agente USCITA)');
+
+  const SITO = 'https://slayerbeard.com';
+
+  await prova('togliCommenti: quello che non e un commento non si tocca', () => {
+    // I casi storti si provano meglio sulla funzione che su una generazione
+    // intera: la pagina vera questi casi non li ha, ma un modello scritto
+    // domani si.
+    const casi = [
+      ['<div title="<!-- non un commento -->">x</div>', '<div title="<!-- non un commento -->">x</div>'],
+      ['<div data-x="-->">\n<!-- via -->\n</div>', '<div data-x="-->">\n</div>'],
+      ['<script>var s = "<!-- no -->";\n\n\nvar t = 1;</script>', '<script>var s = "<!-- no -->";\n\n\nvar t = 1;</script>'],
+      ['<style>a{}\n\n\nb{}</style>\n<!-- via -->\n<p>', '<style>a{}\n\n\nb{}</style>\n<p>'],
+      ['<textarea>\n<!-- testo -->\n</textarea>', '<textarea>\n<!-- testo -->\n</textarea>'],
+      ['<pre>\n\n\n  uno\n  <!-- due -->\n</pre>', '<pre>\n\n\n  uno\n  <!-- due -->\n</pre>'],
+      ['<pre>a</pre>\n<!-- via -->\n<p>', '<pre>a</pre>\n<p>'],
+      ['<!--[if lt IE 9]><script src="x.js"></script><![endif]-->\n<p>', '<!--[if lt IE 9]><script src="x.js"></script><![endif]-->\n<p>'],
+      ['<p>\n<!-- mai chiuso\n<p>', '<p>\n<!-- mai chiuso\n<p>'],
+      ['<!doctype html>\n<!-- via -->\n<html>', '<!doctype html>\n<html>'],
+      ['<img alt="3 > 2">\n<!-- via -->\n<b>', '<img alt="3 > 2">\n<b>'],
+      ['<p class=a>\n<!-- via -->\n<b>', '<p class=a>\n<b>']
+    ];
+    for (const [dentro, atteso] of casi) {
+      esigiUguale(costruisci.togliCommenti(dentro), atteso, JSON.stringify(dentro));
+    }
+  });
+
+  await prova('togliCommenti: i commenti veri se ne vanno senza spostare il resto', () => {
+    // Lo spazio fra due tag conta: toglierlo o aggiungerlo cambia la pagina
+    // che si vede, ed e esattamente quello che non deve succedere.
+    const casi = [
+      ['<a>\n  <!-- ciao -->\n  <b>', '<a>\n  <b>'],
+      ['</span> <!-- x --> <span>', '</span>  <span>'],
+      ['</span><!-- x --><span>', '</span><span>'],
+      ['<b>testo</b> <!-- nota -->\n<i>', '<b>testo</b> \n<i>'],
+      ['<a>\n  <!-- uno --><!-- due -->\n<b>', '<a>\n<b>'],
+      ['<a>\r\n  <!-- x -->\r\n<b>', '<a>\r\n<b>'],
+      ['<a>\n\n\n  <!-- x -->\n  \n\n  <p>', '<a>\n\n  <p>'],
+      ['<a>\n  <b>ciao</b>\n</a>', '<a>\n  <b>ciao</b>\n</a>']
+    ];
+    for (const [dentro, atteso] of casi) {
+      esigiUguale(costruisci.togliCommenti(dentro), atteso, JSON.stringify(dentro));
+    }
+  });
+
+  await prova('index.html generato non contiene nemmeno un <!--', () => {
+    const html = fs.readFileSync(P.indexHtml, 'utf8');
+    esigiUguale((html.match(/<!--/g) || []).length, 0, 'commenti rimasti in pagina');
+    // Il doctype comincia con «<!» ma non e un commento: se sparisse lui, la
+    // pagina cadrebbe in quirks mode.
+    esigiDentro(html, '<!doctype html>', 'doctype');
+    esigiDentro(html, '<html lang="it">', 'apertura della pagina');
+    // I commenti restano nei modelli, che sono il sorgente e devono restare
+    // spiegati: si toglie in uscita, non alla fonte.
+    esigi(fs.readFileSync(P.modelloIndex, 'utf8').indexOf('<!--') !== -1,
+      'i commenti sono spariti anche dal modello: si doveva togliere solo in uscita');
+  });
+
+  await prova('normalizzaIndirizzo: con o senza barra, con o senza schema, e lo stesso', () => {
+    for (const buono of ['https://slayerbeard.com', 'https://slayerbeard.com/', 'slayerbeard.com',
+      '  https://slayerbeard.com  ', 'HTTPS://SlayerBeard.com', 'https://slayerbeard.com/?x=1#y']) {
+      esigiUguale(controlli.normalizzaIndirizzo(buono), SITO + '/', buono);
+    }
+    // Un valore che non e un indirizzo vale come non scritto: meglio il
+    // percorso relativo di un canonico inventato.
+    for (const storto of ['', '   ', 'una frase qualunque', 'ftp://slayerbeard.com', 'javascript:alert(1)',
+      'mailto:qualcuno@example.test', 'https://utente:parola@example.test/']) {
+      esigiUguale(controlli.normalizzaIndirizzo(storto), '', JSON.stringify(storto));
+    }
+  });
+
+  await prova('config.sitoUrl vince su SB_SITO, e senza campo vale l ambiente', () => {
+    const sbSito = process.env.SB_SITO;
+    try {
+      process.env.SB_SITO = 'https://dall-ambiente.example';
+      const conCampo = controlli.indirizzoSito({ sitoUrl: SITO });
+      esigiUguale(conCampo.indirizzo, SITO + '/', 'il campo del pannello deve vincere');
+      esigiUguale(conCampo.host, 'slayerbeard.com', 'host');
+      esigiUguale(conCampo.dallAmbiente, false, 'dallAmbiente');
+
+      const senzaCampo = controlli.indirizzoSito({ sitoUrl: '' });
+      esigiUguale(senzaCampo.indirizzo, 'https://dall-ambiente.example/', 'senza campo vale SB_SITO');
+      esigiUguale(senzaCampo.dallAmbiente, true, 'dallAmbiente');
+      // Un campo storto vale come non scritto, e allora si guarda l'ambiente.
+      esigiUguale(controlli.indirizzoSito({ sitoUrl: 'non un indirizzo' }).indirizzo,
+        'https://dall-ambiente.example/', 'campo storto');
+
+      delete process.env.SB_SITO;
+      esigiUguale(controlli.indirizzoSito({ sitoUrl: '' }).indirizzo, '', 'senza niente non c e indirizzo');
+    } finally {
+      if (sbSito === undefined) { delete process.env.SB_SITO; } else { process.env.SB_SITO = sbSito; }
+    }
+  });
+
+  await prova('con o senza barra finale la pagina esce identica, e contenuti.json non si prende niente', () => {
+    const documento = archivio.leggi();
+    // L'istante si fissa: la pagina contiene gli eventi futuri, e due rese a
+    // cavallo di un minuto sarebbero diverse per un motivo che non c'entra.
+    const opzioni = { adesso: Date.UTC(2026, 8, 17, 10, 0, 0) };
+    documento.config.sitoUrl = SITO;
+    const senza = costruisci.rendi(documento, opzioni).html;
+    esigiUguale(documento.config.sitoUrl, SITO, 'la resa ha riscritto il documento');
+    documento.config.sitoUrl = SITO + '/';
+    const con = costruisci.rendi(documento, opzioni).html;
+    esigiUguale(con, senza, 'la barra finale cambia la pagina');
+    esigiDentro(senza, '<link rel="canonical" href="' + SITO + '/">', 'canonico');
+    esigiDentro(senza, '<meta property="og:url" content="' + SITO + '/">', 'og:url');
+  });
+
+  await prova('sitemap e robots.txt dicono lo stesso indirizzo del canonico', () => {
+    // robots.txt non e un file della generazione: lo scrive chi prepara
+    // l'hosting, e la pubblicazione ci mette solo la riga Sitemap:. Qui se ne
+    // scrive uno nella copia di lavoro, come sull hosting.
+    const robots = path.join(P.radice, 'robots.txt');
+    fs.writeFileSync(robots, 'User-agent: *\nAllow: /\nDisallow: /pannello/\n', 'utf8');
+    const documento = archivio.leggi();
+    documento.config.sitoUrl = SITO;
+    archivio.salva(documento);
+
+    const esito = costruisci.genera();
+    // La sitemap sta fuori da `scritti`, che sono i tre file generati e basta.
+    esigiUguale(esito.scritti.map((s) => s.file).join(', '), 'index.html, js/dati.js, css/tema.css', 'gli scritti restano tre');
+    esigi(esito.sitemap && esito.sitemap.file === 'sitemap.xml', 'la sitemap non e in esito.sitemap');
+    esigiUguale(esito.sitemap.indirizzo, SITO + '/', 'indirizzo della sitemap');
+    esigiUguale(esito.sitemap.robots, 'aggiornato', 'riga in robots.txt');
+
+    const mappa = fs.readFileSync(path.join(P.radice, 'sitemap.xml'), 'utf8');
+    esigiDentro(mappa, '<loc>' + SITO + '/</loc>', 'loc della sitemap');
+    esigiDentro(mappa, '<lastmod>' + String(esito.aggiornatoIl).slice(0, 10) + '</lastmod>', 'lastmod');
+    esigiUguale((mappa.match(/<url>/g) || []).length, 1, 'il sito e una pagina sola');
+
+    const testoRobots = fs.readFileSync(robots, 'utf8');
+    esigiDentro(testoRobots, 'Sitemap: ' + SITO + '/sitemap.xml', 'la riga Sitemap:');
+    esigiDentro(fs.readFileSync(P.indexHtml, 'utf8'), '<link rel="canonical" href="' + SITO + '/">', 'canonico');
+
+    // Due pubblicazioni di fila non devono lasciare due righe.
+    costruisci.genera();
+    esigiUguale((fs.readFileSync(robots, 'utf8').match(/^[ \t]*Sitemap[ \t]*:/gim) || []).length, 1, 'righe Sitemap:');
+  });
+
+  await prova('i domini del player prendono host e www, e senza doppioni', () => {
+    // Per Twitch slayerbeard.com e www.slayerbeard.com sono due «parent»
+    // diversi: chi arrivasse dall'altro vedrebbe un rettangolo nero.
+    const documento = archivio.leggi();
+    documento.config.sitoUrl = SITO;
+    documento.config.twitch.domini = ['slayerbeard.com', 'prova.example'];
+    const domini = costruisci.oggettoDati(documento).twitch.domini;
+    esigiUguale(domini.join(','), 'slayerbeard.com,prova.example,www.slayerbeard.com,localhost,127.0.0.1', 'elenco dei domini');
+    esigiUguale(new Set(domini).size, domini.length, 'ci sono doppioni');
+    // Con il campo vuoto li mette tutti la pubblicazione: e la ragione per
+    // cui il player parte online senza aprire il pannello.
+    documento.config.twitch.domini = [];
+    esigiUguale(costruisci.oggettoDati(documento).twitch.domini.join(','),
+      'slayerbeard.com,www.slayerbeard.com,localhost,127.0.0.1', 'domini con il campo vuoto');
+  });
+
+  await prova('senza indirizzo non si scrive nessuna sitemap e non si protesta', () => {
+    const sbSito = process.env.SB_SITO;
+    delete process.env.SB_SITO;
+    const mappa = path.join(P.radice, 'sitemap.xml');
+    const robots = path.join(P.radice, 'robots.txt');
+    const primaRobots = fs.readFileSync(robots, 'utf8');
+    try {
+      fs.rmSync(mappa, { force: true });
+      const documento = archivio.leggi();
+      documento.config.sitoUrl = '';
+      archivio.salva(documento);
+      const esito = costruisci.genera();
+      esigiUguale(esito.sitemap, null, 'esito.sitemap');
+      esigi(!fs.existsSync(mappa), 'sitemap.xml scritta senza sapere l indirizzo');
+      esigiUguale(fs.readFileSync(robots, 'utf8'), primaRobots, 'robots.txt toccato senza indirizzo');
+      // Senza indirizzo la pagina ripiega sul percorso relativo, come ha
+      // sempre fatto: funziona, e non inventa un dominio.
+      esigiDentro(fs.readFileSync(P.indexHtml, 'utf8'), '<link rel="canonical" href="./">', 'canonico di ripiego');
+    } finally {
+      if (sbSito !== undefined) { process.env.SB_SITO = sbSito; }
+      const documento = archivio.leggi();
+      documento.config.sitoUrl = SITO;
+      archivio.salva(documento);
+      costruisci.genera();
+    }
+  });
+}
+
+/* --- 14. IL PANNELLO ESPOSTO A INTERNET (CONTRATTO-6 §4, SCUDO) ------ */
+
+/** Una richiesta finta: basta a chi guarda solo indirizzo e intestazioni. */
+function richiestaFinta(ip, intestazioni) {
+  return { headers: Object.assign({}, intestazioni || {}), socket: { remoteAddress: ip } };
+}
+
+async function provePannelloEsposto() {
+  apriSezione('14. Il pannello esposto a internet (agente SCUDO)');
+
+  const auth = require('./lib/autenticazione');
+  const statico = require('./lib/statico');
+  const dietroProxyPrima = process.env.SB_DIETRO_PROXY;
+  const primoAccessoPrima = process.env.SB_PRIMO_ACCESSO;
+
+  /** Rimette l'ambiente come l'ha trovato: le due variabili si rileggono a ogni chiamata. */
+  const rimettiAmbiente = () => {
+    if (dietroProxyPrima === undefined) { delete process.env.SB_DIETRO_PROXY; } else { process.env.SB_DIETRO_PROXY = dietroProxyPrima; }
+    if (primoAccessoPrima === undefined) { delete process.env.SB_PRIMO_ACCESSO; } else { process.env.SB_PRIMO_ACCESSO = primoAccessoPrima; }
+  };
+
+  try {
+    await prova('X-Forwarded-For non conta se non si dichiara di stare dietro un proxy', () => {
+      delete process.env.SB_DIETRO_PROXY;
+      esigiUguale(auth.dietroProxy(), false, 'dietroProxy');
+      esigiUguale(auth.indirizzoRichiesta(richiestaFinta('127.0.0.1', { 'x-forwarded-for': '9.9.9.9' })),
+        '127.0.0.1', 'in locale l intestazione non deve spostare niente');
+    });
+
+    await prova('con SB_DIETRO_PROXY=1 vale l ultimo salto, non il primo', () => {
+      // Il primo valore lo scrive chi chiama: bastava cambiarlo a ogni
+      // richiesta per non essere frenati mai. L'ultimo lo accoda il proxy di
+      // casa, ed e l'unico che chi chiama non puo falsificare.
+      process.env.SB_DIETRO_PROXY = '1';
+      esigiUguale(auth.dietroProxy(), true, 'dietroProxy');
+      esigiUguale(auth.indirizzoRichiesta(richiestaFinta('127.0.0.1', { 'x-forwarded-for': '9.9.9.9, 203.0.113.7' })),
+        '203.0.113.7', 'ultimo salto');
+      esigiUguale(auth.indirizzoRichiesta(richiestaFinta('127.0.0.1', { 'x-forwarded-for': '1.1.1.1, 198.51.100.4' })),
+        '198.51.100.4', 'un altro cliente, un altro indirizzo');
+      esigiUguale(auth.indirizzoRichiesta(richiestaFinta('127.0.0.1', {})), '127.0.0.1', 'senza intestazione vale la connessione');
+    });
+
+    await prova('l indirizzo si normalizza: via la porta e il prefisso ::ffff:', () => {
+      // Senza, lo stesso cliente avrebbe un contatore nuovo a ogni richiesta:
+      // la porta di origine cambia sempre.
+      process.env.SB_DIETRO_PROXY = '1';
+      esigiUguale(auth.indirizzoRichiesta(richiestaFinta('::ffff:10.0.0.7', {})), '10.0.0.7', 'IPv4 mappato');
+      esigiUguale(auth.indirizzoRichiesta(richiestaFinta('127.0.0.1', { 'x-forwarded-for': '[2001:db8::1]:443' })),
+        '2001:db8::1', 'IPv6 con la porta');
+      esigiUguale(auth.indirizzoRichiesta(richiestaFinta('127.0.0.1', { 'x-forwarded-for': '203.0.113.7:51234' })),
+        '203.0.113.7', 'IPv4 con la porta');
+    });
+
+    await prova('un primo salto falsificato non moltiplica i contatori del freno', () => {
+      process.env.SB_DIETRO_PROXY = '1';
+      auth.azzeraTutto();
+      for (let i = 0; i < auth.MAX_TENTATIVI; i++) {
+        auth.registraFallimento(richiestaFinta('127.0.0.1', { 'x-forwarded-for': 'falso-' + i + ', 203.0.113.9' }));
+      }
+      esigi(auth.attesaResidua(richiestaFinta('127.0.0.1', { 'x-forwarded-for': 'ancora-un-altro, 203.0.113.9' })) > 0,
+        'cinque tentativi con il primo salto falsificato non hanno frenato niente');
+      // E il blocco colpisce chi deve: un altro cliente dietro lo stesso
+      // proxy non paga per lui.
+      esigiUguale(auth.attesaResidua(richiestaFinta('127.0.0.1', { 'x-forwarded-for': '198.51.100.4' })), 0,
+        'un cliente diverso e stato frenato per sbaglio');
+      auth.azzeraTutto();
+    });
+
+    await prova('il cookie Secure segue la stessa regola di X-Forwarded-Proto', () => {
+      const finta = richiestaFinta('127.0.0.1', { 'x-forwarded-proto': 'https' });
+      delete process.env.SB_DIETRO_PROXY;
+      esigiUguale(auth.inHttps(finta), false, 'senza dichiarazione l intestazione non conta');
+      // Un «https» falso faceva mettere Secure a un cookie su http: il
+      // browser lo buttava via, cioe non si entrava piu nel pannello.
+      esigi(auth.cookieSessione(finta, 'x').indexOf('Secure') === -1, 'Secure su http per un intestazione falsa');
+      process.env.SB_DIETRO_PROXY = '1';
+      esigiUguale(auth.inHttps(finta), true, 'dietro il proxy dichiarato vale');
+      esigiDentro(auth.cookieSessione(finta, 'x'), 'Secure', 'cookie in https');
+      esigi(auth.cookieSessione(richiestaFinta('127.0.0.1', { 'x-forwarded-proto': 'http' }), 'x').indexOf('Secure') === -1,
+        'Secure su una connessione in chiaro');
+    });
+
+    await prova('il freno sulle scritture anonime: 120 al minuto per indirizzo', () => {
+      delete process.env.SB_DIETRO_PROXY;
+      auth.azzeraTutto();
+      esigiUguale(auth.MAX_SCRITTURE_ANONIME, 120, 'il tetto del contratto');
+      const uno = richiestaFinta('203.0.113.9', {});
+      for (let i = 1; i <= auth.MAX_SCRITTURE_ANONIME; i++) {
+        esigiUguale(auth.frenoScritture(uno), 0, 'frenata alla richiesta numero ' + i);
+      }
+      esigi(auth.frenoScritture(uno) > 0, 'la 121esima doveva essere frenata');
+      esigiUguale(auth.frenoScritture(richiestaFinta('198.51.100.4', {})), 0, 'un altro indirizzo ha il suo contatore');
+      auth.azzeraTutto();
+    });
+
+    await prova('statico: quello che non deve uscire dal browser non esce', () => {
+      // La stessa lista che nega .htaccess: su Plesk i file statici li serve
+      // il server web, ma se nginx scavalca .htaccess questo modulo e
+      // l'unico rimasto a dire di no.
+      const negati = ['README.md', 'CONTRATTO-6.md', 'docs/HOSTING.md', 'docs/PANNELLO.md',
+        'package.json', 'package-lock.json', 'app.js', '.env', '.env.esempio', '.htaccess',
+        '.gitignore', '.git/config', '.editorconfig', 'modelli/index.html', 'modelli/parziali/testa.html',
+        'server/server.js', 'server/lib/api.js', 'server/dati/auth.json', 'server/dati/chiavi.js',
+        'server/backup/copia.json', 'contenuti/contenuti.json', 'contenuti/schema.js',
+        'contenuti/font/elenco.json', 'contenuti/media/appunti.md'];
+      for (const relativo of negati) {
+        esigiUguale(statico.riservato(path.join(P.radice, ...relativo.split('/'))), true, 'doveva essere negato: ' + relativo);
+      }
+      // Windows non distingue le maiuscole: senza il confronto in minuscolo
+      // /SERVER/dati/auth.json usciva lo stesso.
+      esigiUguale(statico.riservato(path.join(P.radice, 'SERVER', 'dati', 'auth.json')), true, 'SERVER in maiuscolo');
+    });
+
+    await prova('statico: il sito, il pannello, i media e i font continuano a uscire', () => {
+      const ammessi = ['index.html', 'robots.txt', 'sitemap.xml', 'css/tema.css', 'js/dati.js',
+        'img/avatar.webp', 'pannello/index.html', 'pannello/moduli/api.js',
+        'contenuti/media/citta-notturna.webp', 'contenuti/font/prova.woff2',
+        // L'unico file nascosto che ha senso servire: serve al rinnovo del
+        // certificato.
+        '.well-known/acme-challenge/prova'];
+      for (const relativo of ammessi) {
+        esigiUguale(statico.riservato(path.join(P.radice, ...relativo.split('/'))), false, 'doveva uscire: ' + relativo);
+      }
+    });
+
+    await prova('statico: i segreti restano negati anche se SB_DATI li mette dentro il sito', () => {
+      const radiceLavoro = P.radice;
+      const dentro = path.join(radiceLavoro, 'segreti-di-prova');
+      const sbDati = process.env.SB_DATI;
+      try {
+        process.env.SB_DATI = dentro;
+        percorsi.applicaAmbiente(P);
+        esigiUguale(statico.riservato(path.join(dentro, 'auth.json')), true, 'auth.json in una cartella qualunque');
+        esigiUguale(statico.riservato(path.join(dentro, 'chiavi.js')), true, 'chiavi.js');
+      } finally {
+        if (sbDati === undefined) { delete process.env.SB_DATI; } else { process.env.SB_DATI = sbDati; }
+        percorsi.imposta(radiceLavoro);
+        fs.rmSync(dentro, { recursive: true, force: true });
+      }
+    });
+
+    /* Le prove che restano vogliono un server vero: il freno e il primo
+       accesso passano da api.js, e provarli sulle sole funzioni direbbe
+       meta della cosa. */
+    const { creaServer } = require('./server.js');
+    const server = creaServer();
+    await new Promise((risolvi) => server.listen(0, '127.0.0.1', risolvi));
+    const porta = server.address().port;
+
+    try {
+      await prova('il freno colpisce chi scrive senza sessione, non chi e dentro', async () => {
+        // L'editor dal vivo fa legittimamente decine di richieste al secondo
+        // (POST /api/tema a ogni fotogramma): un freno che lo ferma sarebbe
+        // un freno che ferma chi lavora e non chi prova a caso.
+        delete process.env.SB_DIETRO_PROXY;
+        auth.azzeraTutto();
+        const entra = await chiama(porta, 'POST', '/api/entra', { json: { password: PASSWORD_COLLAUDO } });
+        esigiUguale(entra.stato, 200, 'accesso');
+        const biscotto = biscottoDa(entra);
+
+        // Il contatore dell'indirizzo da cui arriva il collaudo si riempie
+        // senza fare 121 richieste vere: la funzione e la stessa che chiama
+        // api.js a ogni scrittura anonima.
+        const finta = richiestaFinta('127.0.0.1', {});
+        for (let i = 0; i <= auth.MAX_SCRITTURE_ANONIME; i++) { auth.frenoScritture(finta); }
+
+        const conSessione = await chiama(porta, 'POST', '/api/tema', { biscotto: biscotto, json: { tema: { sfondo: { aloni: 40 } } } });
+        esigiUguale(conSessione.stato, 200, 'chi ha la sessione e stato frenato');
+        const anonima = await chiama(porta, 'POST', '/api/tema', { json: { tema: {} } });
+        esigiUguale(anonima.stato, 429, 'una scrittura anonima doveva essere frenata');
+        esigiDentro(anonima.dati.errore, 'Troppe richieste', 'messaggio');
+        // Si frena chi scrive, non chi guarda.
+        esigiUguale((await chiama(porta, 'GET', '/api/sessione')).stato, 200, 'una lettura e stata frenata');
+        auth.azzeraTutto();
+      });
+
+      /* Il primo accesso. Il ramo che CREA la password vive solo finche
+         auth.json non esiste: per provarlo si mette da parte quello della
+         copia di lavoro e lo si rimette subito dopo. */
+      const senzaPassword = async (corpo) => {
+        const daParte = P.auth + '.messo-da-parte';
+        fs.renameSync(P.auth, daParte);
+        auth.azzeraTutto();
+        try {
+          return await corpo();
+        } finally {
+          fs.rmSync(P.auth, { force: true });
+          fs.renameSync(daParte, P.auth);
+          auth.azzeraTutto();
+        }
+      };
+
+      await prova('la prima password non si crea da fuori senza SB_PRIMO_ACCESSO', async () => {
+        // Fra l'avvio dell'applicazione e il momento in cui chi amministra
+        // apre il pannello passa del tempo, e /pannello/ e uno dei percorsi
+        // che i bot provano di serie: chi arriva primo si prende il sito.
+        await senzaPassword(async () => {
+          delete process.env.SB_PRIMO_ACCESSO;
+          const daFuori = await chiama(porta, 'POST', '/api/entra', {
+            json: { password: 'una-password-di-prova' }, intestazioni: { 'X-Forwarded-For': '203.0.113.9' }
+          });
+          esigiUguale(daFuori.stato, 403, 'stato');
+          esigiDentro(daFuori.dati.errore, 'SB_PRIMO_ACCESSO', 'il messaggio deve dire cosa fare');
+          esigi(!fs.existsSync(P.auth), 'la password e stata creata lo stesso');
+        });
+      });
+
+      await prova('con SB_PRIMO_ACCESSO=1 la prima password si crea anche da fuori', async () => {
+        await senzaPassword(async () => {
+          process.env.SB_PRIMO_ACCESSO = '1';
+          try {
+            const r = await chiama(porta, 'POST', '/api/entra', {
+              json: { password: 'una-password-di-prova' }, intestazioni: { 'X-Forwarded-For': '203.0.113.9' }
+            });
+            esigiUguale(r.stato, 201, 'stato');
+            esigiUguale(r.dati.creata, true, 'creata');
+            esigi(fs.existsSync(P.auth), 'auth.json non scritto');
+          } finally {
+            delete process.env.SB_PRIMO_ACCESSO;
+          }
+        });
+      });
+
+      await prova('da un indirizzo locale la prima password si crea come e sempre stato', async () => {
+        await senzaPassword(async () => {
+          delete process.env.SB_PRIMO_ACCESSO;
+          const r = await chiama(porta, 'POST', '/api/entra', { json: { password: 'una-password-di-prova' } });
+          esigiUguale(r.stato, 201, 'in locale non deve cambiare niente');
+          esigi(fs.existsSync(P.auth), 'auth.json non scritto');
+        });
+      });
+
+      await prova('a password esistente SB_PRIMO_ACCESSO non conta piu niente', async () => {
+        // Una variabile lasciata accesa per dimenticanza non deve aprire
+        // nessuna porta: il controllo vive dentro il ramo del primo avvio.
+        process.env.SB_PRIMO_ACCESSO = '1';
+        auth.azzeraTutto();
+        try {
+          const r = await chiama(porta, 'POST', '/api/entra', {
+            json: { password: 'quella-sbagliata-99' }, intestazioni: { 'X-Forwarded-For': '203.0.113.9' }
+          });
+          esigiUguale(r.stato, 401, 'stato');
+          esigiDentro(r.dati.errore, 'Password errata', 'messaggio');
+          const buona = await chiama(porta, 'POST', '/api/entra', { json: { password: PASSWORD_COLLAUDO } });
+          esigiUguale(buona.stato, 200, 'la password di prima non vale piu');
+        } finally {
+          delete process.env.SB_PRIMO_ACCESSO;
+          auth.azzeraTutto();
+        }
+      });
+    } finally {
+      await new Promise((risolvi) => server.close(risolvi));
+    }
+  } finally {
+    rimettiAmbiente();
+    auth.azzeraTutto();
+  }
+}
+
 /* --- ESECUZIONE ------------------------------------------------------ */
 
 async function esegui() {
@@ -2810,6 +3514,14 @@ async function esegui() {
     await proveTwitch(costruisci, archivio);
     await proveClip(contenutiVeri, costruisci, archivio);
     await proveSchedule(contenutiVeri, costruisci, archivio);
+
+    // Le tre sezioni del CONTRATTO-6 stanno in fondo apposta: toccano
+    // l'ambiente (SB_DATI, SB_SITO, SB_DIETRO_PROXY) e i percorsi, e quello
+    // che spostano lo rimettono a posto — ma se qualcosa sfuggisse, non
+    // sfuggirebbe addosso alle prove di prima.
+    await proveHosting(temporanea);
+    await proveUscita(costruisci, archivio);
+    await provePannelloEsposto();
   } finally {
     percorsi.imposta(RADICE_VERA);
     try { fs.rmSync(temporanea, { recursive: true, force: true }); } catch (e) { /* su Windows a volte il file e ancora aperto */ }

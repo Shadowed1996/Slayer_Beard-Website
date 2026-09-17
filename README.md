@@ -13,7 +13,9 @@ Due cose da tenere a mente, perché spiegano tutto il resto:
 
 1. **Il sito pubblicato è statico.** `index.html` è un file generato: chi visita il sito non
    scarica nessun JSON e non parla con nessun server. Va bene qualsiasi hosting.
-2. **Il server serve solo a chi amministra.** Gira sul computer di casa, non in produzione.
+2. **Il server serve solo a chi amministra.** Gira in due modi: sul computer di chi lavora
+   (`node server/server.js`, come è sempre stato) oppure su un hosting con Node, dove lo avvia
+   `app.js`, per avere il pannello online. Chi visita il sito non lo tocca in nessuno dei due casi.
 
 ```
 contenuti/contenuti.json   ← la verità: tutti i testi e la configurazione
@@ -135,6 +137,13 @@ sito/
 │  │                     orari. Anche lui un file solo per pannello e server
 │  └─ moduli/            i mattoni comuni: API, campi dallo schema, testo ricco, media
 │                        (con la riduzione in WebP), backup, l'editor della schedule
+├─ app.js                il file d'avvio per un hosting con Node: fuso, porta e
+│                        indirizzo dall'ambiente, poi lo stesso server di server/
+├─ package.json          avvio e metadati (`npm start`), zero dipendenze
+├─ .htaccess             regole del server web: nega server/ e i file di lavoro,
+│                        compressione, cache, intestazioni di sicurezza
+├─ robots.txt            tutto permesso tranne /pannello/ e /api/
+├─ docs/HOSTING.md       la guida della messa online, passo per passo
 ├─ docs/PANNELLO.md      guida per chi amministra il sito
 ├─ docs/PRESENZA-TWITCH.md  studio su presenza, lurk e login Twitch: come Twitch conta
 │                           davvero gli spettatori, e cosa consente il regolamento
@@ -143,6 +152,7 @@ sito/
 ├─ CONTRATTO-3.md        l'addendum della terza fase: la modalità lurk
 ├─ CONTRATTO-4.md        l'addendum della quarta fase: l'editor unico del pannello
 ├─ CONTRATTO-5.md        l'addendum della quinta fase: la schedule rifatta e le grafiche nuove
+├─ CONTRATTO-6.md        l'addendum della sesta fase: il sito pronto per un hosting con Node
 └─ Cattura.PNG           cattura della pagina del canale su Twitch — banner, riquadro
                          fuori onda, handle social. Non è un'anteprima di questo sito.
 ```
@@ -154,8 +164,8 @@ resta sempre prima e accesa); il binario laterale e il piede ci sono sempre. Il 
 voce per ogni sezione accesa, quindi al massimo sei — e resta a sei: la vetrina delle clip sta
 dentro «diretta» proprio per non chiederne una settima, che sotto i 400 px non ci starebbe.
 
-La versione precedente del sito è conservata in `Desktop/sito-backup/`: serve solo come
-riferimento storico, non è collegata a niente.
+La versione precedente del sito è conservata fuori dal repository, in una cartella locale
+`sito-backup/`: serve solo come riferimento storico, non è collegata a niente.
 
 ---
 
@@ -397,7 +407,7 @@ La guida completa dell'editor, con tutti i casi, è nel capitolo 11 di
 `server/lib/controlli.js` guarda il documento **intero** e stampa avvertimenti —
 mai errori, non blocca niente. Esiste perché la convalida guarda un campo per
 volta, e nessun campo preso da solo è sbagliato quando l'indirizzo di ritorno del
-login punta a `localhost` mentre il sito sta su `slayerbeard.it`: sono due valori
+login punta a `localhost` mentre il sito sta su `slayerbeard.com`: sono due valori
 leciti che insieme fanno un login rotto per tutti i visitatori.
 
 Li stampano `node server/genera.js` in fondo alla generazione e l'avvio del
@@ -409,12 +419,24 @@ prosa, in questo file, e la prosa non parla.
 
 ## Cose da fare quando il sito va online
 
+La guida della messa online è **[`docs/HOSTING.md`](docs/HOSTING.md)**: cosa caricare e dove, i
+campi da compilare nel pannello dell'hosting, le variabili d'ambiente una per una, il primo accesso
+al pannello online e il dominio, che adesso si sa: **`slayerbeard.com`**, senza `www`. Qui sotto
+restano le cose che si fanno da questa parte, prima di caricare.
+
 1. **Domini di Twitch.** Nel pannello, menu ☰ → «Canale, contatti e immagini», aggiungi il
-   dominio di produzione con e senza `www` (per esempio `slayerbeard.it` e `www.slayerbeard.it`).
-   Senza, il player non parte: `localhost` e `127.0.0.1` sono già inclusi da soli.
-2. **Indirizzo pubblico del sito.** Nella stessa vista: riempie il `<link rel="canonical">` e
-   l'`og:url`. Lasciato vuoto, la pagina usa `./` e funziona lo stesso, ma le anteprime social
-   sono più fragili. I testi delle anteprime stanno in menu ☰ → «Google e social».
+   dominio del sito **con e senza `www`**: `slayerbeard.com` e `www.slayerbeard.com`, che per
+   Twitch sono due nomi diversi. `localhost`, `127.0.0.1` e l'indirizzo da cui la pagina è
+   davvero aperta ci sono sempre — li dichiara il sito da sé — quindi questa lista è la rete di
+   sicurezza, non l'unica cosa che tiene in piedi il player. Se l'indirizzo del sito arriva dalla
+   variabile `SB_SITO` invece che dal campo del pannello, quei due nomi li mette da sé la
+   pubblicazione; se è scritto nel pannello — com'è adesso — vanno scritti a mano.
+2. **Indirizzo pubblico del sito.** Nella stessa vista, ed è **`https://slayerbeard.com`**:
+   riempie il `<link rel="canonical">` e l'`og:url`. Lasciato vuoto, la pagina usa `./` e funziona
+   lo stesso, ma le anteprime social sono più fragili. I testi delle anteprime stanno in menu ☰ →
+   «Google e social». Su un hosting con Node lo stesso indirizzo si può passare con la variabile
+   `SB_SITO`, senza scriverlo nel pannello: se il campo è pieno, vince il campo. Vedi
+   [`docs/HOSTING.md`](docs/HOSTING.md).
 3. **«Ultima diretta», se vuoi che si aggiorni da sé.** È facoltativo e si fa una volta sola:
    `node server/imposta-twitch.js <clientId> <clientSecret>`, con le due chiavi di un'app
    registrata su [dev.twitch.tv](https://dev.twitch.tv/console/apps) — può essere la stessa del
@@ -422,19 +444,51 @@ prosa, in questo file, e la prosa non parla.
    diretta e lo scrive nei contenuti, così è fresco anche per chi visita il sito senza collegare
    nessun account. Senza, quel campo resta una casella da riempire a mano, e il sito funziona
    esattamente come prima. Il capitolo qui sotto spiega il resto.
-4. **Pubblica**, poi **carica online** il contenuto della cartella: `index.html`, `css/`, `js/`,
-   `img/`, **`contenuti/media/`** se il sito usa un'immagine della libreria (una caricata dal
-   pannello, o una delle grafiche del canale scelta per un giorno, un evento o il fondale) e
-   **`contenuti/font/`** se hai caricato font (bastano i file dei font: `elenco.json` serve solo al
-   pannello).
-   Attenzione: i file generati sono tre — `index.html`, `js/dati.js` e **`css/tema.css`**. Se
-   carichi solo l'HTML, il sito online resta con i colori e i caratteri di `tokens.css` e non si
-   capisce perché. E se l'hosting aggiunge una Content-Security-Policy sua, deve permettere i font
-   del sito stesso (`font-src 'self'`), come fa quella della pagina.
-   Non serve caricare `server/`, `pannello/`, `modelli/`, né il resto di `contenuti/`: sono gli
-   attrezzi, non il sito. Se il tuo hosting è pubblico, **è meglio non caricarli affatto**.
+4. **Pubblica**, poi **carica online**. Cosa si carica dipende da che cosa vuoi online, e le due
+   risposte sono molto diverse.
 
-Netlify, Vercel, GitHub Pages o un FTP qualsiasi vanno tutti bene: è HTML statico.
+   **Il sito da solo**, con il pannello che resta sul computer di chi lavora: i tre file generati
+   — `index.html`, `js/dati.js` e **`css/tema.css`** — più `css/`, `js/`, `img/`,
+   **`contenuti/media/`** se il sito usa un'immagine della libreria (una caricata dal pannello, o
+   una delle grafiche del canale scelta per un giorno, un evento o il fondale) e
+   **`contenuti/font/`** se hai caricato font (bastano i file dei font: `elenco.json` serve solo
+   al pannello). Qui `server/`, `pannello/` e `modelli/` non servono, e su un hosting pubblico
+   **è meglio non caricarli affatto**.
+
+   **Il sito con il pannello online**: si carica **il progetto intero** — `app.js`,
+   `package.json`, `.htaccess`, `robots.txt`, i tre file generati, `css/`, `js/`, `img/`,
+   `contenuti/`, `modelli/`, `pannello/` e `server/`. `modelli/` in particolare **serve davvero**:
+   ogni «Pubblica» rigenera la pagina da lì e da `contenuti/contenuti.json`, e senza quei file il
+   bottone non ha da dove ripartire. Le due sole eccezioni, che non si caricano mai, sono
+   **`server/dati/`** (la password del pannello e le chiavi di Twitch) e **`server/backup/`**.
+
+   Attenzione, in tutti e due i casi: i file generati sono tre — `index.html`, `js/dati.js` e
+   **`css/tema.css`**. Se carichi solo l'HTML, il sito online resta con i colori e i caratteri di
+   `tokens.css` e non si capisce perché. E se l'hosting aggiunge una Content-Security-Policy sua,
+   deve permettere i font del sito stesso (`font-src 'self'`), come fa quella della pagina.
+
+Per il **solo sito** va bene qualsiasi hosting statico — Netlify, Vercel, GitHub Pages, un FTP —
+perché è HTML e basta. Per avere **anche il pannello online** ci vuole un hosting con Node, ed è
+quello scelto: i passi, uno per uno, stanno in [`docs/HOSTING.md`](docs/HOSTING.md), comprese le
+cose da non caricare mai e come mettere al riparo quello che resta.
+
+### Cosa cambia per chi lavora in locale
+
+Per l'hosting sono arrivati tre pezzi, e nessuno dei tre cambia il modo di lavorare qui:
+
+- **`app.js`**, nella radice, è il file d'avvio dell'hosting: imposta il fuso `Europe/Rome`, ascolta
+  su tutte le interfacce e sulla porta che gli passa l'hosting, e avvia lo stesso server di
+  `server/server.js`, con le stesse rotte e lo stesso pannello. In locale
+  `node server/server.js` resta quello di sempre, su `127.0.0.1:4173`; per provare l'avvio
+  dell'hosting sul proprio computer basta `PORT=4288 SB_HOST=127.0.0.1 node app.js`.
+- **`package.json`** c'è per l'avvio e i metadati: `npm start` lancia `node app.js`, e ci sono gli
+  script per generare e per il collaudo. **Nessuna dipendenza e nessun `npm install`**: la regola
+  del progetto non è cambiata.
+- **Le impostazioni stanno in variabili d'ambiente**, tutte facoltative: senza nessuna di esse il
+  progetto si comporta come prima. `PORT` e `SB_PORTA` per la porta, `SB_HOST` per l'indirizzo di
+  ascolto, `SB_DATI` e `SB_BACKUP` per tenere le chiavi e i backup fuori dalla cartella pubblica,
+  `SB_SITO` per l'indirizzo del sito. L'elenco completo, con un esempio, è in `.env.esempio` e
+  spiegato riga per riga in [`docs/HOSTING.md`](docs/HOSTING.md).
 
 ---
 
@@ -961,6 +1015,7 @@ d'ingresso: qui sotto c'è cosa leggere e quando.
 
 | Documento | A cosa serve |
 |---|---|
+| [`docs/HOSTING.md`](docs/HOSTING.md) | **La guida della messa online.** Cosa caricare e dove, i campi dell'estensione Node del pannello dell'hosting, le variabili d'ambiente una per una, il primo accesso al pannello online, cosa fare quando il dominio si sa e cosa non caricare mai. |
 | [`docs/PANNELLO.md`](docs/PANNELLO.md) | **La guida per chi aggiorna il sito.** Come si entra nel pannello, la differenza fra *Salva* e *Pubblica*, gruppo per gruppo cosa fa ogni campo, le immagini, i colori, i backup e il ripristino. Non serve saper programmare: è il documento da dare in mano a chi deve cambiare un orario. |
 | [`docs/PRESENZA-TWITCH.md`](docs/PRESENZA-TWITCH.md) | **Lo studio da leggere prima di toccare la modalità lurk.** Come Twitch conta davvero gli spettatori, perché la chat non entra nel conteggio, cosa succede ai cookie di terze parti, e cosa il regolamento di Twitch consente e cosa no. Da qui discende ogni scelta di `js/lurk.js`, spegnimento automatico compreso. |
 | [`CONTRATTO.md`](CONTRATTO.md) | Le regole con cui il sito è stato costruito: niente npm, niente framework, niente CDN, tutto in italiano. Vale ancora, tranne i tre punti superati dall'addendum. |
@@ -968,12 +1023,13 @@ d'ingresso: qui sotto c'è cosa leggere e quando.
 | [`CONTRATTO-3.md`](CONTRATTO-3.md) | L'addendum della terza fase: la modalità lurk e il collegamento con Twitch. |
 | [`CONTRATTO-4.md`](CONTRATTO-4.md) | L'addendum della quarta fase: l'editor unico del pannello, con i marcatori `data-sb-*`, le parti, i blocchi e i tre rami dell'editor. |
 | [`CONTRATTO-5.md`](CONTRATTO-5.md) | L'addendum della quinta fase: la schedule rifatta (`config.orari` con schede, eventi speciali e fondale) e le grafiche nuove del sito. |
+| [`CONTRATTO-6.md`](CONTRATTO-6.md) | L'addendum della sesta fase: il sito pronto per un hosting con Node (file d'avvio, variabili d'ambiente, server web, pannello esposto a internet). |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Come si lavora al codice: flusso di lavoro, convenzione dei commit, stile, checklist prima di una pull request. |
 | [`SECURITY.md`](SECURITY.md) | Come segnalare una vulnerabilità, i punti sensibili noti e i casi fuori ambito. |
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Il codice di condotta della comunità. |
 | [`CHANGELOG.md`](CHANGELOG.md) | Il registro delle modifiche, versione per versione. |
 
-`node server/autotest.js` passa per intero: **172 prove su 172**. Il collaudo non
+`node server/autotest.js` passa per intero: **182 prove su 182**. Il collaudo non
 tocca la rete nemmeno nella sezione sul collegamento con Twitch — quello che si
 prova lì è che una pubblicazione regga quando Twitch non risponde, e un collaudo
 che dipendesse da Twitch sarebbe rosso proprio il giorno in cui deve dimostrarlo.
@@ -1020,9 +1076,10 @@ licenze.
 
 ---
 
-## Autore
+## Titolare
 
-Filippo — [@Shadowed1996](https://github.com/Shadowed1996)
+Il progetto è di **slayer_beard**.
 
 Per richieste di licenza, autorizzazioni o collaborazioni, e per tutto ciò che
-non è un difetto o una proposta, il contatto è il profilo GitHub.
+non è un difetto o una proposta, il canale è il repository su GitHub:
+[Slayer_Beard-Website](https://github.com/Shadowed1996/Slayer_Beard-Website).

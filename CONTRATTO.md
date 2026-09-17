@@ -37,7 +37,7 @@ I nomi qui sotto vanno rispettati alla lettera: sono l'unica cosa che tiene insi
 
 ### 0.1 Da dove veniamo — cosa NON rifare
 
-La prima versione del sito sta in `C:\Users\Filippo\Desktop\sito-backup\` (sola lettura, non
+La prima versione del sito sta in `<cartella locale>\sito-backup\` (sola lettura, non
 scrivere lì). Era modellata troppo da vicino su babbalucy.it: **barra di navigazione orizzontale
 in alto, hero centrato sopra il banner, sezioni impilate tutte uguali (occhiello + titolo +
 testo + griglia di card), orari come griglia di 7 card, supporto come griglia di card, social

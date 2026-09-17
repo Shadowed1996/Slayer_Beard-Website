@@ -73,10 +73,15 @@ server lo dice e si avvia su un'altra porta così:
 `http://localhost:4174/pannello/`). Il sito, senza `/pannello/`, sta allo stesso
 indirizzo: `http://localhost:4173/`.
 
-Il pannello si apre dal computer dove gira il server: è il suo attrezzo, non
-una pagina del sito pubblicato.
+Il pannello è l'attrezzo del server, non una pagina del sito pubblicato: da qui
+si apre sul computer dove quel server gira.
 
 Per spegnere tutto, torna nella finestra nera e premi `Ctrl+C`.
+
+**Se il sito sta su un hosting**, i primi tre passi non ci sono: il server è già
+acceso e il pannello sta su `https://slayerbeard.com/pannello/`. Non serve nessun
+comando e non c'è niente da spegnere, serve solo la password — il primo accesso è
+nel capitolo 6 di [`HOSTING.md`](HOSTING.md).
 
 ---
 
@@ -98,6 +103,12 @@ hai scritto, se temi un errore di battitura.
 scrivi `node server/imposta-password.js`. Ti farà scegliere una password nuova.
 Se invece la ricordi e vuoi solo cambiarla, si fa dal pannello: capitolo 14,
 *Password*.
+
+**Se il sito sta su un hosting**, cambia il posto, non la sostanza: il file della
+password può stare fuori dalla cartella del sito, dove punta la variabile
+`SB_DATI`, ed è lì che va cercato; e la **prima** password si può creare solo dopo
+aver acceso `SB_PRIMO_ACCESSO=1`, che poi si spegne subito. I passi, uno per uno,
+sono nel capitolo 6 di [`HOSTING.md`](HOSTING.md).
 
 **Se la sessione scade** (sei rimasto fermo troppo a lungo) il pannello ti riporta
 alla password e ti dice che le modifiche in corso sono ancora lì. Rientra e le

@@ -62,8 +62,9 @@ un evento online o dal vivo.
 ## Applicazione
 
 Comportamenti abusivi, molesti o altrimenti inaccettabili possono essere
-segnalati alle persone che amministrano la comunità, contattando
-[@Shadowed1996](https://github.com/Shadowed1996) su GitHub.
+segnalati alle persone che amministrano la comunità, scrivendo al titolare del
+repository tramite GitHub, dalla pagina del progetto
+([Slayer_Beard-Website](https://github.com/Shadowed1996/Slayer_Beard-Website)).
 
 Tutte le segnalazioni saranno esaminate e affrontate in modo tempestivo ed
 equo.

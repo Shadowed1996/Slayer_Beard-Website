@@ -11,8 +11,13 @@
    una cartella temporanea e ci fa girare generazione e server senza
    toccare i file veri; i moduli che hanno gia fatto `const { P } = ...`
    vedono i valori nuovi.
+
+   Due cartelle si possono portare FUORI dalla radice con una variabile
+   d'ambiente, e su un hosting e la cosa piu importante di questo file:
+   SB_DATI e SB_BACKUP (in fondo).
    ===================================================================== */
 
+const fs = require('node:fs');
 const path = require('node:path');
 
 // La radice del progetto e la cartella che contiene `server/`.
@@ -50,7 +55,9 @@ function calcola(radice) {
     pannello: path.join(radice, 'pannello'),
     css: path.join(radice, 'css'),
 
-    // Roba del server: non esce mai dal browser.
+    // Roba del server: non esce mai dal browser. `dati` e `backup` sono le
+    // due cartelle che SB_DATI e SB_BACKUP possono portare fuori dalla
+    // radice quando il sito sta su un hosting (vedi in fondo al file).
     server: path.join(radice, 'server'),
     dati: path.join(radice, 'server', 'dati'),
     auth: path.join(radice, 'server', 'dati', 'auth.json'),
@@ -69,9 +76,83 @@ function calcola(radice) {
   };
 }
 
-const P = calcola(process.env.SB_RADICE ? path.resolve(process.env.SB_RADICE) : RADICE_PREDEFINITA);
+/* --- LE DUE CARTELLE CHE POSSONO STARE FUORI DALLA RADICE ------------ */
 
-/** Sposta tutti i percorsi su un'altra radice, mutando `P` sul posto. */
+/*
+   In locale la radice del progetto e una cartella sul proprio computer e
+   nessuno la serve al pubblico: server/dati/ e server/backup/ stanno bene
+   dove stanno. Su un hosting, invece, la radice del progetto e anche la
+   document root del sito: se un giorno .htaccess non viene letto — su
+   Plesk succede quando i file statici li serve nginx — server/dati/auth.json
+   (l'impronta della password) e server/dati/chiavi.js (il secret di Twitch)
+   diventano scaricabili da chiunque conosca il percorso.
+
+   SB_DATI e SB_BACKUP spostano quelle due cartelle dove il server web non
+   arriva. E la protezione che non dipende dalla configurazione del server
+   web: una password sbagliata in un file di configurazione si corregge, un
+   secret gia scaricato no.
+
+   Entrambe sono facoltative: senza, non cambia niente.
+*/
+
+/** Il valore della variabile, risolto in assoluto; null se non c'e o e vuota. */
+function cartellaDaAmbiente(nome) {
+  const grezzo = process.env[nome];
+  if (grezzo === undefined || String(grezzo).trim() === '') { return null; }
+  return path.resolve(String(grezzo).trim());
+}
+
+/**
+ * Crea la cartella indicata dall'ambiente, o spiega perche non si puo.
+ * Si controlla all'avvio e non al primo salvataggio, perche ripiegare in
+ * silenzio su server/dati/ vorrebbe dire rimettere i segreti dentro il sito
+ * proprio mentre chi lo ha configurato crede di averli portati fuori.
+ */
+function assicuraCartellaEsterna(cartella, nome) {
+  try {
+    fs.mkdirSync(cartella, { recursive: true });
+  } catch (e) {
+    const err = new Error(
+      nome + ' indica "' + cartella + '", ma quella cartella non esiste e non si puo creare (' +
+      (e && e.message ? e.message : e) + ').\n' +
+      '  Crea la cartella e dalle i permessi di scrittura, oppure togli ' + nome + ' dall ambiente.');
+    err.codice = 'SB_CARTELLA';
+    throw err;
+  }
+  return cartella;
+}
+
+/** Applica SB_DATI e SB_BACKUP a un insieme di percorsi, mutandolo sul posto. */
+function applicaAmbiente(percorsi) {
+  const dati = cartellaDaAmbiente('SB_DATI');
+  if (dati) {
+    assicuraCartellaEsterna(dati, 'SB_DATI');
+    percorsi.dati = dati;
+    percorsi.auth = path.join(dati, 'auth.json');
+    percorsi.chiavi = path.join(dati, 'chiavi.js');
+    percorsi.accessoTwitch = path.join(dati, 'twitch-accesso.json');
+  }
+
+  const backup = cartellaDaAmbiente('SB_BACKUP');
+  if (backup) {
+    assicuraCartellaEsterna(backup, 'SB_BACKUP');
+    percorsi.backup = backup;
+  }
+
+  return percorsi;
+}
+
+const P = applicaAmbiente(calcola(process.env.SB_RADICE ? path.resolve(process.env.SB_RADICE) : RADICE_PREDEFINITA));
+
+/**
+ * Sposta tutti i percorsi su un'altra radice, mutando `P` sul posto.
+ *
+ * SB_DATI e SB_BACKUP qui NON si applicano, ed e voluto: `imposta()` la usa
+ * il collaudo per rinchiudere tutto in una cartella temporanea, e il
+ * collaudo scrive davvero una password di prova. Se rispettasse SB_DATI, un
+ * `node server/autotest.js` lanciato sull hosting riscriverebbe l auth.json
+ * vero — cioe farebbe fuori la password del pannello.
+ */
 function imposta(radice) {
   const nuovi = calcola(path.resolve(radice));
   for (const chiave of Object.keys(P)) { delete P[chiave]; }
@@ -109,4 +190,4 @@ function eDentro(base, percorso) {
   return p === b || p.startsWith(b + path.sep);
 }
 
-module.exports = { P, imposta, risolviDentro, eDentro, RADICE_PREDEFINITA };
+module.exports = { P, imposta, risolviDentro, eDentro, applicaAmbiente, RADICE_PREDEFINITA };

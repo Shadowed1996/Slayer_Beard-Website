@@ -1,0 +1,397 @@
+# =====================================================================
+# .htaccess - le regole del server web per il sito slayer_beard.
+#
+# A cosa serve questo file, in due righe: sull'hosting il sito gira con
+# Node (Passenger), ma i file che esistono davvero sul disco - index.html,
+# css/, js/, img/, pannello/, le immagini e i font - li consegna il server
+# web di sua iniziativa, senza passare da Node. Quindi le protezioni che
+# Node applica da se qui non valgono, e vanno riscritte: e il mestiere di
+# questo file.
+#
+# COME E FATTO. Sette sezioni, in quest'ordine:
+#   1. da http a https
+#   2. un indirizzo solo: www.slayerbeard.com -> slayerbeard.com
+#   3. quello che NON deve uscire dal sito (la sezione importante)
+#   4. compressione
+#   5. cache del browser
+#   6. intestazioni di sicurezza
+#   7. tipi di file e niente elenco delle cartelle
+#
+# REGOLA DI SCRITTURA. Ogni direttiva sta dentro un blocco <IfModule ...>:
+# su un hosting condiviso un modulo che non c'e farebbe rispondere 500 a
+# tutto il sito, e un sito spento e molto peggio di una regola che non si
+# applica.
+#
+# Le direttive che possono dare fastidio hanno sopra un commento che dice
+# quando e perche: si tolgono commentandole con un # davanti.
+#
+# SE IL SITO RISPONDE 500 APPENA CARICHI QUESTO FILE, la causa e quasi
+# sempre una sola: l'hosting non permette a .htaccess di decidere quella
+# cosa li (si chiama AllowOverride, e su Plesk di serie e aperto). Si
+# scopre quale riga in un minuto: si commenta una sezione alla volta,
+# partendo dall'ultima, finche il sito torna. La riga colpevole e scritta
+# per esteso nel log degli errori del dominio, che su Plesk sta in
+# "Logs" -> error_log.
+# =====================================================================
+
+
+# =====================================================================
+# 1. DA HTTP A HTTPS
+# ---------------------------------------------------------------------
+# Chi arriva su http:// viene mandato su https:// allo stesso indirizzo.
+# Non c'e nessun dominio scritto qui dentro: si riusa quello con cui e
+# arrivata la richiesta, quindi la regola vale per qualunque dominio e
+# non va aggiornata quando il dominio si decide.
+#
+# ATTENZIONE, l'unico caso in cui questa sezione fa danno: se il sito NON
+# ha ancora un certificato SSL valido, chi arriva viene spedito su un
+# https rotto e non vede piu niente. Su Plesk il certificato si ottiene
+# gratis con Let's Encrypt (SSL/TLS Certificates) prima di mettere online
+# il sito. Se per qualsiasi motivo il certificato non c'e, metti un # a
+# inizio delle quattro righe RewriteCond/RewriteRule qui sotto.
+# =====================================================================
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Un HTTP_HOST vuoto (richieste HTTP/1.0 dei robot) darebbe un indirizzo
+  # senza dominio: si lascia stare.
+  RewriteCond %{HTTP_HOST} !^$
+  # www.slayerbeard.com lo lascia stare questa sezione e lo prende tutto la
+  # sezione 2, che lo manda dritto su https SENZA www: cosi
+  # http://www.slayerbeard.com fa UN salto solo invece di due (prima su
+  # https con www, poi su https senza). E' l'unica riga di questa sezione
+  # che dipende dal dominio, e va tolta insieme alla sezione 2 se un giorno
+  # quella venisse spenta.
+  RewriteCond %{HTTP_HOST} !^www\.slayerbeard\.com$ [NC]
+  # Su Plesk davanti ad Apache c'e nginx: quando e lui a chiudere l'HTTPS,
+  # Apache vede una richiesta in chiaro e senza questa seconda condizione
+  # il sito girerebbe su se stesso all'infinito.
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+
+# =====================================================================
+# 2. UN INDIRIZZO SOLO: www.slayerbeard.com -> slayerbeard.com
+# ---------------------------------------------------------------------
+# Un sito raggiungibile sia con www sia senza e lo stesso sito a due
+# indirizzi: Google li conta come due e si divide il merito fra i due, e
+# il player di Twitch va autorizzato due volte. Si sceglie un indirizzo
+# solo e l'altro ci rimanda sopra.
+#
+# L'INDIRIZZO BUONO DEL SITO E' https://slayerbeard.com, SENZA www.
+# Questa regola manda www.slayerbeard.com li sopra, con un 301 (cioe
+# "trasloco definitivo": i motori di ricerca spostano tutto sul nuovo).
+# E' l'unico posto di questo file in cui compare il dominio.
+#
+# PER FARE IL CONTRARIO (indirizzo buono CON www) basta cambiare la
+# RewriteRule qui sotto in:
+#   RewriteRule ^ https://www.slayerbeard.com%{REQUEST_URI} [R=301,L]
+# e la RewriteCond in:  RewriteCond %{HTTP_HOST} ^slayerbeard\.com$ [NC]
+#
+# Attenzione: se cambi verso, va cambiato anche SB_SITO (l'indirizzo
+# pubblico del sito) e vanno rifatte una Pubblica e la lista dei domini
+# autorizzati per il player. Vedi docs/HOSTING.md.
+# =====================================================================
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Si scrive https:// per esteso, e non %{HTTPS}, apposta: chi arriva su
+  # http://www.slayerbeard.com viene sistemato in UN salto solo - dominio
+  # giusto e https insieme - invece che rimbalzare due volte.
+  RewriteCond %{HTTP_HOST} ^www\.slayerbeard\.com$ [NC]
+  RewriteRule ^ https://slayerbeard.com%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+
+# =====================================================================
+# 3. QUELLO CHE NON DEVE USCIRE DAL SITO
+# ---------------------------------------------------------------------
+# E' la sezione per cui questo file esiste. Nella cartella del sito, oltre
+# al sito, ci sono gli attrezzi per costruirlo: il server, i modelli, i
+# contenuti, la documentazione. Due file in particolare non devono essere
+# scaricabili da nessuno:
+#
+#   server/dati/auth.json          l'impronta della password del pannello
+#   server/dati/chiavi.js          il secret dell'applicazione Twitch
+#   server/dati/twitch-accesso.json  l'autorizzazione del canale
+#
+# Questa e la PRIMA delle due chiusure. La seconda, quella che non dipende
+# da nessuna configurazione del server web, e tenere quei file fuori dalla
+# cartella del sito con la variabile SB_DATI: vedi docs/HOSTING.md.
+#
+# E c'e un terzo avviso, importante: su Plesk i file statici puo servirli
+# nginx, che passa davanti ad Apache e NON legge questo file. Le stesse
+# negazioni vanno ripetute in nginx, e sono gia scritte e pronte da
+# incollare in docs/HOSTING.md, capitolo "L'avviso su nginx".
+# =====================================================================
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # --- LE ECCEZIONI, PRIMA DI TUTTO ----------------------------------
+  # Queste tre righe dicono "questo passa, non guardare le negazioni qui
+  # sotto". Vanno per forza prima, perche la prima regola che risponde e
+  # quella che decide.
+
+  # .well-known/ e la cartella con cui Let's Encrypt dimostra che il
+  # dominio e tuo. Se la blocchi, il certificato un giorno scade e non si
+  # rinnova piu: e un guasto che si presenta tre mesi dopo l'errore.
+  RewriteRule ^\.well-known/ - [L]
+
+  # La libreria delle immagini: e roba del sito pubblicato, non un
+  # attrezzo. Le immagini di giorni, eventi e fondale della schedule
+  # stanno qui.
+  RewriteRule ^contenuti/media/ - [L]
+
+  # I font caricati dal pannello. Solo i file dei font: elenco.json, che
+  # sta nella stessa cartella, e un file di lavoro e resta fuori (lo nega
+  # la riga su contenuti/ piu sotto).
+  RewriteRule ^contenuti/font/[^/]+\.(woff2|woff|ttf|otf)$ - [L]
+
+  # --- LE NEGAZIONI ---------------------------------------------------
+  # Rispondono 403 ("vietato"). Non 404, perche non e vero che non
+  # esistono, e un 403 chiaro aiuta chi un giorno si chiedera perche.
+
+  # Il server: dentro c'e server/dati/ con la password e le chiavi.
+  RewriteRule ^server(/|$) - [F,L]
+
+  # I modelli della pagina: il codice sorgente da cui nasce index.html.
+  RewriteRule ^modelli(/|$) - [F,L]
+
+  # La documentazione (compresa questa guida).
+  RewriteRule ^docs(/|$) - [F,L]
+
+  # Tutto il resto di contenuti/: contenuti.json (ogni testo e ogni
+  # impostazione del sito, comprese cose che in pagina non si vedono),
+  # schema.js e contenuti/font/elenco.json. media/ e i font sono gia
+  # passati dalle eccezioni qui sopra.
+  RewriteRule ^contenuti(/|$) - [F,L]
+
+  # Il file d'avvio di Passenger e i file di progetto di Node. app.js
+  # continua a funzionare: Passenger lo legge dal disco, non via web.
+  RewriteRule ^app\.js$ - [F,L]
+  RewriteRule ^package(-lock)?\.json$ - [F,L]
+
+  # I documenti Markdown, ovunque siano: LEGGIMI, CHANGELOG, contratti.
+  RewriteRule \.md$ - [F,L]
+
+  # Tutti i file e le cartelle che cominciano con un punto: .env e
+  # .env.esempio (le impostazioni), .git e .gitignore (il controllo di
+  # versione), .editorconfig, .gitattributes, e questo stesso .htaccess.
+  # L'eccezione .well-known/ e la prima riga di questa sezione.
+  RewriteRule (^|/)\.[^/]+ - [F,L]
+</IfModule>
+
+# --- LA STESSA COSA, SENZA mod_rewrite -------------------------------
+# Se mod_rewrite mancasse, la sezione qui sopra non verrebbe letta e i
+# file resterebbero scaricabili. Queste righe la rifanno per nome del
+# file, con un modulo diverso: e un doppio fondo, non un doppione inutile.
+# (Le cartelle intere - server/, modelli/, docs/ - con questo metodo non
+# si possono chiudere da .htaccess: per quelle conta la sezione sopra e la
+# variabile SB_DATI.)
+<IfModule mod_authz_core.c>
+  <FilesMatch "^\.|^app\.js$|^package(-lock)?\.json$|^auth\.json$|^chiavi\.js$|^twitch-accesso\.json$|\.md$">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+# Stessa regola nella forma vecchia di Apache, per i server che hanno
+# ancora quella. Si applica solo se mod_authz_core non c'e, altrimenti le
+# due si pestano i piedi.
+<IfModule !mod_authz_core.c>
+  <IfModule mod_access_compat.c>
+    <FilesMatch "^\.|^app\.js$|^package(-lock)?\.json$|^auth\.json$|^chiavi\.js$|^twitch-accesso\.json$|\.md$">
+      Order allow,deny
+      Deny from all
+    </FilesMatch>
+  </IfModule>
+</IfModule>
+
+
+# =====================================================================
+# 4. COMPRESSIONE
+# ---------------------------------------------------------------------
+# Testo, fogli di stile e JavaScript viaggiano compressi: sono i file che
+# ci guadagnano di piu, spesso un quarto del peso di partenza.
+#
+# Immagini e font NON si comprimono, ed e voluto: webp, avif, jpg e woff2
+# sono gia compressi, e ricomprimerli costa tempo al server senza togliere
+# un byte.
+# =====================================================================
+<IfModule mod_deflate.c>
+  <IfModule mod_filter.c>
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE application/manifest+json
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/plain
+  </IfModule>
+</IfModule>
+
+
+# =====================================================================
+# 5. CACHE DEL BROWSER
+# ---------------------------------------------------------------------
+# Quanto a lungo il browser di chi visita puo tenersi un file senza
+# richiederlo di nuovo. La regola del progetto e semplice:
+#
+#   index.html    mai tenuto: si ricontrolla sempre, cosi una pubblicazione
+#                 si vede subito. (Se il file non e cambiato il server
+#                 risponde "non modificato" e non rimanda niente: costa
+#                 una richiesta, non il peso della pagina.)
+#   css/ e js/    un'ora. Li riscrive ogni pubblicazione e il loro nome non
+#                 cambia mai, quindi una vita lunga vorrebbe dire colori e
+#                 testi vecchi per giorni.
+#   immagini      trenta giorni: cambiano di rado e pesano.
+#   e font
+#
+# Volutamente NON si scrive "immutable" sulle immagini: sostituire un file
+# di img/ tenendo lo stesso nome e un modo di lavorare previsto dal
+# progetto, e "immutable" direbbe al browser di non ricontrollare mai piu.
+# =====================================================================
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+
+  <FilesMatch "\.(css|js|mjs)$">
+    Header set Cache-Control "public, max-age=3600, must-revalidate"
+  </FilesMatch>
+
+  <FilesMatch "\.(webp|avif|png|jpe?g|gif|svg|ico|woff2|woff|ttf|otf|mp4|webm)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+
+  # robots.txt e sitemap.xml: un giorno basta e avanza.
+  <FilesMatch "^(robots\.txt|sitemap\.xml)$">
+    Header set Cache-Control "public, max-age=86400"
+  </FilesMatch>
+</IfModule>
+
+# Se mod_headers non ci fosse, le stesse durate con mod_expires. Sotto
+# <IfModule !mod_headers.c> apposta: attivi tutti e due direbbero la stessa
+# cosa due volte, e a chi legge le intestazioni non sarebbe chiaro quale
+# vince.
+<IfModule !mod_headers.c>
+  <IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType text/css "access plus 1 hour"
+    ExpiresByType text/javascript "access plus 1 hour"
+    ExpiresByType application/javascript "access plus 1 hour"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/avif "access plus 30 days"
+    ExpiresByType image/png "access plus 30 days"
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 30 days"
+    ExpiresByType font/woff "access plus 30 days"
+  </IfModule>
+</IfModule>
+
+
+# =====================================================================
+# 6. INTESTAZIONI DI SICUREZZA
+# ---------------------------------------------------------------------
+# Sono quattro righe che il browser legge e rispetta. Nessuna di queste
+# cambia come si vede il sito.
+#
+# Nota: la Content-Security-Policy NON sta qui. Se la mettessimo, sarebbe
+# scritta in due posti - qui e dentro index.html, dove la scrive la
+# pubblicazione - e due copie della stessa regola prima o poi smettono di
+# essere d'accordo. Quella della pagina e piu precisa: si lascia decidere
+# a lei.
+# =====================================================================
+<IfModule mod_headers.c>
+  # Un file .txt resta un .txt: il browser non prova a indovinare che sia
+  # altro, e questo chiude una famiglia intera di trucchi.
+  Header always set X-Content-Type-Options "nosniff"
+
+  # Quando si esce dal sito verso un altro dominio si manda solo il nome
+  # del sito, non la pagina precisa.
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Il sito puo stare dentro una cornice solo su se stesso. Serve al
+  # pannello, che mostra l'anteprima del sito in un riquadro; a chi volesse
+  # incorniciare il sito per copiarne i clic, no.
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # Il sito non usa posizione, telecamera, microfono e pagamenti: si dice.
+  Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()"
+</IfModule>
+
+# --- HSTS: solo dietro HTTPS ------------------------------------------
+# "Da adesso in poi questo sito parlami solo in https". Si manda SOLTANTO
+# quando la richiesta e gia arrivata in https: mandarla in chiaro non ha
+# senso e non serve a niente.
+#
+# ATTENZIONE, e l'unica direttiva di questo file che non si annulla
+# togliendola: il browser di chi e gia passato si ricorda l'istruzione per
+# un anno. Quindi si accende quando il sito e in https per restarci.
+#
+# ORA CHE IL DOMINIO SI SA (slayerbeard.com) restano fuori apposta due
+# aggiunte, e non e una dimenticanza:
+#
+#   includeSubDomains
+#     estende l'obbligo dell'https a TUTTI i sottodomini di
+#     slayerbeard.com, compresi quelli che nasceranno domani. Se un
+#     sottodominio gira in http - una prova, un pannello di servizio, un
+#     sottodominio di un altro fornitore - dal browser di chi e gia
+#     passato diventa irraggiungibile, e non basta togliere la riga per
+#     rimetterlo a posto. SI AGGIUNGE quando si e sicuri che nessun
+#     sottodominio del sito giri in http, e che nessuno ne nascera uno
+#     senza certificato. Si scrive cosi:
+#       Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+#     (la stessa riga va cambiata due volte: c'e anche la gemella env=SB_HTTPS)
+#
+#   preload
+#     fa entrare slayerbeard.com in un elenco che i browser si portano
+#     dentro: da quel momento nessun browser parla piu in http con questo
+#     dominio, nemmeno la prima volta, nemmeno se il sito e spento.
+#     Uscirne si chiede a mano e ci vogliono mesi. Ha senso solo dopo che
+#     includeSubDomains e in piedi da parecchio tempo e senza sorprese, e
+#     solo se lo si e deciso apposta: non e una spunta in piu, e una porta
+#     che si chiude alle spalle.
+<IfModule mod_setenvif.c>
+  # Su Plesk l'HTTPS spesso lo chiude nginx davanti ad Apache: Apache vede
+  # una richiesta in chiaro e l'unico segno dell'https e questa
+  # intestazione, che mette il proxy di casa.
+  SetEnvIf X-Forwarded-Proto "^https$" SB_HTTPS=1
+</IfModule>
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000" env=HTTPS
+  Header always set Strict-Transport-Security "max-age=31536000" env=SB_HTTPS
+</IfModule>
+
+
+# =====================================================================
+# 7. TIPI DI FILE, PAGINA DI PARTENZA, NIENTE ELENCO DELLE CARTELLE
+# =====================================================================
+
+# I tipi che qualche hosting vecchio non conosce ancora. Un .webp servito
+# con il tipo sbagliato il browser non lo disegna, e un font .woff2 con il
+# tipo sbagliato non si carica: due guasti che sembrano guasti del sito.
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType image/avif .avif
+  AddType font/woff2 .woff2
+  AddType font/woff .woff
+  AddType image/svg+xml .svg
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+# La pagina che si apre quando si chiede una cartella.
+<IfModule mod_dir.c>
+  DirectoryIndex index.html index.htm
+</IfModule>
+
+# Una cartella senza index.html non deve mostrare l'elenco dei suoi file:
+# e il modo piu comune di regalare a un estraneo la mappa del sito.
+<IfModule mod_autoindex.c>
+  Options -Indexes
+</IfModule>

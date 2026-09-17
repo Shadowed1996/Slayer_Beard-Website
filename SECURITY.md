@@ -7,8 +7,12 @@ e conviene tenerle distinte fin da subito:
 - **il sito pubblicato è statico** — `index.html`, `css/`, `js/`, `img/`: non
   parla con nessun server del progetto, non ha un database e non conserva dati
   dei visitatori;
-- **il server e il pannello girano in locale** (`127.0.0.1:4173` di serie) e non
-  vanno esposti su Internet. Non sono pensati per stare online.
+- **il server e il pannello si usano in due modi**: sul computer di chi
+  amministra (`127.0.0.1:4173` di serie, come è sempre stato) oppure su un
+  **hosting con Node**, dove li avvia `app.js` e il pannello sta su
+  `/pannello/`, dietro la password. La seconda è la messa online descritta in
+  [`docs/HOSTING.md`](docs/HOSTING.md): il pannello raggiungibile da Internet è
+  previsto, e tutto ciò che lo riguarda rientra in questa politica.
 
 ## Versioni supportate
 
@@ -26,8 +30,9 @@ Riceve correzioni soltanto l'ultima versione presente sul branch `main`.
 1. Vai nella scheda **Security** del repository e scegli
    **Report a vulnerability**: apre una GitHub Security Advisory privata,
    visibile solo al titolare del repository.
-2. In alternativa, contatta [@Shadowed1996](https://github.com/Shadowed1996)
-   su GitHub.
+2. In alternativa, scrivi al titolare del repository tramite GitHub, dalla
+   pagina del progetto
+   ([Slayer_Beard-Website](https://github.com/Shadowed1996/Slayer_Beard-Website)).
 
 Le segnalazioni non vanno inviate per altri canali, e in nessun caso vanno
 pubblicate prima che sia disponibile una correzione.
@@ -99,8 +104,10 @@ aperte: sono le parti dove un errore costerebbe di più.
 
 Non sono considerate vulnerabilità di questo progetto:
 
-- l'esposizione volontaria del server di amministrazione su una rete pubblica
-  o su Internet: **non è previsto** e non va fatto;
+- il server di amministrazione messo online **senza** le protezioni descritte in
+  [`docs/HOSTING.md`](docs/HOSTING.md) — `server/dati/` dentro la cartella
+  pubblica, le negazioni del server web saltate, nessun HTTPS: è una
+  configurazione sbagliata di chi installa, non un difetto del progetto;
 - problemi che richiedono un accesso già amministrativo alla macchina su cui
   gira il server, o la password del pannello già nota;
 - vulnerabilità di Twitch, del suo player, della sua chat o delle sue API, e
@@ -114,5 +121,6 @@ Non sono considerate vulnerabilità di questo progetto:
 - assenza di intestazioni di sicurezza dipendenti dall'hosting scelto per il
   sito statico;
 - attacchi di *social engineering*, *phishing* o accesso fisico alla macchina;
-- denial of service ottenuto con un volume di richieste anomalo verso un
-  server che, per definizione, gira in locale.
+- denial of service ottenuto con un volume di richieste anomalo verso il server
+  di amministrazione: non è dimensionato per reggerlo, e chi lo mette online lo
+  fa dietro il server web dell'hosting.

@@ -43,7 +43,7 @@ Una cosa sola per ogni modifica: nessuna voce doppione, nessun campo che non fa 
 
 ## 1. Il riferimento: Mobscene93
 
-Il codice che funziona già sta in `C:\Users\Filippo\Desktop\PROGETTI\Mobscene93-Website` (**sola
+Il codice che funziona già sta in `<cartella locale>\Mobscene93-Website` (**sola
 lettura**: non si scrive lì dentro, nemmeno un file temporaneo). Si legge per capire la logica e le
 trappole già risolte, poi si **riscrive** in questo progetto con i suoi nomi, i suoi moduli e il suo
 stile. Non si copia un file così com'è: Mobscene93 usa script classici e nomi inglesi, qui il pannello
@@ -775,7 +775,7 @@ proprie decisioni con `→ AGENTE:` davanti.
 
 ## 14. Convivenza fra agenti
 
-Cartella di lavoro: `C:\Users\Filippo\AppData\Local\Temp\claude\C--Users-Filippo\b42f1f6d-a46d-4933-9710-77b63174b769\scratchpad\slayer\`
+Cartella di lavoro: la scratchpad della sessione, `<cartella di lavoro>\slayer\`
 (qui sotto `LAVORO\`).
 
 - **Niente git**: nessuno usa stash, checkout, reset, commit, push. Committa l'integratore.
