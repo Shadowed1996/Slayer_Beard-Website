@@ -85,6 +85,12 @@ aperte: sono le parti dove un errore costerebbe di più.
   non viene mai inviato a un server del progetto e «Scollega» ne chiede la
   revoca a Twitch. Qualunque percorso che lo faccia sopravvivere alla scheda,
   lo scriva su disco o lo mandi altrove è una vulnerabilità.
+- **Autorizzazione Twitch del canale sul server locale.** Per leggere follower
+  e abbonati il server conserva un refresh token di slayer_beard in
+  `server/dati/twitch-accesso.json` (escluso dal versionamento), con il solo
+  scope `channel:read:subscriptions`. Qualunque percorso che lo porti nei file
+  generati, in `contenuti.json`, nel pannello o fuori dal computer del server
+  è una vulnerabilità.
 - **Content Security Policy** della pagina generata e domini esterni
   consentiti (Twitch, Google Fonts, `static-cdn.jtvnw.net` per le immagini
   dei profili).

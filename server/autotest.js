@@ -1790,6 +1790,104 @@ async function proveTwitch(costruisci, archivio) {
     esigiUguale(caricato.twitch.clientId, '', 'il modello ha un Client ID dentro');
     esigiUguale(caricato.twitch.clientSecret, '', 'il modello ha un secret dentro');
   });
+
+  /* --- Follower e abbonati --------------------------------------------- */
+
+  const scriviAccesso = (testo) => {
+    fs.mkdirSync(path.dirname(P.accessoTwitch), { recursive: true });
+    fs.writeFileSync(P.accessoTwitch, testo);
+  };
+  const togliAccesso = () => { try { fs.unlinkSync(P.accessoTwitch); } catch (e) { /* gia sparito */ } };
+
+  await prova('i numeri si scrivono all italiana, e si riconosce un numero nudo', () => {
+    esigiUguale(twitch.formattaNumero(90), '90', '90');
+    // it-IT di Intl non separa sotto le 10.000: e il motivo per cui e scritto a mano.
+    esigiUguale(twitch.formattaNumero(3624), '3.624', '3624');
+    esigiUguale(twitch.formattaNumero(1234567), '1.234.567', '1234567');
+    for (const si of ['3.619', '90', ' 3624 ', '1.234.567']) { esigi(twitch.eNumeroNudo(si), si + ' e un numero nudo'); }
+    for (const no of ['~25', '3,6K', '3.6', '', 'tanti', '12.34', null]) { esigi(!twitch.eNumeroNudo(no), JSON.stringify(no) + ' non e un numero nudo'); }
+  });
+
+  await prova('i numeri riscrivono solo le caselle che contengono un numero', () => {
+    const documento = {
+      testi: { 'deck.dato1Valore': '3.619', 'chi.dato1Valore': '3,6K', 'chi.dato2Valore': '90' },
+      config: { dati: { follower: 3619, abbonati: 90 } }
+    };
+    const cambiate = twitch.applicaNumeri(documento, { follower: 3624, abbonati: null });
+    esigiUguale(documento.testi['deck.dato1Valore'], '3.624', 'la casella col numero');
+    // Chi ha scritto «3,6K» nel pannello l ha fatto apposta.
+    esigiUguale(documento.testi['chi.dato1Valore'], '3,6K', 'la casella scritta a mano');
+    // Abbonati non letti: non si svuota niente.
+    esigiUguale(documento.testi['chi.dato2Valore'], '90', 'abbonati non letti');
+    esigiUguale(documento.config.dati.abbonati, 90, 'config.dati.abbonati');
+    esigiUguale(cambiate.join(','), 'config.dati.follower,deck.dato1Valore', 'chiavi cambiate');
+    // Due giri di fila non cambiano niente la seconda volta.
+    esigiUguale(twitch.applicaNumeri(documento, { follower: 3624, abbonati: null }).length, 0, 'secondo giro');
+  });
+
+  await prova('le caselle dei numeri esistono davvero nei contenuti e nello schema', () => {
+    const campi = new Set(schema.campi().map((c) => c.chiave));
+    const testi = archivio.leggi().testi;
+    for (const elenco of Object.values(twitch.CAMPI_NUMERI)) {
+      for (const chiave of elenco) {
+        esigi(typeof testi[chiave] === 'string', chiave + ' non e in contenuti.json');
+        esigi(campi.has(chiave), chiave + ' non e nello schema');
+      }
+    }
+  });
+
+  await prova('senza chiavi o senza autorizzazione i numeri restano quelli scritti', async () => {
+    togliCredenziali();
+    togliAccesso();
+    const prima = JSON.stringify(archivio.leggi().testi);
+    esigiUguale((await twitch.aggiornaNumeri()).stato, 'spento', 'senza chiavi');
+
+    scriviCredenziali({ clientId: 'abcdef1234567890abcdef', clientSecret: 'unsegretolungoabbastanza' });
+    try {
+      esigiUguale(twitch.collegato(), false, 'collegato() senza file');
+      esigiUguale((await twitch.aggiornaNumeri()).stato, 'nonCollegato', 'senza autorizzazione');
+
+      // Un file rotto si dice, come per chiavi.js.
+      scriviAccesso('{ non e json');
+      esigiUguale(twitch.collegato(), false, 'collegato() su file rotto');
+      const rotto = await twitch.aggiornaNumeri();
+      esigiUguale(rotto.stato, 'fallito', 'file rotto');
+      esigiDentro(rotto.motivo, '--collega', 'il motivo dice come rimediare');
+
+      esigiUguale(JSON.stringify(archivio.leggi().testi), prima, 'ha toccato i testi e non doveva');
+    } finally {
+      togliAccesso();
+      togliCredenziali();
+    }
+  });
+
+  await prova('ogni stato dei numeri ha la sua riga, e raccontaNumeri() non lancia mai', () => {
+    for (const stato of ['spento', 'nonCollegato', 'senzaCanale', 'aggiornato', 'invariato', 'fallito']) {
+      for (const abbonati of [90, null]) {
+        const riga = twitch.raccontaNumeri({ stato: stato, follower: 3624, abbonati: abbonati, motivo: 'un motivo', motivoAbbonati: 'negati' });
+        esigi(typeof riga === 'string' && riga.length > 0, 'nessuna riga per lo stato ' + stato);
+      }
+    }
+    for (const storto of [null, undefined, {}, { stato: 'inventato' }]) {
+      esigiUguale(twitch.raccontaNumeri(storto), '', 'raccontaNumeri(' + JSON.stringify(storto) + ')');
+    }
+  });
+
+  await prova('il refresh token non finisce nei file generati ne nel repository', () => {
+    const spia = 'refreshtokenchenondevecomparire0000';
+    scriviAccesso(JSON.stringify({ refreshToken: spia, idUtente: '1', login: 'prova' }));
+    try {
+      esigiUguale(twitch.collegato(), true, 'collegato() col file');
+      costruisci.genera();
+      for (const file of [P.indexHtml, P.datiJs, P.temaCss, P.contenutiJson]) {
+        esigi(fs.readFileSync(file, 'utf8').indexOf(spia) === -1, 'il refresh token e finito dentro ' + path.basename(file));
+      }
+    } finally {
+      togliAccesso();
+    }
+    const ignorati = fs.readFileSync(path.join(RADICE_VERA, '.gitignore'), 'utf8');
+    esigiDentro(ignorati, 'server/dati/twitch-accesso.json', 'il .gitignore non esclude l autorizzazione di Twitch');
+  });
 }
 
 /* --- 10. LA VETRINA DELLE CLIP --------------------------------------- */

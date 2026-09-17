@@ -15,8 +15,10 @@
            node server/server.js --guarda   rigenera a ogni modifica
 
    Se le chiavi ci sono (server/dati/chiavi.js),
-   finche questo processo gira tiene fresche da se «Ultima diretta» e la
-   vetrina delle clip: un giro ogni SB_AGGIORNA_MIN minuti, 10 di serie.
+   finche questo processo gira tiene fresche da se «Ultima diretta», la
+   vetrina delle clip e — se slayer_beard ha autorizzato il server con
+   imposta-twitch.js --collega — follower e abbonati: un giro ogni
+   SB_AGGIORNA_MIN minuti, 10 di serie.
    Con SB_AGGIORNA_MIN=0 non parte, e resta solo l'aggiornamento alla
    pubblicazione.
    ===================================================================== */
@@ -328,14 +330,16 @@ function aggiornamentoAutomatico(opzioni) {
 
       const daTwitch = await twitch.aggiornaUltimaDiretta();
       const leClip = await twitch.aggiornaClip();
+      const iNumeri = await twitch.aggiornaNumeri();
 
       const cambiato = daChiavi.stato === 'copiato' ||
-        daTwitch.stato === 'aggiornato' || leClip.stato === 'aggiornato';
+        daTwitch.stato === 'aggiornato' || leClip.stato === 'aggiornato' || iNumeri.stato === 'aggiornato';
 
       // Si stampa solo cio che e successo davvero, e ogni riga risponde del
       // proprio esito: un server che ripete «gia aggiornata» ogni dieci
       // minuti diventa rumore, e il rumore nasconde la riga che conta.
-      const dueRighe = [[daTwitch, twitch.racconta(daTwitch)], [leClip, twitch.raccontaClip(leClip)]];
+      const dueRighe = [[daTwitch, twitch.racconta(daTwitch)], [leClip, twitch.raccontaClip(leClip)],
+        [iNumeri, twitch.raccontaNumeri(iNumeri)]];
       for (const [esito, riga] of dueRighe) {
         if (!riga) { continue; }
         if (esito.stato !== 'aggiornato' && esito.stato !== 'fallito') { continue; }
@@ -350,7 +354,7 @@ function aggiornamentoAutomatico(opzioni) {
       }
       if (!allineato) {
         console.log('  ' + ora() + ' Non ripubblico da solo: c e una bozza salvata e non ancora pubblicata.');
-        console.log('           Premi Pubblica quando sei pronto e il titolo nuovo parte con lei.');
+        console.log('           Premi Pubblica quando sei pronto e i dati nuovi partono con lei.');
         return;
       }
 
@@ -371,7 +375,7 @@ function aggiornamentoAutomatico(opzioni) {
   primo.unref();
   battito.unref();
 
-  console.log('  «Ultima diretta» e le clip si aggiornano da sole ogni ' + AGGIORNA_MIN +
+  console.log('  «Ultima diretta», le clip, follower e abbonati si aggiornano da soli ogni ' + AGGIORNA_MIN +
     (AGGIORNA_MIN === 1 ? ' minuto' : ' minuti') + ', finche questo server gira.');
   return { giro: giro, ferma: () => { clearTimeout(primo); clearInterval(battito); } };
 }

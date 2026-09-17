@@ -23,7 +23,11 @@
    A COSA SERVONO
      - il Client ID fa funzionare «Collegati con Twitch» sul sito;
      - le due insieme fanno aggiornare da se «Ultima diretta» e la
-       vetrina delle clip, a ogni pubblicazione e poi ogni dieci minuti.
+       vetrina delle clip, a ogni pubblicazione e poi ogni dieci minuti;
+     - con in piu l'autorizzazione di slayer_beard
+       (node server/imposta-twitch.js --collega) si aggiornano da se anche
+       follower e abbonati. Quella non sta qui: finisce in
+       server/dati/twitch-accesso.json, che il server riscrive da solo.
 
      Senza questo file il sito funziona lo stesso: semplicemente quei due
      pezzi restano come li hai scritti a mano, e il bottone del login non

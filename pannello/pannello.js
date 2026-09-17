@@ -669,6 +669,19 @@ async function pubblica() {
       });
     }
 
+    /* Follower e abbonati, stessa regola. «nonCollegato» non si dice a ogni
+       pubblicazione: è lo stato di chi non ha ancora autorizzato il server,
+       e il terminale lo spiega già. */
+    const iNumeri = risposta && risposta.numeri;
+    if (iNumeri && iNumeri.messaggio && ['aggiornato', 'fallito', 'senzaCanale'].includes(iNumeri.stato)) {
+      const andataMale = iNumeri.stato !== 'aggiornato';
+      avviso(iNumeri.messaggio, {
+        tipo: andataMale ? 'info' : 'ok',
+        durata: andataMale ? 0 : 6000,
+        titolo: andataMale ? 'Follower e abbonati non aggiornati' : 'Follower e abbonati aggiornati'
+      });
+    }
+
     // Il server non è tenuto a rimandare la data: intanto si segna adesso,
     // e il prossimo caricamento dei contenuti la corregge se serve.
     stato.stato = {

@@ -15,6 +15,24 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Follower e abbonati si aggiornano da soli.** Il server li chiede a Twitch
+  (`helix/channels/followers` e `helix/subscriptions`) a ogni pubblicazione e,
+  col server acceso, ogni dieci minuti, e li scrive in `config.dati` e nelle
+  caselle `deck.dato1Valore`, `chi.dato1Valore` e `chi.dato2Valore`. Le caselle
+  si riscrivono solo se contengono un numero nudo, così quello che si scrive a
+  mano nel pannello resta com'è.
+- Serve l'autorizzazione del canale: `node server/imposta-twitch.js --collega`
+  usa il flusso a codice di Twitch (twitch.tv/activate) e salva il refresh
+  token in `server/dati/twitch-accesso.json`, escluso dal controllo di
+  versione. Il token si rinnova da sé e il refresh token nuovo si salva a ogni
+  rinnovo. Arrivano anche `--scollega`, e `--prova` che controlla i numeri.
+- Il pannello mostra l'esito dei numeri dopo la pubblicazione, come per le clip.
+- Sei prove nuove nella sezione 9 del collaudo: formato dei numeri, caselle
+  scritte a mano che non si toccano, stati senza chiavi o autorizzazione, file
+  rotto, resoconti, refresh token mai nei file generati e sempre nel
+  `.gitignore`.
+- `CONTRATTO-3.md` §4.7: la deroga motivata sul token utente nel server locale.
+
 - **«Chi sono» rifatta, grafica e testi.** Il ritratto è grande e storto come
   una figurina, con la didascalia a etichetta, e sta accanto al racconto invece
   che in fondo. La citazione è un fumetto della chat, i tag sono adesivi con un

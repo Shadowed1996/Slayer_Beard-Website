@@ -5,6 +5,8 @@
    Uso:  node server/imposta-twitch.js <clientId> <clientSecret>
          node server/imposta-twitch.js --togli
          node server/imposta-twitch.js --prova
+         node server/imposta-twitch.js --collega
+         node server/imposta-twitch.js --scollega
 
    Scrive server/dati/chiavi.js, che e l'unico posto in cui stanno le
    chiavi del sito. Da li le prendono tutti:
@@ -12,6 +14,10 @@
      - il login «Collegati con Twitch» (serve il solo Client ID, che alla
        pubblicazione viene copiato nel campo del pannello e quindi nella
        pagina);
+     - follower e abbonati, che vogliono in piu l autorizzazione di
+       slayer_beard: --collega la chiede una volta sola, con un codice da
+       inserire su twitch.tv/activate, e la salva in
+       server/dati/twitch-accesso.json;
      - «Ultima diretta» e la vetrina delle clip, che con la coppia
        completa prendono un app token e chiedono a Twitch.
 
@@ -44,8 +50,10 @@ function aiuto() {
   console.error('  server/modelli/chiavi.esempio.js in server/dati/chiavi.js.');
   console.error('');
   console.error('  Altri comandi:');
-  console.error('    --prova   chiede a Twitch il titolo dell ultima diretta, senza scrivere niente');
-  console.error('    --togli   cancella il collegamento (il sito continua a funzionare)');
+  console.error('    --prova     chiede a Twitch il titolo dell ultima diretta, senza scrivere niente');
+  console.error('    --togli     cancella il collegamento (il sito continua a funzionare)');
+  console.error('    --collega   slayer_beard autorizza il server a leggere follower e abbonati');
+  console.error('    --scollega  toglie quell autorizzazione (i numeri tornano scritti a mano)');
   console.error('');
 }
 
@@ -74,7 +82,66 @@ async function prova() {
   console.log('');
   // Un fallimento qui e un fallimento del comando: chi lo lancia sta
   // proprio verificando che funzioni.
+  if (twitch.collegato()) {
+    const numeri = await twitch.aggiornaNumeri();
+    console.log('  ' + twitch.raccontaNumeri(numeri));
+    console.log('');
+    if (numeri.stato === 'fallito') { process.exit(1); }
+  }
   if (esito.stato === 'fallito' || esito.stato === 'senzaCanale') { process.exit(1); }
+}
+
+/**
+ * L autorizzazione di slayer_beard, col codice di Twitch. Va fatta con
+ * l account del CANALE: gli abbonati Twitch li mostra solo al proprietario.
+ */
+async function collega() {
+  if (!twitch.configurato()) {
+    console.error('');
+    console.error('  Prima servono le chiavi dell app: node server/imposta-twitch.js <clientId> <clientSecret>');
+    console.error('');
+    process.exit(1);
+  }
+  const avvio = await twitch.iniziaCollegamento();
+  console.log('');
+  console.log('  Autorizzazione per follower e abbonati');
+  console.log('');
+  console.log('  1. Apri ' + avvio.indirizzo);
+  console.log('     ed entra con l account del canale (slayer_beard).');
+  console.log('  2. Inserisci questo codice:   ' + avvio.codiceUtente);
+  console.log('  3. Accetta. Twitch chiede solo di leggere gli abbonati.');
+  console.log('');
+  console.log('  Aspetto la conferma (il codice vale ' + Math.round(avvio.scadeTraSec / 60) + ' minuti)...');
+
+  const io = await twitch.completaCollegamento(avvio);
+  console.log('');
+  console.log('  Fatto: il server e autorizzato da ' + (io.login || 'un account senza nome') + '.');
+
+  let canale = '';
+  try { canale = String(require('./lib/archivio').leggi().config.twitch.idUtente || '').trim(); } catch (e) { canale = ''; }
+  if (canale && io.idUtente && io.idUtente !== canale) {
+    console.log('');
+    console.log('  ATTENZIONE: questo non e l account del canale. I follower si leggono lo stesso,');
+    console.log('  gli abbonati no. Rifai --collega entrando come slayer_beard.');
+  }
+
+  const numeri = await twitch.aggiornaNumeri();
+  console.log('  ' + twitch.raccontaNumeri(numeri));
+  console.log('');
+  console.log('  Da ora si aggiornano da soli a ogni pubblicazione e, col server acceso,');
+  console.log('  ogni dieci minuti. Se il server resta spento per piu di 30 giorni Twitch');
+  console.log('  fa scadere l autorizzazione: basta rilanciare questo comando.');
+  console.log('');
+}
+
+function scollega() {
+  const cera = twitch.scollega();
+  console.log('');
+  console.log(cera
+    ? '  Autorizzazione tolta: follower e abbonati tornano a essere scritti a mano.'
+    : '  Non c era nessuna autorizzazione da togliere.');
+  console.log('  (Per revocarla anche da Twitch: Impostazioni > Connessioni.)');
+  console.log('');
 }
 
 function togli() {
@@ -97,6 +164,8 @@ async function esegui() {
 
   if (argomenti[0] === '--togli') { return togli(); }
   if (argomenti[0] === '--prova') { return prova(); }
+  if (argomenti[0] === '--collega') { return collega(); }
+  if (argomenti[0] === '--scollega') { return scollega(); }
   if (argomenti.length !== 2) { aiuto(); process.exit(1); }
 
   const clientId = String(argomenti[0]).trim();

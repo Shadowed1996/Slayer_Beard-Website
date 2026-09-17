@@ -418,6 +418,33 @@ pubblicazione, nel campo qui sopra: così non è una cosa da scrivere due volte.
 Se non dai quel comando non succede niente di male: *Ultima diretta* resta una
 casella che riempi a mano quando ti va.
 
+### Follower e abbonati che si aggiornano da sé
+
+Anche i numeri del canale — i **follower** in copertina e in «Chi sono», gli
+**abbonati** in «Chi sono» — possono aggiornarsi da soli. Serve un passo in più,
+sempre **una volta sola**, e lo deve fare **slayer_beard con il suo account**:
+Twitch mostra gli abbonati solo al proprietario del canale.
+
+```bash
+node server/imposta-twitch.js --collega
+```
+
+Il comando scrive un codice. Apri **twitch.tv/activate** entrando come
+slayer_beard, scrivi il codice e accetta: Twitch chiede soltanto il permesso di
+*leggere* gli abbonati. Fatto questo, i due numeri si aggiornano a ogni
+Pubblica e, col server acceso, ogni dieci minuti.
+
+Due cose da sapere:
+
+- **Le caselle si aggiornano solo se contengono un numero.** Se nel pannello
+  scrivi a mano qualcosa come «3,6K», il server non te la tocca più. Per
+  tornare all'aggiornamento automatico rimetti un numero qualsiasi.
+- **Se il server resta spento per più di un mese** Twitch fa scadere
+  l'autorizzazione. Te ne accorgi dall'avviso dopo la pubblicazione: basta
+  rilanciare `--collega`. Nel frattempo restano i numeri dell'ultima volta.
+
+Per togliere l'autorizzazione: `node server/imposta-twitch.js --scollega`.
+
 ---
 
 ## 13. La modalità lurk

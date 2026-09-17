@@ -11,6 +11,9 @@
    quel momento e fresco per tutti, senza che il sito pubblicato debba
    chiamare nessuno.
 
+   Dalla stessa porta passano FOLLOWER E ABBONATI, che pero vogliono un
+   token utente: la loro sezione, qui sotto, spiega perche e come.
+
    Sulla stessa strada viaggiano le CLIP: la vetrina della sezione
    «diretta» e un elenco calcolato qui e stampato dentro l'HTML, non un
    riquadro che il browser va a riempire. Il sito pubblicato resta quello
@@ -42,10 +45,12 @@
    famiglia di node:http che il server usa gia.
    ===================================================================== */
 
+const fs = require('node:fs');
 const https = require('node:https');
 
 const { P } = require('./percorsi');
 const archivio = require('./archivio');
+const { scriviAtomico, assicuraCartella } = require('./file');
 const chiavi = require('./chiavi');
 
 // Oltre questo tempo si rinuncia: la pubblicazione non deve restare
@@ -110,7 +115,13 @@ function chiedi(opzioni, corpo) {
           // resoconto la spezzerebbe a meta, e quella riga la legge qualcuno
           // che sta cercando di capire cosa non va.
           const corpoBreve = testo.replace(/\s+/g, ' ').trim().slice(0, 200);
-          rifiuta(new Error('Twitch ha risposto ' + risposta.statusCode + ': ' + corpoBreve));
+          const errore = new Error('Twitch ha risposto ' + risposta.statusCode + ': ' + corpoBreve);
+          // Il codice e il corpo viaggiano con l'errore: l'autorizzazione con
+          // codice (§ follower e abbonati) deve distinguere «non ha ancora
+          // confermato» da «e andata male», e Twitch lo dice solo li dentro.
+          errore.codice = risposta.statusCode;
+          try { errore.risposta = JSON.parse(testo); } catch (e) { errore.risposta = null; }
+          rifiuta(errore);
           return;
         }
         try { risolvi(JSON.parse(testo)); }
@@ -415,6 +426,349 @@ async function aggiornaClip() {
   return { stato: 'aggiornato', quante: esito.voci.length, hostStrani: esito.hostStrani };
 }
 
+/* --- FOLLOWER E ABBONATI --------------------------------------------- */
+
+/*
+   I numeri del canale erano scritti a mano e invecchiavano come «Ultima
+   diretta». Qui pero l'app token non basta: Twitch da il totale dei
+   follower solo a un token UTENTE, e gli abbonati solo al token del
+   proprietario del canale con lo scope channel:read:subscriptions.
+
+   Percio slayer_beard autorizza il server una volta sola, con il flusso a
+   codice di Twitch (Device Code Grant): il server stampa un codice, lui lo
+   inserisce su twitch.tv/activate e accetta. Nessun indirizzo di ritorno da
+   registrare, nessuna pagina da aprire sul server.
+
+   Quello che resta su disco e il REFRESH TOKEN, in
+   server/dati/twitch-accesso.json, accanto a chiavi.js e con le stesse
+   regole: non si carica online, non va nel controllo di versione. Twitch
+   lo sostituisce a ogni rinnovo (e monouso) e lo lascia scadere dopo 30
+   giorni senza uso: col server acceso si rinnova da se ogni quattro ore,
+   e se resta spento piu a lungo basta rifare l'autorizzazione.
+
+   Stesse regole del resto del file: NON LANCIA MAI verso la pubblicazione
+   e NON SVUOTA MAI un numero buono.
+*/
+
+// L'unico permesso che si chiede. Il totale dei follower non ne vuole
+// nessuno: basta che il token sia di una persona.
+const SCOPE_ACCESSO = 'channel:read:subscriptions';
+
+// I campi di testo che mostrano i due numeri in pagina. Si riscrivono solo
+// se contengono un numero e nient'altro: chi nel pannello ci ha messo
+// «3,6K» o ha cambiato del tutto il senso della casella non se lo vede
+// sovrascrivere ogni dieci minuti.
+const CAMPI_NUMERI = {
+  follower: ['deck.dato1Valore', 'chi.dato1Valore'],
+  abbonati: ['chi.dato2Valore']
+};
+
+let accessoInCache = null;     // { valore, scadeIl }
+let rinnovoInCorso = null;     // una Promise: due rinnovi insieme brucerebbero il refresh token
+
+/** 3624 → «3.624». Scritto a mano: it-IT non separa le migliaia sotto le 10.000. */
+function formattaNumero(n) {
+  return String(Math.round(Number(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/** Vero se il testo e un numero nudo, con o senza punti delle migliaia. */
+function eNumeroNudo(testo) {
+  return typeof testo === 'string' && /^\s*(\d+|\d{1,3}(\.\d{3})+)\s*$/.test(testo);
+}
+
+/**
+ * L'autorizzazione salvata, o null se non c'e.
+ * Lancia se il file c'e ma e rotto: come per chiavi.js, «non collegato» e
+ * «collegato male» sono due cose che chi guarda vuole distinguere.
+ */
+function leggiAccesso() {
+  let testo;
+  try { testo = fs.readFileSync(P.accessoTwitch, 'utf8'); }
+  catch (e) {
+    if (e.code === 'ENOENT') { return null; }
+    throw e;
+  }
+  let dati;
+  try { dati = JSON.parse(testo); }
+  catch (e) { throw new Error('server/dati/twitch-accesso.json non si legge: rifai l autorizzazione con node server/imposta-twitch.js --collega.'); }
+  if (!dati || typeof dati.refreshToken !== 'string' || !dati.refreshToken.trim()) { return null; }
+  return dati;
+}
+
+function salvaAccesso(dati) {
+  assicuraCartella(P.dati);
+  scriviAtomico(P.accessoTwitch, JSON.stringify(dati, null, 2) + '\n');
+  // Come chiavi.js: su Windows chmod non fa niente, e non e un errore.
+  try { fs.chmodSync(P.accessoTwitch, 0o600); } catch (e) { /* Windows */ }
+}
+
+/** Vero se slayer_beard ha autorizzato il server. Non lancia mai. */
+function collegato() {
+  try { return leggiAccesso() !== null; } catch (e) { return false; }
+}
+
+/** Toglie l'autorizzazione salvata. Vero se c'era qualcosa da togliere. */
+function scollega() {
+  accessoInCache = null;
+  try { fs.unlinkSync(P.accessoTwitch); return true; }
+  catch (e) { if (e.code === 'ENOENT') { return false; } throw e; }
+}
+
+function postModulo(percorso, campi) {
+  const corpo = new URLSearchParams(campi).toString();
+  return chiedi({
+    method: 'POST',
+    hostname: 'id.twitch.tv',
+    path: percorso,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(corpo) }
+  }, corpo);
+}
+
+/**
+ * Primo passo dell'autorizzazione: Twitch da il codice da inserire.
+ * Ritorna { codiceDispositivo, codiceUtente, indirizzo, scadeTraSec, intervalloSec }.
+ */
+async function iniziaCollegamento() {
+  const chiavi = credenziali();
+  if (!chiavi) { throw new Error('Prima servono le chiavi dell app: node server/imposta-twitch.js <clientId> <clientSecret>.'); }
+  const r = await postModulo('/oauth2/device', { client_id: chiavi.clientId, scopes: SCOPE_ACCESSO });
+  if (!r || !r.device_code || !r.user_code) { throw new Error('Twitch non ha dato nessun codice.'); }
+  return {
+    codiceDispositivo: r.device_code,
+    codiceUtente: r.user_code,
+    indirizzo: r.verification_uri || 'https://www.twitch.tv/activate',
+    scadeTraSec: Number(r.expires_in) || 1800,
+    intervalloSec: Number(r.interval) || 5
+  };
+}
+
+/**
+ * Secondo passo: si aspetta che il codice venga confermato su Twitch, poi
+ * si salva l'autorizzazione. Ritorna { login, idUtente }.
+ * `attendi` si puo sostituire (il collaudo non vuole aspettare davvero).
+ */
+async function completaCollegamento(avvio, opzioni) {
+  const chiavi = credenziali();
+  if (!chiavi) { throw new Error('Mancano le chiavi dell app.'); }
+  const attendi = (opzioni && opzioni.attendi) || ((ms) => new Promise((r) => setTimeout(r, ms)));
+  let intervallo = avvio.intervalloSec * 1000;
+  const limite = Date.now() + avvio.scadeTraSec * 1000;
+
+  let token = null;
+  while (!token) {
+    if (Date.now() > limite) { throw new Error('Il codice e scaduto prima della conferma: rilancia il comando.'); }
+    await attendi(intervallo);
+    try {
+      token = await postModulo('/oauth2/token', {
+        client_id: chiavi.clientId,
+        scopes: SCOPE_ACCESSO,
+        device_code: avvio.codiceDispositivo,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+      });
+    } catch (errore) {
+      const messaggio = String((errore.risposta && errore.risposta.message) || '');
+      if (messaggio === 'authorization_pending') { continue; }
+      if (messaggio === 'slow_down') { intervallo += 5000; continue; }
+      throw errore;
+    }
+  }
+  if (!token.refresh_token || !token.access_token) { throw new Error('Twitch non ha dato nessun token.'); }
+
+  // Di chi e l'autorizzazione? Gli abbonati li legge solo il proprietario
+  // del canale, ed e meglio saperlo adesso che fra dieci minuti.
+  const utenti = await chiedi({
+    method: 'GET', hostname: 'api.twitch.tv', path: '/helix/users',
+    headers: { 'Authorization': 'Bearer ' + token.access_token, 'Client-Id': chiavi.clientId }
+  });
+  const io = (utenti && Array.isArray(utenti.data) && utenti.data[0]) || {};
+
+  salvaAccesso({
+    refreshToken: token.refresh_token,
+    idUtente: String(io.id || ''),
+    login: String(io.login || ''),
+    collegatoIl: new Date().toISOString()
+  });
+  accessoInCache = { valore: token.access_token, scadeIl: Date.now() + (Number(token.expires_in) || 3600) * 1000 };
+  return { login: String(io.login || ''), idUtente: String(io.id || '') };
+}
+
+/** Un token utente valido: dalla cache, o rinnovato col refresh token. */
+async function tokenAccesso() {
+  if (accessoInCache && accessoInCache.scadeIl - ANTICIPO_MS > Date.now()) { return accessoInCache.valore; }
+  if (rinnovoInCorso) { return rinnovoInCorso; }
+
+  rinnovoInCorso = (async () => {
+    const chiavi = credenziali();
+    const accesso = leggiAccesso();
+    if (!chiavi || !accesso) { throw new Error('Il server non e autorizzato: node server/imposta-twitch.js --collega.'); }
+
+    let r;
+    try {
+      r = await postModulo('/oauth2/token', {
+        client_id: chiavi.clientId,
+        client_secret: chiavi.clientSecret,
+        grant_type: 'refresh_token',
+        refresh_token: accesso.refreshToken
+      });
+    } catch (errore) {
+      if (errore.codice === 400 || errore.codice === 401) {
+        throw new Error('Twitch non accetta piu l autorizzazione' + (accesso.login ? ' di ' + accesso.login : '') +
+          ' (scaduta o revocata): rifalla con node server/imposta-twitch.js --collega.');
+      }
+      throw errore;
+    }
+    if (!r || !r.access_token) { throw new Error('Twitch non ha rinnovato il token.'); }
+
+    // Il refresh token e monouso: quello nuovo va salvato SUBITO, prima di
+    // usare l'access token, o al prossimo giro non ci sarebbe piu niente.
+    if (r.refresh_token && r.refresh_token !== accesso.refreshToken) {
+      salvaAccesso({ ...accesso, refreshToken: r.refresh_token });
+    }
+    accessoInCache = { valore: r.access_token, scadeIl: Date.now() + (Number(r.expires_in) || 3600) * 1000 };
+    return accessoInCache.valore;
+  })();
+
+  try { return await rinnovoInCorso; }
+  finally { rinnovoInCorso = null; }
+}
+
+/** Una GET su helix col token utente. Su 401 rinnova una volta e riprova. */
+async function helixAccesso(percorso) {
+  const chiavi = credenziali();
+  const opzioni = (token) => ({
+    method: 'GET', hostname: 'api.twitch.tv', path: '/helix' + percorso,
+    headers: { 'Authorization': 'Bearer ' + token, 'Client-Id': chiavi.clientId }
+  });
+  try {
+    return await chiedi(opzioni(await tokenAccesso()));
+  } catch (errore) {
+    if (errore.codice !== 401) { throw errore; }
+    accessoInCache = null;
+    return chiedi(opzioni(await tokenAccesso()));
+  }
+}
+
+/**
+ * Follower e abbonati del canale.
+ * Gli abbonati possono mancare (null) senza far fallire i follower: capita
+ * se l'autorizzazione e di un altro account, o se Twitch li nega.
+ */
+async function numeriCanale(idUtente) {
+  const id = encodeURIComponent(String(idUtente));
+  const seguaci = await helixAccesso('/channels/followers?broadcaster_id=' + id + '&first=1');
+  if (!seguaci || !Number.isFinite(Number(seguaci.total))) { throw new Error('Twitch non ha dato il totale dei follower.'); }
+
+  let abbonati = null;
+  let motivoAbbonati = '';
+  try {
+    const abb = await helixAccesso('/subscriptions?broadcaster_id=' + id + '&first=1');
+    if (abb && Number.isFinite(Number(abb.total))) { abbonati = Number(abb.total); }
+    else { motivoAbbonati = 'Twitch non ha dato il totale degli abbonati'; }
+  } catch (errore) {
+    motivoAbbonati = errore.message;
+  }
+  return { follower: Number(seguaci.total), abbonati: abbonati, motivoAbbonati: motivoAbbonati };
+}
+
+/**
+ * Scrive i numeri nel documento: config.dati e i campi di testo che li
+ * mostrano. Pura, senza rete: e la parte che il collaudo tiene ferma.
+ * Ritorna l'elenco delle chiavi cambiate.
+ */
+function applicaNumeri(documento, numeri) {
+  const cambiate = [];
+  if (!documento.config.dati || typeof documento.config.dati !== 'object') { documento.config.dati = {}; }
+  const dati = documento.config.dati;
+
+  for (const nome of ['follower', 'abbonati']) {
+    const valore = numeri[nome];
+    if (valore === null || valore === undefined || !Number.isFinite(Number(valore))) { continue; }
+    if (dati[nome] !== valore) { dati[nome] = valore; cambiate.push('config.dati.' + nome); }
+
+    const scritto = formattaNumero(valore);
+    for (const chiave of CAMPI_NUMERI[nome]) {
+      const attuale = documento.testi[chiave];
+      if (!eNumeroNudo(attuale) || attuale.trim() === scritto) { continue; }
+      documento.testi[chiave] = scritto;
+      cambiate.push(chiave);
+    }
+  }
+  return cambiate;
+}
+
+/**
+ * Aggiorna follower e abbonati in contenuti.json, se si puo.
+ * Stati: spento, nonCollegato, senzaCanale, aggiornato, invariato, fallito.
+ */
+async function aggiornaNumeri() {
+  let chiavi;
+  let accesso;
+  try {
+    chiavi = credenziali();
+    if (!chiavi) { return { stato: 'spento' }; }
+    accesso = leggiAccesso();
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+  if (!accesso) { return { stato: 'nonCollegato' }; }
+
+  let idUtente;
+  try {
+    const twitch = (archivio.leggi().config.twitch) || {};
+    idUtente = typeof twitch.idUtente === 'string' ? twitch.idUtente.trim() : '';
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+  if (!idUtente) { return { stato: 'senzaCanale' }; }
+
+  let numeri;
+  try {
+    numeri = await numeriCanale(idUtente);
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+
+  // Si rilegge dopo la rete, come per le clip: il pannello puo aver salvato.
+  let cambiate;
+  try {
+    const fresco = archivio.leggi();
+    cambiate = applicaNumeri(fresco, numeri);
+    if (cambiate.length) { archivio.salva(fresco); }
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+
+  return {
+    stato: cambiate.length ? 'aggiornato' : 'invariato',
+    follower: numeri.follower, abbonati: numeri.abbonati,
+    motivoAbbonati: numeri.motivoAbbonati, cambiate: cambiate
+  };
+}
+
+/** Il resoconto dei numeri in una riga. */
+function raccontaNumeri(esito) {
+  if (!esito || !esito.stato) { return ''; }
+  const abb = (e) => e.abbonati === null || e.abbonati === undefined
+    ? '. Abbonati non letti (' + (e.motivoAbbonati || 'motivo sconosciuto') + ').'
+    : ', ' + formattaNumero(e.abbonati) + ' abbonati.';
+  switch (esito.stato) {
+    case 'spento':
+      return 'Follower e abbonati: il collegamento con Twitch non e configurato, restano quelli scritti a mano.';
+    case 'nonCollegato':
+      return 'Follower e abbonati: restano quelli scritti a mano finche slayer_beard non autorizza il server (node server/imposta-twitch.js --collega).';
+    case 'senzaCanale':
+      return 'Follower e abbonati: manca l ID del canale (campo config.twitch.idUtente), non ho chiesto niente a Twitch.';
+    case 'aggiornato':
+      return 'Follower e abbonati: aggiornati da Twitch — ' + formattaNumero(esito.follower) + ' follower' + abb(esito);
+    case 'invariato':
+      return 'Follower e abbonati: gia aggiornati — ' + formattaNumero(esito.follower) + ' follower' + abb(esito);
+    case 'fallito':
+      return 'Follower e abbonati: non sono riuscito a chiederli a Twitch (' + esito.motivo + '). Tengo quelli che c erano.';
+    default:
+      return '';
+  }
+}
+
 /** Il resoconto in una riga, per il terminale e per il pannello. */
 function racconta(esito) {
   if (!esito || !esito.stato) { return ''; }
@@ -467,5 +821,8 @@ module.exports = {
   credenziali, configurato, appToken, dimenticaToken, helix,
   titoloUltimaDiretta, aggiornaUltimaDiretta, racconta,
   clipMigliori, aggiornaClip, raccontaClip,
+  collegato, scollega, iniziaCollegamento, completaCollegamento, numeriCanale,
+  applicaNumeri, aggiornaNumeri, raccontaNumeri, formattaNumero, eNumeroNudo,
+  SCOPE_ACCESSO, CAMPI_NUMERI,
   TIMEOUT_MS, HOST_ANTEPRIME, PERIODI
 };

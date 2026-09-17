@@ -242,6 +242,7 @@ async function rottaPubblica(req, res) {
   const daChiavi = chiavi.sincronizzaClientId();
   const daTwitch = await twitch.aggiornaUltimaDiretta();
   const leClip = await twitch.aggiornaClip();
+  const iNumeri = await twitch.aggiornaNumeri();
   const esito = costruisci.genera();
   // `controlli` sono avvertimenti d'insieme, non errori: la pubblicazione e
   // riuscita comunque, e il pannello li mostra dopo invece di trattarli come
@@ -251,6 +252,7 @@ async function rottaPubblica(req, res) {
     scritti: esito.scritti, controlli: esito.controlli,
     twitch: { stato: daTwitch.stato, messaggio: twitch.racconta(daTwitch) },
     clip: { stato: leClip.stato, messaggio: twitch.raccontaClip(leClip) },
+    numeri: { stato: iNumeri.stato, messaggio: twitch.raccontaNumeri(iNumeri) },
     chiavi: { stato: daChiavi.stato, messaggio: chiavi.racconta(daChiavi) }
   });
 }

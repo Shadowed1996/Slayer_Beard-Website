@@ -60,6 +60,10 @@ function calcola(radice) {
     // cosa: roba locale, che non esce mai da questo computer.
     chiavi: path.join(radice, 'server', 'dati', 'chiavi.js'),
     modelloChiavi: path.join(radice, 'server', 'modelli', 'chiavi.esempio.js'),
+    // L'autorizzazione che slayer_beard da UNA volta al server, per leggere
+    // follower e abbonati. Non sta in chiavi.js perche non si scrive a mano
+    // e cambia da sola: Twitch rinnova il refresh token a ogni uso.
+    accessoTwitch: path.join(radice, 'server', 'dati', 'twitch-accesso.json'),
     backup: path.join(radice, 'server', 'backup'),
     modelloDati: path.join(radice, 'server', 'modelli', 'dati.js.tpl')
   };

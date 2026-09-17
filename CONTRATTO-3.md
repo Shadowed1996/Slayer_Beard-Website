@@ -302,6 +302,33 @@ ogni pubblicazione.
 Resta vietato tutto il resto: nessun secret nello schema, nessun secret nel pannello, nessuna
 chiamata a Twitch dal sito pubblicato che non sia quella del §4.4 col token dell'utente.
 
+### 4.7 Deroga: l'autorizzazione di slayer_beard sul server locale (17 settembre 2026)
+
+Il §4.6 dice che il server usa **solo** un app token, «il token di nessuna persona». Per i numeri
+del canale non basta: Twitch dà il totale dei follower solo a un token utente
+(`helix/channels/followers`) e gli abbonati solo al proprietario del canale con lo scope
+`channel:read:subscriptions` (`helix/subscriptions`). Il committente ha chiesto che quei numeri
+si aggiornino da soli, e l'unica strada con dati ufficiali è che il proprietario autorizzi il
+server.
+
+Come, e con quali limiti:
+
+- **Una volta sola, con il flusso a codice di Twitch** (Device Code Grant):
+  `node server/imposta-twitch.js --collega` stampa un codice da inserire su twitch.tv/activate.
+  Nessun indirizzo di ritorno da registrare e nessuna pagina del server esposta al login.
+- **Un solo scope, di sola lettura**: `channel:read:subscriptions`. Il token non può scrivere in
+  chat né modificare il canale; il rischio del §4.5 continua a non applicarsi.
+- **Sul disco sta il refresh token**, in `server/dati/twitch-accesso.json`, con le stesse regole di
+  `chiavi.js`: escluso dal controllo di versione, mai nei file generati né in `contenuti.json`.
+  Tutte e due le cose sono prove del collaudo (sezione 9), non promesse. L'access token vive solo
+  in memoria.
+- **Il refresh token è monouso** e Twitch lo sostituisce a ogni rinnovo: il nuovo si salva prima di
+  usare l'access token. Dentro un processo i rinnovi sono in fila, mai due insieme.
+- **È facoltativo, e non può rompere una pubblicazione.** Senza autorizzazione i numeri restano
+  quelli scritti a mano; con l'autorizzazione scaduta o revocata `aggiornaNumeri()` restituisce un
+  resoconto che dice di rifare `--collega`, e non tocca niente.
+- **Non scavalca il pannello.** Le caselle di testo si riscrivono solo se contengono un numero nudo.
+
 ---
 
 ## 5. Interfacce fra agenti — firme esatte

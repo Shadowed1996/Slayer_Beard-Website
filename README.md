@@ -375,6 +375,50 @@ equivalente, ed è comunque meglio di un campo fermo a mesi fa.
 
 ---
 
+## Follower e abbonati che si aggiornano da sé
+
+I numeri del canale — i follower nella copertina e in «Chi sono», gli abbonati in «Chi sono» —
+erano scritti a mano e invecchiavano come «Ultima diretta». Adesso li chiede a Twitch lo stesso
+server, negli stessi momenti: a ogni Pubblica e, col server acceso, ogni dieci minuti.
+
+C'è però un passo in più. L'app token che basta per il titolo e le clip **qui non basta**: Twitch
+dà il totale dei follower solo a un token di una persona, e gli abbonati solo al **proprietario
+del canale** con il permesso `channel:read:subscriptions`. Quindi slayer_beard autorizza il server
+**una volta sola**:
+
+```bash
+node server/imposta-twitch.js <clientId> <clientSecret>   # se non l'hai già fatto
+node server/imposta-twitch.js --collega
+```
+
+Il comando stampa un codice: si apre [twitch.tv/activate](https://www.twitch.tv/activate) **con
+l'account del canale**, si inserisce il codice e si accetta. Il server salva l'autorizzazione in
+`server/dati/twitch-accesso.json` e da lì fa tutto da sé. `--prova` ora controlla anche i numeri;
+`--scollega` toglie l'autorizzazione.
+
+Cosa viene riscritto, e cosa no:
+
+- `config.dati.follower` e `config.dati.abbonati`, sempre;
+- le caselle `deck.dato1Valore`, `chi.dato1Valore` (follower) e `chi.dato2Valore` (abbonati), **solo
+  se contengono un numero e nient'altro**. Se nel pannello ci scrivi «3,6K» o cambi il senso della
+  casella, il server la lascia stare;
+- gli spettatori medi e gli altri numeri restano a mano: Twitch non li dà.
+
+Le regole sono quelle di tutto il resto: **non lancia mai e non svuota mai**. Se Twitch non
+risponde, o nega gli abbonati, restano i numeri che c'erano e il resoconto lo dice.
+
+> **L'autorizzazione scade se il server resta spento a lungo.** Twitch sostituisce il refresh
+> token a ogni rinnovo e lascia scadere quello non usato dopo 30 giorni. Col server acceso si
+> rinnova da sé ogni quattro ore; se resta spento più a lungo, il resoconto dice di rifare
+> `--collega`, e nel frattempo i numeri restano quelli dell'ultima volta.
+
+**Il file dell'autorizzazione è un segreto come `chiavi.js`.** Sta in `server/dati/`, è escluso dal
+controllo di versione, non finisce nei file generati (una prova del collaudo lo verifica) e dà
+accesso **soltanto** alla lettura degli abbonati: non può scrivere in chat né cambiare niente del
+canale. La deroga è motivata nel CONTRATTO-3, §4.7.
+
+---
+
 ## La vetrina delle clip
 
 In fondo alla sezione «diretta», sotto al riquadro del lurk, può comparire una griglia con le

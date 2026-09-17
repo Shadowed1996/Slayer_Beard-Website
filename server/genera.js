@@ -50,7 +50,9 @@ async function esegui() {
   if (daTwitch.stato !== 'spento') { console.log('  ' + twitch.racconta(daTwitch)); }
   const leClip = await twitch.aggiornaClip();
   if (leClip.stato !== 'spento') { console.log('  ' + twitch.raccontaClip(leClip)); }
-  if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento' || chiavi.racconta(daChiavi)) { console.log(''); }
+  const iNumeri = await twitch.aggiornaNumeri();
+  if (iNumeri.stato !== 'spento') { console.log('  ' + twitch.raccontaNumeri(iNumeri)); }
+  if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento' || iNumeri.stato !== 'spento' || chiavi.racconta(daChiavi)) { console.log(''); }
 
   const esito = costruisci.genera();
 
