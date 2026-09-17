@@ -507,7 +507,7 @@ const gruppi = [
       { chiave: 'config.sitoUrl', etichetta: 'Indirizzo pubblico del sito', tipo: 'url', facoltativo: true,
         aiuto: 'L\'indirizzo con cui la gente apre il sito: https://slayerbeard.com. Da qui escono il link canonico, le anteprime social e la sitemap. Lasciandolo vuoto, i link di anteprima restano relativi.' },
       { chiave: 'config.email', etichetta: 'Indirizzo email pubblico', tipo: 'email' },
-      { chiave: 'config.ultimaDiretta', etichetta: 'Ultima diretta', tipo: 'testo', max: 120,
+      { chiave: 'config.ultimaDiretta', etichetta: 'Ultima diretta', tipo: 'testo', max: 130,
         aiuto: 'Titolo dell\'ultima serata: compare nel quadro comandi. Lo riempie da sé la pubblicazione, chiedendolo a Twitch, se hai impostato il client secret con «node server/imposta-twitch.js»; senza quello resta il valore che scrivi qui.' },
       { chiave: 'config.dati.follower', etichetta: 'Follower', tipo: 'numero', min: 0, max: 100000000,
         aiuto: 'È il primo numero della copertina e di «Chi sono». Lo aggiorna da sé la pubblicazione, chiedendolo a Twitch, se hai impostato il client secret con «node server/imposta-twitch.js»; senza quello resta il valore che scrivi qui.' },
