@@ -774,10 +774,12 @@ a:not([class]):hover { color: var(--ciano); }
     background-color: var(--pannello-2);
   }
 
+  /* Le icone di modelli/icone sono disegnate a tratto (fill="none" nel file):
+     qui non si dichiara nessun fill, altrimenti i contorni si riempiono e
+     Twitch e Instagram diventano due macchie, TikTok una nota musicale. */
   .binario__social-voce svg {
-    inline-size: 17px;
-    block-size: 17px;
-    fill: currentColor;
+    inline-size: 19px;
+    block-size: 19px;
   }
 }
 

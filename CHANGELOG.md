@@ -130,6 +130,13 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Corretto
 
+- **Le icone social nel binario a sinistra si vedono come devono.** Sono
+  disegnate a tratto, ma `css/base.css` dava loro `fill: currentColor`: i
+  contorni si riempivano, e Twitch e Instagram diventavano due macchie mentre
+  TikTok sembrava una nota musicale. Tolto il riempimento, le icone passano
+  da 17 a 19px e quella di TikTok (`modelli/icone/tiktok.svg`) è ridisegnata
+  con il ricciolo aperto, così si riconosce.
+
 - Il resoconto delle clip distingue i due motivi per cui può essere spento —
   manca il collegamento, oppure la vetrina non è accesa nel pannello — invece
   di mandare a controllare il posto sbagliato.
