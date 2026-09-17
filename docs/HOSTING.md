@@ -550,6 +550,16 @@ location ~ \.md$ {
 location ~ /\.(?!well-known/) {
     return 403;
 }
+
+# CSS e JS si ricontrollano sempre: li riscrive ogni pubblicazione, e li
+# sostituisce chi carica un file nuovo sul pannello. Nginx serve questi
+# file saltando .htaccess (e' il motivo di tutto questo capitolo), quindi
+# la stessa regola va detta anche qui, altrimenti un aggiornamento resta
+# invisibile finche' la cache di chi visita non scade da sola.
+location ~* \.(css|js|mjs)$ {
+    add_header Cache-Control "no-cache" always;
+    expires off;
+}
 ```
 
 ### Modo B — far consegnare tutto ad Apache

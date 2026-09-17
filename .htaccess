@@ -244,9 +244,18 @@
 #                 si vede subito. (Se il file non e cambiato il server
 #                 risponde "non modificato" e non rimanda niente: costa
 #                 una richiesta, non il peso della pagina.)
-#   css/ e js/    un'ora. Li riscrive ogni pubblicazione e il loro nome non
-#                 cambia mai, quindi una vita lunga vorrebbe dire colori e
-#                 testi vecchi per giorni.
+#   css/ e js/    si ricontrollano sempre anche loro (no-cache, non
+#                 un'ora): il loro nome non cambia mai, li riscrive ogni
+#                 pubblicazione E li sostituisce chi carica un file nuovo
+#                 sul pannello, quindi una vita anche breve vorrebbe dire
+#                 colori, testi o un bottone nuovo del pannello che il
+#                 browser continua a non vedere finche' l'ora non passa.
+#                 "no-cache" non vuol dire "non tenere": vuol dire "chiedi
+#                 prima di riusare", e se il file non e' cambiato la
+#                 risposta e' un 304 senza byte — costa una richiesta
+#                 piccola, non il peso del file. E' la stessa regola che
+#                 usa gia' Node quando serve questi file da se
+#                 (server/lib/statico.js): qui si allinea .htaccess.
 #   immagini      trenta giorni: cambiano di rado e pesano.
 #   e font
 #
@@ -255,12 +264,8 @@
 # progetto, e "immutable" direbbe al browser di non ricontrollare mai piu.
 # =====================================================================
 <IfModule mod_headers.c>
-  <FilesMatch "\.(html|htm)$">
+  <FilesMatch "\.(html|htm|css|js|mjs)$">
     Header set Cache-Control "no-cache"
-  </FilesMatch>
-
-  <FilesMatch "\.(css|js|mjs)$">
-    Header set Cache-Control "public, max-age=3600, must-revalidate"
   </FilesMatch>
 
   <FilesMatch "\.(webp|avif|png|jpe?g|gif|svg|ico|woff2|woff|ttf|otf|mp4|webm)$">
@@ -281,9 +286,9 @@
   <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresByType text/html "access plus 0 seconds"
-    ExpiresByType text/css "access plus 1 hour"
-    ExpiresByType text/javascript "access plus 1 hour"
-    ExpiresByType application/javascript "access plus 1 hour"
+    ExpiresByType text/css "access plus 0 seconds"
+    ExpiresByType text/javascript "access plus 0 seconds"
+    ExpiresByType application/javascript "access plus 0 seconds"
     ExpiresByType image/webp "access plus 30 days"
     ExpiresByType image/avif "access plus 30 days"
     ExpiresByType image/png "access plus 30 days"
