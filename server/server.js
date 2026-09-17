@@ -327,16 +327,18 @@ function aggiornamentoAutomatico(opzioni) {
       if (chiavi.racconta(daChiavi)) { console.log('  ' + ora() + ' ' + chiavi.racconta(daChiavi)); }
 
       const daTwitch = await twitch.aggiornaUltimaDiretta();
+      const iFollower = await twitch.aggiornaFollower();
       const leClip = await twitch.aggiornaClip();
 
       const cambiato = daChiavi.stato === 'copiato' ||
-        daTwitch.stato === 'aggiornato' || leClip.stato === 'aggiornato';
+        daTwitch.stato === 'aggiornato' || iFollower.stato === 'aggiornato' || leClip.stato === 'aggiornato';
 
       // Si stampa solo cio che e successo davvero, e ogni riga risponde del
       // proprio esito: un server che ripete «gia aggiornata» ogni dieci
       // minuti diventa rumore, e il rumore nasconde la riga che conta.
-      const dueRighe = [[daTwitch, twitch.racconta(daTwitch)], [leClip, twitch.raccontaClip(leClip)]];
-      for (const [esito, riga] of dueRighe) {
+      const leRighe = [[daTwitch, twitch.racconta(daTwitch)], [iFollower, twitch.raccontaFollower(iFollower)],
+        [leClip, twitch.raccontaClip(leClip)]];
+      for (const [esito, riga] of leRighe) {
         if (!riga) { continue; }
         if (esito.stato !== 'aggiornato' && esito.stato !== 'fallito') { continue; }
         console.log('  ' + ora() + ' ' + riga);

@@ -1,20 +1,63 @@
 <section id="settimana" class="settimana" aria-labelledby="settimana-titolo" data-sb-sezione="settimana" data-sb-riquadro="settimana">
+  <!-- Fondale: decorativo, sempre primo figlio (CONTRATTO-5 §6.1). Il div c'è anche spento, così il
+       pannello ha sempre dove scrivere --intensita; l'immagine solo se c'è e se l'intensità non è 0. -->
+  <div class="settimana__sfondo{{#se sito.settimanaSfondo.immagine}} con-immagine{{/se}}" aria-hidden="true"{{#se sito.settimanaSfondo.stile}} style="{{sito.settimanaSfondo.stile}}"{{/se}}>
+    {{#se sito.settimanaSfondo.immagine}}<img class="settimana__sfondo-img" src="{{sito.settimanaSfondo.immagine}}" alt="" loading="lazy" decoding="async">{{/se}}
+  </div>
+
   <div class="sezione__testa settimana__testa" data-sb-blocco="settimana.testa">
     <p class="sezione__occhiello" data-sb-testo="settimana.occhiello">{{settimana.occhiello}}</p>
     <h2 id="settimana-titolo" class="sezione__titolo" data-sb-testo="settimana.titolo">{{settimana.titolo}}</h2>
     <p class="sezione__testo" data-sb-testo="settimana.testo">{{{settimana.testo}}}</p>
   </div>
 
-  <!-- Sette voci sempre, anche i giorni di riposo: il nastro è una settimana intera, non un elenco di dirette. -->
-  <ol id="nastro" class="nastro" aria-label="{{sito.orariTesto}}" data-sb-parte="nastro" data-sb-blocco="settimana.nastro">
+  <!-- Sette voci sempre, anche i giorni di riposo: il nastro è una settimana intera, non un elenco di
+       dirette. Senza JavaScript qui c'è già tutto quello che serve per leggerla: ore, titoli, immagini.
+       sito.js aggiunge solo le date, i segni (oggi, prossima, in onda, speciale) e l'ora di chi guarda:
+       le date nel contenitore vuoto .nastro__data, i segni in .nastro__segni. -->
+  <ol id="nastro" class="nastro"{{#se sito.orariTesto}} aria-label="{{sito.orariTesto}}"{{/se}} data-sb-parte="nastro" data-sb-blocco="settimana.nastro">
     {{#ogni settimana}}
-    <li class="nastro__giorno{{#se diretta}} is-diretta{{/se}}" data-giorno="{{indice}}">
-      <span class="nastro__abbr">{{abbr}}</span>
-      <b class="nastro__ora">{{ora}}</b>
-      <span class="nastro__tag">{{tag}}</span>
+    <li class="nastro__giorno{{#se diretta}} is-diretta{{/se}}{{#se immagine}} con-immagine{{/se}}" data-giorno="{{indice}}"{{#se stile}} style="{{stile}}"{{/se}}>
+      {{#se immagine}}<img class="nastro__sfondo" src="{{immagine}}" alt="" loading="lazy" decoding="async">{{/se}}
+      {{#se diretta}}{{^se immagine}}<span class="nastro__filigrana" aria-hidden="true">{{nome}}</span>{{/se}}{{/se}}
+      <div class="nastro__testa">
+        <p class="nastro__targa"><span class="nastro__abbr" aria-hidden="true">{{abbr}}</span><span class="nastro__nome">{{nome}}</span><span class="nastro__data"></span></p>
+        <p class="nastro__segni"></p>
+      </div>
+      <div class="nastro__corpo">
+        <p class="nastro__quando"><span class="nastro__tag">{{tag}}</span>{{#se diretta}} <span class="nastro__orario"><b class="nastro__ora">{{ora}}</b><span class="nastro__fine"> – {{fine}}</span></span>{{/se}}</p>
+        {{#se titolo}}<p class="nastro__titolo">{{titolo}}</p>{{/se}}
+        {{#se gioco}}<p class="nastro__gioco">{{gioco}}</p>{{/se}}
+        {{#se nota}}<p class="nastro__nota">{{nota}}</p>{{/se}}
+      </div>
     </li>
     {{/ogni}}
   </ol>
+
+  {{#se sito.haEventi}}<!-- Eventi speciali: dopo il nastro, perché la settimana resta la struttura che si legge per
+       prima; sono solo quelli non ancora finiti quando il sito è stato generato, e sito.js toglie quelli
+       che finiscono dopo. -->
+  <div class="eventi" data-sb-parte="eventi" data-sb-blocco="settimana.eventi">
+    <h3 class="eventi__titolo" data-sb-testo="settimana.titoloEventi">{{settimana.titoloEventi}}</h3>
+    <ol class="eventi__elenco">
+      {{#ogni sito.eventi}}
+      <li class="evento{{#se immagine}} con-immagine{{/se}}" data-evento="{{indice}}" data-inizio="{{inizio}}" data-fine="{{termine}}"{{#se stile}} style="{{stile}}"{{/se}}>
+        <div class="evento__manifesto">
+          {{#se immagine}}<img class="evento__sfondo" src="{{immagine}}" alt="" loading="lazy" decoding="async">{{/se}}
+          <p class="evento__data" aria-hidden="true"><span class="evento__giorno">{{abbr}}</span><span class="evento__numero">{{numero}}</span><span class="evento__mese">{{mese}}</span></p>
+          <p class="evento__segni"><span class="segno segno--evento">{{settimana.etichettaEvento}}</span></p>
+        </div>
+        <div class="evento__corpo">
+          <h4 class="evento__titolo">{{titolo}}</h4>
+          <p class="evento__quando"><time class="evento__giorno-esteso" datetime="{{inizio}}">{{dataTesto}}</time> <span class="evento__orario"><b class="evento__ora">{{ora}}</b><span class="evento__fine"> – {{fine}}</span></span></p>
+          {{#se gioco}}<p class="evento__gioco">{{gioco}}</p>{{/se}}
+          {{#se nota}}<p class="evento__nota">{{nota}}</p>{{/se}}
+        </div>
+      </li>
+      {{/ogni}}
+    </ol>
+  </div>
+  {{/se}}
 
   <div class="settimana__piede" data-sb-blocco="settimana.piede">
     <p class="settimana__nota" data-sb-testo="settimana.nota">{{{settimana.nota}}}</p>

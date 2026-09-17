@@ -895,6 +895,30 @@ function scriviRicco(el, valore) {
   segnaOriginali(el);
 }
 
+/* Un marcatore va scritto come testo ricco? Una chiave senza campo suo è la
+   proprietà di una voce di elenco (config.supporto.0.testo) o il pezzo di un
+   campo composto (config.orari.giochi.1): si risale al campo che la contiene
+   e, per un elenco, si guarda il tipo del sottocampo. Fuori da un «ricco»
+   dichiarato il valore resta testo, come lo stampa la generazione con la
+   doppia graffa: passarlo dal sanificatore toglierebbe dall'anteprima un
+   «<Quake>» che sul sito pubblicato si legge. Solo senza schema vale ancora
+   la strada prudente: un tag nel valore si ripulisce come ricco. */
+function testoRicco(chiave, valore) {
+  const campo = campoDi(chiave);
+  if (campo) return campo.tipo === 'ricco';
+  if (!ponte.stato || !ponte.stato.schema) return valore.indexOf('<') !== -1;
+  const pezzi = chiave.split('.');
+  for (let n = pezzi.length - 1; n > 1; n -= 1) {
+    const padre = campoDi(pezzi.slice(0, n).join('.'));
+    if (!padre) continue;
+    const resto = pezzi.slice(n).filter((p) => !/^\d+$/.test(p));
+    if (padre.tipo !== 'elenco' || !Array.isArray(padre.campi) || resto.length !== 1) return false;
+    const sotto = padre.campi.find((c) => c && c.chiave === resto[0]);
+    return !!(sotto && sotto.tipo === 'ricco');
+  }
+  return false;
+}
+
 function applicaTesti(filtro = null) {
   const doc = docVivo();
   if (!doc) return;
@@ -905,9 +929,7 @@ function applicaTesti(filtro = null) {
     if (!RE_TESTO.test(chiave || '') || !vale(chiave) || inScrittura(el)) continue;
     const valore = leggi(chiave);
     if (typeof valore !== 'string') continue;
-    const campo = campoDi(chiave);
-    // Tipo sconosciuto e un tag nel valore: si tratta come ricco, che è la strada ripulita.
-    if ((campo && campo.tipo === 'ricco') || (!campo && valore.indexOf('<') !== -1)) scriviRicco(el, valore);
+    if (testoRicco(chiave, valore)) scriviRicco(el, valore);
     else if (el.textContent !== valore) el.textContent = valore;
   }
 
@@ -1563,7 +1585,11 @@ function muoviTrascina(ev) {
   let B = s.y + s.a;
 
   if (t.tipo === 'move') {
-    L = stringi(g(s.x + dx), 0, Math.max(0, X_MAX - s.l));
+    /* Un blocco largo quanto il contenuto parte già con x + l oltre 100: x si
+       misura dal bordo del riempimento, l sulla larghezza del contenuto. Il
+       tetto è quindi almeno la x di partenza, altrimenti al primo movimento,
+       anche solo in verticale, salterebbe a sinistra dentro il riempimento. */
+    L = stringi(g(s.x + dx), 0, Math.max(0, X_MAX - s.l, s.x));
     T = stringi(g(s.y + dy), 0, Math.max(0, Y_MAX - s.a));
     R = L + s.l;
     B = T + s.a;
@@ -1619,7 +1645,8 @@ function spingi(dx, dy, dl, da) {
   const l = stringi(cur.l + dl, MISURA_MIN, X_MAX);
   const a = stringi(cur.a + da, MISURA_MIN, Y_MAX);
   const p = {
-    x: stringi(cur.x + dx, 0, Math.max(0, X_MAX - l)),
+    // Stesso tetto del trascinamento: una freccia in verticale non sposta di lato.
+    x: stringi(cur.x + dx, 0, Math.max(0, X_MAX - l, cur.x)),
     y: stringi(cur.y + dy, 0, Math.max(0, Y_MAX - a)),
     l,
     a

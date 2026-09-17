@@ -56,8 +56,9 @@ const SISTEMA = ['versione', 'aggiornatoIl'];
 // chiavi scoperte, ed e l'unica eccezione ammessa alla regola «lo schema
 // copre esattamente contenuti.json».
 //
-// `config.ultimaDiretta` NON sta qui: quello resta un campo scritto a mano,
-// che il server si limita a tenere aggiornato se il collegamento c'e.
+// `config.ultimaDiretta` e `config.dati.follower` NON stanno qui: restano
+// campi scritti a mano, che il server si limita a tenere aggiornati se il
+// collegamento c'e.
 const GENERATI = ['config.clip.voci'];
 
 // I rami che scrive l'editor con controlli suoi (CONTRATTO-4 §2.4): ordine
@@ -141,8 +142,10 @@ const gruppi = [
       { chiave: 'deck.etichettaUltima', etichetta: 'Etichetta «ultima diretta»', tipo: 'testo', max: 40 },
       { chiave: 'deck.etichettaStato', etichetta: 'Etichetta del riquadro di stato', tipo: 'testo', max: 40,
         aiuto: 'Non si vede: la leggono i lettori di schermo per annunciare il riquadro delle spie.' },
-      { chiave: 'deck.dato1Valore', etichetta: 'Primo numero — valore', tipo: 'testo', max: 12 },
-      { chiave: 'deck.dato1Etichetta', etichetta: 'Primo numero — etichetta', tipo: 'testo', max: 30 },
+      // Il primo numero non ha un valore da scrivere: e il numero dei
+      // follower, config.dati.follower nel gruppo «Canale e contatti».
+      { chiave: 'deck.dato1Etichetta', etichetta: 'Primo numero — etichetta', tipo: 'testo', max: 30,
+        aiuto: 'Il valore è il numero vero dei follower del canale (campo «Follower» in «Canale e contatti»), che la pubblicazione aggiorna da Twitch.' },
       { chiave: 'deck.dato2Valore', etichetta: 'Secondo numero — valore', tipo: 'testo', max: 12 },
       { chiave: 'deck.dato2Etichetta', etichetta: 'Secondo numero — etichetta', tipo: 'testo', max: 30 },
       { chiave: 'deck.dato3Valore', etichetta: 'Terzo numero — valore', tipo: 'testo', max: 12 },
@@ -355,21 +358,30 @@ const gruppi = [
   {
     id: 'settimana',
     titolo: 'La settimana',
-    descrizione: 'Il nastro dei sette giorni. I giorni di diretta si impostano qui: il nastro si ricalcola da solo.',
+    descrizione: 'La schedule: i sette giorni con le loro locandine, gli eventi fuori programma e il fondale della sezione. Si imposta tutto qui, e la sezione si ricalcola da sola.',
     campi: [
       { chiave: 'settimana.occhiello', etichetta: 'Occhiello', tipo: 'testo', max: 40 },
       { chiave: 'settimana.titolo', etichetta: 'Titolo della sezione', tipo: 'testo', max: 60 },
       { chiave: 'settimana.testo', etichetta: 'Testo introduttivo', tipo: 'ricco', max: 240 },
       { chiave: 'settimana.nota', etichetta: 'Nota in fondo', tipo: 'ricco', max: 300 },
-      // Le quattro etichette del nastro finiscono anche in js/dati.js e nel
-      // testo di un attributo: restano testo semplice, senza HTML.
+      // Le etichette del nastro e degli eventi finiscono anche in js/dati.js,
+      // che le scrive con textContent, e nel testo di un attributo: restano
+      // testo semplice, senza HTML.
       { chiave: 'settimana.etichettaDiretta', etichetta: 'Etichetta dei giorni con diretta', tipo: 'testo', max: 20 },
       { chiave: 'settimana.etichettaRiposo', etichetta: 'Etichetta dei giorni di riposo', tipo: 'testo', max: 20 },
       { chiave: 'settimana.etichettaOggi', etichetta: 'Etichetta «oggi»', tipo: 'testo', max: 20 },
       { chiave: 'settimana.etichettaProssima', etichetta: 'Etichetta «prossima»', tipo: 'testo', max: 20 },
+      { chiave: 'settimana.etichettaInOnda', etichetta: 'Etichetta «in onda» sul nastro', tipo: 'testo', max: 20,
+        aiuto: 'Compare sul giorno di oggi mentre il canale è acceso.' },
+      { chiave: 'settimana.etichettaDaTe', etichetta: 'Etichetta dell\'ora nel fuso di chi guarda', tipo: 'testo', max: 20,
+        aiuto: 'Chi guarda da un altro fuso vede sotto l\'ora anche la sua, con questa parola davanti: «Da te 15:00».' },
+      { chiave: 'settimana.titoloEventi', etichetta: 'Titolo degli eventi speciali', tipo: 'testo', max: 40,
+        aiuto: 'Sta sopra le dirette fuori programma. Senza eventi in arrivo non si vede.' },
+      { chiave: 'settimana.etichettaEvento', etichetta: 'Etichetta di un evento speciale', tipo: 'testo', max: 20,
+        aiuto: 'Il bollino su ogni evento, e sul giorno della settimana in cui ne cade uno.' },
       { chiave: 'settimana.cta', etichetta: 'Bottone in fondo alla sezione', tipo: 'testo', max: 30 },
-      { chiave: 'config.orari', etichetta: 'Giorni e ora delle dirette', tipo: 'orari',
-        aiuto: 'Da qui nascono il nastro della settimana e il conto alla rovescia.' }
+      { chiave: 'config.orari', etichetta: 'Schedule della settimana', tipo: 'orari',
+        aiuto: 'Giorni, ore, schede con immagine di sfondo, eventi speciali e fondale della sezione. Da qui nascono anche il conto alla rovescia della copertina e gli orari scritti nella pagina.' }
     ]
   },
 
@@ -398,8 +410,9 @@ const gruppi = [
       { chiave: 'chi.nota2Testo', etichetta: 'Seconda nota a margine — testo', tipo: 'ricco', max: 160 },
       { chiave: 'chi.nota3Titolo', etichetta: 'Terza nota a margine — titolo', tipo: 'testo', max: 30 },
       { chiave: 'chi.nota3Testo', etichetta: 'Terza nota a margine — testo', tipo: 'ricco', max: 160 },
-      { chiave: 'chi.dato1Valore', etichetta: 'Primo numero — valore', tipo: 'testo', max: 12 },
-      { chiave: 'chi.dato1Etichetta', etichetta: 'Primo numero — etichetta', tipo: 'testo', max: 40 },
+      // Come nella copertina: il primo numero e il conteggio vero dei follower.
+      { chiave: 'chi.dato1Etichetta', etichetta: 'Primo numero — etichetta', tipo: 'testo', max: 40,
+        aiuto: 'Il valore è il numero vero dei follower del canale (campo «Follower» in «Canale e contatti»), che la pubblicazione aggiorna da Twitch.' },
       { chiave: 'chi.dato2Valore', etichetta: 'Secondo numero — valore', tipo: 'testo', max: 12 },
       { chiave: 'chi.dato2Etichetta', etichetta: 'Secondo numero — etichetta', tipo: 'testo', max: 40 },
       { chiave: 'chi.dato3Valore', etichetta: 'Terzo numero — valore', tipo: 'testo', max: 12 },
@@ -496,7 +509,8 @@ const gruppi = [
       { chiave: 'config.email', etichetta: 'Indirizzo email pubblico', tipo: 'email' },
       { chiave: 'config.ultimaDiretta', etichetta: 'Ultima diretta', tipo: 'testo', max: 120,
         aiuto: 'Titolo dell\'ultima serata: compare nel quadro comandi. Lo riempie da sé la pubblicazione, chiedendolo a Twitch, se hai impostato il client secret con «node server/imposta-twitch.js»; senza quello resta il valore che scrivi qui.' },
-      { chiave: 'config.dati.follower', etichetta: 'Follower', tipo: 'numero', min: 0, max: 100000000 },
+      { chiave: 'config.dati.follower', etichetta: 'Follower', tipo: 'numero', min: 0, max: 100000000,
+        aiuto: 'È il primo numero della copertina e di «Chi sono». Lo aggiorna da sé la pubblicazione, chiedendolo a Twitch, se hai impostato il client secret con «node server/imposta-twitch.js»; senza quello resta il valore che scrivi qui.' },
       { chiave: 'config.dati.abbonati', etichetta: 'Abbonati', tipo: 'numero', min: 0, max: 1000000 },
       { chiave: 'config.dati.spettatoriMedi', etichetta: 'Spettatori medi', tipo: 'numero', min: 0, max: 1000000 },
       { chiave: 'config.dati.dal', etichetta: 'Su Twitch dall\'anno', tipo: 'numero', min: 2005, max: 2100 },

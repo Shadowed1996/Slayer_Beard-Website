@@ -71,10 +71,13 @@ async function prova() {
   console.log('  Chiedo a Twitch...');
   const esito = await twitch.aggiornaUltimaDiretta();
   console.log('  ' + twitch.racconta(esito));
+  const follower = await twitch.aggiornaFollower();
+  console.log('  ' + twitch.raccontaFollower(follower));
   console.log('');
   // Un fallimento qui e un fallimento del comando: chi lo lancia sta
   // proprio verificando che funzioni.
   if (esito.stato === 'fallito' || esito.stato === 'senzaCanale') { process.exit(1); }
+  if (follower.stato === 'fallito' || follower.stato === 'senzaCanale') { process.exit(1); }
 }
 
 function togli() {

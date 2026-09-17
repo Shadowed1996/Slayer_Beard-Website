@@ -3,7 +3,7 @@
      js/player.js e js/sito.js: non si rinominano e non si tolgono. -->
 <section id="regia" class="regia" aria-labelledby="titolo" data-sb-sezione="regia">
   <div class="regia__sfondo" aria-hidden="true">
-    <img src="{{config.immagini.banner}}" alt="" data-sb-immagine="config.immagini.banner">
+    <img src="{{config.immagini.banner}}" alt="" decoding="async" data-sb-immagine="config.immagini.banner">
   </div>
 
   <div class="regia__griglia" data-sb-riquadro="regia">
@@ -39,7 +39,10 @@
     <!-- I quattro numeri sono fuori dal quadro: sono la fascia di strumenti che
          chiude la copertina a tutta larghezza (CONTRATTO-2 §2.1). -->
     <ul class="quadro__dati" data-sb-blocco="regia.dati">
-      <li class="dato"><b class="dato__valore" data-sb-testo="deck.dato1Valore">{{deck.dato1Valore}}</b><span class="dato__etichetta" data-sb-testo="deck.dato1Etichetta">{{deck.dato1Etichetta}}</span></li>
+      <!-- Il primo numero e quello dei follower, VERO: lo stampa la generazione da config.dati.follower
+           (aggiornato da Twitch a ogni pubblicazione) e js/canale.js lo rinfresca per chi e collegato.
+           Non si modifica nell'editor: si modifica solo l'etichetta. -->
+      <li class="dato"><b class="dato__valore" data-follower>{{sito.follower}}</b><span class="dato__etichetta" data-sb-testo="deck.dato1Etichetta">{{deck.dato1Etichetta}}</span></li>
       <li class="dato"><b class="dato__valore" data-sb-testo="deck.dato2Valore">{{deck.dato2Valore}}</b><span class="dato__etichetta" data-sb-testo="deck.dato2Etichetta">{{deck.dato2Etichetta}}</span></li>
       <li class="dato"><b class="dato__valore" data-sb-testo="deck.dato3Valore">{{deck.dato3Valore}}</b><span class="dato__etichetta" data-sb-testo="deck.dato3Etichetta">{{deck.dato3Etichetta}}</span></li>
       <li class="dato"><b class="dato__valore" data-sb-testo="deck.dato4Valore">{{deck.dato4Valore}}</b><span class="dato__etichetta" data-sb-testo="deck.dato4Etichetta">{{deck.dato4Etichetta}}</span></li>

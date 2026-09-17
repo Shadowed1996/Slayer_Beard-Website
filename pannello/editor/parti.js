@@ -4,7 +4,9 @@
 
    Nella scheda Contenuto del pannello disegna:
      - l'ispettore di una PARTE (`data-sb-parte`): i campi dello schema che
-       il registro del §5.4 le assegna, disegnati con ponte.creaCampo;
+       il registro del §5.4 le assegna, disegnati con ponte.creaCampo; la
+       schedule (CONTRATTO-5 §8) si apre sulla vista della parte (nastro o
+       eventi), e nella parte «stato» compare solo come riepilogo;
      - l'ispettore di una SEZIONE (`data-sb-sezione`): «Mostra questa
        sezione», gli interruttori delle parti che la diretta può non
        stampare, «Cosa contiene» e «Testi che non si vedono in pagina»,
@@ -354,9 +356,65 @@ function spostaSezione(da, a) {
   return true;
 }
 
+/* --------------------------------------------- la schedule nelle parti */
+
+/* Dalla schedule (CONTRATTO-5 §8.3) la stessa chiave, config.orari, si
+   modifica da due parti: il nastro apre la vista della settimana, gli
+   eventi quella degli eventi speciali. Nella parte «stato» della copertina
+   c'è solo un riepilogo con il bottone che porta al nastro. */
+const VISTA_DELLA_PARTE = { nastro: 'settimana', eventi: 'eventi' };
+const CHIAVE_ORARI = 'config.orari';
+
+/* Il riepilogo sta in moduli/settimana.js, che si carica a parte: se non
+   arriva, la parte «stato» resta com'era, con il solo bottone. */
+let moduloSettimana = null;
+function caricaSettimana() {
+  if (!moduloSettimana) {
+    moduloSettimana = import('../moduli/settimana.js').catch((errore) => {
+      avvisaGuasto('moduli/settimana.js', errore);
+      return null;
+    });
+  }
+  return moduloSettimana;
+}
+
+function riepilogoSchedule() {
+  const posto = el('div', { classe: 'parti__riepilogo' });
+  const modifica = el('button', {
+    type: 'button', classe: 'btn btn--primario',
+    su: { click: () => apriSchedule() }
+  }, [el('span', { testo: 'Modifica la schedule' })]);
+
+  caricaSettimana().then((modulo) => {
+    if (!modulo || typeof modulo.creaRiepilogoOrari !== 'function') return;
+    try {
+      const riepilogo = modulo.creaRiepilogoOrari({ leggi: () => ponte.leggi(CHIAVE_ORARI) });
+      posto.replaceChildren(riepilogo.nodo);
+    } catch (errore) {
+      avvisaGuasto('riepilogo della schedule', errore);
+    }
+  });
+
+  return el('div', { classe: 'parti__blocco parti__schedule' }, [
+    el('h3', { classe: 'parti__sottotitolo', testo: 'Schedule della settimana' }),
+    el('p', { classe: 'parti__nota', testo: 'Il conto alla rovescia qui sopra parte dai giorni, dalle ore e dagli eventi speciali della schedule. La schedule si cambia dal nastro della settimana.' }),
+    posto,
+    el('div', { classe: 'parti__azioni' }, [modifica])
+  ]);
+}
+
+function apriSchedule() {
+  const meta = chiamaMotore('seleziona', 'parte:nastro');
+  if (meta) {
+    chiamaMotore('scorriA', 'parte:nastro');
+    return;
+  }
+  ponte.avviso('Il nastro della settimana adesso non è nell\'anteprima (la sezione è nascosta o la pagina si sta aggiornando). Riaccendi «La settimana» dal Navigatore, oppure cerca «Schedule» con Ctrl+K.', { tipo: 'info', durata: 7000 });
+}
+
 /* ----------------------------------------------- ispettore di una parte */
 
-const cacheParti = new Map();   // nome -> { radice, dati, schema, chiavi, fuoco, cursore }
+const cacheParti = new Map();   // nome -> { radice, dati, schema, chiavi, orari, fuoco, cursore }
 
 function costruisciParte(nome) {
   const schema = schemaCorrente();
@@ -364,13 +422,17 @@ function costruisciParte(nome) {
   const idTitolo = idUnico('parti-titolo');
   const campi = el('div', { classe: 'parti__campi' });
   const disegnate = [];
+  let orari = null;
 
   for (const chiave of chiavi) {
     const controllo = campoDelloSchema(chiave);
     if (!controllo) continue;
     campi.append(controllo.nodo);
     disegnate.push(chiave);
+    if (chiave === CHIAVE_ORARI) orari = controllo;
   }
+
+  if (nome === 'stato' && ponte.campo(CHIAVE_ORARI)) campi.append(riepilogoSchedule());
 
   if (!disegnate.length) {
     campi.append(el('p', {
@@ -389,7 +451,7 @@ function costruisciParte(nome) {
     campi
   ]);
 
-  const voce = { radice, dati: datiCorrenti(), schema, chiavi, completa: disegnate.length > 0, fuoco: null, cursore: null };
+  const voce = { radice, dati: datiCorrenti(), schema, chiavi, orari, completa: disegnate.length > 0, fuoco: null, cursore: null };
   seguiFuoco(voce);
   return voce;
 }
@@ -407,7 +469,18 @@ function mettiParte(contenitore, nome) {
     else cacheParti.delete(nome);
   }
 
+  // Il nodo entra adesso nel pannello (la parte è appena stata scelta), non
+  // è il ridisegno dopo una ricarica dell'anteprima: la schedule si apre
+  // sulla vista della parte. Dopo una ricarica resta dov'era chi lavora.
+  const entra = !voce.radice.isConnected;
   metti(contenitore, 'parte', voce.radice);
+  if (entra && voce.orari && typeof voce.orari.apriVista === 'function' && VISTA_DELLA_PARTE[nome]) {
+    try {
+      voce.orari.apriVista(VISTA_DELLA_PARTE[nome]);
+    } catch (errore) {
+      avvisaGuasto('vista della schedule', errore);
+    }
+  }
   if (riusabile) rimettiFuoco(voce);
   return voce.radice;
 }

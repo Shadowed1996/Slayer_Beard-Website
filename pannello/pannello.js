@@ -304,6 +304,25 @@ function usoDi(percorso) {
           });
         }
       }
+      // La schedule tiene le sue immagini dentro un campo solo (schede, eventi,
+      // fondale): lo schema dice «orari», non «immagine», e senza questo giro
+      // la libreria proporrebbe di cancellare la locandina di un giorno.
+      if (campo.tipo === 'orari') {
+        const orari = leggiChiave(stato.dati, campo.chiave);
+        const pari = (valore) => String(valore || '').replace(/^\/+/, '') === cercato;
+        const nomi = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+        if (orari && typeof orari === 'object') {
+          (Array.isArray(orari.schede) ? orari.schede : []).forEach((scheda, giorno) => {
+            if (scheda && pari(scheda.immagine)) trovati.push('Schedule · ' + (nomi[giorno] || 'giorno ' + giorno));
+          });
+          (Array.isArray(orari.eventi) ? orari.eventi : []).forEach((evento, indice) => {
+            if (evento && pari(evento.immagine)) {
+              trovati.push('Schedule · evento ' + (evento.titolo ? '«' + evento.titolo + '»' : indice + 1));
+            }
+          });
+          if (orari.sfondo && pari(orari.sfondo.immagine)) trovati.push('Schedule · fondale della sezione');
+        }
+      }
     }
   }
   // Uno sfondo scelto nello stile di un elemento usa l'immagine anche lui:
@@ -653,6 +672,17 @@ async function pubblica() {
         tipo: andataMale ? 'info' : 'ok',
         durata: andataMale ? 0 : 6000,
         titolo: andataMale ? 'Ultima diretta non aggiornata' : 'Ultima diretta aggiornata'
+      });
+    }
+
+    /* Il numero dei follower, con la stessa regola di «Ultima diretta». */
+    const iFollower = risposta && risposta.follower;
+    if (iFollower && iFollower.messaggio && iFollower.stato !== 'spento' && iFollower.stato !== 'invariato') {
+      const andataMale = iFollower.stato === 'fallito' || iFollower.stato === 'vuoto' || iFollower.stato === 'senzaCanale';
+      avviso(iFollower.messaggio, {
+        tipo: andataMale ? 'info' : 'ok',
+        durata: andataMale ? 0 : 6000,
+        titolo: andataMale ? 'Follower non aggiornati' : 'Follower aggiornati'
       });
     }
 

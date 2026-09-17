@@ -241,6 +241,7 @@ async function rottaPubblica(req, res) {
   // messo nei contenuti prima che costruisci.genera() li rilegga.
   const daChiavi = chiavi.sincronizzaClientId();
   const daTwitch = await twitch.aggiornaUltimaDiretta();
+  const iFollower = await twitch.aggiornaFollower();
   const leClip = await twitch.aggiornaClip();
   const esito = costruisci.genera();
   // `controlli` sono avvertimenti d'insieme, non errori: la pubblicazione e
@@ -250,6 +251,7 @@ async function rottaPubblica(req, res) {
     ok: true, backup: esito.backup, durataMs: esito.durataMs,
     scritti: esito.scritti, controlli: esito.controlli,
     twitch: { stato: daTwitch.stato, messaggio: twitch.racconta(daTwitch) },
+    follower: { stato: iFollower.stato, messaggio: twitch.raccontaFollower(iFollower) },
     clip: { stato: leClip.stato, messaggio: twitch.raccontaClip(leClip) },
     chiavi: { stato: daChiavi.stato, messaggio: chiavi.racconta(daChiavi) }
   });

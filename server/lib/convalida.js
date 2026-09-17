@@ -16,6 +16,9 @@ const testoricco = require('./testoricco.js');
 // Il generatore dell'editor: le regole dei tre rami senza campo nello
 // schema stanno lì e non si ricopiano qui (CONTRATTO-4 §8).
 const SBStili = require('../../pannello/condivisi/stili.js');
+// Le regole della schedule (CONTRATTO-5 §3.5): le stesse che il pannello usa
+// per gli errori accanto alle caselle, così i due non possono dire cose diverse.
+const SBOrari = require('../../pannello/condivisi/orari.js');
 
 // Estensioni ammesse nei campi immagine: quelle che il sito sa mostrare.
 const ESTENSIONI_IMMAGINE = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'ico', 'gif', 'avif'];
@@ -26,7 +29,6 @@ const RE_COLORE = /^#[0-9a-fA-F]{6}$/;
 // Volutamente permissiva: serve a intercettare gli errori di battitura, non
 // a decidere se una casella esiste davvero.
 const RE_EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
-const GIORNI = ['domenica', 'lunedi', 'martedi', 'mercoledi', 'giovedi', 'venerdi', 'sabato'];
 
 /* ------------------------------------------------------------------ */
 /* CONTROLLI ELEMENTARI                                                */
@@ -169,15 +171,17 @@ function estensioneDi(percorso) {
 
 /**
  * Controlla un valore contro la descrizione di un campo.
- * `aggiungi(messaggio)` incassa gli errori: cosi la stessa funzione serve
- * sia per i campi di primo livello sia per quelli dentro un elenco.
+ * `aggiungi(messaggio, dettagli)` incassa gli errori: cosi la stessa
+ * funzione serve sia per i campi di primo livello sia per quelli dentro un
+ * elenco. `dettagli`, facoltativo, si fonde nell'errore: lo usa la schedule
+ * per dire dentro il campo quale casella ha sbagliato.
  */
 function controllaValore(campo, valore, aggiungi, chiave) {
   const etichetta = campo.etichetta || chiave;
   const vuotoAmmesso = campo.facoltativo === true;
 
   // I tipi composti hanno una forma tutta loro: si trattano a parte.
-  if (campo.tipo === 'orari') { return controllaOrari(valore, aggiungi); }
+  if (campo.tipo === 'orari') { return controllaOrari(valore, aggiungi, chiave); }
   if (campo.tipo === 'elencoTesti') { return controllaElencoTesti(campo, valore, aggiungi, vuotoAmmesso); }
   if (campo.tipo === 'elenco') { return controllaElenco(campo, valore, aggiungi, chiave); }
 
@@ -368,37 +372,29 @@ function controllaFontCaricato(id, aggiungi, etichetta) {
   }
 }
 
-function controllaOrari(valore, aggiungi) {
-  if (!valore || typeof valore !== 'object' || Array.isArray(valore)) {
-    aggiungi('Gli orari devono essere un oggetto con giorni, ora, fuso e durataOre.');
-    return;
-  }
-  if (!Array.isArray(valore.giorni) || valore.giorni.length === 0) {
-    aggiungi('Serve almeno un giorno di diretta.');
-  } else {
-    const visti = new Set();
-    for (const giorno of valore.giorni) {
-      if (!Number.isInteger(giorno) || giorno < 0 || giorno > 6) {
-        aggiungi('I giorni vanno indicati con un numero da 0 (domenica) a 6 (sabato): "' + giorno + '" non va bene.');
-        continue;
-      }
-      if (visti.has(giorno)) { aggiungi('Il giorno ' + GIORNI[giorno] + ' è ripetuto due volte.'); }
-      visti.add(giorno);
-    }
-  }
-  if (typeof valore.ora !== 'string' || !RE_ORARIO.test(valore.ora.trim())) {
-    aggiungi('L\'ora delle dirette va scritta come HH:MM, per esempio 21:00.');
-  }
-  if (typeof valore.fuso !== 'string' || !valore.fuso.trim()) {
-    aggiungi('Manca il fuso orario, per esempio Europe/Rome.');
-  } else {
-    // Un fuso inesistente farebbe esplodere il conto alla rovescia nel
-    // browser del visitatore: meglio scoprirlo qui.
-    try { new Intl.DateTimeFormat('it-IT', { timeZone: valore.fuso }); }
-    catch (e) { aggiungi('Il fuso orario "' + valore.fuso + '" non esiste: usa un nome come Europe/Rome.'); }
-  }
-  if (typeof valore.durataOre !== 'number' || !isFinite(valore.durataOre) || valore.durataOre <= 0 || valore.durataOre > 24) {
-    aggiungi('La durata di una diretta va indicata in ore, fra 1 e 24.');
+/**
+ * La schedule (CONTRATTO-5 §3). Le regole stanno tutte in
+ * pannello/condivisi/orari.js e non si ricopiano qui: il pannello mostra
+ * gli stessi messaggi accanto alle caselle prima ancora di salvare.
+ *
+ * Ogni errore porta la chiave del punto preciso, con la forma di tutte le
+ * altre chiavi del pannello: `config.orari.schede.1.ora`,
+ * `config.orari.eventi.0.data`. Il pannello risale da sé al campo
+ * `config.orari` quando non ha una casella con quel nome, e più errori
+ * sullo stesso campo non si coprono a vicenda. `percorso` ripete la parte
+ * interna al ramo, quella che SBOrari.problemi() chiama così.
+ *
+ * Un ramo senza schede, eventi o fondale (un contenuti.json di prima della
+ * schedule nuova) è valido: problemi() tollera le assenze, e il salvataggio
+ * lo completa con normalizza().
+ */
+function controllaOrari(valore, aggiungi, chiave) {
+  const radice = chiave || 'config.orari';
+  for (const problema of SBOrari.problemi(valore)) {
+    aggiungi(problema.messaggio, {
+      chiave: problema.percorso ? radice + '.' + problema.percorso : radice,
+      percorso: problema.percorso
+    });
   }
 }
 
@@ -636,7 +632,8 @@ function controllaEditor(contenuti, aggiungiSu) {
  */
 function convalida(contenuti) {
   const errori = [];
-  const aggiungiSu = (chiave) => (messaggio) => errori.push({ chiave: chiave, messaggio: messaggio });
+  const aggiungiSu = (chiave) => (messaggio, dettagli) =>
+    errori.push(Object.assign({ chiave: chiave, messaggio: messaggio }, dettagli));
 
   if (!contenuti || typeof contenuti !== 'object') {
     return [{ chiave: '', messaggio: 'I contenuti devono essere un oggetto con "testi" e "config".' }];
@@ -705,7 +702,7 @@ function convalidaCampo(chiave, valore) {
   const campo = schema.campo(chiave);
   if (!campo) { return [{ chiave: chiave, messaggio: 'Il campo "' + chiave + '" non esiste nello schema.' }]; }
   const errori = [];
-  controllaValore(campo, valore, (m) => errori.push({ chiave: chiave, messaggio: m }), chiave);
+  controllaValore(campo, valore, (m, dettagli) => errori.push(Object.assign({ chiave: chiave, messaggio: m }, dettagli)), chiave);
   return errori;
 }
 

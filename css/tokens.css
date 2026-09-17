@@ -20,12 +20,26 @@
       picco dell'alone viola della copertina, composito rgb(36,26,75) — che è
       il caso peggiore: se il testo regge lì, regge ovunque.
 
-   DA DOVE VIENE LA PALETTE — campionata dagli asset reali in img/
-   · viola corpo della mascotte ... mascot.png / avatar.png → #8b2fff
-   · ciano della cresta ........... mascot.png              → #22e0ff
-   · viola profondo del banner .... banner.png              → #4b1391
-   · magenta del lettering ........ Cattura.PNG             → #ff2fa0
-   · fondo notturno ............... banner.png              → grafite in tinta 260deg
+   DA DOVE VIENE LA PALETTE — campionata dagli asset reali
+   La prima campionatura era sul vecchio banner e sul vecchio ritaglio della
+   mascotte, che il CONTRATTO-5 ha sostituito con le grafiche nuove del canale.
+   Ricontrollata su quelle: i valori NON cambiano, e qui sotto c'è quanto
+   combaciano ancora (mediana e quartile chiaro dei pixel di quella zona).
+   · viola corpo della mascotte ... mascotte.webp / avatar.webp → #8b2fff
+       corpo 272deg, da #5c05ab (ombra) a #7210cb (luce): il token è il tono
+       illuminato della stessa tinta, e regge come colore pieno dei comandi.
+   · ciano della cresta ........... mascotte.webp              → #22e0ff
+       cresta #02ebff: combacia.
+   · viola profondo ............... copertina.webp / og.jpg     → #4b1391
+       la città nuova è più indaco (249deg, nebbia #392a8d–#4531a3) del token
+       (267deg): il token resta il viola del marchio per code di gradienti e
+       aloni, e la copertina a opacità 0,6 sul fondo non lo contraddice.
+   · magenta del lettering ........ Cattura.PNG                → #ff2fa0
+       nelle grafiche nuove il lettering sfuma dal viola #9a4cfe al rosa
+       #de60fd (overlay-cam.webp) e #fd6ffd (spoiler-maratona.webp): più
+       lilla del token, che resta l'accento raro e più caldo del sito.
+   · fondo notturno ............... copertina.webp             → grafite in tinta 260deg
+       cielo della città #25224c, 249deg: stessa famiglia, un filo più blu.
    ============================================================================= */
 
 :root {

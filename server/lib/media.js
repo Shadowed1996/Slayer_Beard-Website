@@ -211,7 +211,16 @@ function salva(corpo, tipoContenuto) {
   return descrivi(nome);
 }
 
-/** Le chiavi dei contenuti che citano questo file. */
+/**
+ * Le chiavi dei contenuti che citano questo file.
+ *
+ * Si scende in ogni oggetto E in ogni elenco (le chiavi di un elenco sono
+ * i suoi indici), non solo nei campi `immagine` dello schema: le immagini
+ * della schedule stanno in config.orari.schede.N.immagine,
+ * config.orari.eventi.N.immagine e config.orari.sfondo.immagine, e una
+ * locandina cancellata dalla libreria lascerebbe un buco nella pagina
+ * pubblicata alla prima generazione.
+ */
 function doveUsato(nome, contenuti) {
   const candidati = ['contenuti/media/' + nome, '/contenuti/media/' + nome, './contenuti/media/' + nome, nome];
   const usi = [];
