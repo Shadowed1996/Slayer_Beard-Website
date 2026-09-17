@@ -203,7 +203,7 @@ variabile compare lì ma non qui, vince quello che dice questo capitolo.
 #### `SB_DATI` — dove stanno i segreti
 
 ```
-SB_DATI = /var/www/vhosts/<il-tuo-account>/dati-slayer
+SB_DATI = ../dati-slayer
 ```
 
 È **la variabile più importante di tutta questa pagina.** Dice al programma di
@@ -221,27 +221,44 @@ mestiere. Con questa variabile stanno altrove, e non c'è configurazione sbaglia
 che possa esporli: è una porta chiusa a chiave, non una porta con il cartello.
 
 **Come si sceglie il percorso.** Deve essere una cartella **fuori** da
-`httpdocs`, ma dentro lo spazio dell'account. In Plesk la struttura tipica è:
+`httpdocs`, ma dentro lo spazio dell'account. In Plesk la struttura è questa:
 
 ```
-/var/www/vhosts/<il-tuo-account>/
+la tua area
 ├── httpdocs/        ← il sito: tutto quello che c'è qui dentro è pubblico
 ├── dati-slayer/     ← QUI: i segreti, fuori dal sito
 └── backup-slayer/   ← e qui i backup (vedi SB_BACKUP)
 ```
 
-Il percorso esatto del tuo account lo dice Plesk stesso: File Manager → il nome
-della cartella in alto, oppure la voce *Web Hosting Access*. La cartella non devi
-crearla a mano: se non c'è, il programma la crea al primo avvio. Se invece è
-indicata e non può essere creata (per esempio perché il percorso è sbagliato), il
-programma **lo dice all'avvio e si ferma**, invece di ripiegare in silenzio su
-una cartella dentro il sito: è voluto, perché un ripiego silenzioso ti farebbe
-credere di essere protetto quando non lo sei.
+**`..` è il modo più semplice di scriverlo, e funziona.** Passenger avvia
+l'applicazione dentro `httpdocs`, quindi `../dati-slayer` vuol dire «un livello
+sopra `httpdocs`», cioè la tua area: esattamente la cartella `dati-slayer` del
+disegno qui sopra. Non serve sapere il percorso assoluto della macchina, e non
+serve cambiare niente se un giorno l'hosting cambia.
+
+Se preferisci scriverlo per esteso, il percorso assoluto della tua area lo dice
+Plesk: File Manager → la voce in alto, oppure *Web Hosting Access* → *Home
+directory*. Su Plesk ha di solito la forma `/var/www/vhosts/<dominio>/`, e allora
+il valore diventa `/var/www/vhosts/<dominio>/dati-slayer`. Le due scritture sono
+equivalenti: la relativa è solo più difficile da sbagliare.
+
+La cartella non devi crearla a mano: se non c'è, il programma la crea al primo
+avvio. Se invece è indicata e non può essere creata (per esempio perché il
+percorso è sbagliato), il programma **lo dice nel log e si ferma**, invece di
+ripiegare in silenzio su una cartella dentro il sito: è voluto, perché un ripiego
+silenzioso ti farebbe credere di essere protetto quando non lo sei.
+
+**Come vedi in dieci secondi che ha funzionato.** Dopo il primo accesso al
+pannello (capitolo 6), apri il File Manager di Plesk: accanto a `httpdocs` deve
+essere comparsa la cartella `dati-slayer` con dentro `auth.json`, e dentro
+`httpdocs/server/` **non** deve esserci nessuna cartella `dati`. Se è il
+contrario, la variabile non è stata letta: controlla di averla scritta nella
+pagina Node.js del dominio giusto e di aver premuto *Restart App*.
 
 #### `SB_BACKUP` — dove stanno le copie di sicurezza
 
 ```
-SB_BACKUP = /var/www/vhosts/<il-tuo-account>/backup-slayer
+SB_BACKUP = ../backup-slayer
 ```
 
 Ogni volta che premi **Pubblica**, prima di riscrivere il sito il programma ne
@@ -370,13 +387,14 @@ Queste quattro si mettono e non si toccano più:
 
 | Nome | Valore |
 |---|---|
-| `SB_DATI` | `/var/www/vhosts/<il-tuo-account>/dati-slayer` |
-| `SB_BACKUP` | `/var/www/vhosts/<il-tuo-account>/backup-slayer` |
+| `SB_DATI` | `../dati-slayer` |
+| `SB_BACKUP` | `../backup-slayer` |
 | `SB_DIETRO_PROXY` | `1` |
 | `TZ` | `Europe/Rome` |
 
-L'unica cosa da sostituire è `<il-tuo-account>`, con il percorso vero che Plesk
-mostra nel File Manager.
+Si copiano così come sono scritte, niente da sostituire: i due `..` valgono «un
+livello sopra `httpdocs`», cioè la tua area. Niente virgolette e niente barra
+finale.
 
 E poi ce n'è una che si accende e si spegne subito:
 

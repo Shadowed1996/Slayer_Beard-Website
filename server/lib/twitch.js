@@ -636,30 +636,39 @@ async function iniziaCollegamento() {
  * si salva l'autorizzazione. Ritorna { login, idUtente }.
  * `attendi` si puo sostituire (il collaudo non vuole aspettare davvero).
  */
-async function completaCollegamento(avvio, opzioni) {
+/**
+ * Un solo tentativo di completare l'autorizzazione, senza aspettare.
+ *
+ * completaCollegamento() (qui sotto) la ripete in un ciclo per la riga di
+ * comando, che non deve rispondere a nessuno nel frattempo. La rotta del
+ * pannello (server/lib/api.js, «Collegati per i numeri») invece la chiama
+ * una volta per ogni richiesta HTTP: il browser tiene il ciclo, non il
+ * server, cosi' una connessione non resta appesa per tutta la durata del
+ * codice (fino a mezz'ora).
+ *
+ * Ritorna { stato: 'confermato', login, idUtente } quando Twitch ha
+ * accettato, { stato: 'in attesa' } o { stato: 'rallenta' } quando non
+ * ancora. Lancia solo per un guaio vero (le chiavi mancano, la rete non
+ * risponde, Twitch non da un token buono): chi chiama lo traduce in un
+ * errore che ferma il programma, o in un avviso nel pannello.
+ */
+async function tentaCollegamento(avvio) {
   const chiavi = credenziali();
   if (!chiavi) { throw new Error('Mancano le chiavi dell app.'); }
-  const attendi = (opzioni && opzioni.attendi) || ((ms) => new Promise((r) => setTimeout(r, ms)));
-  let intervallo = avvio.intervalloSec * 1000;
-  const limite = Date.now() + avvio.scadeTraSec * 1000;
 
-  let token = null;
-  while (!token) {
-    if (Date.now() > limite) { throw new Error('Il codice e scaduto prima della conferma: rilancia il comando.'); }
-    await attendi(intervallo);
-    try {
-      token = await postModulo('/oauth2/token', {
-        client_id: chiavi.clientId,
-        scopes: SCOPE_ACCESSO,
-        device_code: avvio.codiceDispositivo,
-        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-      });
-    } catch (errore) {
-      const messaggio = String((errore.risposta && errore.risposta.message) || '');
-      if (messaggio === 'authorization_pending') { continue; }
-      if (messaggio === 'slow_down') { intervallo += 5000; continue; }
-      throw errore;
-    }
+  let token;
+  try {
+    token = await postModulo('/oauth2/token', {
+      client_id: chiavi.clientId,
+      scopes: SCOPE_ACCESSO,
+      device_code: avvio.codiceDispositivo,
+      grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+    });
+  } catch (errore) {
+    const messaggio = String((errore.risposta && errore.risposta.message) || '');
+    if (messaggio === 'authorization_pending') { return { stato: 'in attesa' }; }
+    if (messaggio === 'slow_down') { return { stato: 'rallenta' }; }
+    throw errore;
   }
   if (!token.refresh_token || !token.access_token) { throw new Error('Twitch non ha dato nessun token.'); }
 
@@ -678,7 +687,34 @@ async function completaCollegamento(avvio, opzioni) {
     collegatoIl: new Date().toISOString()
   });
   accessoInCache = { valore: token.access_token, scadeIl: Date.now() + (Number(token.expires_in) || 3600) * 1000 };
-  return { login: String(io.login || ''), idUtente: String(io.id || '') };
+  return { stato: 'confermato', login: String(io.login || ''), idUtente: String(io.id || '') };
+}
+
+/**
+ * Aspetta che il codice venga confermato su Twitch, riprovando da se':
+ * e' quello che usa la riga di comando (node server/imposta-twitch.js
+ * --collega), che tiene il terminale finche' non arriva la conferma.
+ */
+async function completaCollegamento(avvio, opzioni) {
+  const attendi = (opzioni && opzioni.attendi) || ((ms) => new Promise((r) => setTimeout(r, ms)));
+  let intervallo = avvio.intervalloSec * 1000;
+  const limite = Date.now() + avvio.scadeTraSec * 1000;
+
+  for (;;) {
+    if (Date.now() > limite) { throw new Error('Il codice e scaduto prima della conferma: rilancia il comando.'); }
+    await attendi(intervallo);
+    const esito = await tentaCollegamento(avvio);
+    if (esito.stato === 'confermato') { return { login: esito.login, idUtente: esito.idUtente }; }
+    if (esito.stato === 'rallenta') { intervallo += 5000; }
+  }
+}
+
+/** Cosa sapere del collegamento, senza il refresh token: per il pannello. */
+function infoCollegamento() {
+  let accesso;
+  try { accesso = leggiAccesso(); } catch (e) { return { collegato: false }; }
+  if (!accesso) { return { collegato: false }; }
+  return { collegato: true, login: accesso.login || '', idUtente: accesso.idUtente || '' };
 }
 
 /** Un token utente valido: dalla cache, o rinnovato col refresh token. */
@@ -934,7 +970,7 @@ module.exports = {
   titoloUltimaDiretta, aggiornaUltimaDiretta, racconta,
   totaleFollower, contaFollower, aggiornaFollower, raccontaFollower,
   clipMigliori, aggiornaClip, raccontaClip,
-  collegato, scollega, iniziaCollegamento, completaCollegamento, numeriCanale,
+  collegato, scollega, iniziaCollegamento, completaCollegamento, tentaCollegamento, infoCollegamento, numeriCanale,
   applicaNumeri, aggiornaNumeri, raccontaNumeri, formattaNumero, eNumeroNudo,
   SCOPE_ACCESSO, CAMPI_NUMERI,
   TIMEOUT_MS, HOST_ANTEPRIME, PERIODI

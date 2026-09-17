@@ -390,5 +390,20 @@ export const api = {
       if (errore instanceof ErroreApi && errore.stato === 401 && alloScadere) alloScadere(errore);
       throw errore;
     }
-  }
+  },
+
+  /* --- Collegamento a Twitch per follower e abbonati (§«Collegati per i
+     numeri»). rottaAssente() lascia il pannello lavorare anche contro un
+     server piu' vecchio, che non ha ancora queste tre rotte. --------- */
+
+  /** Collegato o no, e con chi: per disegnare il bottone giusto all'apertura. */
+  twitchStato: () => richiesta('GET', '/api/twitch/collega'),
+
+  /** Comincia: torna { codiceUtente, indirizzo, scadeTraSec, intervalloSec }. */
+  twitchCollega: () => richiesta('POST', '/api/twitch/collega'),
+
+  /** Un tentativo: il chiamante la richiama ogni pochi secondi finche' dura. */
+  twitchCollegaStato: () => richiesta('POST', '/api/twitch/collega/stato'),
+
+  twitchScollega: () => richiesta('POST', '/api/twitch/scollega')
 };

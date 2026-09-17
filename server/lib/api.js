@@ -390,6 +390,86 @@ function rottaEliminaMedia(req, res, nome) {
   json(res, 200, { ok: true, eliminato: media.elimina(nome, archivio.leggi()) });
 }
 
+/* --- COLLEGAMENTO A TWITCH PER I NUMERI -----------------------------
+   Il pulsante «Collegati per i numeri» del pannello (server/lib/twitch.js
+   spiega il perche' di tutta l'autorizzazione). Qui sta solo il ponte fra
+   il browser e le funzioni gia' scritte per la riga di comando:
+
+     POST /api/twitch/collega        comincia, da' il codice da inserire
+     POST /api/twitch/collega/stato  un tentativo, chiamato dal browser
+                                      ogni pochi secondi finche' dura
+     POST /api/twitch/scollega       toglie l'autorizzazione
+
+   collegamentoPendente vive in memoria come le sessioni: un riavvio del
+   server lo cancella, e va bene cosi', perche' un solo amministratore
+   alla volta preme questo pulsante — chi lo ritrova a meta' preme di
+   nuovo Collegati e riparte da zero. */
+let collegamentoPendente = null;   // { avvio, scadeAlle } oppure null
+
+function rottaTwitchStato(req, res) {
+  json(res, 200, twitch.infoCollegamento());
+}
+
+async function rottaTwitchCollega(req, res) {
+  let avvio;
+  try {
+    avvio = await twitch.iniziaCollegamento();
+  } catch (errore) {
+    // Il motivo piu' comune e' le chiavi mancanti: e' un errore di chi
+    // amministra, non del server, quindi 422 e non 500 (risposte.js).
+    throw erroreHttp(422, (errore && errore.message) || 'Non sono riuscito a cominciare il collegamento con Twitch.');
+  }
+  collegamentoPendente = { avvio: avvio, scadeAlle: Date.now() + avvio.scadeTraSec * 1000 };
+  json(res, 200, {
+    codiceUtente: avvio.codiceUtente,
+    indirizzo: avvio.indirizzo,
+    scadeTraSec: avvio.scadeTraSec,
+    intervalloSec: avvio.intervalloSec
+  });
+}
+
+async function rottaTwitchCollegaStato(req, res) {
+  if (!collegamentoPendente) { json(res, 200, { stato: 'assente' }); return; }
+  if (Date.now() > collegamentoPendente.scadeAlle) {
+    collegamentoPendente = null;
+    json(res, 200, { stato: 'scaduto' });
+    return;
+  }
+
+  let esito;
+  try {
+    esito = await twitch.tentaCollegamento(collegamentoPendente.avvio);
+  } catch (errore) {
+    // Un guaio vero (rete, chiavi sparite nel frattempo): si racconta e
+    // si azzera, cosi' il pannello mostra di nuovo il bottone di partenza
+    // invece di continuare a interrogare un tentativo che non puo' riuscire.
+    collegamentoPendente = null;
+    json(res, 200, { stato: 'fallito', messaggio: (errore && errore.message) || 'Errore imprevisto.' });
+    return;
+  }
+
+  if (esito.stato !== 'confermato') { json(res, 200, { stato: esito.stato }); return; }
+
+  collegamentoPendente = null;
+  // Si aggiornano subito anche i numeri, come fa --collega da terminale:
+  // chi ha appena collegato vuole vedere il risultato, non aspettare il
+  // giro automatico di dieci minuti. Se questo giro fallisce il
+  // collegamento resta comunque fatto: e' un avviso in piu', non un motivo
+  // per disfare quello che ha funzionato.
+  let numeri = null;
+  try { numeri = await twitch.aggiornaNumeri(); } catch (e) { numeri = null; }
+  json(res, 200, {
+    stato: 'confermato',
+    login: esito.login,
+    numeri: numeri ? { stato: numeri.stato, messaggio: twitch.raccontaNumeri(numeri) } : null
+  });
+}
+
+function rottaTwitchScollega(req, res) {
+  collegamentoPendente = null;
+  json(res, 200, { ok: true, eraCollegato: twitch.scollega() });
+}
+
 /* --- FONT CARICATI (CONTRATTO-4 §7) -------------------------------- */
 
 function rottaElencoFont(req, res) {
@@ -533,6 +613,17 @@ async function gestisci(req, res, percorso) {
     try { nome = decodeURIComponent(percorso.slice('/api/media/'.length)); }
     catch (e) { return errore(res, 400, 'Il nome del file non e codificato correttamente.'); }
     return rottaEliminaMedia(req, res, nome);
+  }
+  if (percorso === '/api/twitch/collega') {
+    if (metodo === 'GET') { return rottaTwitchStato(req, res); }
+    if (metodo === 'POST') { return rottaTwitchCollega(req, res); }
+    return metodoNonAmmesso(res, 'GET, POST');
+  }
+  if (percorso === '/api/twitch/collega/stato') {
+    return metodo === 'POST' ? rottaTwitchCollegaStato(req, res) : metodoNonAmmesso(res, 'POST');
+  }
+  if (percorso === '/api/twitch/scollega') {
+    return metodo === 'POST' ? rottaTwitchScollega(req, res) : metodoNonAmmesso(res, 'POST');
   }
   if (percorso === '/api/font') {
     if (metodo === 'GET') { return rottaElencoFont(req, res); }

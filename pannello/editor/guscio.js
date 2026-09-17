@@ -38,7 +38,7 @@
    ===================================================================== */
 
 import { ponte } from './ponte.js';
-import { api, ErroreApi } from '../moduli/api.js';
+import { api, ErroreApi, rottaAssente } from '../moduli/api.js';
 import { el, icona, bottone, svuota, leggiPreferenza, scriviPreferenza, menoMovimento } from '../moduli/dom.js';
 import { avviso, conferma } from '../moduli/avvisi.js';
 import { apriVoci } from '../moduli/elenchi.js';
@@ -867,6 +867,169 @@ function disegnaGruppo(scorri, gruppo) {
     if (controllo && controllo.nodo) corpo.append(controllo.nodo);
   }
   scorri.append(corpo);
+  // Il collegamento a Twitch per i numeri non è un campo dello schema (non
+  // c'è niente da scrivere a mano: o si è autorizzati o no), quindi non
+  // passa da ponte.creaCampo. Vive solo nella vista «canale».
+  if (gruppo.id === 'canale') scorri.append(creaCollegamentoTwitch());
+}
+
+/* =====================================================================
+   COLLEGAMENTO A TWITCH PER I NUMERI (follower e abbonati)
+   ---------------------------------------------------------------------
+   In fondo alla vista «Canale, contatti e immagini»: fa dal browser la
+   stessa cosa di «node server/imposta-twitch.js --collega» da terminale
+   (server/lib/twitch.js spiega il perché di questa autorizzazione in più
+   rispetto al solo Client ID). Serve a chi amministra un hosting senza un
+   accesso a riga di comando.
+
+   Il server tiene UN tentativo alla volta (server/lib/api.js,
+   collegamentoPendente): qui il browser lo richiama ogni intervalloSec
+   finché non arriva una risposta diversa da «in attesa»/«rallenta», o
+   finché questo riquadro non esce di scena.
+
+   `generazione` distingue un ciclo di attesa dal successivo: chi preme
+   Annulla, o comincia un altro tentativo, la fa avanzare, e un ciclo
+   vecchio che si risveglia con `mia !== generazione` si ferma da sé senza
+   dover essere inseguito con un flag di cancellazione a parte.
+   ===================================================================== */
+
+function creaCollegamentoTwitch() {
+  const corpo = el('div', { classe: 'lato__campi' });
+  const nodo = el('div', { classe: 'lato__campi' }, [
+    el('div', { classe: 'spiegazione' }, [
+      icona('info'),
+      el('p', { testo: 'Con l\'autorizzazione del canale, follower e abbonati si aggiornano da soli, come «Ultima diretta». Senza, restano i numeri scritti qui sopra.' })
+    ]),
+    corpo
+  ]);
+
+  let generazione = 0;
+
+  function segna(testo) {
+    corpo.replaceChildren(el('p', { classe: 'campo__aiuto', testo }));
+  }
+
+  function partenza(messaggio) {
+    generazione += 1;
+    const stato = el('p', {
+      classe: 'campo__aiuto',
+      testo: messaggio || 'Non ancora collegato: i numeri restano quelli scritti a mano.'
+    });
+    const btn = bottone({
+      testo: 'Collegati per i numeri', ico: 'canale', classe: 'btn btn--primario',
+      su: { click: cominciaCollegamento }
+    });
+    corpo.replaceChildren(stato, el('div', { classe: 'lato__azioni' }, [btn]));
+  }
+
+  function collegato(login) {
+    generazione += 1;
+    const stato = el('p', {
+      classe: 'campo__aiuto',
+      testo: login ? ('Collegato come ' + login + '.') : 'Collegato.'
+    });
+    const btn = bottone({ testo: 'Scollega', classe: 'btn', su: { click: staccaCollegamento } });
+    corpo.replaceChildren(stato, el('div', { classe: 'lato__azioni' }, [btn]));
+  }
+
+  function inAttesa(avvio) {
+    const link = el('a', { href: avvio.indirizzo, target: '_blank', rel: 'noopener', testo: avvio.indirizzo });
+    const annulla = bottone({ testo: 'Annulla', classe: 'btn btn--minimo', su: { click: () => partenza() } });
+    corpo.replaceChildren(
+      el('p', { classe: 'campo__aiuto' }, [
+        el('span', { testo: 'Apri ' }), link,
+        el('span', { testo: ' con l\'account del canale e inserisci questo codice:' })
+      ]),
+      el('p', {}, [el('code', { testo: avvio.codiceUtente })]),
+      el('p', { classe: 'campo__aiuto', testo: 'Aspetto la conferma su Twitch…' }),
+      el('div', { classe: 'lato__azioni' }, [annulla])
+    );
+  }
+
+  function erroreInline(messaggio) {
+    partenza();
+    avviso(messaggio, { tipo: 'errore', titolo: 'Twitch' });
+  }
+
+  async function poll(mia, intervalloMs) {
+    while (nodo.isConnected && mia === generazione) {
+      await attendi(intervalloMs);
+      if (!nodo.isConnected || mia !== generazione) return;
+
+      let esito;
+      try {
+        esito = await api.twitchCollegaStato();
+      } catch (e) {
+        erroreInline(e instanceof ErroreApi ? e.message : 'Il collegamento si è interrotto.');
+        return;
+      }
+      if (mia !== generazione) return;   // nel frattempo e' cambiato tutto
+
+      if (esito.stato === 'confermato') {
+        collegato(esito.login);
+        avviso(
+          (esito.numeri && esito.numeri.messaggio) || 'Collegato: follower e abbonati si aggiornano da soli.',
+          { tipo: 'ok', titolo: 'Twitch' }
+        );
+        return;
+      }
+      if (esito.stato === 'scaduto') { erroreInline('Il codice è scaduto: premi di nuovo Collegati.'); return; }
+      if (esito.stato === 'fallito') { erroreInline(esito.messaggio || 'Il collegamento non è riuscito.'); return; }
+      if (esito.stato === 'assente') { partenza(); return; }
+      if (esito.stato === 'rallenta') { intervalloMs += 5000; }
+      // 'in attesa': si continua il ciclo.
+    }
+  }
+
+  async function cominciaCollegamento() {
+    generazione += 1;
+    const mia = generazione;
+    segna('Chiedo il codice a Twitch…');
+
+    let avvio;
+    try {
+      avvio = await api.twitchCollega();
+    } catch (e) {
+      if (mia !== generazione) return;   // hanno gia' premuto Annulla
+      erroreInline(e instanceof ErroreApi ? e.message : 'Non sono riuscito a cominciare il collegamento.');
+      return;
+    }
+    if (mia !== generazione) return;
+
+    inAttesa(avvio);
+    poll(mia, (Number(avvio.intervalloSec) || 5) * 1000);
+  }
+
+  async function staccaCollegamento() {
+    const ok = await conferma({
+      titolo: 'Togliere il collegamento con Twitch?',
+      testo: ['Follower e abbonati smettono di aggiornarsi da soli: tornano i numeri scritti a mano.'],
+      conferma: 'Scollega',
+      pericolo: true
+    });
+    if (!ok) return;
+    try {
+      await api.twitchScollega();
+      partenza();
+      avviso('Collegamento tolto.', { tipo: 'ok' });
+    } catch (e) {
+      avviso(e instanceof ErroreApi ? e.message : 'Non sono riuscito a togliere il collegamento.', { tipo: 'errore' });
+    }
+  }
+
+  // Lo stato di apertura si legge una volta sola, quando il riquadro compare.
+  segna('Controllo lo stato del collegamento…');
+  api.twitchStato().then((info) => {
+    if (!nodo.isConnected) return;
+    if (info && info.collegato) collegato(info.login);
+    else partenza();
+  }).catch((e) => {
+    if (!nodo.isConnected) return;
+    if (rottaAssente(e)) { partenza('Il server non ha ancora questa funzione: va aggiornato.'); return; }
+    partenza();
+  });
+
+  return nodo;
 }
 
 function disegnaImpostazioni(scorri) {
