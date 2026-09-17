@@ -687,17 +687,33 @@ Senza, il sito funziona, ma **«Ultima diretta», la vetrina delle clip e i nume
 del canale restano quelli scritti a mano** e non si aggiornano più da soli.
 
 Poi c'è un passo in più per **follower e abbonati**, che Twitch dà solo al
-proprietario del canale:
+proprietario del canale. Due modi, a seconda che tu abbia l'SSH o no:
+
+**Con l'SSH:**
 
 ```
 node server/imposta-twitch.js --collega
 ```
 
 Il comando stampa un codice e chiede di aprire `https://www.twitch.tv/activate`
-**con l'account del canale**, inserire il codice e accettare. **È l'unico passo
-di tutta questa guida che richiede il browser di chi amministra**, e va fatto una
-volta sola: da lì in poi il server si rinnova da sé. Con `--prova` si controlla
-che funzioni tutto.
+**con l'account del canale**, inserire il codice e accettare. Va fatto una volta
+sola: da lì in poi il server si rinnova da sé. Con `--prova` si controlla che
+funzioni tutto.
+
+**Senza l'SSH:** lo stesso collegamento si fa dal pannello. Vai in
+`https://slayerbeard.com/pannello/` → menu ☰ → **Canale, contatti e immagini**,
+e in fondo trovi **«Collegati per i numeri»**. Premi il bottone, apri l'indirizzo
+di Twitch che compare **con l'account del canale**, inserisci il codice e
+accetta: la pagina del pannello aspetta la conferma da sola e mostra «Collegato
+come...» appena Twitch risponde. Da quel momento il server si rinnova da sé,
+esattamente come con l'SSH — è la stessa autorizzazione, solo chiesta dal
+browser invece che dal terminale. Il bottone diventa «Scollega» se un giorno
+vuoi togliere l'autorizzazione.
+
+In entrambi i casi **è l'unico passo di tutta questa guida che richiede il
+browser di chi amministra**, e le due chiavi del punto precedente (Client ID e
+Client Secret) devono già essere a posto: senza, il bottone risponde con
+l'errore che lo dice.
 
 **8. Le prove finali.** Rifai le tre prove del capitolo 7 sugli indirizzi veri, e
 aggiungi queste sei. Dieci minuti in tutto, e sono il collaudo del lavoro:
