@@ -110,6 +110,9 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Modificato
 
+- L'affiliazione è dal 2020, non dal 2013: corretta la riga del marchio
+  («Twitch Affiliate · dal 2020»), che compare sotto l'avatar di «Chi sono» e
+  nella scheda per i motori di ricerca.
 - «Chi sono» ha i testi scritti da slayer_beard: le live da agosto 2020 nate
   come sfida personale, la citazione sul sorriso e i giochi della settimana.
   Il titolo della sezione diventa «Chi sono» e l'occhiello sopra passa a
