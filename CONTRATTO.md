@@ -91,6 +91,13 @@ Tre scelte strutturali che lo separano dalla versione precedente e dal reference
    citazione grande. Il supporto è un **listino a righe**, non card. La chiusura è una
    **schermata di fine diretta** con social e contatti insieme.
 
+   *Deroga su «Chi sono» (17 settembre 2026).* Era la sezione più personale del sito e sembrava
+   la più fredda. Il markup resta quello del §5, cambia la resa: il ritratto è grande e storto
+   come una figurina e sta accanto al racconto; la citazione è un fumetto della chat; i tag sono
+   adesivi colorati; le tre note diventano bigliettini in fila sotto al racconto, con i tre numeri
+   sotto di loro. Il margine non è più sticky, perché non ha più niente accanto. I blocchi
+   `chi.corpo`, `chi.margine` e `chi.ritratto` non cambiano (CONTRATTO-4 §5.5).
+
 Palette e forme: grafite quasi nera, linee da 1 px, viola del marchio come accento, ciano per
 tutto ciò che è «acceso», magenta col contagocce. Etichette maiuscole spaziate in monospazio.
 

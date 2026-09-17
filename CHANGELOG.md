@@ -15,6 +15,16 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **«Chi sono» rifatta, grafica e testi.** Il ritratto è grande e storto come
+  una figurina, con la didascalia a etichetta, e sta accanto al racconto invece
+  che in fondo. La citazione è un fumetto della chat, i tag sono adesivi con un
+  pallino colorato, le tre note sono bigliettini in fila e i numeri del canale
+  stanno sotto, grandi e col gradiente del titolo. I testi sono riscritti più
+  semplici e diretti, senza aggiungere fatti nuovi (è sparito quello del
+  «pollaio», che nessuno aveva confermato). Il markup non cambia: cambiano
+  `css/sezioni.css` §3 e i testi `chi.*` in `contenuti.json`. Deroga motivata
+  in `CONTRATTO.md` §2.
+
 - **Tutte le chiavi in un file solo: `server/dati/chiavi.js`.** Prima il Client
   ID stava scritto in due posti — il campo del pannello, e quindi
   `contenuti.json`, più il file del server insieme al secret — e due copie

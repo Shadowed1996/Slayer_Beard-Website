@@ -376,7 +376,7 @@ const gruppi = [
   {
     id: 'chi',
     titolo: 'Chi sono',
-    descrizione: 'La parte editoriale: testo a colonna larga, note a margine e citazione.',
+    descrizione: 'La parte personale: il racconto, la citazione a fumetto, le note e i numeri del canale.',
     campi: [
       { chiave: 'chi.occhiello', etichetta: 'Occhiello', tipo: 'testo', max: 40 },
       { chiave: 'chi.titolo', etichetta: 'Titolo della sezione', tipo: 'testo', max: 60 },

@@ -238,44 +238,47 @@
 
 
 /* =============================================================================
-   3. CHI SONO — impaginazione editoriale
-   Colonna di lettura larga a sinistra, margine stretto e appeso a destra,
-   ritratto in fondo al pezzo come una firma. Nessun riquadro: quello che tiene
-   insieme la pagina sono le linee da 1px del margine.
+   3. CHI SONO — la figurina e il racconto
+   La sezione più personale del sito, e deve sembrarlo: il ritratto è grande e
+   storto come una figurina attaccata al quaderno, la citazione è un fumetto
+   della chat, le etichette sono adesivi colorati. Il linguaggio resta quello
+   della regia — monospazio per le etichette, linee da 1px — ma qui si scalda.
+
+   Disposizione (le aree le assegna .chi__griglia, CONTRATTO-4 §5.5):
+     · stretto:      ritratto / corpo / margine, in colonna;
+     · da 1100px:    corpo accanto al ritratto, e sotto il margine a tutta
+                     larghezza con le tre note e i tre numeri in fila.
+   Il margine non è più sticky: stando sotto al racconto non ha niente accanto
+   a cui restare agganciato. La deroga è motivata in CONTRATTO.md §2.
    ============================================================================= */
 
 .chi__griglia {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "ritratto"
+    "corpo"
+    "margine";
   gap: var(--passo-6);
 }
 
+.chi__corpo    { grid-area: corpo; }
+.chi__ritratto { grid-area: ritratto; }
+.chi__margine  { grid-area: margine; }
+
 @media (min-width: 1100px) {
   .chi__griglia {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 18rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
     grid-template-areas:
-      "corpo    margine"
-      "ritratto margine";
-    column-gap: var(--passo-8);
-    row-gap: var(--passo-6);
-    align-items: start;
-  }
-
-  .chi__corpo    { grid-area: corpo; }
-  .chi__ritratto { grid-area: ritratto; }
-
-  .chi__margine {
-    grid-area: margine;
-    /* align-self: start è quello che dà a sticky lo spazio in cui scorrere
-       dentro l'area di griglia: senza, il margine si stira su tutta la riga e
-       resta fermo. */
-    align-self: start;
-    position: sticky;
-    inset-block-start: var(--passo-4);
+      "corpo   ritratto"
+      "margine margine";
+    column-gap: var(--passo-12);
+    row-gap: var(--passo-8);
+    align-items: center;
   }
 }
 
-/* --- La colonna di lettura -------------------------------------------------- */
+/* --- Il racconto ------------------------------------------------------------ */
 
 .chi__corpo {
   /* Sopra le ~62 battute per riga l'occhio perde il capo riga: è il limite di
@@ -288,29 +291,67 @@
   color: var(--testo-medio);
 }
 
-/* L'apertura è l'occhio del pezzo: più grande del corpo e in tinta piena. */
+/* L'apertura è la voce che saluta: più grande e in tinta piena. */
 .chi__apertura {
-  font-size: clamp(1.08rem, 1rem + 0.38vw, 1.3rem);
-  line-height: 1.55;
+  font-size: clamp(1.15rem, 1rem + 0.6vw, 1.45rem);
+  line-height: 1.5;
 }
 
 .chi__corpo .chi__apertura { color: var(--testo); }
 
-/* Citazione senza virgolette decorative: una barra ciano e un salto di scala
-   bastano a dire che qui la voce cambia. */
+/* La citazione è un messaggio in chat: un fumetto con la coda in basso a
+   sinistra e le virgolette grandi appese al bordo come un adesivo. */
 .chi__citazione {
-  margin-block: var(--passo-4);
+  position: relative;
+  margin-block: var(--passo-6) var(--passo-6);
   margin-inline: 0;
-  padding-inline-start: var(--passo-3);
-  border-inline-start: 2px solid var(--ciano);
+  padding: var(--passo-3) var(--passo-4) var(--passo-3) calc(var(--passo) * 5.5);
+  border: 1px solid var(--linea-viva);
+  border-radius: var(--raggio-g) var(--raggio-g) var(--raggio-g) 6px;
+  background:
+    var(--grad-pannello),
+    color-mix(in srgb, var(--viola) 14%, var(--fondo));
+  box-shadow: var(--ombra-morbida);
   color: var(--testo);
   font-family: var(--font-titolo);
-  font-size: clamp(1.3rem, 1.08rem + 1vw, 1.85rem);
+  font-size: clamp(1.2rem, 1.02rem + 0.8vw, 1.6rem);
   font-weight: 500;
-  line-height: 1.28;
-  letter-spacing: -0.015em;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
   text-wrap: balance;
 }
+
+.chi__citazione::before {
+  content: "\201C";
+  position: absolute;
+  inset-block-start: calc(var(--passo) * -1.5);
+  inset-inline-start: var(--passo-2);
+  color: var(--ciano);
+  font-family: var(--font-titolo);
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: var(--bagliore-ciano);
+}
+
+/* La coda del fumetto: un quadratino ruotato con i due bordi che servono,
+   dello stesso colore pieno del fumetto così copre il bordo che attraversa. */
+.chi__citazione::after {
+  content: "";
+  position: absolute;
+  inset-block-end: -8px;
+  inset-inline-start: var(--passo-3);
+  inline-size: 14px;
+  block-size: 14px;
+  border-inline-end: 1px solid var(--linea-viva);
+  border-block-end: 1px solid var(--linea-viva);
+  background-color: color-mix(in srgb, var(--viola) 14%, var(--fondo));
+  rotate: 45deg;
+}
+
+/* --- Gli adesivi ------------------------------------------------------------
+   Il .tag di base.css con un pallino colorato davanti. I colori girano sui
+   tre accenti del marchio; al passaggio l'adesivo si stacca un filo. ------- */
 
 .chi__tag {
   display: flex;
@@ -319,30 +360,147 @@
   margin-block: var(--passo-4);
 }
 
-.chi__corpo .btn { margin-block-start: var(--passo);}
+.chi__tag .tag {
+  --accento: var(--ciano);
+  border-color: color-mix(in srgb, var(--accento) 30%, transparent);
+  background-color: color-mix(in srgb, var(--accento) 8%, var(--pannello));
+  color: var(--testo);
+  transition:
+    translate var(--durata-lampo) ease,
+    rotate var(--durata-lampo) ease,
+    border-color var(--durata-lampo) ease;
+}
 
-/* --- Il margine ------------------------------------------------------------- */
+.chi__tag .tag::before {
+  content: "";
+  flex: none;
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: 50%;
+  background-color: var(--accento);
+  box-shadow: 0 0 8px var(--accento);
+}
+
+.chi__tag .tag:nth-child(3n + 2) { --accento: var(--viola-chiaro); }
+.chi__tag .tag:nth-child(3n + 3) { --accento: var(--magenta); }
+
+.chi__tag .tag:hover {
+  translate: 0 -2px;
+  rotate: -2deg;
+  border-color: var(--accento);
+}
+
+.chi__corpo .btn { margin-block-start: var(--passo); }
+
+/* --- La figurina ------------------------------------------------------------
+   L'avatar è un primo piano molto stretto del pollo: grande regge solo se è
+   quadrato e pieno. Dietro c'è un cartoncino viola e ciano storto
+   dall'altra parte, e la didascalia è un'etichetta attaccata sopra.
+   Le rotazioni stanno sui figli e sugli pseudo-elementi, mai sul blocco: fra
+   riquadro e blocco non ci devono essere trasformazioni (CONTRATTO-4 §5.5). */
+
+.chi__ritratto {
+  --lato: min(100%, 300px);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  margin: 0;
+}
+
+.chi__ritratto::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 50%;
+  inline-size: var(--lato);
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: var(--raggio-g);
+  background: linear-gradient(135deg, var(--viola), var(--ciano));
+  rotate: 6deg;
+  box-shadow: var(--bagliore-viola);
+}
+
+.chi__ritratto img {
+  position: relative;
+  inline-size: var(--lato);
+  block-size: auto;
+  aspect-ratio: 1;
+  border: 4px solid var(--fondo);
+  border-radius: var(--raggio-g);
+  object-fit: cover;
+  rotate: -3deg;
+  box-shadow: var(--ombra);
+  transition: rotate var(--durata) ease;
+}
+
+.chi__ritratto:hover img { rotate: 0deg; }
+
+.chi__ritratto figcaption {
+  position: relative;
+  max-inline-size: 100%;
+  margin-block-start: calc(var(--passo) * -2.5);
+  padding: calc(var(--passo) * 0.75) var(--passo-2);
+  border-radius: var(--raggio-pill);
+  background-color: var(--magenta);
+  box-shadow: var(--ombra-morbida);
+  color: var(--fondo);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-wrap: balance;
+  rotate: 2deg;
+}
+
+/* Sul telefono la figurina non deve prendersi tutto lo schermo. */
+@media (max-width: 639.98px) {
+  .chi__ritratto { --lato: min(100%, 220px); }
+}
+
+/* --- Il margine: tre bigliettini e i numeri --------------------------------- */
 
 .chi__margine {
   display: grid;
-  gap: var(--passo-3);
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--passo-2);
   align-content: start;
 }
 
-/* Sotto i 1100px il margine sta sotto l'articolo: da 640px le note si mettono
-   in fila su due colonne invece di allungare la pagina. */
-@media (min-width: 640px) and (max-width: 1099.98px) {
-  .chi__margine { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 760px) {
+  .chi__margine { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .chi__dati    { grid-column: 1 / -1; }
 }
 
 .nota {
-  padding-block-start: var(--passo-2);
-  border-block-start: 1px solid var(--linea);
+  --accento: var(--ciano);
+  position: relative;
+  padding: var(--passo-3);
+  border: 1px solid var(--linea);
+  border-radius: var(--raggio);
+  background: var(--grad-pannello), var(--pannello);
+  overflow: hidden;
 }
 
+/* Una striscia colorata in cima a ogni bigliettino, come nastro adesivo. */
+.nota::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 3px;
+  background-color: var(--accento);
+}
+
+.nota:nth-of-type(2) { --accento: var(--viola-chiaro); }
+.nota:nth-of-type(3) { --accento: var(--magenta); }
+
 .nota__titolo {
-  margin: 0 0 calc(var(--passo) * 0.5);
-  color: var(--ciano);
+  margin: 0 0 var(--passo);
+  color: var(--accento);
   font-family: var(--font-mono);
   font-size: var(--t-micro);
   font-weight: 500;
@@ -358,70 +516,49 @@
   line-height: 1.55;
 }
 
-/* I tre numeri: valore sopra, etichetta sotto. In colonna stretta l'etichetta
-   («Spettatori medi per diretta») non starebbe mai su una riga sola accanto al
-   numero, quindi qui si impila invece di affiancare. */
+/* I tre numeri in fila, divisi da linee verticali: il valore grande col
+   gradiente del titolo, l'etichetta sotto in parole normali. */
 .chi__dati {
-  border-block-start: 1px solid var(--linea);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-block-start: var(--passo);
+  padding-block: var(--passo-3);
+  border-block: 1px solid var(--linea);
 }
 
 .chi__dati li {
-  padding-block: calc(var(--passo) * 1.25);
-  border-block-end: 1px solid var(--linea);
+  padding-inline: var(--passo);
+  text-align: center;
 }
+
+.chi__dati li + li { border-inline-start: 1px solid var(--linea); }
 
 .chi__dati b {
   display: block;
-  color: var(--testo);
-  font-family: var(--font-mono);
-  font-size: clamp(1.2rem, 1.08rem + 0.5vw, 1.5rem);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums slashed-zero;
-  line-height: 1;
+  inline-size: fit-content;
+  margin-inline: auto;
+  background: var(--grad-titolo);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-family: var(--font-titolo);
+  font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.6rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 
 .chi__dati span {
   display: block;
   margin-block-start: calc(var(--passo) * 0.5);
   color: var(--testo-tenue);
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
+  font-size: var(--t-piccolo);
   line-height: 1.35;
-  text-transform: uppercase;
-  letter-spacing: var(--spazio-etichetta);
 }
 
-/* --- Ritratto ---------------------------------------------------------------
-   In fondo al pezzo e in orizzontale, come la firma di un articolo. L'avatar è
-   un primo piano molto ravvicinato: tondo e piccolo è l'unico taglio in cui
-   funziona. ------------------------------------------------------------------ */
-
-.chi__ritratto {
-  display: flex;
-  align-items: center;
-  gap: var(--passo-2);
-  margin: 0;
-  padding-block-start: var(--passo-3);
-  border-block-start: 1px solid var(--linea);
-}
-
-.chi__ritratto img {
-  flex: none;
-  inline-size: 84px;
-  block-size: 84px;
-  border-radius: 50%;
-  border: 1px solid var(--linea-forte);
-  object-fit: cover;
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--viola) 16%, transparent);
-}
-
-.chi__ritratto figcaption {
-  color: var(--testo-tenue);
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  line-height: 1.4;
-  text-transform: uppercase;
-  letter-spacing: var(--spazio-etichetta);
+@media (prefers-reduced-motion: reduce) {
+  .chi__tag .tag:hover     { translate: none; rotate: none; }
+  .chi__ritratto:hover img { rotate: -3deg; }
 }
 
 
