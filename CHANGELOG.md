@@ -110,6 +110,9 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Modificato
 
+- La nota in fondo al piede non parla più di come è fatto il sito («Fatto in
+  casa, senza framework.») ma del pollo: «Nessun pollo è stato maltrattato
+  durante la costruzione di questo sito.»
 - `README.md`: aggiunti i badge, l'indice della documentazione, le sezioni
   Licenza e Autore. Il resto del documento è rimasto invariato.
 - `.gitignore` esteso con le cartelle degli editor e altri file temporanei.
