@@ -917,7 +917,7 @@ function creaCollegamentoTwitch() {
     });
     const btn = bottone({
       testo: 'Collegati per i numeri', ico: 'canale', classe: 'btn btn--primario',
-      su: { click: cominciaCollegamento }
+      su: cominciaCollegamento
     });
     corpo.replaceChildren(stato, el('div', { classe: 'lato__azioni' }, [btn]));
   }
@@ -928,13 +928,13 @@ function creaCollegamentoTwitch() {
       classe: 'campo__aiuto',
       testo: login ? ('Collegato come ' + login + '.') : 'Collegato.'
     });
-    const btn = bottone({ testo: 'Scollega', classe: 'btn', su: { click: staccaCollegamento } });
+    const btn = bottone({ testo: 'Scollega', classe: 'btn', su: staccaCollegamento });
     corpo.replaceChildren(stato, el('div', { classe: 'lato__azioni' }, [btn]));
   }
 
   function inAttesa(avvio) {
     const link = el('a', { href: avvio.indirizzo, target: '_blank', rel: 'noopener', testo: avvio.indirizzo });
-    const annulla = bottone({ testo: 'Annulla', classe: 'btn btn--minimo', su: { click: () => partenza() } });
+    const annulla = bottone({ testo: 'Annulla', classe: 'btn btn--minimo', su: () => partenza() });
     corpo.replaceChildren(
       el('p', { classe: 'campo__aiuto' }, [
         el('span', { testo: 'Apri ' }), link,
