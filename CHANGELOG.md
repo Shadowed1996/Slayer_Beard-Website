@@ -427,6 +427,11 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - `RIPRENDI-DOMANI.md`: era l'appunto di un lavoro interrotto a metà, e quel
   lavoro adesso è chiuso. Quello che restava da dire è finito nel README, nel
   CONTRATTO-3 e in questo registro; il resto è nella storia del repository.
+- La nota «Password persa? Dal computer dove gira il sito: `node
+  server/imposta-password.js`» sotto il login del pannello. La vedeva chiunque
+  aprisse `/pannello/`, e a un estraneo diceva come è fatto il server e con
+  quale comando si cambia la password. Chi gestisce il sito la trova in
+  `docs/PANNELLO.md` §3.
 
 ### Corretto
 

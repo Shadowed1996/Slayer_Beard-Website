@@ -257,8 +257,7 @@ code {
 .accesso__marchio { display: flex; align-items: center; gap: 12px; }
 .accesso__marchio img { border-radius: 50%; border: 1px solid var(--p-linea-forte); }
 .accesso__titolo { font-family: var(--p-mono); font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
-.accesso__intro, .accesso__nota { color: var(--p-testo-medio); font-size: 14px; }
-.accesso__nota { border-top: 1px solid var(--p-linea); padding-top: 14px; }
+.accesso__intro { color: var(--p-testo-medio); font-size: 14px; }
 .accesso__ripresa {
   font-size: 14px;
   color: var(--p-allerta);
