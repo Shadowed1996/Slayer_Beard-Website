@@ -410,13 +410,6 @@ const gruppi = [
       { chiave: 'chi.nota2Testo', etichetta: 'Seconda nota a margine — testo', tipo: 'ricco', max: 160 },
       { chiave: 'chi.nota3Titolo', etichetta: 'Terza nota a margine — titolo', tipo: 'testo', max: 30 },
       { chiave: 'chi.nota3Testo', etichetta: 'Terza nota a margine — testo', tipo: 'ricco', max: 160 },
-      // Come nella copertina: il primo numero e il conteggio vero dei follower.
-      { chiave: 'chi.dato1Etichetta', etichetta: 'Primo numero — etichetta', tipo: 'testo', max: 40,
-        aiuto: 'Il valore è il numero vero dei follower del canale (campo «Follower» in «Canale e contatti»), che la pubblicazione aggiorna da Twitch.' },
-      { chiave: 'chi.dato2Valore', etichetta: 'Secondo numero — valore', tipo: 'testo', max: 12 },
-      { chiave: 'chi.dato2Etichetta', etichetta: 'Secondo numero — etichetta', tipo: 'testo', max: 40 },
-      { chiave: 'chi.dato3Valore', etichetta: 'Terzo numero — valore', tipo: 'testo', max: 12 },
-      { chiave: 'chi.dato3Etichetta', etichetta: 'Terzo numero — etichetta', tipo: 'testo', max: 40 },
       { chiave: 'chi.ritrattoAlt', etichetta: 'Descrizione del ritratto', tipo: 'testolungo', max: 160,
         aiuto: 'Finisce nell\'attributo alt dell\'immagine: solo testo, niente formattazione.' }
     ]

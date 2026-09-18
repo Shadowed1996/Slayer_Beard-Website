@@ -1371,7 +1371,6 @@
 
 @media (min-width: 760px) {
   .chi__margine { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .chi__dati    { grid-column: 1 / -1; }
 }
 
 .nota {
@@ -1413,46 +1412,6 @@
   color: var(--testo-medio);
   font-size: var(--t-piccolo);
   line-height: 1.55;
-}
-
-/* I tre numeri in fila, divisi da linee verticali: il valore grande col
-   gradiente del titolo, l'etichetta sotto in parole normali. */
-.chi__dati {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-block-start: var(--passo);
-  padding-block: var(--passo-3);
-  border-block: 1px solid var(--linea);
-}
-
-.chi__dati li {
-  padding-inline: var(--passo);
-  text-align: center;
-}
-
-.chi__dati li + li { border-inline-start: 1px solid var(--linea); }
-
-.chi__dati b {
-  display: block;
-  inline-size: fit-content;
-  margin-inline: auto;
-  background: var(--grad-titolo);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-family: var(--font-titolo);
-  font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.6rem);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
-.chi__dati span {
-  display: block;
-  margin-block-start: calc(var(--passo) * 0.5);
-  color: var(--testo-tenue);
-  font-size: var(--t-piccolo);
-  line-height: 1.35;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -547,10 +547,10 @@ const SCOPE_ACCESSO = 'channel:read:subscriptions';
 // I follower non sono qui perche non passano da una casella di testo: la
 // pagina li stampa da config.dati.follower (`{{sito.follower}}`, i nodi
 // marcati data-follower), che applicaNumeri() scrive comunque. Gli abbonati
-// invece stanno ancora in un campo che si puo scrivere a mano.
-const CAMPI_NUMERI = {
-  abbonati: ['chi.dato2Valore']
-};
+// stavano in «Chi sono» (chi.dato2Valore), fra i tre numeri tolti dalla
+// pagina: oggi si fermano a config.dati.abbonati, e l elenco resta vuoto
+// finche un campo di testo non torna a mostrare un numero.
+const CAMPI_NUMERI = {};
 
 let accessoInCache = null;     // { valore, scadeIl }
 let rinnovoInCorso = null;     // una Promise: due rinnovi insieme brucerebbero il refresh token

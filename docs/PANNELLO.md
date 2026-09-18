@@ -848,7 +848,7 @@ Le sezioni, dall'alto in basso come sono di partenza:
 | **Copertina** | la prima schermata: il titolo grande, le spie di stato, i due bottoni e i quattro numeri del canale |
 | **La diretta** | il player di Twitch con la chat, il profilo del sito, il pollo, la modalità lurk e la vetrina delle clip |
 | **La settimana** | il nastro dei sette giorni, gli eventi speciali, il fondale dietro la sezione, la nota e il bottone in fondo |
-| **Chi sono** | il racconto, la citazione, le note a margine con i numeri e il ritratto |
+| **Chi sono** | il racconto, la citazione, le note a margine e il ritratto |
 | **Come dare una mano** | il listino del supporto, il testo di apertura e la riga di chiusura |
 | **Dove mi trovi** | i profili social, l'email con i bottoni per copiarla o scrivere, la riga di chiusura |
 | **Piede della pagina** | copyright, avvertenza sui marchi e nota finale |
@@ -1387,8 +1387,8 @@ in menu ☰ → *Canale, contatti e immagini*.
 
 ### Follower e abbonati che si aggiornano da sé
 
-Anche i numeri del canale — i **follower** in copertina e in «Chi sono», gli
-**abbonati** in «Chi sono» — possono aggiornarsi da soli. Serve un passo in più,
+Anche i numeri del canale — i **follower** in copertina e gli **abbonati**, che
+per ora il server si tiene da parte senza mostrarli — possono aggiornarsi da soli. Serve un passo in più,
 sempre **una volta sola**, e lo deve fare **slayer_beard con il suo account**:
 Twitch mostra gli abbonati solo al proprietario del canale.
 
@@ -1403,9 +1403,6 @@ Pubblica e, col server acceso, ogni dieci minuti.
 
 Due cose da sapere:
 
-- **Le caselle si aggiornano solo se contengono un numero.** Se nel pannello
-  scrivi a mano qualcosa come «3,6K», il server non te la tocca più. Per
-  tornare all'aggiornamento automatico rimetti un numero qualsiasi.
 - **Se il server resta spento per più di un mese** Twitch fa scadere
   l'autorizzazione. Te ne accorgi dall'avviso dopo la pubblicazione: basta
   rilanciare `--collega`. Nel frattempo restano i numeri dell'ultima volta.

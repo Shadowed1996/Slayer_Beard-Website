@@ -229,7 +229,6 @@ main#contenuto
         a.btn.btn--pieno
      aside.chi__margine
         .nota > h3.nota__titolo + p.nota__testo   (3)
-        ul.chi__dati > li > b + span              (3)
      figure.chi__ritratto > img + figcaption
 
  section#supporto.supporto

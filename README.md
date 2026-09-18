@@ -657,10 +657,10 @@ l'account del canale**, si inserisce il codice e si accetta. Il server salva l'a
 Cosa viene riscritto, e cosa no:
 
 - `config.dati.follower` e `config.dati.abbonati`, sempre;
-- le caselle `deck.dato1Valore`, `chi.dato1Valore` (follower) e `chi.dato2Valore` (abbonati), **solo
-  se contengono un numero e nient'altro**. Se nel pannello ci scrivi «3,6K» o cambi il senso della
-  casella, il server la lascia stare;
-- gli spettatori medi e gli altri numeri restano a mano: Twitch non li dà.
+- nessuna casella di testo: i follower in copertina la pagina li stampa da `config.dati.follower`,
+  e gli abbonati oggi non compaiono in pagina (i tre numeri di «Chi sono» sono stati tolti) e restano
+  solo in `config.dati.abbonati`. Il meccanismo che riscrive una casella **solo se contiene un numero
+  e nient'altro** c'è ancora, con l'elenco `CAMPI_NUMERI` di `server/lib/twitch.js` vuoto.
 
 Le regole sono quelle di tutto il resto: **non lancia mai e non svuota mai**. Se Twitch non
 risponde, o nega gli abbonati, restano i numeri che c'erano e il resoconto lo dice.

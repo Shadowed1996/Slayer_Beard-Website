@@ -1847,7 +1847,8 @@ async function proveTwitch(costruisci, archivio) {
   await prova('il numero dei follower stampato in pagina e quello dei contenuti, con il punto delle migliaia', () => {
     // Il valore non si scrive piu a mano in due posti (deck.dato1Valore e
     // chi.dato1Valore non esistono piu): la pagina lo prende da
-    // config.dati.follower, una volta in copertina e una in «Chi sono».
+    // config.dati.follower, in copertina. In «Chi sono» c era un secondo
+    // nodo, sparito insieme ai tre numeri della sezione.
     const documento = archivio.leggi();
     const originale = documento.config.dati.follower;
     try {
@@ -1855,7 +1856,7 @@ async function proveTwitch(costruisci, archivio) {
       archivio.salva(documento);
       const reso = costruisci.rendi(archivio.leggi());
       const trovati = reso.html.match(/data-follower>([^<]*)</g) || [];
-      esigiUguale(trovati.length, 2, 'nodi data-follower in pagina');
+      esigiUguale(trovati.length, 1, 'nodi data-follower in pagina');
       esigi(trovati.every((x) => x === 'data-follower>1.234.567<'), 'numero stampato: ' + trovati.join(' | '));
       esigi(reso.html.indexOf('deck.dato1Valore') === -1 && reso.html.indexOf('chi.dato1Valore') === -1, 'il valore scritto a mano e ancora in pagina');
     } finally {
@@ -1932,6 +1933,11 @@ async function proveTwitch(costruisci, archivio) {
   });
 
   await prova('i numeri riscrivono solo le caselle che contengono un numero', () => {
+    // Oggi nessuna casella mostra un numero (CAMPI_NUMERI e vuoto): il
+    // meccanismo si prova con una casella finta, rimessa a posto alla fine.
+    const prima = twitch.CAMPI_NUMERI.abbonati;
+    twitch.CAMPI_NUMERI.abbonati = ['chi.dato2Valore'];
+    try {
     const documento = {
       testi: { 'chi.dato2Valore': '90' },
       config: { dati: { follower: 3619, abbonati: 90 } }
@@ -1951,6 +1957,9 @@ async function proveTwitch(costruisci, archivio) {
     const aMano = { testi: { 'chi.dato2Valore': '3,6K' }, config: { dati: {} } };
     twitch.applicaNumeri(aMano, { follower: 3624, abbonati: 96 });
     esigiUguale(aMano.testi['chi.dato2Valore'], '3,6K', 'la casella scritta a mano');
+    } finally {
+      if (prima === undefined) { delete twitch.CAMPI_NUMERI.abbonati; } else { twitch.CAMPI_NUMERI.abbonati = prima; }
+    }
   });
 
   await prova('le caselle dei numeri esistono davvero nei contenuti e nello schema', () => {

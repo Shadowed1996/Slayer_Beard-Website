@@ -200,7 +200,7 @@
       });
   }
 
-  /** I numeri marcati data-follower: uno in copertina, uno in «Chi sono». */
+  /** I numeri marcati data-follower: oggi uno solo, in copertina. */
   function scriviFollower(totale) {
     const testo = numeroTesto(totale);
     for (let i = 0; i < nodi.follower.length; i++) {

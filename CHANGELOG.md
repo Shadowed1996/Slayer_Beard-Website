@@ -427,6 +427,14 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - `RIPRENDI-DOMANI.md`: era l'appunto di un lavoro interrotto a metà, e quel
   lavoro adesso è chiuso. Quello che restava da dire è finito nel README, nel
   CONTRATTO-3 e in questo registro; il resto è nella storia del repository.
+- **I tre numeri sotto le note di «Chi sono»** (follower, abbonati, «~25 in
+  chat a serata») tolti dal modello `modelli/parziali/chi.html`, insieme ai
+  loro cinque campi `chi.dato*` nello schema e nei contenuti e alle regole
+  `.chi__dati` di `css/sezioni.css`. Toglierli a mano da `index.html` non
+  bastava: la pubblicazione successiva li rimetteva. I follower restano in
+  copertina; gli abbonati si aggiornano ancora in `config.dati.abbonati`, ma
+  nessuna casella li mostra più (`CAMPI_NUMERI` in `server/lib/twitch.js` è
+  vuoto). Il collaudo prova la riscrittura delle caselle con una casella finta.
 - La nota «Password persa? Dal computer dove gira il sito: `node
   server/imposta-password.js`» sotto il login del pannello. La vedeva chiunque
   aprisse `/pannello/`, e a un estraneo diceva come è fatto il server e con
