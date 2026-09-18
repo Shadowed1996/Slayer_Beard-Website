@@ -476,9 +476,16 @@
       aggiungi(dove + '.ora', 'L\'ora ' + di + ' va scritta come 21:00.');
     }
 
-    if (!durataBuona(evento.durataOre, LIMITI.durataEventoMax)) {
+    // Facoltativa: un evento senza durata è a tempo indefinito (una maratona
+    // che non si sa quando finisce) e resta «non ancora finito» finché non lo
+    // si toglie a mano — vedi eventiFuturi() più sotto. Se però c'è scritto
+    // qualcosa, deve essere un numero buono: un valore storto (un testo, un
+    // numero fuori dai limiti) non si distingue da «vuoto» e sparirebbe la
+    // fine senza che chi scrive se ne accorga.
+    if (evento.durataOre !== undefined && evento.durataOre !== null && evento.durataOre !== '' &&
+      !durataBuona(evento.durataOre, LIMITI.durataEventoMax)) {
       aggiungi(dove + '.durataOre', 'La durata ' + di + ' va indicata in ore, da ' + numeroTesto(LIMITI.durataMin) + ' a '
-        + LIMITI.durataEventoMax + ', a passi di mezz\'ora.');
+        + LIMITI.durataEventoMax + ', a passi di mezz\'ora — oppure lasciata vuota per un evento senza una fine nota.');
     }
 
     // Senza titolo il nome è sempre «numero N»: il titolo è proprio quello che manca.
@@ -671,22 +678,38 @@
     return d ? new Date(utc(d.anno, d.mese, d.giorno, 12, 0, 0)).getUTCDay() : -1;
   }
 
+  // Un anno: la finta «fine» di un evento senza durata (una maratona di cui
+  // non si sa l'ultimo giorno). Non è mai una fine vera — chi amministra
+  // toglierà l'evento, o gli darà una durata, molto prima — ma deve essere
+  // un numero finito e normale: server e sito la trasformano in una data
+  // ISO, e js/sito.js scarta gli eventi il cui termine non è più grande
+  // dell'inizio, quindi un vero «infinito» sparirebbe invece di restare.
+  const ORE_APERTO = 24 * 365;
+
   /**
    * Gli eventi non ancora finiti a `adessoMs`, dal primo che parte:
    * [{ indice, inizio, termine, ...evento }] con inizio e termine in ms UTC
    * e l'evento già normalizzato. `indice` è la posizione in orari.eventi.
-   * Un evento senza data, ora o durata leggibili non ha un quando, e resta
-   * fuori; uno in corso invece c'è ancora.
+   * Un evento senza data o ora leggibili non ha un quando, e resta fuori;
+   * uno in corso invece c'è ancora.
+   *
+   * Un evento senza durata (durataOre === null: il campo lasciato vuoto)
+   * usa ORE_APERTO al posto della durata: resta «non ancora finito» per un
+   * anno, che per una maratona vale «finché non lo tolgo io». Chi scrive
+   * `termine` in un testo per chi legge (non per un confronto fra numeri)
+   * deve guardare prima `durataOre === null` e non stampare quella data
+   * finta: è qui sotto in eventiDi() e orariDati(), server/lib/costruisci.js.
    */
   function eventiFuturi(orari, adessoMs) {
     const adesso = typeof adessoMs === 'number' && Number.isFinite(adessoMs) ? adessoMs : Date.now();
     const pulito = normalizza(orari);
     const fuori = [];
     pulito.eventi.forEach(function (evento, indice) {
-      if (!evento.data || !evento.ora || evento.durataOre === null) { return; }
+      if (!evento.data || !evento.ora) { return; }
       const inizio = istante(evento.data, evento.ora, pulito.fuso);
       if (!Number.isFinite(inizio)) { return; }
-      const termine = inizio + Math.round(evento.durataOre * MS_ORA);
+      const oreValide = evento.durataOre === null ? ORE_APERTO : evento.durataOre;
+      const termine = inizio + Math.round(oreValide * MS_ORA);
       if (termine <= adesso) { return; }
       const voce = { indice: indice, inizio: inizio, termine: termine };
       Object.keys(evento).forEach(function (k) { voce[k] = evento[k]; });

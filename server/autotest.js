@@ -2443,7 +2443,12 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     }
     esigiUguale(O.problemi(conEvento({ data: '2026-02-29' }))[0].messaggio, 'La data dell\'evento «Maratona» non esiste nel calendario: 2026-02-29.', 'messaggio della data');
     for (const ora of ['', '25:00', '9:00']) { soloSu(conEvento({ ora: ora }), 'eventi.0.ora', 'ora ' + JSON.stringify(ora)); }
-    for (const durata of [null, 0, 0.3, 72.5, 73, 1.25]) { soloSu(conEvento({ durataOre: durata }), 'eventi.0.durataOre', 'durata ' + JSON.stringify(durata)); }
+    // La durata di un evento e' facoltativa (CONTRATTO-6bis, la maratona
+    // senza una fine nota): vuota, assente o esplicitamente null vanno
+    // bene tutte e restano tali finche' chi amministra non la toglie a
+    // mano o le da una durata. Un numero scritto, pero', deve essere buono.
+    for (const durata of [undefined, null, '']) { nessuno(conEvento({ durataOre: durata }), 'durata assente ' + JSON.stringify(durata)); }
+    for (const durata of [0, 0.3, 72.5, 73, 1.25]) { soloSu(conEvento({ durataOre: durata }), 'eventi.0.durataOre', 'durata ' + JSON.stringify(durata)); }
     for (const titolo of ['', '   ', 'a'.repeat(41), 'uno\ndue']) { soloSu(conEvento({ titolo: titolo }), 'eventi.0.titolo', 'titolo ' + JSON.stringify(titolo)); }
     esigiUguale(O.problemi(conEvento({ titolo: '' }))[0].messaggio, 'Il titolo dell\'evento numero 1 non può restare vuoto.', 'messaggio del titolo vuoto');
     soloSu(conEvento({ gioco: 'g'.repeat(41) }), 'eventi.0.gioco');
@@ -2453,7 +2458,7 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     soloSu(conEvento({ fuoco: { x: 'a', y: 1 } }), 'eventi.0.fuoco');
     soloSu(conEvento({ velo: 100 }), 'eventi.0.velo');
     const manca = Object.assign(orariBuoni(), { eventi: [{ titolo: 'Senza quando' }] });
-    esigiUguale(percorsiDi(manca).join(','), 'eventi.0.data,eventi.0.ora,eventi.0.durataOre', 'data, ora e durata obbligatorie');
+    esigiUguale(percorsiDi(manca).join(','), 'eventi.0.data,eventi.0.ora', 'data e ora obbligatorie, la durata no');
     const nove = Object.assign(orariBuoni(), { eventi: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => evento({ titolo: 'E' + i })) });
     soloSu(nove, 'eventi', 'nove eventi');
     soloSu(Object.assign(orariBuoni(), { eventi: {} }), 'eventi', 'eventi non elenco');
@@ -2557,6 +2562,33 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     // L'evento finisce proprio adesso: finito vuol dire termine <= adesso.
     esigiUguale(O.eventiFuturi(orari, Date.parse('2026-09-20T10:00:00.000Z')).some((e) => e.titolo === 'Finito da poco'), false, 'finito all istante');
     esigiUguale(O.eventiFuturi({ eventi: 'x' }, adesso).length, 0, 'eventi non elenco');
+  });
+
+  await prova('eventiFuturi: un evento senza durata resta non finito per un anno, non per sempre', () => {
+    const orari = Object.assign(orariBuoni(), {
+      eventi: [evento({ data: '2026-09-18', ora: '16:00', durataOre: null, titolo: 'Maratona aperta' })]
+    });
+    const inizio = Date.parse('2026-09-18T14:00:00.000Z');   // 16:00 a Roma, ora legale
+    // Prima di cominciare: futuro, non ancora in corso.
+    esigiUguale(O.eventiFuturi(orari, inizio - 1000).length, 1, 'prima dell inizio c e ancora');
+    // Un mese dopo, in piena maratona: ancora li.
+    esigiUguale(O.eventiFuturi(orari, inizio + 30 * 24 * 3600000).length, 1, 'un mese dopo e ancora non finito');
+    // Il termine finto e' inizio + un anno esatto: eventiDi() lo trasforma
+    // in fine:'' (server/lib/costruisci.js) cosi' nessuno lo scrive come
+    // un orario vero, ma resta un numero finito perche' js/sito.js scarta
+    // gli eventi con termine non finito o non maggiore dell inizio.
+    const [voce] = O.eventiFuturi(orari, inizio);
+    esigi(Number.isFinite(voce.termine) && voce.termine > voce.inizio, 'termine finito e dopo l inizio');
+    esigiUguale(voce.termine - voce.inizio, 365 * 24 * 3600000, 'un anno esatto di finta durata');
+    // Dato per finito solo dopo quell anno: non e' infinito davvero, e va
+    // bene cosi' — nessuno amministra un sito per non tornarci mai piu'.
+    esigiUguale(O.eventiFuturi(orari, voce.termine + 1).length, 0, 'oltre l anno finto e considerato finito');
+
+    // eventiDi() (server/lib/costruisci.js) e' quello che finisce nella
+    // pagina: la fine finta non deve mai uscire come un orario vero.
+    const [pagina] = costruisci.eventiDi(orari, inizio);
+    esigiUguale(pagina.fine, '', 'senza durata, fine vuota: niente "- 15:00" inventato');
+    esigi(pagina.termine !== '', 'termine invece resta un istante vero (serve a data-fine)');
   });
 
   /* --- convalida del server ------------------------------------------ */

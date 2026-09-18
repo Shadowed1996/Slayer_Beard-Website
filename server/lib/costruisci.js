@@ -189,7 +189,11 @@ function eventiDi(orari, adesso) {
       indice: evento.indice,
       data: evento.data,
       ora: evento.ora,
-      fine: SBOrari.oraNelFuso(evento.termine, orari.fuso),
+      // Un evento senza durata (durataOre === null) non ha una fine vera:
+      // evento.termine è la data finta di ORE_APERTO (orari.js), e
+      // stamparla come orario confonderebbe chi guarda. '' e il modello si
+      // aspettano già questo: senza fine non si scrive « – niente».
+      fine: evento.durataOre === null ? '' : SBOrari.oraNelFuso(evento.termine, orari.fuso),
       abbr: giorno.abbr,
       giorno: giorno.nome,
       numero: String(d[2]),
