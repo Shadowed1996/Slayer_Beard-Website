@@ -1,0 +1,75 @@
+<!-- La parte di <head> che NON cambia da una pagina all'altra: la codifica, la
+     Content-Security-Policy, l'icona e i font. La includono sia parziali/testa.html
+     (la home) sia parziali/testa-clip.html (la pagina di tutte le clip).
+
+     Sta in un file suo per la CSP. Quell'elenco di host e` gia` ripetuto una volta
+     in server/lib/twitch.js (HOST_ANTEPRIME), e una ripetizione e` il massimo che
+     ci si puo` permettere: copiarlo anche in una seconda pagina vorrebbe dire che
+     il giorno in cui Twitch cambia il nome di un CDN le anteprime si spengono in
+     meta` sito, e in silenzio — una CSP che blocca un'immagine non lo dice a
+     nessuno. Una pagina nuova eredita la CSP giusta senza doverci pensare. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Content-Security-Policy (CONTRATTO-3 §4.5). Introdotta insieme alla modalità lurk, che può
+     tenere in pagina un token di scrittura in chat: quel token vale su TUTTI i canali di Twitch,
+     quindi una singola iniezione di script varrebbe un account rubato per ogni visitatore.
+
+     `script-src` è la riga che conta ed è stretta: nessun 'unsafe-inline', nessun 'unsafe-eval'.
+     Si può permettere perché la pagina non ha script inline — il solo <script> incorporato è il
+     JSON-LD della home, che ha type="application/ld+json", non è eseguibile e non ricade sotto
+     script-src. Vale anche per il filtro dei periodi in clip.html: sta in js/clip.js, un file
+     servito dal sito, non un `onclick` scritto dentro al bottone.
+
+     `style-src` invece porta 'unsafe-inline', ed è una rinuncia consapevole: l'SDK di Twitch
+     scrive attributi style sull'iframe che costruisce, e senza questo il player si romperebbe.
+     Costa poco: un foglio di stile iniettato non può leggere un token, e la difesa che serve
+     contro il furto è quella sugli script.
+
+     `img-src` ha tre domini esterni, e tutti e tre sono host di SOLE IMMAGINI: non possono
+     eseguire niente, e nessun'altra cosa della pagina viene da lì.
+     - static-cdn.jtvnw.net è dove Twitch tiene le immagini di profilo, e serve alla tessera
+       dell'account — l'avatar di chi si è collegato, accanto al suo nome;
+     - clips-media-assets2.twitch.tv e clips-media-assets.twitch.tv servono le anteprime delle
+       clip. Sono due perché Twitch non ha mai migrato del tutto le clip vecchie sul nome nuovo.
+       L'elenco è ripetuto in server/lib/twitch.js (HOST_ANTEPRIME), che scarta le anteprime su
+       host diversi invece di stamparle e lasciarle bloccare in silenzio: un'immagine che la CSP
+       ferma non lo dice a nessuno.
+
+     `frame-ancestors` NON c'è: in un <meta> viene ignorato per specifica, e va messo come
+     intestazione HTTP dall'hosting. Stessa cosa per report-uri. -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' https://embed.twitch.tv;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  img-src 'self' data: https://static-cdn.jtvnw.net https://clips-media-assets2.twitch.tv https://clips-media-assets.twitch.tv;
+  frame-src https://player.twitch.tv https://www.twitch.tv https://embed.twitch.tv;
+  connect-src 'self' https://api.twitch.tv https://id.twitch.tv wss://irc-ws.chat.twitch.tv;
+  base-uri 'self';
+  form-action 'none';
+  object-src 'none'">
+
+<meta name="author" content="{{marchio.nome}}">
+
+<link rel="icon" href="{{config.immagini.favicon}}" type="image/png">
+<link rel="apple-touch-icon" href="{{config.immagini.favicon}}">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{marchio.nome}}">
+<meta property="og:locale" content="it_IT">
+<meta property="og:image" content="{{config.immagini.og}}">
+<meta property="og:image:alt" content="{{meta.ogImmagineAlt}}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{{config.immagini.og}}">
+<meta name="twitter:image:alt" content="{{meta.ogImmagineAlt}}">
+
+<!-- I font sono scelti dal pannello (gruppo «Aspetto»): l'indirizzo lo compone la generazione
+     dalle famiglie scelte e dai pesi del catalogo. Se sono tutti font di sistema, sito.fontUrl
+     resta vuoto e qui non si stampa niente — nessuna richiesta a Google. -->
+{{#se sito.fontUrl}}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{sito.fontUrl}}">{{/se}}

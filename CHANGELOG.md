@@ -15,6 +15,37 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Una pagina con tutte le clip, dove il periodo lo sceglie chi guarda.**
+  `clip.html` è la seconda pagina del sito — il resto resta una pagina sola con
+  sei sezioni — e nasce da `modelli/clip.html` come `index.html` nasce dal suo.
+  Ci sono **tutte** le clip, non le sei della vetrina, e quattro bottoni
+  (**24 ore, 3 giorni, 7 giorni, 30 giorni**) cambiano quello che si vede
+  **senza ricaricare niente**. Il bottone in testa a «La diretta» porta qui, e
+  sotto la vetrina c'è il secondo modo di arrivarci; la vetrina in home resta
+  com'era, l'assaggio di chi sta scorrendo la sezione.
+- **Il filtro non chiede niente a nessuno, ed è il punto.** Il sito è statico e
+  le chiavi di Twitch non devono arrivare in un browser: quindi «e quelle delle
+  ultime 24 ore?» non è una domanda che si possa fare da online. Alla
+  pubblicazione il server chiede a Twitch le migliori di **ciascuno** dei quattro
+  periodi (`clipArchivio` in `server/lib/twitch.js`) e le unisce senza doppioni —
+  quattro richieste e non una, perché le trenta clip più viste del mese possono
+  benissimo essere tutte di tre settimane fa e lasciare le ultime 24 ore vuote.
+  Le clip finiscono tutte dentro la pagina con la loro data (`data-quando`), e
+  `js/clip.js` nasconde e rimostra quello che è già lì. Senza JavaScript la
+  pagina resta intera: si vedono tutte le clip e i bottoni non compaiono affatto.
+  Se in un periodo non c'è niente lo dice — «Nessuna clip in questo periodo.» —
+  invece di restare bianca.
+- **`config.clip.quanteArchivio`**, nella parte «Le clip» del pannello: quante
+  clip il server porta a casa **per ogni periodo** (da 4 a 50, di serie 12). È il
+  prezzo in peso della pagina, ed è l'unica impostazione nuova.
+- **I campi nati dopo la messa online non rompono più la prima Pubblica.** Nuova
+  proprietà `predefinito` nello schema e `schema.completa()`: un campo aggiunto
+  oggi, su un `contenuti.json` scritto ieri, nasce col suo valore di partenza
+  invece di far fallire la generazione con «punta a una chiave che non esiste».
+  Serviva adesso — le dieci chiavi nuove delle clip sarebbero state dieci motivi
+  di guasto sul sito già online, che `docs/HOSTING.md` dice giustamente di
+  aggiornare **senza** sovrascrivere i contenuti — e servirà a ogni campo nuovo
+  da qui in avanti.
 - **La vetrina delle clip è accesa, e adesso si trova.** L'interruttore
   `config.clip.attivo` parte acceso, e in testa a «La diretta» c'è **un bottone
   con scritto il titolo della vetrina** (`.clip__vai`) che porta all'ancora

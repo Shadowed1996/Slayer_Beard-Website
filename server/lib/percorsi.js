@@ -30,6 +30,10 @@ function calcola(radice) {
     // Output della generazione: non si scrivono mai a mano. Sono tre, non
     // due: css/tema.css nasce da config.tema come index.html nasce dai testi.
     indexHtml: path.join(radice, 'index.html'),
+    // La pagina di tutte le clip. E il quarto file generato, e sta a parte
+    // dai tre di sempre perche a volte non si scrive affatto: senza clip non
+    // esiste, e se le clip si spengono va tolta (server/lib/costruisci.js).
+    clipHtml: path.join(radice, 'clip.html'),
     cartellaJs: path.join(radice, 'js'),
     datiJs: path.join(radice, 'js', 'dati.js'),
     temaCss: path.join(radice, 'css', 'tema.css'),
@@ -47,6 +51,7 @@ function calcola(radice) {
     // Modelli del sito (agente A).
     modelli: path.join(radice, 'modelli'),
     modelloIndex: path.join(radice, 'modelli', 'index.html'),
+    modelloClip: path.join(radice, 'modelli', 'clip.html'),
     parziali: path.join(radice, 'modelli', 'parziali'),
     icone: path.join(radice, 'modelli', 'icone'),
 

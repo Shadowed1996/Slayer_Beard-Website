@@ -13,6 +13,7 @@ const fs = require('node:fs');
 const { P } = require('./percorsi');
 const { scriviAtomico } = require('./file');
 const { erroreHttp } = require('./risposte');
+const schema = require('../../contenuti/schema.js');
 
 /** Legge contenuti.json e controlla che abbia la forma attesa. */
 function leggi() {
@@ -45,6 +46,14 @@ function leggi() {
 
   if (typeof documento.versione !== 'number') { documento.versione = 1; }
   if (typeof documento.aggiornatoIl !== 'string') { documento.aggiornatoIl = new Date().toISOString(); }
+
+  // I campi nati dopo la messa online (schema.js, riquadro PREDEFINITO).
+  // Sta qui e non nella generazione perche il documento deve essere gia
+  // intero per TUTTI: il pannello che disegna il form, la convalida, la
+  // copertura e la pagina. Non si scrive niente su disco — ci pensa il
+  // primo salvataggio, che e anche il momento giusto: da quel punto in poi
+  // il file ce li ha davvero.
+  schema.completa(documento);
   return documento;
 }
 

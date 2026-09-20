@@ -1,0 +1,39 @@
+<!-- Una card di clip. La stampano in due: la vetrina in fondo alla «diretta»
+     (parziali/clip.html) e la pagina di tutte le clip (modelli/clip.html).
+
+     Sta in un parziale perche' e` la stessa cosa nei due posti e deve restarlo:
+     due copie dello stesso rettangolo vogliono dire che prima o poi una delle
+     due perde un `rel="noopener"` o l'`aria-label`, e a perderlo e` sempre
+     quella che si guarda di meno.
+
+     Si include DENTRO un ciclo «ogni», quindi qui l'ambito e` la singola clip:
+     titolo, url e compagnia sono i suoi campi, mentre le parole scritte nel
+     pannello (clip.guarda, clip.visualizzazioni) il motore le trova risalendo
+     al contesto della pagina.
+
+     Attenzione a scrivere in questo commento: il motore dei modelli cerca le
+     doppie graffe dappertutto, anche dentro un commento HTML, e le
+     sostituirebbe per davvero. I nomi dei campi qui sopra sono scritti nudi
+     apposta. -->
+<a class="clip__card" href="{{url}}" target="_blank" rel="noopener" aria-label="{{clip.guarda}}: {{titolo}}">
+  <span class="clip__anteprima">
+    <!-- L'anteprima è un di più e può mancare: la card sta in piedi
+         lo stesso, col suo fondo. alt vuoto perché il titolo qui
+         sotto dice già di che clip si tratta: descriverla due volte
+         è rumore per chi ascolta. loading="lazy" perché la vetrina
+         sta in fondo alla sezione e quasi sempre fuori schermo, e
+         nella pagina delle clip perché sotto la piega ce ne sono
+         decine. -->
+    {{#se anteprima}}<img class="clip__immagine" src="{{anteprima}}" alt="" loading="lazy" decoding="async" width="480" height="272">{{/se}}
+    <span class="clip__durata">{{durata}}</span>
+  </span>
+
+  <span class="clip__corpo">
+    <span class="clip__nome">{{titolo}}</span>
+    <span class="clip__dati">
+      <span class="clip__viste">{{visualizzazioni}} {{clip.visualizzazioni}}</span>
+      {{#se quando}}<span class="clip__quando">{{quando}}</span>{{/se}}
+    </span>
+    {{#se firma}}<span class="clip__firma">{{firma}}</span>{{/se}}
+  </span>
+</a>

@@ -225,7 +225,169 @@
   color: var(--testo-tenue);
 }
 
+/* Il link che dalla vetrina porta alla pagina di tutte le clip. Riusa la
+   pillola del bottone in testa alla sezione: è lo stesso gesto, fatto in
+   fondo invece che in cima. */
+.clip__tutte {
+  margin-block-start: var(--passo-3);
+}
+
 /* Chi ha chiesto meno animazioni non deve vedere nemmeno questa. */
 @media (prefers-reduced-motion: reduce) {
   .clip__card { transition: none; }
+}
+
+/* =====================================================================
+   LA PAGINA clip.html
+
+   Da qui in giù è roba della seconda pagina del sito, che carica questo
+   foglio senza diretta.css, sezioni.css e gli altri: tutto quello che le
+   serve e che non è già in base.css sta scritto qui.
+
+   Il corpo della pagina è una colonna sola, larga esattamente come le
+   sezioni del sito (stessa formula di css/sezioni.css), perché qui non c'è
+   niente da affiancare: una testa, quattro bottoni e una griglia.
+   ===================================================================== */
+
+/* base.css tiene libera una striscia in fondo al corpo per il dock del
+   telefono. Qui il dock non c'è — questa pagina non ha il binario — e quella
+   striscia sarebbe un buco bianco sotto al piede. */
+.pagina-clip {
+  padding-block-end: 0;
+}
+
+.clip-pagina__testa,
+.clip-pagina__corpo {
+  inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2));
+  margin-inline: auto;
+  padding-inline: var(--margine);
+}
+
+.clip-pagina__testa {
+  padding-block: var(--passo-6) var(--passo-3);
+}
+
+/* Il link per tornare al sito. Non è una pillola come gli altri comandi:
+   quelli fanno succedere qualcosa, questo riporta indietro, e deve leggersi
+   come una riga di servizio — piccola, in monospazio, sopra al titolo. */
+.clip-pagina__torna {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--passo);
+  min-block-size: 44px;
+  margin-block-end: var(--passo-2);
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 140ms ease;
+}
+
+.clip-pagina__torna svg {
+  inline-size: 1.1em;
+  block-size: 1.1em;
+  flex: none;
+}
+
+.clip-pagina__torna:hover,
+.clip-pagina__torna:focus-visible { color: var(--ciano); }
+
+.clip-pagina__titolo {
+  margin-block: var(--passo) 0;
+  font-family: var(--font-titolo);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1.1;
+  color: var(--testo);
+}
+
+.clip-pagina__corpo {
+  padding-block-end: var(--passo-8);
+}
+
+/* --- I quattro periodi ---------------------------------------------- */
+
+.clip-periodi {
+  margin-block-end: var(--passo-3);
+  padding-block-end: var(--passo-3);
+  border-block-end: 1px solid var(--linea);
+}
+
+.clip-periodi__etichetta {
+  margin-block-end: var(--passo);
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* In fila, e a capo se non ci stanno: a 320px quattro etichette come «30
+   giorni» non stanno su una riga sola, e una barra che scorre di lato
+   nasconderebbe l'ultimo periodo a chi non sa che c'è. */
+.clip-periodi__bottoni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--passo);
+}
+
+/* Stessa pillola del bottone che porta qui: chi arriva da lì ritrova la
+   stessa forma, e sa già che cosa sono. */
+.clip-periodi__bottone {
+  min-block-size: 44px;
+  padding-inline: var(--passo-3);
+  border: 1px solid var(--linea-comando);
+  border-radius: var(--raggio-pill);
+  background: transparent;
+  color: var(--testo-medio);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.clip-periodi__bottone:hover {
+  border-color: var(--ciano);
+  color: var(--ciano);
+}
+
+/* Il periodo acceso. Non è solo il colore a dirlo: il bordo è pieno e il
+   fondo è acceso, così si distingue anche su uno schermo in bianco e nero o
+   per chi non separa il ciano dal grigio. Il suo stato vero, quello che
+   leggono i lettori di schermo, è aria-pressed — questa è la faccia. */
+.clip-periodi__bottone[aria-pressed="true"] {
+  border-color: var(--ciano);
+  background: var(--pannello-2);
+  color: var(--ciano);
+}
+
+.clip-periodi__bottone:focus-visible {
+  outline: 2px solid var(--ciano);
+  outline-offset: 2px;
+}
+
+/* --- Quando in un periodo non c'è niente ---------------------------- */
+
+.clip-vuoto {
+  margin-block: var(--passo-4);
+  padding: var(--passo-3);
+  border: 1px dashed var(--linea);
+  border-radius: var(--raggio-s);
+  color: var(--testo-medio);
+  text-align: center;
+}
+
+/* Una card nascosta dal filtro non deve lasciare il suo buco nella griglia.
+   `[hidden]` da solo vale `display:none`, ma la griglia qui sopra dichiara
+   `display:flex` sulla voce, e una regola con la stessa specificità scritta
+   dopo vincerebbe: questa la rimette a posto una volta per tutte. */
+.clip__voce[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .clip-periodi__bottone,
+  .clip-pagina__torna { transition: none; }
 }

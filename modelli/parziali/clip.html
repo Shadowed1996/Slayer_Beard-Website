@@ -7,9 +7,12 @@
      invece di chiederne una propria — e il binario resta a sei voci.
 
      Al posto della voce nel dock c'e un bottone in testa alla «diretta»
-     (modelli/parziali/diretta.html) che porta qui: senza, la vetrina la
-     trovava solo chi scorreva fino in fondo. L'id #clip e il bersaglio di
-     quel bottone, e nient'altro.
+     (modelli/parziali/diretta.html). Portava qui, all'id #clip; adesso porta
+     alla pagina clip.html, dove ci sono tutte le clip e il periodo lo sceglie
+     chi guarda. Questa vetrina resta l'assaggio: le piu viste, senza uscire
+     dalla pagina, per chi sta scorrendo la «diretta» e non sta cercando
+     l'archivio. L'id #clip resta perche un indirizzo gia condiviso continui
+     a portare dove portava.
 
      Tutto statico: nessun id e contratto con nessun JavaScript, e senza JS
      questa parte funziona per intero — il bottone e un'ancora, non un
@@ -27,31 +30,22 @@
 
   <ul class="clip__griglia">
     {{#ogni clip.voci}}
-    <li class="clip__voce">
-      <!-- Il link avvolge tutta la card: il bersaglio grosso è il punto,
-           su un telefono. aria-label unisce l'azione al titolo, perché
-           «Guarda la clip» ripetuto sei volte non distingue niente. -->
-      <a class="clip__card" href="{{url}}" target="_blank" rel="noopener" aria-label="{{clip.guarda}}: {{titolo}}">
-        <span class="clip__anteprima">
-          <!-- L'anteprima è un di più e può mancare: la card sta in piedi
-               lo stesso, col suo fondo. alt vuoto perché il titolo qui
-               sotto dice già di che clip si tratta: descriverla due volte
-               è rumore per chi ascolta. loading="lazy" perché la vetrina
-               sta in fondo alla sezione e quasi sempre fuori schermo. -->
-          {{#se anteprima}}<img class="clip__immagine" src="{{anteprima}}" alt="" loading="lazy" decoding="async" width="480" height="272">{{/se}}
-          <span class="clip__durata">{{durata}}</span>
-        </span>
-
-        <span class="clip__corpo">
-          <span class="clip__nome">{{titolo}}</span>
-          <span class="clip__dati">
-            <span class="clip__viste">{{visualizzazioni}} {{clip.visualizzazioni}}</span>
-            {{#se quando}}<span class="clip__quando">{{quando}}</span>{{/se}}
-          </span>
-          {{#se firma}}<span class="clip__firma">{{firma}}</span>{{/se}}
-        </span>
-      </a>
-    </li>
+    <!-- Il link avvolge tutta la card: il bersaglio grosso è il punto, su un
+         telefono. La card è in parziali/clip-card.html perché è la stessa
+         della pagina di tutte le clip. -->
+    <li class="clip__voce">{{> parziali/clip-card}}</li>
     {{/ogni}}
   </ul>
+
+  <!-- Il modo di arrivare a tutte le altre. La vetrina è un assaggio — sei
+       clip di un periodo deciso nel pannello — e da qui in poi si continua
+       nella pagina, dove il periodo lo sceglie chi guarda. Si stampa solo se
+       quella pagina esiste davvero: `clipPagina.attivo` è «le clip sono
+       accese E ce n'è almeno una con una data buona». -->
+  {{#se clipPagina.attivo}}<p class="clip__tutte">
+    <a class="clip__vai" href="clip.html">
+      <span class="clip__vai-testo">{{clip.paginaTitolo}}</span>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </a>
+  </p>{{/se}}
 </div>

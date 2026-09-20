@@ -386,30 +386,41 @@ async function aggiornaFollower() {
 /** I giorni indietro di ogni periodo. `sempre` non mette nessun limite. */
 const PERIODI = { '7': 7, '30': 30, '365': 365 };
 
-/**
- * Le clip migliori del canale, gia ripulite.
- *
- * helix/clips le restituisce ordinate per visualizzazioni decrescenti, che
- * e esattamente l'ordine che serve: chi arriva sul sito vuole vedere le
- * migliori, non le ultime. Il periodo si passa come intervallo
- * started_at..ended_at perche Twitch, dato solo l'inizio, assume una
- * settimana e ignora in silenzio quello che si voleva chiedere.
- */
-async function clipMigliori(idUtente, quante, periodo) {
+/*
+   Le quattro finestre della pagina «clip.html», quelle fra cui sceglie chi
+   visita il sito. Si chiedono TUTTE E QUATTRO a Twitch, una per una, e non
+   si ricava la piu stretta tagliando la piu larga: helix/clips risponde con
+   le piu VISTE della finestra, non con tutte, quindi le trenta clip piu
+   viste del mese possono benissimo essere tutte di tre settimane fa e le
+   ultime 24 ore non comparire affatto. Chiedere ogni finestra per suo conto
+   e poi unire e l'unico modo perche ogni bottone mostri davvero le migliori
+   del suo periodo. Sono quattro richieste alla pubblicazione, non una per
+   visitatore: il sito e statico e il browser non parla con Twitch.
+*/
+const FINESTRE_PAGINA = [1, 3, 7, 30];
+
+/** L'indirizzo della richiesta: quante clip, e in che finestra di giorni. */
+function percorsoClip(idUtente, quante, giorni) {
   const id = encodeURIComponent(String(idUtente));
   let percorso = '/clips?broadcaster_id=' + id + '&first=' + Math.min(50, Math.max(1, quante));
-
-  const giorni = PERIODI[String(periodo)];
+  // Il periodo si passa come intervallo started_at..ended_at perche Twitch,
+  // dato solo l'inizio, assume una settimana e ignora in silenzio quello
+  // che si voleva chiedere.
   if (giorni) {
     const fine = new Date();
     const inizio = new Date(fine.getTime() - giorni * 24 * 60 * 60 * 1000);
     percorso += '&started_at=' + inizio.toISOString() + '&ended_at=' + fine.toISOString();
   }
+  return percorso;
+}
 
-  const risposta = await helix(percorso);
+/**
+ * Le clip di una risposta di Twitch, ripulite. `hostStrani` si riempie per
+ * strada: chi chiama lo passa e poi lo racconta a chi pubblica.
+ */
+function ripulisciClip(risposta, hostStrani) {
   const voci = (risposta && Array.isArray(risposta.data)) ? risposta.data : [];
   const fuori = [];
-  const hostStrani = [];
 
   for (const voce of voci) {
     const url = String((voce && voce.url) || '').trim();
@@ -443,7 +454,60 @@ async function clipMigliori(idUtente, quante, periodo) {
     });
   }
 
-  return { voci: fuori, hostStrani: hostStrani };
+  return fuori;
+}
+
+/**
+ * Le clip migliori del canale, gia ripulite.
+ *
+ * helix/clips le restituisce ordinate per visualizzazioni decrescenti, che
+ * e esattamente l'ordine che serve: chi arriva sul sito vuole vedere le
+ * migliori, non le ultime.
+ */
+async function clipMigliori(idUtente, quante, periodo) {
+  const hostStrani = [];
+  const risposta = await helix(percorsoClip(idUtente, quante, PERIODI[String(periodo)]));
+  return { voci: ripulisciClip(risposta, hostStrani), hostStrani: hostStrani };
+}
+
+/**
+ * Le clip della pagina «clip.html»: le migliori di ciascuna delle quattro
+ * finestre, messe insieme senza doppioni e in ordine di visualizzazioni.
+ *
+ * L'unione basta al filtro del browser, e non per caso: una clip di ieri sta
+ * dentro tutte e quattro le finestre, quindi quella che il visitatore vede
+ * scegliendo «7 giorni» e esattamente l'insieme delle clip dell'unione piu
+ * recenti di sette giorni — e siccome le migliori dei sette giorni sono
+ * state chieste apposta, in cima ci sono quelle. Niente di quello che
+ * Twitch avrebbe risposto a quella domanda manca all'appello.
+ *
+ * Se una delle quattro richieste va storta si lascia perdere tutto e si
+ * lancia: chi chiama tiene l'archivio di prima, che e una fotografia
+ * coerente, invece di una mezza fotografia nuova.
+ */
+async function clipArchivio(idUtente, quante) {
+  const hostStrani = [];
+  const viste = new Map();
+
+  for (const giorni of FINESTRE_PAGINA) {
+    const risposta = await helix(percorsoClip(idUtente, quante, giorni));
+    for (const clip of ripulisciClip(risposta, hostStrani)) {
+      const chiave = clip.id || clip.url;
+      if (!viste.has(chiave)) { viste.set(chiave, clip); }
+    }
+  }
+
+  // In ordine di visualizzazioni una volta sola, qui: la pagina filtra e
+  // basta, e non deve rimettersi a ordinare niente nel browser di chi legge.
+  const voci = Array.from(viste.values()).sort((a, b) => b.visualizzazioni - a.visualizzazioni);
+  return { voci: voci, hostStrani: hostStrani };
+}
+
+/** Due elenchi di clip sono lo stesso elenco? (stesse clip, stessi numeri) */
+function stessoElenco(prima, dopo) {
+  return prima.length === dopo.length
+    && prima.every((v, i) => v && v.id === dopo[i].id && v.titolo === dopo[i].titolo
+      && v.visualizzazioni === dopo[i].visualizzazioni);
 }
 
 /**
@@ -485,6 +549,8 @@ async function aggiornaClip() {
   if (!idUtente) { return { stato: 'senzaCanale' }; }
 
   const quante = Number.isFinite(Number(clip.quante)) ? Math.round(Number(clip.quante)) : 6;
+  const quantePagina = Number.isFinite(Number(clip.quanteArchivio))
+    ? Math.min(50, Math.max(4, Math.round(Number(clip.quanteArchivio)))) : 12;
 
   let esito;
   try {
@@ -493,26 +559,59 @@ async function aggiornaClip() {
     return { stato: 'fallito', motivo: errore.message };
   }
 
-  const precedenti = Array.isArray(clip.voci) ? clip.voci : [];
-  if (!esito.voci.length) { return { stato: 'vuoto', quante: precedenti.length }; }
-
-  const uguali = precedenti.length === esito.voci.length
-    && precedenti.every((v, i) => v && v.id === esito.voci[i].id && v.titolo === esito.voci[i].titolo
-      && v.visualizzazioni === esito.voci[i].visualizzazioni);
-  if (uguali) { return { stato: 'invariato', quante: esito.voci.length, hostStrani: esito.hostStrani }; }
-
-  // Si rilegge, come per il titolo: fra la lettura e adesso c'e stata una
-  // richiesta in rete, e il pannello puo aver salvato nel frattempo.
+  // L'archivio della pagina va per conto suo: se le sue quattro richieste
+  // non riescono, la vetrina in home si aggiorna lo stesso. Sono due cose
+  // che si guardano in due posti diversi, e una non deve trascinarsi
+  // dietro l'altra.
+  let pagina;
   try {
-    const fresco = archivio.leggi();
-    if (!fresco.config.clip || typeof fresco.config.clip !== 'object') { fresco.config.clip = {}; }
-    fresco.config.clip.voci = esito.voci;
-    archivio.salva(fresco);
+    pagina = await clipArchivio(idUtente, quantePagina);
   } catch (errore) {
-    return { stato: 'fallito', motivo: errore.message };
+    pagina = { voci: [], hostStrani: [], errore: errore.message };
   }
 
-  return { stato: 'aggiornato', quante: esito.voci.length, hostStrani: esito.hostStrani };
+  const precedenti = Array.isArray(clip.voci) ? clip.voci : [];
+  const primaPagina = Array.isArray(clip.archivio) ? clip.archivio : [];
+
+  // Un elenco vuoto non sostituisce mai uno pieno, ne qui ne per la pagina:
+  // una vetrina che sparisce perche Twitch era giu per dieci secondi e
+  // peggio di una vetrina di una settimana fa.
+  const cambiaVetrina = esito.voci.length > 0 && !stessoElenco(precedenti, esito.voci);
+  const cambiaPagina = pagina.voci.length > 0 && !stessoElenco(primaPagina, pagina.voci);
+
+  if (cambiaVetrina || cambiaPagina) {
+    // Si rilegge, come per il titolo: fra la lettura e adesso c'e stata una
+    // richiesta in rete, e il pannello puo aver salvato nel frattempo.
+    try {
+      const fresco = archivio.leggi();
+      if (!fresco.config.clip || typeof fresco.config.clip !== 'object') { fresco.config.clip = {}; }
+      if (cambiaVetrina) { fresco.config.clip.voci = esito.voci; }
+      if (cambiaPagina) { fresco.config.clip.archivio = pagina.voci; }
+      archivio.salva(fresco);
+    } catch (errore) {
+      return { stato: 'fallito', motivo: errore.message };
+    }
+  }
+
+  const hostStrani = esito.hostStrani.slice();
+  for (const host of pagina.hostStrani || []) {
+    if (hostStrani.indexOf(host) === -1) { hostStrani.push(host); }
+  }
+
+  let statoPagina;
+  if (pagina.errore) { statoPagina = { stato: 'fallito', motivo: pagina.errore, quante: primaPagina.length }; }
+  else if (!pagina.voci.length) { statoPagina = { stato: 'vuoto', quante: primaPagina.length }; }
+  else { statoPagina = { stato: cambiaPagina ? 'aggiornato' : 'invariato', quante: pagina.voci.length }; }
+
+  if (!esito.voci.length) {
+    return { stato: 'vuoto', quante: precedenti.length, hostStrani: hostStrani, pagina: statoPagina };
+  }
+  return {
+    stato: cambiaVetrina ? 'aggiornato' : 'invariato',
+    quante: esito.voci.length,
+    hostStrani: hostStrani,
+    pagina: statoPagina
+  };
 }
 
 /* --- CATEGORIA DELLA DIRETTA IN CORSO -------------------------------- */
@@ -1083,9 +1182,27 @@ function raccontaCategoria(esito) {
   }
 }
 
+/** La riga sulla pagina «clip.html», in coda a quella della vetrina. */
+function raccontaPaginaClip(pagina) {
+  if (!pagina || !pagina.stato) { return ''; }
+  switch (pagina.stato) {
+    case 'aggiornato':
+      return ' Pagina: ' + pagina.quante + (pagina.quante === 1 ? ' clip nei quattro periodi.' : ' clip nei quattro periodi.');
+    case 'invariato':
+      return ' Pagina: gia a posto, ' + pagina.quante + ' clip.';
+    case 'vuoto':
+      return ' Pagina: Twitch non ne ha date per nessuno dei quattro periodi, tengo le ' + pagina.quante + ' che c erano.';
+    case 'fallito':
+      return ' Pagina: non sono riuscito a chiederle (' + pagina.motivo + '), tengo quelle che c erano.';
+    default:
+      return '';
+  }
+}
+
 /** Lo stesso, per le clip. */
 function raccontaClip(esito) {
   if (!esito || !esito.stato) { return ''; }
+  const pagina = raccontaPaginaClip(esito.pagina);
   const strani = (esito.hostStrani && esito.hostStrani.length)
     ? ' Attenzione: ' + esito.hostStrani.length + (esito.hostStrani.length === 1 ? ' anteprima arriva' : ' anteprime arrivano')
       + ' da un host che la CSP non conosce (' + esito.hostStrani.join(', ') + '), e quelle card restano senza immagine.'
@@ -1098,11 +1215,11 @@ function raccontaClip(esito) {
     case 'senzaCanale':
       return 'Clip: manca l ID del canale (campo config.twitch.idUtente), non ho chiesto niente a Twitch.';
     case 'aggiornato':
-      return 'Clip: aggiornate da Twitch — ' + esito.quante + (esito.quante === 1 ? ' clip.' : ' clip.') + strani;
+      return 'Clip: aggiornate da Twitch — ' + esito.quante + (esito.quante === 1 ? ' clip.' : ' clip.') + pagina + strani;
     case 'invariato':
-      return 'Clip: gia aggiornate — ' + esito.quante + ' in vetrina.' + strani;
+      return 'Clip: gia aggiornate — ' + esito.quante + ' in vetrina.' + pagina + strani;
     case 'vuoto':
-      return 'Clip: Twitch non ne ha date per il periodo scelto, tengo le ' + esito.quante + ' che c erano.';
+      return 'Clip: Twitch non ne ha date per il periodo scelto, tengo le ' + esito.quante + ' che c erano.' + pagina;
     case 'fallito':
       return 'Clip: non sono riuscito a chiederle a Twitch (' + esito.motivo + '). Tengo quelle che c erano.';
     default:
@@ -1114,10 +1231,10 @@ module.exports = {
   credenziali, configurato, appToken, dimenticaToken, helix,
   titoloUltimaDiretta, aggiornaUltimaDiretta, racconta,
   totaleFollower, contaFollower, aggiornaFollower, raccontaFollower,
-  clipMigliori, aggiornaClip, raccontaClip,
+  clipMigliori, clipArchivio, aggiornaClip, raccontaClip, raccontaPaginaClip,
   categoriaInDiretta, aggiornaCategoria, raccontaCategoria, direttaSalvata, salvaDiretta,
   collegato, scollega, iniziaCollegamento, completaCollegamento, tentaCollegamento, infoCollegamento, numeriCanale,
   applicaNumeri, aggiornaNumeri, raccontaNumeri, formattaNumero, eNumeroNudo,
   SCOPE_ACCESSO, CAMPI_NUMERI,
-  TIMEOUT_MS, HOST_ANTEPRIME, PERIODI
+  TIMEOUT_MS, HOST_ANTEPRIME, PERIODI, FINESTRE_PAGINA
 };

@@ -505,6 +505,48 @@ async function proveSchema(contenutiVeri) {
     const problemi = schema.verificaCopertura(magro);
     esigi(problemi.some((p) => p.chiave === 'config.immagini.favicon' && p.tipo === 'inesistente'), 'chiave sparita non segnalata');
   });
+
+  await prova('un contenuti.json di ieri continua a pubblicare: i campi nuovi nascono col loro valore', () => {
+    // La prova che protegge il sito gia online. docs/HOSTING.md dice di NON
+    // sovrascrivere contenuti.json quando arriva una versione nuova del
+    // programma: quindi ogni campo aggiunto allo schema dopo quel giorno, su
+    // quel file, non c'e. Senza «predefinito» la prima Pubblica fallirebbe
+    // con «punta a una chiave che non esiste», e a fallire sarebbe il sito
+    // vero di chi non ha fatto niente di male.
+    const vecchio = JSON.parse(JSON.stringify(contenutiVeri));
+    const nuovi = schema.campi().filter((c) => Object.prototype.hasOwnProperty.call(c, 'predefinito'));
+    esigi(nuovi.length > 0, 'nessun campo con un predefinito: la prova non sta provando niente');
+    for (const campo of nuovi) {
+      if (campo.chiave.startsWith('config.')) {
+        const pezzi = campo.chiave.slice('config.'.length).split('.');
+        let dove = vecchio.config;
+        for (let i = 0; i < pezzi.length - 1 && dove; i++) { dove = dove[pezzi[i]]; }
+        if (dove) { delete dove[pezzi[pezzi.length - 1]]; }
+      } else {
+        delete vecchio.testi[campo.chiave];
+      }
+    }
+
+    // Senza completa(): la copertura non deve lamentarsi lo stesso, perche
+    // un campo nuovo assente non e una chiave sparita.
+    esigiUguale(schema.verificaCopertura(vecchio).length, 0, 'la copertura si lamenta di un contenuti.json di ieri');
+
+    // Con completa(): le chiavi ci sono, col valore di partenza, e la
+    // convalida passa — cioe la pubblicazione va a buon fine.
+    const aggiunte = schema.completa(vecchio);
+    esigiUguale(aggiunte.length, nuovi.length, 'quante chiavi sono nate');
+    for (const campo of nuovi) {
+      const esito = schema.valoreDi(vecchio, campo.chiave);
+      esigi(esito.trovato, 'manca ancora ' + campo.chiave);
+      esigiUguale(esito.valore, campo.predefinito, 'valore di partenza di ' + campo.chiave);
+    }
+    esigiUguale(convalida.convalida(vecchio).length, 0, 'i valori di partenza non passano la convalida');
+    // E una seconda passata non riscrive niente: chi ha gia scelto un suo
+    // valore non deve vederselo rimettere a quello di serie a ogni lettura.
+    vecchio.testi['clip.paginaTitolo'] = 'Le mie clip';
+    esigiUguale(schema.completa(vecchio).length, 0, 'completa() ha rifatto il lavoro');
+    esigiUguale(vecchio.testi['clip.paginaTitolo'], 'Le mie clip', 'completa() ha sovrascritto una scelta');
+  });
 }
 
 /* --- 4. TESTO RICCO --------------------------------------------------- */
@@ -2187,25 +2229,56 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
     esigi(html.indexOf('clip__vai') === -1, 'il bottone per la vetrina e in pagina senza la vetrina');
   });
 
-  await prova('il bottone in testa alla diretta porta alla vetrina', () => {
-    // La vetrina non ha una voce nel binario (prova qui sotto) e sta in
-    // fondo a una sezione lunga: senza questo bottone la trovava solo chi
-    // scorreva fino in fondo.
+  await prova('il bottone in testa alla diretta porta alla pagina delle clip', () => {
+    // Le clip non hanno una voce nel binario (prova qui sotto) e la vetrina
+    // sta in fondo a una sezione lunga: senza questo bottone le trovava solo
+    // chi scorreva fino in fondo. Portava all'ancora #clip; adesso porta alla
+    // pagina, dove ci sono tutte e il periodo lo sceglie chi guarda.
     const documento = archivio.leggi();
-    documento.config.clip = accesa();
+    documento.config.clip = accesa({ archivio: [clipFinta()] });
     const html = costruisci.anteprimaDi(documento);
 
     const diretta = html.slice(html.indexOf('id="diretta"'), html.indexOf('id="settimana"'));
-    esigiDentro(diretta, 'class="clip__vai" href="#clip"', 'manca il bottone che porta alla vetrina');
-    // Il bersaglio deve esistere davvero, e una volta sola.
+    esigiDentro(diretta, 'class="clip__vai" href="clip.html"', 'manca il bottone che porta alla pagina');
+    // L'ancora resta dov'era: un indirizzo gia condiviso deve continuare a
+    // portare dove portava.
     esigiUguale((html.match(/id="clip"/g) || []).length, 1, 'quanti bersagli #clip');
-    // Il bottone viene prima della vetrina: e la scorciatoia per arrivarci.
-    esigi(diretta.indexOf('clip__vai') < diretta.indexOf('clip__griglia'),
-      'il bottone sta dopo la vetrina a cui dovrebbe portare');
     // L'etichetta e il titolo della vetrina, non una stringa nuova da tenere
     // d'accordo con quella: scritta nel pannello una volta sola.
     esigiDentro(diretta, '<span class="clip__vai-testo">' + documento.testi['clip.titolo'] + '</span>',
       'l etichetta del bottone non e il titolo della vetrina');
+    // E sotto la vetrina, il secondo modo di arrivarci.
+    esigiDentro(html, '>' + documento.testi['clip.paginaTitolo'] + '<',
+      'manca il link a tutte le clip sotto la vetrina');
+  });
+
+  await prova('senza clip da mostrare non si promette nessuna pagina', () => {
+    // Un bottone che porta a un file che la pubblicazione non ha scritto
+    // sarebbe un 404 promesso in prima pagina.
+    const documento = archivio.leggi();
+    documento.config.clip = accesa({ voci: [], archivio: [] });
+    const html = costruisci.anteprimaDi(documento);
+    esigi(html.indexOf('clip.html') === -1, 'la home promette una pagina che non esiste');
+  });
+
+  await prova('la pagina delle clip: una card per clip, con la sua data addosso', () => {
+    // E il contratto con js/clip.js: il filtro dei periodi lavora su
+    // data-quando, e senza quella data una clip resterebbe in pagina
+    // qualunque bottone si prema.
+    const tre = [
+      clipFinta({ id: 'a', creataIl: '2026-08-03T20:11:00Z' }),
+      clipFinta({ id: 'b', creataIl: '2026-08-04T20:11:00Z' }),
+      // Senza una data leggibile non si puo collocare in nessun periodo.
+      clipFinta({ id: 'c', creataIl: 'ieri' })
+    ];
+    const pagina = costruisci.clipPaginaDi({ clip: accesa({ archivio: tre, quanteArchivio: 20 }) }, contenutiVeri.testi);
+    esigiUguale(pagina.attivo, true, 'la pagina e accesa');
+    esigiUguale(pagina.voci.length, 2, 'la clip senza data buona resta fuori');
+    esigiUguale(pagina.voci[0].iso, '2026-08-03T20:11:00.000Z', 'la data in ISO per il filtro');
+    esigiUguale(pagina.quante, 20, 'il tetto per periodo arriva alla pagina');
+    // Il tetto sta fra 4 e 50 comunque lo si scriva.
+    esigiUguale(costruisci.clipPaginaDi({ clip: accesa({ archivio: tre, quanteArchivio: 999 }) }, contenutiVeri.testi).quante, 50, 'tetto massimo');
+    esigiUguale(costruisci.clipPaginaDi({ clip: accesa({ archivio: tre }) }, contenutiVeri.testi).quante, 12, 'tetto di serie');
   });
 
   await prova('a vetrina accesa le card ci sono, e i valori arrivano protetti', () => {

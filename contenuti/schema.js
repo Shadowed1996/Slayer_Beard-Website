@@ -21,7 +21,21 @@
      max/min     lunghezza massima del testo, oppure intervallo del numero;
      facoltativo se vuoto va bene (per esempio un social non ancora attivo);
      slot        solo per il tipo "font": quale dei tre font del sito si sta
-                 scegliendo, così la convalida sa in quale catalogo cercare.
+                 scegliendo, così la convalida sa in quale catalogo cercare;
+     predefinito il valore che vale se la chiave in contenuti.json NON C'È.
+
+   PREDEFINITO: i campi nati dopo la messa online. Un sito già in piedi ha il
+   suo contenuti.json, che chi amministra ha riempito e che
+   docs/HOSTING.md dice esplicitamente di NON sovrascrivere quando arriva
+   una versione nuova del programma. Senza questa proprietà, ogni campo
+   aggiunto qui dentro dopo quel giorno farebbe fallire la prima Pubblica —
+   copertura e convalida pretendono che schema e contenuti combacino, ed è
+   la regola giusta: è così che un campo sparito si nota subito. Un campo
+   con "predefinito" dice invece che la sua assenza non è una perdita ma
+   un'aggiunta non ancora arrivata: completa() ce la mette col valore di
+   partenza, la copertura non la segnala, e il primo salvataggio la scrive
+   sul disco una volta per tutte. Vale solo per i campi nuovi: toglierlo a
+   un campo esistente vorrebbe dire non accorgersi più se sparisce.
 
    TESTO RICCO (CONTRATTO-2 §7). I campi di tipo "ricco" contengono un po'
    di HTML ristretto (grassetto, corsivo, <br>, link). Sono ricche SOLO le
@@ -59,7 +73,11 @@ const SISTEMA = ['versione', 'aggiornatoIl'];
 // `config.ultimaDiretta` e `config.dati.follower` NON stanno qui: restano
 // campi scritti a mano, che il server si limita a tenere aggiornati se il
 // collegamento c'e.
-const GENERATI = ['config.clip.voci'];
+// `config.clip.archivio` e` il fratello piu` largo di `voci`: le clip dei
+// quattro periodi della pagina «clip.html», messe insieme una volta sola
+// alla pubblicazione perche il browser possa filtrarle senza chiedere
+// niente a nessuno (le chiavi di Twitch non escono da questo computer).
+const GENERATI = ['config.clip.voci', 'config.clip.archivio'];
 
 // I rami che scrive l'editor con controlli suoi (CONTRATTO-4 §2.4): ordine
 // e visibilità delle sezioni, stile per elemento, blocchi posizionati. Non
@@ -328,7 +346,7 @@ const gruppi = [
   {
     id: 'clip',
     titolo: 'Le clip',
-    descrizione: 'La vetrina dei momenti migliori, in fondo alla sezione «La diretta». Le clip le prende il server da Twitch a ogni pubblicazione: qui si decide quante, di che periodo, e come si presenta.',
+    descrizione: 'La vetrina dei momenti migliori, in fondo alla sezione «La diretta», e la pagina «clip.html» con tutte quante, dove è chi visita a scegliere il periodo. Le clip le prende il server da Twitch a ogni pubblicazione: qui si decide quante, di che periodo, e come si presentano.',
     campi: [
       { chiave: 'config.clip.attivo', etichetta: 'Mostra le clip', tipo: 'interruttore',
         aiuto: 'Spento, la vetrina non compare per nessuno, il resto di questo gruppo non ha effetto e alla pubblicazione non viene chiesto niente a Twitch. Acceso, compare in fondo a «La diretta», con un bottone in testa alla sezione che ci porta — ma solo dopo la prima Pubblica: è lì che il server va a prendere le clip su Twitch.' },
@@ -341,7 +359,14 @@ const gruppi = [
           { valore: '365', etichetta: 'Ultimo anno' },
           { valore: 'sempre', etichetta: 'Da sempre' }
         ],
-        aiuto: 'Twitch le ordina per visualizzazioni, dalla più vista in giù. Periodo stretto = vetrina che cambia spesso ma può restare vuota nelle settimane fiacche; «da sempre» = sempre piena, ma sempre uguale.' },
+        aiuto: 'Twitch le ordina per visualizzazioni, dalla più vista in giù. Periodo stretto = vetrina che cambia spesso ma può restare vuota nelle settimane fiacche; «da sempre» = sempre piena, ma sempre uguale. Vale per la vetrina in home: nella pagina «Tutte le clip» il periodo lo sceglie chi visita.' },
+      // Il numero della PAGINA, che è un'altra cosa da «quante ne mostra la
+      // vetrina»: lì si sceglie quante se ne vedono, qui quante il server ne
+      // porta a casa da Twitch per ciascuno dei quattro periodi. Chi visita
+      // le filtra nel browser fra quelle già incorporate, quindi questo
+      // numero è anche il tetto di quante ne può vedere per periodo.
+      { chiave: 'config.clip.quanteArchivio', etichetta: 'Quante clip nella pagina, per ogni periodo', tipo: 'numero', min: 4, max: 50, predefinito: 12,
+        aiuto: 'Da 4 a 50, di serie 12. La pagina «clip.html» le porta già tutte dentro di sé e chi visita sceglie il periodo (24 ore, 3 giorni, 7 giorni, 30 giorni) senza aspettare niente: il prezzo è il peso della pagina, perché ogni clip in più è un\'anteprima in più da scaricare. Alzalo se il canale ne produce tante.' },
       { chiave: 'clip.occhiello', etichetta: 'Occhiello', tipo: 'testo', max: 40 },
       { chiave: 'clip.titolo', etichetta: 'Titolo della vetrina', tipo: 'testo', max: 60 },
       { chiave: 'clip.testo', etichetta: 'Riga di presentazione', tipo: 'ricco', max: 220,
@@ -351,7 +376,26 @@ const gruppi = [
       { chiave: 'clip.visualizzazioni', etichetta: 'Parola per le visualizzazioni', tipo: 'testo', max: 30,
         aiuto: 'Compare dopo il numero: «1.2k visualizzazioni».' },
       { chiave: 'clip.di', etichetta: 'Parola prima del nome di chi l\'ha creata', tipo: 'testo', max: 20,
-        aiuto: 'Le clip le ritaglia chi guarda, non chi trasmette: questo dice di chi è il merito. Per esempio «clip di».' }
+        aiuto: 'Le clip le ritaglia chi guarda, non chi trasmette: questo dice di chi è il merito. Per esempio «clip di».' },
+
+      // Da qui in giù: la pagina «clip.html». Tutti con un predefinito,
+      // perché sono nati dopo la messa online e su un contenuti.json di
+      // prima non ci sono — vedi il riquadro PREDEFINITO in cima al file.
+      { chiave: 'clip.paginaTitolo', etichetta: 'Pagina — titolo', tipo: 'testo', max: 60, predefinito: 'Tutte le clip',
+        aiuto: 'Il titolo della pagina «clip.html», e anche il link che ci porta da sotto la vetrina in home.' },
+      { chiave: 'clip.paginaTesto', etichetta: 'Pagina — riga di presentazione', tipo: 'ricco', max: 220, predefinito: 'Le clip più viste del canale. Scegli il periodo: cambia quello che vedi, non la pagina.',
+        aiuto: 'Una riga sotto al titolo della pagina. Può restare vuota. È anche la descrizione che finisce su Google, ripulita dal grassetto.' },
+      { chiave: 'clip.paginaTorna', etichetta: 'Pagina — link per tornare al sito', tipo: 'testo', max: 30, predefinito: 'Torna al sito',
+        aiuto: 'La pagina delle clip non ha il menu del sito: questo è il modo di tornare indietro, in alto a sinistra.' },
+      { chiave: 'clip.filtroEtichetta', etichetta: 'Pagina — etichetta dei periodi', tipo: 'testo', max: 40, predefinito: 'Periodo',
+        aiuto: 'La parola sopra ai quattro bottoni. La leggono anche i lettori di schermo, per dire di che gruppo di bottoni si tratta.' },
+      { chiave: 'clip.filtro24ore', etichetta: 'Pagina — primo periodo', tipo: 'testo', max: 20, predefinito: '24 ore' },
+      { chiave: 'clip.filtro3giorni', etichetta: 'Pagina — secondo periodo', tipo: 'testo', max: 20, predefinito: '3 giorni' },
+      { chiave: 'clip.filtro7giorni', etichetta: 'Pagina — terzo periodo', tipo: 'testo', max: 20, predefinito: '7 giorni' },
+      { chiave: 'clip.filtro30giorni', etichetta: 'Pagina — quarto periodo', tipo: 'testo', max: 20, predefinito: '30 giorni',
+        aiuto: 'È il periodo da cui la pagina parte: chi arriva vede queste, e stringendo il periodo ne vede meno.' },
+      { chiave: 'clip.vuoto', etichetta: 'Pagina — quando in un periodo non c\'è niente', tipo: 'testo', max: 120, predefinito: 'Nessuna clip in questo periodo.',
+        aiuto: 'Capita davvero, ed è giusto che si veda: in una settimana tranquilla le 24 ore possono essere vuote anche se il mese è pieno. Meglio una riga che lo dice che una pagina bianca.' }
     ]
   },
 
@@ -628,6 +672,58 @@ function chiaviDeiContenuti(contenuti) {
   return fuori;
 }
 
+/** Copia profonda di un valore di partenza: due contenuti non lo condividono. */
+function copiaValore(valore) {
+  return (valore !== null && typeof valore === 'object') ? JSON.parse(JSON.stringify(valore)) : valore;
+}
+
+/**
+ * Scrive una chiave dentro i contenuti, creando gli oggetti che mancano.
+ * I testi sono piatti (il punto fa parte del nome), la configurazione
+ * scende: è la stessa regola di valoreDi(), al contrario.
+ */
+function scrivi(contenuti, chiave, valore) {
+  if (!chiave.startsWith('config.')) {
+    contenuti.testi[chiave] = valore;
+    return;
+  }
+  const pezzi = chiave.slice('config.'.length).split('.');
+  let corrente = contenuti.config;
+  for (let i = 0; i < pezzi.length - 1; i++) {
+    const nome = pezzi[i];
+    if (!haChiave(corrente, nome) || corrente[nome] === null || typeof corrente[nome] !== 'object' || Array.isArray(corrente[nome])) {
+      corrente[nome] = {};
+    }
+    corrente = corrente[nome];
+  }
+  corrente[pezzi[pezzi.length - 1]] = valore;
+}
+
+/**
+ * Mette a posto i campi nati dopo la messa online: quelli che hanno un
+ * "predefinito" e che in questo contenuti.json ancora non ci sono.
+ *
+ * Muta il documento e restituisce l'elenco delle chiavi aggiunte. Si chiama
+ * appena letto il file (server/lib/archivio.js), quindi prima della
+ * copertura, della convalida e della generazione: da lì in giù nessuno deve
+ * sapere che un contenuti.json possa essere più vecchio del programma.
+ * Non scrive niente su disco da sé — ci pensa il primo salvataggio.
+ */
+function completa(contenuti) {
+  if (!contenuti || typeof contenuti !== 'object') { return []; }
+  if (!contenuti.testi || typeof contenuti.testi !== 'object') { return []; }
+  if (!contenuti.config || typeof contenuti.config !== 'object') { return []; }
+
+  const aggiunte = [];
+  for (const c of campi()) {
+    if (!Object.prototype.hasOwnProperty.call(c, 'predefinito')) { continue; }
+    if (valoreDi(contenuti, c.chiave).trovato) { continue; }
+    scrivi(contenuti, c.chiave, copiaValore(c.predefinito));
+    aggiunte.push(c.chiave);
+  }
+  return aggiunte;
+}
+
 /**
  * Confronta schema e contenuti e restituisce l'elenco dei problemi.
  * Vuoto = copertura totale. Ogni voce è { tipo, chiave, messaggio }.
@@ -658,6 +754,11 @@ function verificaCopertura(contenuti) {
 
     const esito = valoreDi(contenuti, c.chiave);
     if (!esito.trovato) {
+      // Un campo nato dopo la messa online non è una chiave sparita: è una
+      // chiave non ancora arrivata, e completa() sa con che valore farla
+      // nascere. Segnalarla vorrebbe dire rifiutarsi di generare un sito che
+      // funziona benissimo, solo perché i suoi contenuti sono di ieri.
+      if (Object.prototype.hasOwnProperty.call(c, 'predefinito')) { continue; }
       problemi.push({ tipo: 'inesistente', chiave: c.chiave, messaggio: 'Il campo "' + c.chiave + '" punta a una chiave che in contenuti.json non esiste.' });
       continue;
     }
@@ -722,4 +823,4 @@ function verificaCopertura(contenuti) {
   return problemi;
 }
 
-module.exports = { gruppi, TIPI, SISTEMA, GENERATI, EDITOR, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura };
+module.exports = { gruppi, TIPI, SISTEMA, GENERATI, EDITOR, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura, completa };

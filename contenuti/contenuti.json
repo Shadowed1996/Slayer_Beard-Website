@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-20T12:33:35.019Z",
+  "aggiornatoIl": "2026-09-20T16:04:08.280Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -127,7 +127,16 @@
     "saluti.chiusura": "Grazie per essere passato. Ci si vede in diretta.",
     "footer.copy": "slayer_beard",
     "footer.disclaimer": "Sito personale, non affiliato a Twitch. Twitch è un marchio di Twitch Interactive, Inc. I nomi e i loghi dei social appartengono ai rispettivi proprietari.",
-    "footer.nota": "Nessun pollo è stato maltrattato durante la costruzione di questo sito."
+    "footer.nota": "Nessun pollo è stato maltrattato durante la costruzione di questo sito.",
+    "clip.paginaTitolo": "Tutte le clip",
+    "clip.paginaTesto": "Le clip più viste del canale. Scegli il periodo: cambia quello che vedi, non la pagina.",
+    "clip.paginaTorna": "Torna al sito",
+    "clip.filtroEtichetta": "Periodo",
+    "clip.filtro24ore": "24 ore",
+    "clip.filtro3giorni": "3 giorni",
+    "clip.filtro7giorni": "7 giorni",
+    "clip.filtro30giorni": "30 giorni",
+    "clip.vuoto": "Nessuna clip in questo periodo."
   },
   "config": {
     "twitch": {
@@ -370,7 +379,8 @@
       "attivo": true,
       "quante": 6,
       "periodo": "30",
-      "voci": []
+      "voci": [],
+      "quanteArchivio": 12
     },
     "social": [
       {

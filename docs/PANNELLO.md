@@ -1799,6 +1799,15 @@ Se Twitch non trova nessuna clip nel periodo scelto, le clip che c'erano
 **restano**: non ti ritrovi la vetrina svuotata perché è stata una settimana
 tranquilla.
 
+> Questo periodo vale per la **vetrina in home**. Nella pagina «Tutte le clip»
+> il periodo lo sceglie chi visita, e non c'entra niente con questo campo.
+
+**Quante clip nella pagina, per ogni periodo** — da 4 a 50, di serie 12. È
+l'unico campo della pagina «Tutte le clip» (qui sotto): quante clip il server
+va a prendere per **ciascuno** dei quattro periodi. Sono anche quante se ne
+possono vedere alla volta. Alzarlo fa una pagina più ricca e più pesante: ogni
+clip in più è un'anteprima in più da scaricare.
+
 **Occhiello, titolo e riga di presentazione** — le tre righe sopra alla griglia,
 come in ogni altra sezione. La riga di presentazione può restare vuota.
 
@@ -1817,9 +1826,46 @@ Restava il fatto che «La diretta» è lunga e la vetrina sta in fondo: la trova
 solo chi scorreva fino là. Per questo in testa alla sezione c'è **un bottone con
 scritto il titolo della vetrina** — quello che scrivi tu nel campo *Titolo della
 vetrina*, non una settima riga da tenere d'accordo con la prima — che porta
-dritto alle clip. È un'ancora, quindi funziona anche col JavaScript spento, e
-compare e sparisce insieme alla vetrina: se le clip non ci sono, non c'è nemmeno
-un bottone che prometta di portarti da nessuna parte.
+alle clip. Compare e sparisce insieme alle clip: se non ce n'è nessuna, non c'è
+nemmeno un bottone che prometta di portarti da nessuna parte.
+
+### La pagina «Tutte le clip»
+
+Il bottone qui sopra non scende più alla vetrina: apre **`clip.html`**, una
+pagina tutta sua con **tutte** le clip che il server ha trovato. Ci si arriva
+anche dal link sotto alla vetrina, e da lì si torna al sito col link in alto a
+sinistra.
+
+La differenza vera è che qui **il periodo lo sceglie chi guarda**, con quattro
+bottoni: **24 ore, 3 giorni, 7 giorni, 30 giorni**. Si parte da 30 giorni, cioè
+da tutto, e stringendo si vede di meno. Cambiare periodo **non ricarica la
+pagina** e non fa aspettare nessuno: le clip sono già tutte dentro la pagina, e
+il sito si limita a nascondere quelle fuori periodo.
+
+> **Perché funziona così.** Il sito pubblicato è fatto di file, non c'è un
+> programma che risponda alle domande di chi visita, e le chiavi di Twitch non
+> devono finire dentro una pagina — con quelle si parla a nome del canale. Così
+> la domanda la fa il server **alla pubblicazione**, una volta per tutti: chiede
+> a Twitch le migliori di ciascuno dei quattro periodi e le incorpora tutte.
+
+Due conseguenze da sapere, perché si vedono:
+
+- **Le date contano dal momento in cui uno apre la pagina**, non da quando hai
+  pubblicato. Se pubblichi oggi e qualcuno apre il sito fra tre giorni, alla
+  voce «24 ore» non trova niente — ed è la risposta giusta: quelle clip hanno
+  tre giorni. Pubblicando si rinfresca tutto.
+- **Un periodo può essere vuoto anche col mese pieno.** La pagina lo dice
+  («Nessuna clip in questo periodo») invece di restare bianca.
+
+I testi della pagina — titolo, riga di presentazione, il link per tornare
+indietro, le quattro etichette dei periodi e la riga di quando non c'è niente —
+si scrivono nella stessa parte **Le clip** del pannello, insieme a tutto il
+resto. Hanno già un valore di partenza sensato: si toccano solo se si vuole.
+
+Se spegni **Mostra le clip**, o se Twitch non ne restituisce nessuna, la pagina
+**non viene scritta affatto** e, se c'era, la pubblicazione la **toglie** dal
+sito: niente pagine orfane che restano online e su Google quando il bottone che
+ci portava non c'è più.
 
 ### Quando qualcosa non va
 

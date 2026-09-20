@@ -359,6 +359,60 @@ function clipDi(config, testi) {
   return { attivo: clip.attivo === true && voci.length > 0, voci: voci };
 }
 
+/**
+ * La pagina «clip.html»: tutte le clip che il server ha portato a casa, con
+ * addosso la loro data.
+ *
+ * Qui non si filtra niente per periodo, ed e il punto di tutta la faccenda:
+ * il sito e statico e le chiavi di Twitch non escono da questo computer,
+ * quindi il browser non puo chiedere «e quelle delle ultime 24 ore?» a
+ * nessuno. Le clip dei quattro periodi si incorporano TUTTE nella pagina,
+ * ognuna con la sua data in un attributo, e il filtro del visitatore
+ * nasconde e rimostra quello che e gia li (js/clip.js). Il numero del
+ * pannello e il tetto per periodo, non il totale: l'elenco qui sotto e
+ * l'unione delle quattro finestre e puo essere piu lungo.
+ */
+function clipPaginaDi(config, testi) {
+  const clip = (config.clip && typeof config.clip === 'object') ? config.clip : {};
+  const grezze = Array.isArray(clip.archivio) ? clip.archivio : [];
+
+  let quante = Number(clip.quanteArchivio);
+  if (!Number.isFinite(quante)) { quante = 12; }
+  quante = Math.min(50, Math.max(4, Math.round(quante)));
+
+  const voci = [];
+  for (const voce of grezze) {
+    const url = String((voce && voce.url) || '').trim();
+    const titolo = String((voce && voce.titolo) || '').trim();
+    if (!url || !titolo) { continue; }
+
+    // Senza una data valida la clip non si puo collocare in nessun periodo, e
+    // finirebbe per restare in pagina qualunque bottone si prema: meglio
+    // fuori. Non e un caso che capiti — Twitch la data ce l'ha sempre — ma un
+    // elenco che arriva da fuori si controlla lo stesso.
+    const quando = new Date(String((voce && voce.creataIl) || ''));
+    if (Number.isNaN(quando.getTime())) { continue; }
+
+    const autore = String((voce && voce.autore) || '').trim();
+    voci.push({
+      titolo: titolo,
+      url: url,
+      anteprima: String((voce && voce.anteprima) || '').trim(),
+      durata: durataTesto(voce && voce.durataSec),
+      visualizzazioni: numeroTesto(voce && voce.visualizzazioni),
+      autore: autore,
+      firma: autore ? (testi['clip.di'] || '') + ' ' + autore : '',
+      quando: dataTesto(voce && voce.creataIl),
+      // L'istante esatto, quello su cui lavora il filtro nel browser. In
+      // ISO con la Z: il confronto e fra due istanti assoluti, quindi
+      // funziona uguale per chi legge da un altro fuso orario.
+      iso: quando.toISOString()
+    });
+  }
+
+  return { attivo: clip.attivo === true && voci.length > 0, voci: voci, quante: quante };
+}
+
 /* ------------------------------------------------------------------ */
 /* TESTO RICCO                                                         */
 /* ------------------------------------------------------------------ */
@@ -724,6 +778,7 @@ function costruisciContesto(contenuti, opzioni) {
     supporto: elencoVisibile(config.supporto, cache, mancanti),
     settimana: settimanaDi(config, testi, adesso),
     clip: clipDi(config, testi),
+    clipPagina: clipPaginaDi(config, testi),
     sito: {
       urlCanale: urlCanale,
       urlChat: 'https://www.twitch.tv/popout/' + canale + '/chat',
@@ -763,6 +818,19 @@ function costruisciContesto(contenuti, opzioni) {
       cssDisposizione: ''
     }
   });
+
+  // Le due cose che la pagina delle clip ha di suo rispetto alla home: dove
+  // sta (per il canonico e per il link che ci porta) e che cosa racconta di
+  // se a un motore di ricerca. La descrizione e la riga di presentazione
+  // della pagina, ripulita dal grassetto perche finisce dentro un
+  // attributo; se e vuota si ripiega su quella del sito, che c'e sempre.
+  const presentazioneClip = testoricco.soloTesto(testi['clip.paginaTesto'] || '');
+  contesto.sito.paginaClip = {
+    url: 'clip.html',
+    canonico: config.sitoUrl ? config.sitoUrl + 'clip.html' : 'clip.html',
+    titolo: (testi['clip.paginaTitolo'] || '') + ' · ' + (testi['marchio.nome'] || ''),
+    descrizione: presentazioneClip || String(testi['meta.descrizione'] || '')
+  };
 
   if (mancanti.length) {
     throw erroreHttp(500, 'Mancano le icone richieste dai contenuti: ' + mancanti.join(', ') +
@@ -1253,13 +1321,27 @@ function rendi(contenuti, opzioni) {
   // sono la stessa pagina.
   const html = togliCommenti(modello.rendiFile(P.modelloIndex, contesto,
     { file: 'modelli/index.html', cartella: P.modelli, cache: cache }));
+
+  // La pagina delle clip si rende solo se c'e qualcosa da metterci dentro.
+  // `null` non vuol dire «errore»: vuol dire che questo sito, adesso, non ha
+  // quella pagina — le clip sono spente, oppure non ne e ancora arrivata
+  // nessuna da Twitch. Chi scrive i file sa che cosa farne (genera()).
+  let clip = null;
+  if (contesto.clipPagina.attivo) {
+    if (!eFile(P.modelloClip)) {
+      throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.modelloClip) +
+        ': e il modello della pagina di tutte le clip.');
+    }
+    clip = togliCommenti(modello.rendiFile(P.modelloClip, contesto,
+      { file: 'modelli/clip.html', cartella: P.modelli, cache: cache }));
+  }
   const dati = modello.rendiFile(P.modelloDati, Object.assign({ dati: jsonSicuro(oggettoDati(contenuti, scelte)) }, contesto),
     { file: 'server/modelli/dati.js.tpl', cartella: P.modelli, cache: cache });
   // Il foglio del tema non passa dal motore di template: e calcolato, non
   // riempito. tema.css() non lancia mai, nemmeno con un tema mezzo scritto.
   const foglio = tema.css(contenuti.config.tema);
 
-  return { html: html, dati: dati, tema: foglio, contesto: contesto };
+  return { html: html, clip: clip, dati: dati, tema: foglio, contesto: contesto };
 }
 
 /** Solo l'HTML, per l'anteprima: si rende al volo e non tocca il disco. */
@@ -1375,25 +1457,31 @@ function xml(valore) {
 }
 
 /**
- * La sitemap: una pagina sola, perche il sito e una pagina sola. Non e un
+ * La sitemap: gli indirizzi VERI del sito, che sono uno o due. Non e un
  * elenco di ancore — `#chi` e `#supporto` non sono indirizzi diversi per un
- * motore di ricerca — e non ha senso gonfiarla.
+ * motore di ricerca — e non ha senso gonfiarla. La pagina delle clip invece
+ * e un indirizzo suo, con un titolo e un contenuto suoi, e ci sta dentro
+ * quando esiste: se le clip sono spente non viene scritta affatto, e
+ * dichiararla vorrebbe dire mandare un motore di ricerca su un 404.
  *
  * `lastmod` e la data dell'ultima pubblicazione, cioe il timbro che la
  * generazione mette su contenuti.json: la sola data, senza l'ora, perche e
  * quello che serve a un motore di ricerca e perche cosi due pubblicazioni
  * nello stesso giorno non producono due file diversi per niente.
  */
-function sitemapXml(indirizzo, quando) {
+function sitemapXml(indirizzo, quando, pagine) {
   const letta = new Date(quando);
   const giorno = (Number.isFinite(letta.getTime()) ? letta : new Date()).toISOString().slice(0, 10);
-  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    '  <url>\n' +
-    '    <loc>' + xml(indirizzo) + '</loc>\n' +
-    '    <lastmod>' + giorno + '</lastmod>\n' +
-    '  </url>\n' +
-    '</urlset>\n';
+  const elenco = (Array.isArray(pagine) && pagine.length) ? pagine : [''];
+  let fuori = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+  for (const pagina of elenco) {
+    fuori += '  <url>\n' +
+      '    <loc>' + xml(indirizzo + pagina) + '</loc>\n' +
+      '    <lastmod>' + giorno + '</lastmod>\n' +
+      '  </url>\n';
+  }
+  return fuori + '</urlset>\n';
 }
 
 /**
@@ -1449,9 +1537,9 @@ function aggiornaRobots(indirizzo) {
  * Ritorna null quando non c'e niente da scrivere, altrimenti il resoconto
  * di cosa e stato scritto — che genera.js stampa e il pannello puo mostrare.
  */
-function scriviSitemap(sito, quando) {
+function scriviSitemap(sito, quando, pagine) {
   if (!sito || !sito.indirizzo) { return null; }
-  const testo = sitemapXml(sito.indirizzo, quando);
+  const testo = sitemapXml(sito.indirizzo, quando, pagine);
   try {
     scriviGenerato(path.join(P.radice, 'sitemap.xml'), testo);
   } catch (e) {
@@ -1464,8 +1552,34 @@ function scriviSitemap(sito, quando) {
     file: 'sitemap.xml',
     byte: Buffer.byteLength(testo, 'utf8'),
     indirizzo: sito.indirizzo,
+    pagine: (Array.isArray(pagine) && pagine.length) ? pagine.length : 1,
     robots: aggiornaRobots(sito.indirizzo)
   };
+}
+
+/**
+ * Scrive clip.html, oppure la toglie di mezzo.
+ *
+ * Toglierla e la meta che conta. La pagina esiste solo finche esistono le
+ * clip: spegnere la vetrina nel pannello deve farla sparire dal sito, non
+ * lasciarne online una copia di tre mesi fa che nessun link raggiunge piu ma
+ * che Google ha in memoria e continua a servire. Se il file non si riesce a
+ * cancellare non si fa fallire la pubblicazione — il resto del sito e gia
+ * scritto ed e giusto — ma lo si dice a chi pubblica, che puo toglierlo a
+ * mano.
+ */
+function scriviPaginaClip(html) {
+  if (html) {
+    scriviGenerato(P.clipHtml, html);
+    return { file: 'clip.html', stato: 'scritta', byte: Buffer.byteLength(html, 'utf8') };
+  }
+  if (!eFile(P.clipHtml)) { return { file: 'clip.html', stato: 'niente', byte: 0 }; }
+  try {
+    fs.unlinkSync(P.clipHtml);
+    return { file: 'clip.html', stato: 'tolta', byte: 0 };
+  } catch (e) {
+    return { file: 'clip.html', stato: 'non tolta', byte: 0, errore: (e && e.message) ? e.message : String(e) };
+  }
 }
 
 /**
@@ -1511,13 +1625,21 @@ function genera(opzioni) {
   scriviGenerato(P.datiJs, reso.dati);
   scriviGenerato(P.temaCss, reso.tema);
 
+  // La pagina delle clip sta fuori dai tre file di sempre, come la sitemap:
+  // quelli ci sono a ogni pubblicazione e sono sempre gli stessi tre, questa
+  // c'e solo se il sito ha delle clip. Tenerla dentro `scritti` vorrebbe
+  // dire un elenco che a volte ha tre voci e a volte quattro, e chi lo legge
+  // — il pannello, il collaudo — dovrebbe mettersi a distinguere.
+  const paginaClip = scriviPaginaClip(reso.clip);
+
   const quando = archivio.salva(contenuti);
 
   // La sitemap dopo il timbro, non prima: `lastmod` e la data dell'ultima
   // pubblicazione, e la pubblicazione e questa. Resta fuori da `scritti`
   // perche quello e l'elenco dei tre file generati, che e sempre lo stesso
   // e su cui si appoggiano il pannello e il collaudo.
-  const mappa = scriviSitemap(controlli.indirizzoSito(contenuti.config), quando);
+  const mappa = scriviSitemap(controlli.indirizzoSito(contenuti.config), quando,
+    reso.clip ? ['', 'clip.html'] : ['']);
 
   return {
     ok: true,
@@ -1525,6 +1647,7 @@ function genera(opzioni) {
     durataMs: Date.now() - inizio,
     aggiornatoIl: quando,
     sitemap: mappa,
+    paginaClip: paginaClip,
     scritti: [
       { file: 'index.html', byte: Buffer.byteLength(reso.html, 'utf8') },
       { file: 'js/dati.js', byte: Buffer.byteLength(reso.dati, 'utf8') },
@@ -1543,7 +1666,7 @@ function genera(opzioni) {
 module.exports = {
   genera, anteprima, anteprimaDi, anteprimaEditor, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
-  oggettoDati, orariTesto, settimanaDi, clipDi, jsonSicuro, chiaviRicche,
+  oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, jsonSicuro, chiaviRicche,
   orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta,
   // togliCommenti si esporta per il collaudo: e una funzione di testo pura
   // e i casi da provare (l'attributo, lo <script>, il <pre>) si provano

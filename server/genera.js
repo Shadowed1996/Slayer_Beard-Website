@@ -78,6 +78,19 @@ async function esegui() {
     console.log('  scritto   ' + scritto.file.padEnd(14) + byteLeggibili(scritto.byte));
   }
 
+  // La pagina di tutte le clip: c'e solo se il sito ha delle clip, quindi va
+  // detto in tutti e tre i casi — scritta, tolta, o non c'era niente da fare.
+  // Chi pubblica deve sapere se quel file adesso e online, perche il bottone
+  // in testa alla «diretta» ci porta.
+  const pagina = esito.paginaClip;
+  if (pagina && pagina.stato === 'scritta') {
+    console.log('  scritto   ' + pagina.file.padEnd(14) + byteLeggibili(pagina.byte));
+  } else if (pagina && pagina.stato === 'tolta') {
+    console.log('  tolta     clip.html: le clip sono spente o non ce n e nessuna');
+  } else if (pagina && pagina.stato === 'non tolta') {
+    console.log('  clip.html non si e potuta togliere (' + pagina.errore + '): va cancellata a mano');
+  }
+
   // La sitemap si scrive solo quando l'indirizzo del sito e noto — dal
   // pannello o da SB_SITO (CONTRATTO-6 §4.3) — e va detto in tutti e due i
   // casi: chi pubblica deve sapere se il file c'e, e se non c'e, perche.
