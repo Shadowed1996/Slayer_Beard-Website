@@ -672,6 +672,15 @@
     return due(o.ore) + ':' + due(o.minuti);
   }
 
+  /** 'AAAA-MM-GG' sul calendario di `fuso` all'istante `ms`; '' se non si legge. */
+  function dataNelFuso(ms, fuso) {
+    const zona = fuso === undefined || fuso === null || fuso === '' ? PREDEFINITI.fuso : fuso;
+    if (typeof ms !== 'number' || !Number.isFinite(ms) || !fusoValido(zona)) { return ''; }
+    const o = orologio(ms, zona.trim());
+    const anno = String(o.anno);
+    return (anno.length >= 4 ? anno : ('0000' + anno).slice(-4)) + '-' + due(o.mese) + '-' + due(o.giorno);
+  }
+
   /** Il giorno della settimana di una data 'AAAA-MM-GG' (0 = domenica), -1 se la data non esiste. */
   function giornoDellaSettimana(data) {
     const d = leggiData(data);
@@ -719,6 +728,70 @@
     return fuori;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* PRIORITÀ DELL'EVENTO SPECIALE                                       */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * L'evento speciale acceso a `adessoMs` (inizio <= adesso < termine),
+   * oppure null. Se per un errore ce ne fossero due sovrapposti vince
+   * quello cominciato prima: è quello che chi guarda sta già vedendo.
+   *
+   * La voce è la stessa di eventiFuturi(): { indice, inizio, termine, … }.
+   */
+  function eventoAttivo(orari, adessoMs) {
+    const adesso = typeof adessoMs === 'number' && Number.isFinite(adessoMs) ? adessoMs : Date.now();
+    const accesi = eventiFuturi(orari, adesso).filter(function (e) { return e.inizio <= adesso; });
+    return accesi.length ? accesi[0] : null;
+  }
+
+  /**
+   * Che cosa si porta via un evento speciale acceso.
+   *
+   * La regola: finché un evento è in corso è LUI il programma, e la
+   * schedule regolare che gli finisce sotto non vale. Una maratona che
+   * comincia sabato alle 15:00 e va avanti fino alle 03:00 copre la
+   * diretta regolare del sabato sera: quella sera non c'è «anche» il
+   * programma di sempre, c'è la maratona e basta. Un giorno che invece
+   * comincia dopo la fine dell'evento non c'entra niente e resta com'è.
+   *
+   * -> { evento, giorni } — `evento` è quello acceso (null se non ce n'è) e
+   * `giorni[0..6]` dice, giorno della settimana per giorno della settimana,
+   * se la sua diretta regolare cade dentro l'evento.
+   *
+   * Si guardano le date di calendario toccate dall'evento nel fuso del
+   * canale, da quella prima del suo inizio (una diretta cominciata la sera
+   * prima e non ancora finita) e per al massimo una settimana: il nastro è
+   * lungo sette giorni, e un evento senza fine nota (ORE_APERTO) li copre
+   * comunque tutti.
+   */
+  function programmaSostituito(orari, adessoMs) {
+    const pulito = normalizza(orari);
+    const giorni = [false, false, false, false, false, false, false];
+    const evento = eventoAttivo(pulito, adessoMs);
+    if (!evento) { return { evento: null, giorni: giorni }; }
+
+    for (let salto = -1; salto <= 7; salto++) {
+      const ms = evento.inizio + salto * MS_GIORNO;
+      // Oltre la fine dell'evento non si guarda: da lì in poi il programma
+      // regolare torna a valere.
+      if (salto > 0 && ms >= evento.termine + MS_GIORNO) { break; }
+      const data = dataNelFuso(ms, pulito.fuso);
+      const g = giornoDellaSettimana(data);
+      if (g === -1 || pulito.giorni.indexOf(g) === -1 || giorni[g]) { continue; }
+      const inizio = istante(data, oraDi(pulito, g), pulito.fuso);
+      if (!Number.isFinite(inizio)) { continue; }
+      const termine = inizio + Math.round(durataDi(pulito, g) * MS_ORA);
+      // Si sovrappongono? Due finestre si toccano se ognuna comincia prima
+      // che l'altra finisca. Sfiorarsi (una finisce dove l'altra comincia)
+      // non è sovrapporsi: la serata regolare che comincia quando la
+      // maratona finisce si fa davvero.
+      if (inizio < evento.termine && termine > evento.inizio) { giorni[g] = true; }
+    }
+
+    return { evento: evento, giorni: giorni };
+  }
+
   return {
     LIMITI: LIMITI,
     PREDEFINITI: PREDEFINITI,
@@ -742,7 +815,10 @@
     fine: fine,
     istante: istante,
     oraNelFuso: oraNelFuso,
+    dataNelFuso: dataNelFuso,
     giornoDellaSettimana: giornoDellaSettimana,
-    eventiFuturi: eventiFuturi
+    eventiFuturi: eventiFuturi,
+    eventoAttivo: eventoAttivo,
+    programmaSostituito: programmaSostituito
   };
 });

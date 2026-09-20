@@ -593,6 +593,45 @@
   white-space: nowrap;
 }
 
+/* --- Il giorno che un evento speciale si è preso ----------------------------
+   Finché un evento speciale è acceso è lui il programma: la serata regolare
+   che gli finisce sotto resta scritta — quando l'evento finisce torna a
+   valere, e sito.js toglie is-sostituito senza ripubblicare niente — ma si
+   legge come quello che non vale adesso: l'orario sbarrato, i testi in
+   secondo piano e una riga ciano col titolo dell'evento che comanda. */
+.nastro__giorno.is-sostituito { border-color: color-mix(in srgb, var(--ciano) 45%, transparent); }
+
+.nastro__giorno.is-sostituito .nastro__orario {
+  color: var(--testo-medio);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.nastro__giorno.is-sostituito .nastro__ora {
+  color: var(--testo-medio);
+  text-shadow: none;
+}
+
+.nastro__giorno.is-sostituito .nastro__titolo,
+.nastro__giorno.is-sostituito .nastro__gioco,
+.nastro__giorno.is-sostituito .nastro__nota {
+  color: var(--testo-medio);
+  font-weight: 500;
+}
+
+.nastro__sostituito {
+  margin: 0;
+  margin-block-start: 2px;
+  color: var(--ciano);
+  font-family: var(--font-titolo);
+  font-size: clamp(1.05rem, 0.72rem + 0.66vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
 /* L'ora di chi guarda (sito.js), solo se è diversa da quella del canale. */
 .nastro__locale,
 .evento__locale {

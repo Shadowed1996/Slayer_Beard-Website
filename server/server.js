@@ -414,16 +414,24 @@ function aggiornamentoAutomatico(opzioni) {
       const iFollower = await twitch.aggiornaFollower();
       const leClip = await twitch.aggiornaClip();
       const iNumeri = await twitch.aggiornaNumeri();
+      // La categoria in onda: durante un evento speciale e il campo che
+      // cambia piu spesso, ed e proprio quello che il sito deve mostrare.
+      const laCategoria = await twitch.aggiornaCategoria();
 
       const cambiato = daChiavi.stato === 'copiato' ||
         daTwitch.stato === 'aggiornato' || iFollower.stato === 'aggiornato' ||
-        leClip.stato === 'aggiornato' || iNumeri.stato === 'aggiornato';
+        leClip.stato === 'aggiornato' || iNumeri.stato === 'aggiornato' ||
+        laCategoria.stato === 'aggiornato' ||
+        // Il canale si e spento mentre una categoria era in pagina: va tolta,
+        // e per toglierla bisogna rigenerare.
+        (laCategoria.stato === 'spenta' && !!laCategoria.precedente);
 
       // Si stampa solo cio che e successo davvero, e ogni riga risponde del
       // proprio esito: un server che ripete «gia aggiornata» ogni dieci
       // minuti diventa rumore, e il rumore nasconde la riga che conta.
       const leRighe = [[daTwitch, twitch.racconta(daTwitch)], [iFollower, twitch.raccontaFollower(iFollower)],
-        [leClip, twitch.raccontaClip(leClip)], [iNumeri, twitch.raccontaNumeri(iNumeri)]];
+        [leClip, twitch.raccontaClip(leClip)], [iNumeri, twitch.raccontaNumeri(iNumeri)],
+        [laCategoria, twitch.raccontaCategoria(laCategoria)]];
       for (const [esito, riga] of leRighe) {
         if (!riga) { continue; }
         if (esito.stato !== 'aggiornato' && esito.stato !== 'fallito') { continue; }
