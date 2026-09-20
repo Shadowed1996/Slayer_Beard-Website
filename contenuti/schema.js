@@ -331,7 +331,7 @@ const gruppi = [
     descrizione: 'La vetrina dei momenti migliori, in fondo alla sezione «La diretta». Le clip le prende il server da Twitch a ogni pubblicazione: qui si decide quante, di che periodo, e come si presenta.',
     campi: [
       { chiave: 'config.clip.attivo', etichetta: 'Mostra le clip', tipo: 'interruttore',
-        aiuto: 'Spento, la vetrina non compare per nessuno, il resto di questo gruppo non ha effetto e alla pubblicazione non viene chiesto niente a Twitch.' },
+        aiuto: 'Spento, la vetrina non compare per nessuno, il resto di questo gruppo non ha effetto e alla pubblicazione non viene chiesto niente a Twitch. Acceso, compare in fondo a «La diretta», con un bottone in testa alla sezione che ci porta — ma solo dopo la prima Pubblica: è lì che il server va a prendere le clip su Twitch.' },
       { chiave: 'config.clip.quante', etichetta: 'Quante clip mostrare', tipo: 'numero', min: 1, max: 12,
         aiuto: 'Da 1 a 12. Sei è un buon numero: due righe da tre sui monitor larghi, una colonna sul telefono.' },
       { chiave: 'config.clip.periodo', etichetta: 'Fra le clip di quale periodo', tipo: 'scelta',

@@ -15,6 +15,25 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **La vetrina delle clip è accesa, e adesso si trova.** L'interruttore
+  `config.clip.attivo` parte acceso, e in testa a «La diretta» c'è **un bottone
+  con scritto il titolo della vetrina** (`.clip__vai`) che porta all'ancora
+  `#clip` in fondo alla sezione. Il binario resta a sei voci — la settima non ci
+  sta a 320 px — ma la vetrina non è più raggiungibile solo scorrendo fino in
+  fondo a una sezione lunga. Il bottone è un'ancora, quindi funziona senza
+  JavaScript, si stampa con la stessa condizione della vetrina («acceso **e**
+  almeno una clip»), e l'etichetta è la chiave `clip.titolo` già esistente: una
+  stringa sola da tenere aggiornata, non due.
+- **Il pannello dice perché la vetrina accesa non si vede.** Nuovo avvertimento
+  d'insieme (`server/lib/controlli.js`): interruttore acceso ed elenco ancora
+  vuoto significa «pubblica una volta», perché è la pubblicazione ad andare a
+  prendere le clip su Twitch. Non è un errore e non ferma niente — è la riga che
+  mancava fra le cose da guardare prima di mandare il sito online.
+- **`static-cdn.jtvnw.net` fra gli host delle anteprime** (`HOST_ANTEPRIME` in
+  `server/lib/twitch.js`): è quello da cui Twitch serve le clip ritagliate di
+  recente. La Content-Security-Policy lo conosceva già — è lo stesso host degli
+  avatar — quindi quelle card restavano senza immagine per un filtro nostro, non
+  per un divieto del browser.
 - **Il progetto è pronto per un hosting con Node.** Finora sito e pannello
   nascevano per girare in locale (`127.0.0.1:4173`, avviati a mano); adesso lo
   stesso progetto si carica su un hosting con Node — il caso di partenza è un

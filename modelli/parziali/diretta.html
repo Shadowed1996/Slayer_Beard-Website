@@ -10,6 +10,26 @@
     <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
     <p class="sezione__testo" data-sb-testo="diretta.testo">{{{diretta.testo}}}</p>
 
+    <!-- La scorciatoia per la vetrina delle clip, che sta in fondo a questa
+         stessa sezione. È il posto della voce che il binario non può avere:
+         il dock si ferma a sei etichette (css/base.css, tarato a 320px), e
+         senza questo bottone la vetrina la trovava solo chi scorreva fino
+         in fondo — cioè quasi nessuno su un telefono.
+
+         L'etichetta è il titolo della vetrina, quello che si scrive nel
+         pannello: porta dove dice di portare, e non è una settima stringa
+         da tenere d'accordo con la prima. Niente data-sb-testo, perché la
+         chiave ha già il suo nodo giù nella vetrina e l'editor deve
+         continuare ad avere un solo posto in cui modificarla.
+
+         Si stampa con la stessa condizione della vetrina — `clip.attivo` è
+         già «acceso E almeno una clip» — perché un bottone che porta a
+         un'ancora inesistente è peggio che nessun bottone. -->
+    {{#se clip.attivo}}<a class="clip__vai" href="#clip">
+      <span class="clip__vai-testo">{{clip.titolo}}</span>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+    </a>{{/se}}
+
     <!-- Il profilo del sito. Sta qui in cima, staccato dai comandi del lurk,
          perché sono due cose diverse: questa dice CHI sei sul sito, quella
          sotto al monitor dice cosa fa il sito col video. Mescolarle in

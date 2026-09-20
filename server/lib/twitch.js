@@ -74,9 +74,13 @@ const ANTICIPO_MS = 60 * 1000;
 // Gli host da cui Twitch serve le anteprime delle clip. Vanno tenuti
 // d'accordo con `img-src` della Content-Security-Policy in
 // modelli/parziali/testa.html: un'anteprima su un host che la CSP non
-// conosce non si vede, e non lo dice nessuno. Sono due perche Twitch non
-// ha mai migrato del tutto le clip vecchie sul nome nuovo.
-const HOST_ANTEPRIME = ['clips-media-assets2.twitch.tv', 'clips-media-assets.twitch.tv'];
+// conosce non si vede, e non lo dice nessuno. I primi due sono i nomi
+// storici, che convivono perche Twitch non ha mai migrato del tutto le clip
+// vecchie sul nome nuovo; il terzo e quello che serve le clip ritagliate di
+// recente, ed e lo stesso host degli avatar — quindi la CSP lo conosceva
+// gia, e senza questa riga quelle card restavano senza immagine per un
+// controllo nostro, non per un divieto del browser.
+const HOST_ANTEPRIME = ['clips-media-assets2.twitch.tv', 'clips-media-assets.twitch.tv', 'static-cdn.jtvnw.net'];
 
 // Cache in memoria, non su disco: il server locale si riavvia spesso e un
 // app token si riprende in una richiesta sola. Scriverlo su disco vorrebbe
