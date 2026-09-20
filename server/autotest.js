@@ -261,9 +261,33 @@ async function proveConvalida(contenutiVeri) {
     documento.config.account.attivo = true;
     documento.config.account.clientId = 'k3j9x2q7w1m5v8b4n6z0c7t2y5r8p3';
     documento.config.account.urlRitorno = 'https://slayerbeard.com/';
+    // Un sito in produzione con la vetrina accesa ha gia le sue clip: gliele
+    // ha messe la pubblicazione. Senza questa riga scatterebbe l'avvertimento
+    // «accesa ma vuota», che e giusto ma qui parlerebbe di un altro caso.
+    documento.config.clip = Object.assign({}, documento.config.clip, {
+      attivo: true,
+      voci: [{ id: 'abc', titolo: 'Una clip', url: 'https://clips.twitch.tv/abc', anteprima: '', durataSec: 30, visualizzazioni: 10, creataIl: '', autore: '' }]
+    });
     const avvertimenti = controlli.controlli(documento);
     esigiUguale(avvertimenti.length, 0,
       'avvertimenti inattesi: ' + avvertimenti.map((a) => a.chiave).join(', '));
+  });
+
+  await prova('controlli: la vetrina accesa e ancora vuota viene detta', () => {
+    // E il caso che manda a cercare nel posto sbagliato: interruttore acceso,
+    // parte presente nel pannello, e sul sito niente. Non e un guasto — la
+    // vetrina si stampa solo con almeno una clip — ma senza una riga che lo
+    // dica sembra esattamente un guasto.
+    const documento = JSON.parse(JSON.stringify(contenutiVeri));
+    documento.config.clip = Object.assign({}, documento.config.clip, { attivo: true, voci: [] });
+    const avvertimenti = controlli.controlli(documento);
+    esigi(avvertimenti.some((a) => a.chiave === 'config.clip.attivo'),
+      'nessun avvertimento sulla vetrina accesa e vuota');
+
+    // Spenta invece non si dice niente: e una scelta, non una dimenticanza.
+    documento.config.clip.attivo = false;
+    esigi(!controlli.controlli(documento).some((a) => a.chiave === 'config.clip.attivo'),
+      'avvertimento sulla vetrina spenta, che non ha niente che non va');
   });
 
   await prova('controlli: senza indirizzo e senza domini il player viene detto', () => {
@@ -2125,6 +2149,30 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
     const html = costruisci.anteprimaDi(documento);
     esigi(html.indexOf('clip__griglia') === -1, 'la griglia e finita in pagina con la vetrina spenta');
     esigi(html.indexOf('clip__card') === -1, 'le card sono finite in pagina con la vetrina spenta');
+    // E nemmeno il bottone che ci porterebbe: un'ancora verso un id che non
+    // c'e porta in cima alla pagina, e chi la usa non capisce perche.
+    esigi(html.indexOf('clip__vai') === -1, 'il bottone per la vetrina e in pagina senza la vetrina');
+  });
+
+  await prova('il bottone in testa alla diretta porta alla vetrina', () => {
+    // La vetrina non ha una voce nel binario (prova qui sotto) e sta in
+    // fondo a una sezione lunga: senza questo bottone la trovava solo chi
+    // scorreva fino in fondo.
+    const documento = archivio.leggi();
+    documento.config.clip = accesa();
+    const html = costruisci.anteprimaDi(documento);
+
+    const diretta = html.slice(html.indexOf('id="diretta"'), html.indexOf('id="settimana"'));
+    esigiDentro(diretta, 'class="clip__vai" href="#clip"', 'manca il bottone che porta alla vetrina');
+    // Il bersaglio deve esistere davvero, e una volta sola.
+    esigiUguale((html.match(/id="clip"/g) || []).length, 1, 'quanti bersagli #clip');
+    // Il bottone viene prima della vetrina: e la scorciatoia per arrivarci.
+    esigi(diretta.indexOf('clip__vai') < diretta.indexOf('clip__griglia'),
+      'il bottone sta dopo la vetrina a cui dovrebbe portare');
+    // L'etichetta e il titolo della vetrina, non una stringa nuova da tenere
+    // d'accordo con quella: scritta nel pannello una volta sola.
+    esigiDentro(diretta, '<span class="clip__vai-testo">' + documento.testi['clip.titolo'] + '</span>',
+      'l etichetta del bottone non e il titolo della vetrina');
   });
 
   await prova('a vetrina accesa le card ci sono, e i valori arrivano protetti', () => {

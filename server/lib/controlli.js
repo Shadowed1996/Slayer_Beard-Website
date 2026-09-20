@@ -149,6 +149,7 @@ function controlli(contenuti) {
   const twitch = (config.twitch && typeof config.twitch === 'object') ? config.twitch : {};
   const lurk = (config.lurk && typeof config.lurk === 'object') ? config.lurk : {};
   const account = (config.account && typeof config.account === 'object') ? config.account : {};
+  const clip = (config.clip && typeof config.clip === 'object') ? config.clip : {};
 
   // L'indirizzo in vigore, che puo venire dal pannello o da SB_SITO
   // (CONTRATTO-6 §4.2 e §4.4). Da qualunque parte arrivi, la generazione fa
@@ -194,6 +195,23 @@ function controlli(contenuti) {
       'Il profilo del sito e acceso ma manca il Client ID: la generazione lo lascia spento comunque, '
       + 'sul sito non compare nessun bottone «Collegati con Twitch» e il messaggio in chat della modalita lurk '
       + 'resta spento con lui.');
+  }
+
+  /* --- La vetrina delle clip: accesa e vuota non si vede, e non lo dice --- */
+
+  // Il caso che manda a cercare nel posto sbagliato: l'interruttore è acceso,
+  // nel pannello la parte c'è, e sul sito non compare niente. Non è un guasto
+  // — la generazione stampa la vetrina solo se c'è almeno una clip, perché un
+  // titolo con sotto il vuoto è peggio di nessun titolo — ma senza una riga
+  // che lo dica sembra esattamente un guasto. Le clip arrivano da Twitch alla
+  // pubblicazione (server/lib/twitch.js): se dopo una pubblicazione l'elenco è
+  // ancora vuoto, o manca il collegamento, o nel periodo scelto non ce n'è.
+  if (clip.attivo === true && !(Array.isArray(clip.voci) && clip.voci.length)) {
+    dico('config.clip.attivo',
+      'La vetrina delle clip e accesa ma l\'elenco e ancora vuoto, quindi sul sito non compare — '
+      + 'ne la griglia ne il bottone che ci porta. Le clip le prende il server da Twitch a ogni pubblicazione: '
+      + 'pubblica una volta, e se restano zero controlla il collegamento (node server/imposta-twitch.js) '
+      + 'e allarga il periodo nella parte «Le clip».');
   }
 
   if (lurk.messaggioAttivo === true && account.attivo !== true) {

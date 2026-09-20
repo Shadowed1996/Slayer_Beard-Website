@@ -15,6 +15,68 @@
   margin-block-start: var(--passo-4);
   padding-block-start: var(--passo-3);
   border-block-start: 1px solid var(--linea);
+  /* La vetrina non è una <section id>, quindi la regola di base.css non la
+     prende: senza questo, chi arriva da #clip se la ritrova incollata al
+     bordo alto della finestra, con l'occhiello mangiato dal margine. */
+  scroll-margin-block-start: var(--passo-3);
+}
+
+/* Il bottone che porta alla vetrina. Sta in testa alla «diretta» e non qui
+   dentro — il markup è in modelli/parziali/diretta.html — ma appartiene a
+   questo blocco: compare e sparisce con la vetrina, e se un domani la
+   vetrina se ne va, se ne va anche il suo stile, da un file solo.
+
+   La forma è quella del comando sotto al monitor (.monitor__piede > button):
+   pillola vuota, etichetta in monospazio, 44px di bersaglio. Non è una CTA e
+   non deve competere col player — resta un comando della strumentazione. */
+.clip__vai {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--passo);
+  /* La testa della «diretta» è una colonna flex, e da 900px in su una
+     griglia: in tutti e due i casi un figlio si allarga da solo fino al
+     bordo, e la pillola diventerebbe una barra lunga mezza sezione. */
+  align-self: flex-start;
+  margin-block-start: var(--passo-2);
+  min-block-size: 44px;
+  padding-inline: var(--passo-3);
+  border: 1px solid var(--linea-comando);
+  border-radius: var(--raggio-pill);
+  color: var(--testo);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.clip__vai svg {
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  flex: none;
+}
+
+.clip__vai:hover {
+  border-color: var(--ciano);
+  background-color: var(--pannello-2);
+  color: var(--ciano);
+}
+
+/* Da 900px la testa della «diretta» è una griglia a due colonne con i posti
+   assegnati a mano (css/diretta.css): occhiello e titolo a sinistra, il testo
+   a destra. Il bottone si prende una casella dichiarata — riga 3, colonna
+   del testo — e non una a caso: lasciato all'automatismo si infilava nella
+   prima libera e spingeva la tessera del profilo nell'altra colonna, cioè
+   spostava una parte che non c'entra niente con le clip. */
+@media (min-width: 900px) {
+  .diretta__testa .clip__vai {
+    grid-column: 2;
+    grid-row: 3;
+    justify-self: start;
+  }
 }
 
 .clip__testa {

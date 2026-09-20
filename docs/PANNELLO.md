@@ -1748,8 +1748,14 @@ lurk, può comparire una griglia con **le clip più viste del canale**: anteprim
 durata, quante volte è stata guardata, quando, e il nome di chi l'ha ritagliata.
 Nel pannello è la parte **Le clip**: clicca la vetrina nell'anteprima.
 
-**Di serie è spenta**, e da spenta nell'anteprima non c'è: si accende da *La
-diretta* → *Parti che si possono spegnere* → **Mostra le clip**.
+L'interruttore è **acceso**, e in testa a «La diretta» compare un bottone con
+scritto il titolo della vetrina che porta giù fino a lei. Si spegne — insieme al
+bottone — da *La diretta* → *Parti che si possono spegnere* → **Mostra le clip**.
+
+> Acceso non basta: la vetrina compare **dopo la prima Pubblica**, perché è lì
+> che il server va a prendere le clip su Twitch. Finché l'elenco è vuoto non si
+> stampa niente — né la griglia né il bottone — e il pannello te lo dice in
+> chiaro fra le cose da guardare prima di mandare il sito online.
 
 ### Le clip non le scegli tu, e non è un limite
 
@@ -1769,7 +1775,8 @@ l'ennesimo campo che invecchia.
 
 **Mostra le clip** — l'interruttore principale. Spento, la vetrina non compare
 per nessuno, il resto della parte non ha effetto, e alla pubblicazione non
-viene chiesto niente a Twitch.
+viene chiesto niente a Twitch. Acceso, compare in fondo a «La diretta», col
+bottone in testa alla sezione che ci porta.
 
 **Quante clip mostrare** — da 1 a 12. Sei è un buon numero: due righe da tre sui
 monitor larghi, una colonna sul telefono. Se lo abbassi, la vetrina si accorcia
@@ -1795,29 +1802,39 @@ come in ogni altra sezione. La riga di presentazione può restare vuota.
 schermo («Guarda la clip»), quella dopo il numero delle visualizzazioni, e
 quella prima del nome di chi ha ritagliato la clip («clip di»).
 
-### Perché non c'è nel menu laterale
+### Perché non c'è nel menu laterale, e come ci si arriva lo stesso
 
 Il menu del sito ha al massimo sei voci, e sul telefono diventa la barra in basso:
 sei etichette ci stanno anche su uno schermo da 320 px, la settima no. Le clip
 sono l'archivio di quello che succede nel video lì sopra, quindi stanno dentro la
-stessa sezione «La diretta» invece di chiederne una tutta loro. Chi scende la
-pagina le trova; il menu resta leggibile su qualunque telefono.
+stessa sezione «La diretta» invece di chiederne una tutta loro.
+
+Restava il fatto che «La diretta» è lunga e la vetrina sta in fondo: la trovava
+solo chi scorreva fino là. Per questo in testa alla sezione c'è **un bottone con
+scritto il titolo della vetrina** — quello che scrivi tu nel campo *Titolo della
+vetrina*, non una settima riga da tenere d'accordo con la prima — che porta
+dritto alle clip. È un'ancora, quindi funziona anche col JavaScript spento, e
+compare e sparisce insieme alla vetrina: se le clip non ci sono, non c'è nemmeno
+un bottone che prometta di portarti da nessuna parte.
 
 ### Quando qualcosa non va
 
 **Ho acceso l'interruttore e non compare niente**
-Nell'ordine: hai dato `node server/imposta-twitch.js`? Hai **pubblicato** dopo
-aver acceso l'interruttore? Il canale ha davvero delle clip nel periodo scelto?
-Prova ad allargare il periodo a «da sempre»: se compaiono, era quello.
+È il caso che il pannello ti dice da sé: a interruttore acceso ed elenco ancora
+vuoto, fra le cose da guardare prima di mandare il sito online compare una riga
+sulle clip. Nell'ordine: hai dato `node server/imposta-twitch.js`? Hai
+**pubblicato** dopo aver acceso l'interruttore? Il canale ha davvero delle clip
+nel periodo scelto? Prova ad allargare il periodo a «da sempre»: se compaiono,
+era quello.
 
 **Le card ci sono ma le immagini no**
-Twitch serve le anteprime da due indirizzi noti. Se una clip ha l'anteprima
+Twitch serve le anteprime da tre indirizzi noti. Se una clip ha l'anteprima
 altrove, il server la scarta e te lo scrive alla pubblicazione — la card resta,
 col suo fondo scuro, e non è un guasto. Se invece **nessuna** immagine si vede,
 di solito è l'hosting che aggiunge una propria Content-Security-Policy più
-stretta di quella della pagina: vanno permessi `clips-media-assets2.twitch.tv` e
-`clips-media-assets.twitch.tv` in `img-src`. È lo stesso problema dell'avatar
-della tessera, nel capitolo 20.
+stretta di quella della pagina: vanno permessi `clips-media-assets2.twitch.tv`,
+`clips-media-assets.twitch.tv` e `static-cdn.jtvnw.net` in `img-src`. È lo stesso
+problema dell'avatar della tessera, nel capitolo 20.
 
 **Le clip sono vecchie**
 Si aggiornano a ogni **Pubblica** e, se il collegamento con Twitch c'è, a ogni

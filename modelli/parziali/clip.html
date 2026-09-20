@@ -6,12 +6,18 @@
      succede nel monitor qui sopra, quindi stanno dentro la stessa sezione
      invece di chiederne una propria — e il binario resta a sei voci.
 
+     Al posto della voce nel dock c'e un bottone in testa alla «diretta»
+     (modelli/parziali/diretta.html) che porta qui: senza, la vetrina la
+     trovava solo chi scorreva fino in fondo. L'id #clip e il bersaglio di
+     quel bottone, e nient'altro.
+
      Tutto statico: nessun id e contratto con nessun JavaScript, e senza JS
-     questa parte funziona per intero. L'elenco lo riempie la generazione,
-     da config.clip.voci, che a sua volta arriva da server/lib/twitch.js.
-     Stampata solo se c'e almeno una clip: il ramo `clip.attivo` del
-     contesto e gia «acceso E non vuoto» (server/lib/costruisci.js). -->
-<div class="clip" data-sb-parte="clip">
+     questa parte funziona per intero — il bottone e un'ancora, non un
+     comando. L'elenco lo riempie la generazione, da config.clip.voci, che
+     a sua volta arriva da server/lib/twitch.js. Stampata solo se c'e
+     almeno una clip: il ramo `clip.attivo` del contesto e gia «acceso E
+     non vuoto» (server/lib/costruisci.js). -->
+<div id="clip" class="clip" data-sb-parte="clip">
   <div class="clip__testa">
     <p class="sezione__occhiello" data-sb-testo="clip.occhiello">{{clip.occhiello}}</p>
     <h3 class="clip__titolo" data-sb-testo="clip.titolo">{{clip.titolo}}</h3>

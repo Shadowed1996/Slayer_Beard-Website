@@ -162,7 +162,8 @@ grande, con la chat e il pollo accanto, e in fondo la vetrina delle clip), **set
 sono**, **supporto**, **saluti**. Dal pannello si possono riordinare e nascondere (la copertina
 resta sempre prima e accesa); il binario laterale e il piede ci sono sempre. Il binario ha una
 voce per ogni sezione accesa, quindi al massimo sei — e resta a sei: la vetrina delle clip sta
-dentro «diretta» proprio per non chiederne una settima, che sotto i 400 px non ci starebbe.
+dentro «diretta» proprio per non chiederne una settima, che sotto i 400 px non ci starebbe. Ci si
+arriva da un bottone in testa a «diretta», non dal binario.
 
 La versione precedente del sito è conservata fuori dal repository, in una cartella locale
 `sito-backup/`: serve solo come riferimento storico, non è collegata a niente.
@@ -694,9 +695,20 @@ etichette ci stanno anche a 320 px, e la settima le farebbe traboccare: il comme
 sopra, quindi stanno dentro la stessa sezione invece di chiederne una propria. Una prova del
 collaudo controlla che le voci restino sei.
 
+**Al posto della voce nel dock c'è un bottone in testa alla «diretta».** `.clip__vai` in
+`modelli/parziali/diretta.html` è un'ancora verso `#clip`, l'id della vetrina: funziona col
+JavaScript spento, si stampa con la stessa condizione della vetrina — `clip.attivo` nel contesto
+è già «acceso **e** almeno una clip», perché un bottone verso un'ancora inesistente porta in cima
+alla pagina e non lo spiega a nessuno — e porta l'etichetta di `clip.titolo`, la chiave che si
+scrive nel pannello, invece di una settima stringa da tenere d'accordo con la prima. Senza, la
+vetrina la trovava solo chi scorreva fino in fondo a una sezione lunga.
+
 **Serve il collegamento con Twitch** (`node server/imposta-twitch.js`, capitolo qui sopra): è lo
 stesso app token che aggiorna «Ultima diretta». Senza, la vetrina resta spenta e nel pannello si
 può accendere quanto si vuole senza che compaia niente — non ci sarebbe niente da mostrare.
+Quel caso non resta muto: `server/lib/controlli.js` lo dice fra gli avvertimenti d'insieme —
+interruttore acceso ed elenco ancora vuoto vuol dire «pubblica una volta», ed è la generazione
+che va a prendere le clip.
 
 Dal pannello — si clicca la vetrina nell'anteprima, parte **«Le clip»**; da spenta si accende
 dalla sezione «La diretta» — si scelgono tre cose: se mostrarla, **quante** clip (da 1 a
@@ -712,9 +724,10 @@ sotto le dita di chi la compila. La copertura dello schema lo salta apposta (`GE
 i tre dell'editor (`EDITOR`), che invece scrive il pannello: capitolo *Modificare il sito*.
 
 **Le anteprime.** Le serve Twitch da `clips-media-assets2.twitch.tv` (e da
-`clips-media-assets.twitch.tv`, per le clip vecchie): sono i due host che si sono aggiunti a
-`img-src` nella Content-Security-Policy, e come `static-cdn.jtvnw.net` sono host di sole
-immagini. `server/lib/twitch.js` **scarta** le anteprime che arrivano da un host diverso invece
+`clips-media-assets.twitch.tv`, per le clip vecchie) e da `static-cdn.jtvnw.net`, che è lo stesso
+host degli avatar e quello da cui arrivano le clip ritagliate di recente: sono i tre host di
+`img-src` nella Content-Security-Policy, e sono tutti e tre host di sole immagini.
+`server/lib/twitch.js` **scarta** le anteprime che arrivano da un host diverso invece
 di stamparle e lasciarle bloccare in silenzio — un'immagine che la CSP ferma non lo dice a
 nessuno — e la generazione lo scrive in fondo, così si sa che è successo. La card senza anteprima
 resta comunque in piedi, col suo fondo: meglio una clip senza immagine che una clip in meno. Il
