@@ -71,6 +71,12 @@ function calcola(radice) {
     // follower e abbonati. Non sta in chiavi.js perche non si scrive a mano
     // e cambia da sola: Twitch rinnova il refresh token a ogni uso.
     accessoTwitch: path.join(radice, 'server', 'dati', 'twitch-accesso.json'),
+    // Che cosa sta trasmettendo il canale, letto da Twitch alla
+    // pubblicazione: serve al gioco degli eventi speciali. Non sta in
+    // contenuti.json apposta — non e roba scritta da chi amministra, e un
+    // file che cambia da se accanto ai contenuti farebbe sembrare che ci
+    // sia sempre una bozza da pubblicare.
+    direttaTwitch: path.join(radice, 'server', 'dati', 'twitch-diretta.json'),
     backup: path.join(radice, 'server', 'backup'),
     modelloDati: path.join(radice, 'server', 'modelli', 'dati.js.tpl')
   };
@@ -131,6 +137,7 @@ function applicaAmbiente(percorsi) {
     percorsi.auth = path.join(dati, 'auth.json');
     percorsi.chiavi = path.join(dati, 'chiavi.js');
     percorsi.accessoTwitch = path.join(dati, 'twitch-accesso.json');
+    percorsi.direttaTwitch = path.join(dati, 'twitch-diretta.json');
   }
 
   const backup = cartellaDaAmbiente('SB_BACKUP');

@@ -827,6 +827,10 @@ hai scritto.
   viola) e **In onda** (un contorno rosso con la spia). Un giorno la cui data
   coincide con quella di un evento speciale prende l'etichetta *Speciale*. Chi guarda
   da un altro fuso vede sotto l'ora anche la sua: *Da te 15:00*.
+- **Un evento in corso ha la precedenza su tutto.** Il giorno la cui diretta regolare
+  gli finisce sotto si legge spento — orario sbarrato, sotto il titolo dell'evento — e
+  non è più né *Prossima* né *In onda*: in onda c'è l'evento. Quando l'evento finisce
+  il giorno torna quello di sempre da solo, senza ripubblicare il sito.
 - Il **conto alla rovescia** della copertina va verso la partenza più vicina, che sia
   una serata normale o un evento speciale, con l'ora e la durata di ogni giorno.
 
@@ -2415,6 +2419,8 @@ carica con `require('../../pannello/condivisi/orari.js')`; nel pannello lo impor
 | `istante(data, ora, fuso)` | i millisecondi UTC di quell'orologio in quel fuso, `NaN` se qualcosa non si legge. L'ora che non esiste al cambio d'ora scivola avanti (29/03/2026 02:30 a Roma → 03:30), l'ora che esiste due volte è la prima |
 | `oraNelFuso(ms, fuso)` · `giornoDellaSettimana(data)` | `'HH:MM'` a quell'istante · 0–6, `-1` se la data non esiste |
 | `eventiFuturi(orari, adessoMs)` | gli eventi non ancora finiti, dal primo che parte: `[{ indice, inizio, termine, …evento }]`, istanti in ms ed evento normalizzato; quelli in corso ci sono |
+| `eventoAttivo(orari, adessoMs)` | l'evento **acceso adesso** (`inizio <= adesso < termine`) o `null`; a due sovrapposti vince quello cominciato prima, che è quello che si sta già guardando |
+| `programmaSostituito(orari, adessoMs)` | `{ evento, giorni }`: l'evento acceso e, giorno per giorno (0–6), se la sua diretta regolare **finisce sotto** all'evento. Sfiorarsi non conta: la serata che comincia quando la maratona finisce si fa davvero |
 
 `normalizza` e `problemi` hanno due mestieri diversi. `normalizza` serve a **leggere**:
 generazione, anteprima e riassunti del pannello devono mostrare qualcosa anche con una

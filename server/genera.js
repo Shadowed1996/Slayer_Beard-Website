@@ -65,6 +65,11 @@ async function esegui() {
   if (leClip.stato !== 'spento') { console.log('  ' + twitch.raccontaClip(leClip)); }
   const iNumeri = await twitch.aggiornaNumeri();
   if (iNumeri.stato !== 'spento') { console.log('  ' + twitch.raccontaNumeri(iNumeri)); }
+  // Che cosa c e in onda proprio adesso: lo mostra l evento speciale acceso
+  // al posto del gioco scritto a mano (server/lib/costruisci.js, eventiDi).
+  // Va chiesto qui e non dentro genera(): la generazione resta sincrona.
+  const laCategoria = await twitch.aggiornaCategoria();
+  if (laCategoria.stato !== 'spento') { console.log('  ' + twitch.raccontaCategoria(laCategoria)); }
   if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento' || iNumeri.stato !== 'spento' || chiavi.racconta(daChiavi)) { console.log(''); }
 
   const esito = costruisci.genera();

@@ -1844,6 +1844,39 @@ async function proveTwitch(costruisci, archivio) {
     }
   });
 
+  await prova('la categoria in onda non lancia mai e non tocca contenuti.json', async () => {
+    // Stesse regole del resto del file: senza credenziali non si chiede
+    // niente, e quello che si legge non entra MAI nei contenuti — sta in
+    // server/dati/twitch-diretta.json, che non e roba di chi amministra.
+    const primaDeiContenuti = JSON.stringify(archivio.leggi());
+    togliCredenziali();
+    esigiUguale((await twitch.aggiornaCategoria()).stato, 'spento', 'senza credenziali');
+    scriviCredenziali('module.exports = { questo non e javascript');
+    esigiUguale((await twitch.aggiornaCategoria()).stato, 'fallito', 'file rotto');
+    togliCredenziali();
+    esigiUguale(JSON.stringify(archivio.leggi()), primaDeiContenuti, 'ha toccato i contenuti');
+
+    for (const stato of ['spento', 'senzaCanale', 'aggiornato', 'invariato', 'spenta', 'fallito']) {
+      const riga = twitch.raccontaCategoria({ stato: stato, categoria: 'Elden Ring', precedente: 'Quiz', motivo: 'un motivo' });
+      esigi(typeof riga === 'string' && riga.length > 0, 'nessuna riga per lo stato ' + stato);
+    }
+    for (const storto of [null, undefined, {}, { stato: 'inventato' }]) {
+      esigiUguale(twitch.raccontaCategoria(storto), '', 'raccontaCategoria(' + JSON.stringify(storto) + ')');
+    }
+
+    // direttaSalvata() legge un file di servizio: se non c e, o e storto, la
+    // risposta e null e la pubblicazione va avanti come sempre.
+    try { fs.unlinkSync(P.direttaTwitch); } catch (e) { /* gia sparito */ }
+    esigiUguale(twitch.direttaSalvata(), null, 'senza file');
+    fs.mkdirSync(path.dirname(P.direttaTwitch), { recursive: true });
+    fs.writeFileSync(P.direttaTwitch, '{ non e json');
+    esigiUguale(twitch.direttaSalvata(), null, 'file storto');
+    twitch.salvaDiretta({ categoria: 'Elden Ring', inOnda: true, letteIl: '2026-09-20T10:00:00.000Z' });
+    esigiUguale(JSON.stringify(twitch.direttaSalvata()),
+      JSON.stringify({ categoria: 'Elden Ring', inOnda: true, letteIl: '2026-09-20T10:00:00.000Z' }), 'lettura salvata');
+    try { fs.unlinkSync(P.direttaTwitch); } catch (e) { /* gia sparito */ }
+  });
+
   await prova('il numero dei follower stampato in pagina e quello dei contenuti, con il punto delle migliaia', () => {
     // Il valore non si scrive piu a mano in due posti (deck.dato1Valore e
     // chi.dato1Valore non esistono piu): la pagina lo prende da
@@ -2600,6 +2633,61 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     esigi(pagina.termine !== '', 'termine invece resta un istante vero (serve a data-fine)');
   });
 
+  /* --- priorita dell evento speciale --------------------------------- */
+
+  await prova('eventoAttivo: solo quello acceso adesso, e a due sovrapposti vince chi ha cominciato prima', () => {
+    const orari = Object.assign(orariBuoni(), {
+      eventi: [
+        evento({ data: '2026-09-27', ora: '15:00', durataOre: 12, titolo: 'Maratona' }),
+        evento({ data: '2026-09-27', ora: '14:00', durataOre: 12, titolo: 'Cominciata prima' })
+      ]
+    });
+    // 15:00 a Roma e 13:00Z: prima di allora la sola accesa e quella delle 14.
+    esigiUguale(O.eventoAttivo(orari, Date.parse('2026-09-27T12:30:00.000Z')).titolo, 'Cominciata prima', 'una sola accesa');
+    esigiUguale(O.eventoAttivo(orari, Date.parse('2026-09-27T16:00:00.000Z')).titolo, 'Cominciata prima', 'sovrapposte: vince chi e cominciata prima');
+    esigiUguale(O.eventoAttivo(orari, Date.parse('2026-09-27T10:00:00.000Z')), null, 'non ancora cominciate');
+    esigiUguale(O.eventoAttivo(orari, Date.parse('2026-09-29T10:00:00.000Z')), null, 'finite tutte');
+    esigiUguale(O.eventoAttivo(orariBuoni(), Date.parse('2026-09-27T16:00:00.000Z')), null, 'senza eventi');
+    esigiUguale(O.eventoAttivo('x', Date.parse('2026-09-27T16:00:00.000Z')), null, 'ramo storto');
+  });
+
+  await prova('programmaSostituito: l evento acceso si prende i giorni che gli finiscono sotto, non gli altri', () => {
+    // giorni 1, 3, 5, 0 alle 21:00 per quattro ore. La maratona comincia
+    // domenica alle 15:00 e va fino alle 03:00 di lunedi: si porta via la
+    // domenica sera, non il lunedi (che comincia alle 21:00 del giorno dopo).
+    const orari = Object.assign(orariBuoni(), {
+      eventi: [evento({ data: '2026-09-27', ora: '15:00', durataOre: 12, titolo: 'Maratona' })]
+    });
+    const dentro = O.programmaSostituito(orari, Date.parse('2026-09-27T16:00:00.000Z'));
+    esigiUguale(dentro.evento.titolo, 'Maratona', 'l evento acceso');
+    esigiUguale(dentro.giorni.join(','), 'true,false,false,false,false,false,false', 'solo la domenica');
+
+    // Prima che cominci non si porta via niente: il nastro resta quello di sempre.
+    const prima = O.programmaSostituito(orari, Date.parse('2026-09-27T10:00:00.000Z'));
+    esigiUguale(prima.evento + ' ' + prima.giorni.join(','), 'null false,false,false,false,false,false,false', 'evento non ancora acceso');
+    // E dopo la fine torna tutto com era, senza ripubblicare niente.
+    const dopo = O.programmaSostituito(orari, Date.parse('2026-09-28T02:00:00.000Z'));
+    esigiUguale(dopo.evento + ' ' + dopo.giorni.join(','), 'null false,false,false,false,false,false,false', 'evento finito');
+  });
+
+  await prova('programmaSostituito: sfiorarsi non e sovrapporsi, e un evento senza fine nota li copre tutti', () => {
+    // La serata regolare comincia esattamente quando l evento finisce: quella
+    // diretta si fa davvero, e non va sbarrata.
+    const attaccati = Object.assign(orariBuoni(), {
+      eventi: [evento({ data: '2026-09-27', ora: '13:00', durataOre: 8, titolo: 'Fino alle 21' })]
+    });
+    esigiUguale(O.programmaSostituito(attaccati, Date.parse('2026-09-27T16:00:00.000Z')).giorni.join(','),
+      'false,false,false,false,false,false,false', 'una finestra che finisce dove l altra comincia');
+
+    // Senza durata (ORE_APERTO) l evento dura finche non lo si toglie: tutti
+    // i giorni accesi del nastro gli finiscono sotto.
+    const aperto = Object.assign(orariBuoni(), {
+      eventi: [evento({ data: '2026-09-27', ora: '15:00', durataOre: null, titolo: 'Maratona aperta' })]
+    });
+    esigiUguale(O.programmaSostituito(aperto, Date.parse('2026-09-28T10:00:00.000Z')).giorni.join(','),
+      'true,true,false,true,false,true,false', 'tutti e quattro i giorni di diretta');
+  });
+
   /* --- convalida del server ------------------------------------------ */
 
   await prova('convalida: gli errori della schedule portano la chiave della casella e i messaggi di orari.js', () => {
@@ -2644,7 +2732,7 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     const per = {};
     for (const voce of contesto.settimana) { per[voce.indice] = voce; }
     esigiUguale(contesto.settimana.map((v) => v.indice).join(','), '1,2,3,4,5,6,0', 'ordine');
-    const chiavi = 'indice,abbr,nome,diretta,ora,fine,tag,titolo,gioco,nota,contenuto,immagine,stile';
+    const chiavi = 'indice,abbr,nome,diretta,ora,fine,tag,titolo,gioco,nota,contenuto,sostituito,immagine,stile';
     esigi(contesto.settimana.every((v) => Object.keys(v).join(',') === chiavi), 'le voci non hanno i nomi del contratto');
     const lun = per[1];
     esigiUguale([lun.diretta, lun.ora, lun.fine, lun.tag, lun.titolo, lun.gioco, lun.contenuto, lun.immagine, lun.stile].join('|'),
@@ -2677,6 +2765,67 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     // Con `quando` (il timbro della generazione) l'istante e lo stesso.
     const conQuando = costruisci.costruisciContesto(documentoRicco(), { quando: '2026-09-28T00:30:00.000Z' });
     esigiUguale(conQuando.sito.eventi.map((e) => e.titolo).join(','), 'Maratona,Speciale ottobre', 'maratona ancora in corso alle 02:30');
+  });
+
+  /** I contenuti ricchi con una maratona ACCESA all istante ADESSO (domenica). */
+  const documentoInMaratona = () => {
+    const documento = documentoRicco();
+    // Domenica 20 settembre 2026, 09:00–23:00 a Roma: ADESSO ci sta dentro, e
+    // ci sta dentro anche la diretta regolare della domenica (16:00–22:00).
+    documento.config.orari.eventi = [evento({ data: '2026-09-20', ora: '09:00', durataOre: 14, titolo: 'Maratona', gioco: 'Quiz' })];
+    return documento;
+  };
+
+  await prova('settimana: l evento acceso si prende il giorno, e il programma di sempre resta scritto sotto', () => {
+    const contesto = costruisci.costruisciContesto(documentoInMaratona(), { adesso: ADESSO, categoriaDiretta: '' });
+    const per = {};
+    for (const voce of contesto.settimana) { per[voce.indice] = voce; }
+    esigiUguale(per[0].sostituito, 'Maratona', 'la domenica porta il titolo dell evento');
+    // I testi del giorno restano in pagina: quando l evento finisce js/sito.js
+    // toglie is-sostituito e la serata di sempre torna senza ripubblicare.
+    esigiUguale(per[0].ora + '|' + per[0].fine, '16:00|22:00', 'l orario regolare resta scritto');
+    esigiUguale(contesto.settimana.filter((v) => v.sostituito).length, 1, 'un giorno solo');
+    esigiUguale(per[1].sostituito + '|' + per[3].sostituito, '|', 'i giorni fuori dall evento non cambiano');
+
+    // Senza eventi accesi nessun giorno e sostituito: e il caso di sempre.
+    const normale = costruisci.costruisciContesto(documentoRicco(), { adesso: ADESSO, categoriaDiretta: '' });
+    esigiUguale(normale.settimana.filter((v) => v.sostituito).length, 0, 'senza evento acceso');
+  });
+
+  await prova('sito.eventi: l evento acceso mostra la categoria vera di Twitch, gli altri il gioco scritto a mano', () => {
+    const documento = documentoInMaratona();
+    documento.config.orari.eventi.push(evento({ data: '2026-10-03', ora: '21:00', durataOre: 3, titolo: 'Dopo', gioco: 'Quiz di ottobre' }));
+    const conTwitch = costruisci.costruisciContesto(documento, { adesso: ADESSO, categoriaDiretta: ' Elden Ring ' });
+    esigiUguale(conTwitch.sito.eventi.map((e) => e.titolo + ':' + e.gioco).join(', '),
+      'Maratona:Elden Ring, Dopo:Quiz di ottobre', 'solo l evento acceso prende la categoria');
+    // Twitch giu, canale spento, collegamento non configurato: si torna a
+    // quello che c e scritto nel pannello, come prima di questa modifica.
+    const senza = costruisci.costruisciContesto(documento, { adesso: ADESSO, categoriaDiretta: '' });
+    esigiUguale(senza.sito.eventi.map((e) => e.titolo + ':' + e.gioco).join(', '),
+      'Maratona:Quiz, Dopo:Quiz di ottobre', 'senza categoria resta il gioco scritto a mano');
+    // `contenuto` segue la categoria: un evento senza nota ne gioco scritto
+    // ha comunque qualcosa da mostrare se Twitch risponde.
+    documento.config.orari.eventi[0].gioco = '';
+    documento.config.orari.eventi[0].nota = '';
+    esigiUguale(costruisci.costruisciContesto(documento, { adesso: ADESSO, categoriaDiretta: 'Elden Ring' }).sito.eventi[0].contenuto, true, 'contenuto con la sola categoria');
+    esigiUguale(costruisci.costruisciContesto(documento, { adesso: ADESSO, categoriaDiretta: '' }).sito.eventi[0].contenuto, false, 'contenuto senza niente');
+  });
+
+  await prova('categoriaDiretta: si usa solo se e fresca, e solo se il canale e davvero acceso', () => {
+    const scritta = (aggiunte) => Object.assign({ categoria: 'Elden Ring', inOnda: true, letteIl: new Date(ADESSO).toISOString() }, aggiunte || {});
+    const con = (dati) => {
+      twitch.salvaDiretta(dati);
+      try { return costruisci.categoriaDiretta({}, ADESSO); }
+      finally { try { fs.unlinkSync(P.direttaTwitch); } catch (e) { /* gia sparito */ } }
+    };
+    esigiUguale(con(scritta()), 'Elden Ring', 'lettura appena fatta');
+    esigiUguale(con(scritta({ inOnda: false, categoria: '' })), '', 'canale spento');
+    esigiUguale(con(scritta({ letteIl: new Date(ADESSO - 60 * 60 * 1000).toISOString() })), '', 'lettura di un ora fa');
+    esigiUguale(con(scritta({ letteIl: 'boh' })), '', 'istante illeggibile');
+    esigiUguale(costruisci.categoriaDiretta({}, ADESSO), '', 'senza il file non si sa niente');
+    // La scelta esplicita ha la precedenza e non tocca il disco: e cosi che
+    // l anteprima del pannello resta una funzione di dati.
+    esigiUguale(costruisci.categoriaDiretta({ categoriaDiretta: '  Hollow Knight  ' }, ADESSO), 'Hollow Knight', 'scelta esplicita');
   });
 
   await prova('sito.settimanaSfondo: stile con intensita, spento a 0 o senza immagine', () => {
@@ -2993,6 +3142,7 @@ async function proveHosting(cartella) {
       esigiUguale(dopo.auth, path.join(path.resolve(fuori), 'auth.json'), 'auth.json');
       esigiUguale(dopo.chiavi, path.join(path.resolve(fuori), 'chiavi.js'), 'chiavi.js');
       esigiUguale(dopo.accessoTwitch, path.join(path.resolve(fuori), 'twitch-accesso.json'), 'twitch-accesso.json');
+      esigiUguale(dopo.direttaTwitch, path.join(path.resolve(fuori), 'twitch-diretta.json'), 'twitch-diretta.json');
       esigiUguale(dopo.backup, path.resolve(copie), 'cartella dei backup');
       // Le cartelle si creano al primo uso: senza, il primo salvataggio
       // fallirebbe proprio nel momento in cui si sceglie la password.

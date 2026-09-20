@@ -511,6 +511,126 @@ async function aggiornaClip() {
   return { stato: 'aggiornato', quante: esito.voci.length, hostStrani: esito.hostStrani };
 }
 
+/* --- CATEGORIA DELLA DIRETTA IN CORSO -------------------------------- */
+
+/*
+   Serve agli eventi speciali. Il gioco di un evento si scrive a mano nel
+   pannello, e per una maratona e proprio la cosa che cambia piu spesso:
+   chi sta trasmettendo non torna nel pannello ogni volta che cambia
+   categoria. Alla pubblicazione si chiede a Twitch che cosa c'e davvero
+   in onda adesso, e l'evento ACCESO in quel momento mostra quella
+   (server/lib/costruisci.js, eventiDi): il testo scritto a mano resta il
+   ripiego di sempre.
+
+   `helix/streams` risponde solo se il canale e acceso: una lista vuota
+   vuol dire «non sta trasmettendo», ed e una risposta vera, non un
+   guasto. In quel caso la categoria si svuota — meglio niente che il gioco
+   di tre settimane fa — mentre un guasto vero (rete, credenziali, risposta
+   storta) lascia l'ultima lettura dov'e, come nel resto del file.
+
+   Non si scrive in contenuti.json, e la differenza conta. Quel documento e
+   di chi amministra: lo si tocca solo per i campi che il pannello mostra
+   («Ultima diretta», i follower), e questa e invece roba di servizio che
+   cambia da se anche piu volte in una sera. Se stesse li, ogni lettura
+   farebbe sembrare che ci sia una bozza da pubblicare. Sta quindi in
+   server/dati/twitch-diretta.json, accanto all'autorizzazione, con
+   l'istante della lettura: costruisci.js usa la categoria solo se e
+   abbastanza fresca, cosi una pubblicazione fatta con Twitch giu non
+   stampa il gioco di ieri.
+*/
+
+/** L'ultima lettura salvata: { categoria, inOnda, letteIl } oppure null. Non lancia mai. */
+function direttaSalvata() {
+  let testo;
+  try { testo = fs.readFileSync(P.direttaTwitch, 'utf8'); }
+  catch (e) { return null; }
+  let dati;
+  try { dati = JSON.parse(testo); }
+  catch (e) { return null; }
+  if (!dati || typeof dati !== 'object') { return null; }
+  return {
+    categoria: typeof dati.categoria === 'string' ? dati.categoria : '',
+    inOnda: dati.inOnda === true,
+    letteIl: typeof dati.letteIl === 'string' ? dati.letteIl : ''
+  };
+}
+
+/** Scrive l'ultima lettura. Non lancia mai: e un file di servizio, non un contenuto. */
+function salvaDiretta(dati) {
+  try {
+    assicuraCartella(P.dati);
+    scriviAtomico(P.direttaTwitch, JSON.stringify(dati, null, 2) + '\n');
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/** { inOnda, categoria } del canale adesso, chiesto a Twitch. */
+async function categoriaInDiretta(idUtente) {
+  const id = encodeURIComponent(String(idUtente));
+  const risposta = await helix('/streams?user_id=' + id + '&first=1');
+  const voci = (risposta && Array.isArray(risposta.data)) ? risposta.data : [];
+  if (!voci.length) { return { inOnda: false, categoria: '' }; }
+  const gioco = typeof voci[0].game_name === 'string' ? voci[0].game_name.trim() : '';
+  return { inOnda: true, categoria: gioco };
+}
+
+/**
+ * Chiede a Twitch che cosa c'e in onda e lo salva in
+ * server/dati/twitch-diretta.json, se si puo. NON LANCIA MAI e non tocca
+ * contenuti.json.
+ *
+ * Stati: spento, senzaCanale, aggiornato, invariato, spenta (il canale non
+ * sta trasmettendo: la categoria si svuota), fallito (resta l'ultima
+ * lettura, che costruisci.js scarta da se quando e troppo vecchia).
+ */
+async function aggiornaCategoria() {
+  let chiavi;
+  try {
+    chiavi = credenziali();
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+  if (!chiavi) { return { stato: 'spento' }; }
+
+  let idUtente;
+  try {
+    const contenuti = archivio.leggi();
+    const twitch = (contenuti.config && contenuti.config.twitch) || {};
+    idUtente = typeof twitch.idUtente === 'string' ? twitch.idUtente.trim() : '';
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+  if (!idUtente) { return { stato: 'senzaCanale' }; }
+
+  let esito;
+  try {
+    esito = await categoriaInDiretta(idUtente);
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+
+  const prima = direttaSalvata();
+  const precedente = prima ? prima.categoria : '';
+
+  // Si riscrive anche quando la categoria e la stessa: quello che conta non
+  // e solo il nome, e sapere QUANDO l'abbiamo letta. Senza l'istante fresco
+  // costruisci.js la considererebbe vecchia e non la userebbe piu. Qui si
+  // puo fare senza danni: il file e di servizio, e nessuno guarda la sua
+  // data per decidere se c'e da ripubblicare.
+  const scritto = salvaDiretta({
+    categoria: esito.categoria,
+    inOnda: esito.inOnda,
+    letteIl: new Date().toISOString()
+  });
+  if (!scritto) { return { stato: 'fallito', motivo: 'non sono riuscito a scrivere server/dati/twitch-diretta.json' }; }
+
+  if (!esito.inOnda) { return { stato: 'spenta', precedente: precedente }; }
+  if (esito.categoria === precedente) { return { stato: 'invariato', categoria: esito.categoria }; }
+  return { stato: 'aggiornato', categoria: esito.categoria, precedente: precedente };
+}
+
 /* --- FOLLOWER E ABBONATI --------------------------------------------- */
 
 /*
@@ -938,6 +1058,27 @@ function raccontaFollower(esito) {
   }
 }
 
+/** Lo stesso, per la categoria della diretta in corso. */
+function raccontaCategoria(esito) {
+  if (!esito || !esito.stato) { return ''; }
+  switch (esito.stato) {
+    case 'spento':
+      return 'Categoria: il collegamento con Twitch non e configurato, gli eventi mostrano il gioco scritto a mano.';
+    case 'senzaCanale':
+      return 'Categoria: manca l ID del canale (campo config.twitch.idUtente), non ho chiesto niente a Twitch.';
+    case 'aggiornato':
+      return 'Categoria: in onda adesso «' + esito.categoria + '» — la mostra l evento speciale acceso.';
+    case 'invariato':
+      return 'Categoria: in onda adesso «' + esito.categoria + '», la stessa di prima.';
+    case 'spenta':
+      return 'Categoria: il canale non sta trasmettendo, gli eventi mostrano il gioco scritto a mano.';
+    case 'fallito':
+      return 'Categoria: non sono riuscito a chiederla a Twitch (' + esito.motivo + '). Tengo l ultima lettura.';
+    default:
+      return '';
+  }
+}
+
 /** Lo stesso, per le clip. */
 function raccontaClip(esito) {
   if (!esito || !esito.stato) { return ''; }
@@ -970,6 +1111,7 @@ module.exports = {
   titoloUltimaDiretta, aggiornaUltimaDiretta, racconta,
   totaleFollower, contaFollower, aggiornaFollower, raccontaFollower,
   clipMigliori, aggiornaClip, raccontaClip,
+  categoriaInDiretta, aggiornaCategoria, raccontaCategoria, direttaSalvata, salvaDiretta,
   collegato, scollega, iniziaCollegamento, completaCollegamento, tentaCollegamento, infoCollegamento, numeriCanale,
   applicaNumeri, aggiornaNumeri, raccontaNumeri, formattaNumero, eNumeroNudo,
   SCOPE_ACCESSO, CAMPI_NUMERI,

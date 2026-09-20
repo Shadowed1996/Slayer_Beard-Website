@@ -309,6 +309,9 @@ async function rottaPubblica(req, res) {
   const iFollower = await twitch.aggiornaFollower();
   const leClip = await twitch.aggiornaClip();
   const iNumeri = await twitch.aggiornaNumeri();
+  // Prima di generare: la categoria in onda finisce nell evento speciale
+  // acceso, e genera() la rilegge da server/dati/twitch-diretta.json.
+  const laCategoria = await twitch.aggiornaCategoria();
   const esito = costruisci.genera();
   // `controlli` sono avvertimenti d'insieme, non errori: la pubblicazione e
   // riuscita comunque, e il pannello li mostra dopo invece di trattarli come
@@ -320,6 +323,7 @@ async function rottaPubblica(req, res) {
     follower: { stato: iFollower.stato, messaggio: twitch.raccontaFollower(iFollower) },
     clip: { stato: leClip.stato, messaggio: twitch.raccontaClip(leClip) },
     numeri: { stato: iNumeri.stato, messaggio: twitch.raccontaNumeri(iNumeri) },
+    categoria: { stato: laCategoria.stato, messaggio: twitch.raccontaCategoria(laCategoria) },
     chiavi: { stato: daChiavi.stato, messaggio: chiavi.racconta(daChiavi) }
   });
 }

@@ -92,6 +92,9 @@
         return {
           indice: e && typeof e.indice === 'number' ? e.indice : null,
           data: e && typeof e.data === 'string' ? e.data : '',
+          // Il titolo serve al giorno che l'evento si prende: la riga
+          // .nastro__sostituito dice chi comanda quella sera.
+          titolo: e && typeof e.titolo === 'string' ? e.titolo : '',
           inizio: Date.parse(e && e.inizio),
           termine: Date.parse(e && e.termine)
         };
@@ -331,18 +334,34 @@
       });
     }
 
+    const vivi = EVENTI.filter(function (e) { return e.termine > adesso; });
+    let prossimoEvento = null;
+    // L'evento ACCESO adesso (inizio passato, fine non ancora arrivata). Gli
+    // eventi sono in ordine di inizio: il primo che risponde è quello
+    // cominciato prima, cioè quello che si sta guardando.
+    let attivo = null;
+    vivi.forEach(function (e) {
+      if (!prossimoEvento && e.inizio > adesso) { prossimoEvento = e; }
+      if (!attivo && e.inizio <= adesso) { attivo = e; }
+    });
+
+    // Finché un evento speciale è acceso è LUI il programma: la diretta
+    // regolare che gli finisce sotto non conta più — non è la «prossima»,
+    // non è quella «in onda» e il conto alla rovescia non ci punta. Torna a
+    // valere da sé appena l'evento finisce.
+    finestre.forEach(function (f) {
+      f.sostituita = !!attivo && f.inizio < attivo.termine && f.termine > attivo.inizio;
+    });
+
     // Le finestre escono già in ordine di inizio: i giorni sono in ordine e
     // un'ora del giorno dopo viene sempre dopo, qualunque sia la durata.
     let prossimaRegolare = null;
     let inCorso = null;
     finestre.forEach(function (f) {
+      if (f.sostituita) { return; }
       if (!prossimaRegolare && f.inizio > adesso) { prossimaRegolare = f; }
       if (f.inizio <= adesso && adesso < f.termine) { inCorso = f; }
     });
-
-    const vivi = EVENTI.filter(function (e) { return e.termine > adesso; });
-    let prossimoEvento = null;
-    vivi.forEach(function (e) { if (!prossimoEvento && e.inizio > adesso) { prossimoEvento = e; } });
 
     // La partenza più vicina fra giorni ed eventi. A pari istante vince
     // l'evento: se cade sull'ora di una diretta regolare, è quella serata
@@ -356,7 +375,9 @@
     // La prossima occorrenza di ogni giorno. Un giorno acceso è la sua
     // prima finestra non ancora finita (oggi conta finché la diretta di oggi
     // non è finita); un giorno di riposo è la prossima data con quel nome,
-    // oggi compreso.
+    // oggi compreso. Qui le finestre sostituite ci sono ancora, con il loro
+    // `sostituita`: la data del giorno resta quella vera, e il nastro la
+    // mostra sbarrata invece di saltare alla settimana dopo.
     const occorrenze = [];
     for (let g = 0; g < 7; g++) {
       if (GIORNI.indexOf(g) !== -1) {
@@ -387,6 +408,9 @@
       oggi: p.giornoSettimana,
       prossima: prossima,
       inCorso: inCorso,
+      // L'evento acceso adesso, se c'è: finché resta acceso nessun giorno
+      // del nastro può dirsi «in onda» al posto suo.
+      evento: attivo,
       occorrenze: occorrenze,
       dateEventi: dateEventi
     };
@@ -460,6 +484,31 @@
     memoria.nodoLocale.textContent = DA_TE + ' ' + ora;
   }
 
+  // Il titolo dell'evento speciale che si è preso questo giorno, sotto
+  // l'orario. La generazione la scrive già quando l'evento era acceso
+  // (modelli/parziali/settimana.html): qui si aggiorna, si toglie appena
+  // l'evento finisce — e la serata di sempre torna a valere senza
+  // ripubblicare niente — e si crea per un evento che comincia mentre la
+  // pagina è aperta.
+  function scriviSostituito(memoria, titolo) {
+    if (memoria.sostituito === titolo) { return; }
+    memoria.sostituito = titolo;
+    if (!memoria.nodoSostituito) { memoria.nodoSostituito = memoria.li.querySelector('.nastro__sostituito'); }
+    if (!titolo) {
+      if (memoria.nodoSostituito) { memoria.nodoSostituito.hidden = true; }
+      return;
+    }
+    if (!memoria.nodoSostituito) {
+      const p = document.createElement('p');
+      p.className = 'nastro__sostituito';
+      if (memoria.quando) { memoria.quando.insertAdjacentElement('afterend', p); }
+      else { memoria.li.appendChild(p); }
+      memoria.nodoSostituito = p;
+    }
+    memoria.nodoSostituito.hidden = false;
+    memoria.nodoSostituito.textContent = titolo;
+  }
+
   /* ===================================================================
      5. CONTO ALLA ROVESCIA + NASTRO + EVENTI
      ===================================================================
@@ -472,6 +521,13 @@
      dopo mezzanotte resta di lunedì — e, fuori da ogni finestra, su oggi.
      Un giorno la cui prossima occorrenza cade nella data di un evento
      prende ha-evento.
+
+     Evento acceso: ha la precedenza su tutto. Finché dura, la diretta
+     regolare che gli finisce sotto prende is-sostituito (orario sbarrato e
+     titolo dell'evento al posto del programma), nessun giorno è «prossima»
+     né «in onda» — in onda c'è l'evento, sul suo li.evento — e il conto
+     alla rovescia salta quella serata. Quando finisce torna tutto com'era:
+     la pagina si ripara da sé, senza una nuova pubblicazione.
 
      Eventi: quello finito si toglie, e se non ne resta nessuno si nasconde
      tutto il blocco.
@@ -515,14 +571,19 @@
         const g = v.giorno;
         const occorrenza = stato.occorrenze[g] || null;
         const oggi = g === stato.oggi;
+        // La serata di questo giorno che un evento acceso si è presa: non è
+        // «prossima» (prossimaRegolare la salta già), non è «in onda» — in
+        // onda c'è l'evento — e si legge sbarrata, con il titolo dell'evento.
+        const sostituita = !!(occorrenza && occorrenza.sostituita);
         const prossima = !!stato.prossima && stato.prossima.evento === null && stato.prossima.giorno === g;
-        const inOndaQui = inOnda && (stato.inCorso ? stato.inCorso.giorno === g : oggi);
-        const haEvento = !!occorrenza && stato.dateEventi.indexOf(occorrenza.data) !== -1;
+        const inOndaQui = inOnda && !stato.evento && (stato.inCorso ? stato.inCorso.giorno === g : oggi);
+        const haEvento = sostituita || (!!occorrenza && stato.dateEventi.indexOf(occorrenza.data) !== -1);
 
         metti(v.li, 'is-oggi', oggi);
         metti(v.li, 'is-prossima', prossima);
         metti(v.li, 'is-in-onda', inOndaQui);
         metti(v.li, 'ha-evento', haEvento);
+        metti(v.li, 'is-sostituito', sostituita);
         scrivi(v.data, occorrenza ? occorrenza.testo : '');
 
         const tipi = [];
@@ -532,6 +593,7 @@
         if (haEvento) { tipi.push('evento'); }
         segni(v.segni, v, tipi);
 
+        scriviSostituito(v, sostituita && stato.evento ? stato.evento.titolo : '');
         scriviLocale(v.quando, 'nastro__locale', v, occorrenza && occorrenza.inizio !== null ? occorrenza.inizio : null);
       });
     }

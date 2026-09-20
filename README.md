@@ -347,6 +347,20 @@ uno dei giorni che il nastro sta mostrando, anche quel giorno prende lo stesso s
 rovescia della copertina lo conta come una diretta: se viene prima della prossima serata normale,
 conta verso l'evento.
 
+**Finché un evento è in corso, comanda lui.** La serata normale che gli finisce sotto non è più «la
+prossima» e non è più «in onda»: sul nastro resta scritta, ma con l'orario sbarrato e sotto il titolo
+dell'evento, e il conto alla rovescia la salta e punta alla serata dopo. Una maratona che comincia
+domenica alle 15:00 e va avanti fino alle 03:00 si prende la domenica sera: quella sera non c'è
+«anche» il programma di sempre. Un giorno che invece comincia **quando l'evento è già finito** non
+c'entra niente e resta com'è. Appena l'evento finisce torna tutto da solo, **senza ripubblicare**.
+
+**Il gioco di un evento in corso lo scrive Twitch.** Se il collegamento con Twitch è configurato
+(vedi *Collegare Twitch*), a ogni pubblicazione il sito chiede che cosa stai trasmettendo davvero in
+quel momento e lo mostra al posto del campo **Gioco** — per una maratona è proprio la cosa che cambia
+più spesso, e nessuno torna nel pannello a ogni cambio di categoria. Vale **solo per l'evento acceso
+adesso**: gli altri mostrano quello che ci hai scritto. Se Twitch non risponde, se il canale è spento
+o se il collegamento non c'è, resta il **Gioco** scritto a mano: non sparisce niente.
+
 Gli eventi sono **al massimo otto**. Un evento **finito** resta nel pannello, in fondo all'elenco
 sotto «Passati», ma dal sito **sparisce da solo**, anche senza ripubblicare. Per fare posto a uno
 nuovo si elimina un evento passato con **Elimina evento**, che chiede conferma.
@@ -590,8 +604,12 @@ da riempire a mano.
 ### L'aggiornamento automatico, e la regola che non scavalca
 
 Finché il server locale gira fa un giro ogni **dieci minuti** (`SB_AGGIORNA_MIN`, `0` per
-spegnerlo) e, quando trova qualcosa di nuovo, **ripubblica da sé**. Vale sia per «Ultima diretta»
-sia per la vetrina delle clip.
+spegnerlo) e, quando trova qualcosa di nuovo, **ripubblica da sé**. Vale per «Ultima diretta», per
+la vetrina delle clip e per la **categoria in onda**, quella che un evento speciale acceso mostra al
+posto del suo campo *Gioco*: durante una maratona è il dato che cambia più spesso, e così cambia sul
+sito senza che nessuno tocchi il pannello. La lettura non entra in `contenuti.json` — sta in
+`server/dati/twitch-diretta.json`, accanto all'autorizzazione — proprio perché non è roba scritta da
+chi amministra, e non deve far sembrare che ci sia sempre una bozza da pubblicare.
 
 Non è un secondo modo di pubblicare: è lo stesso, chiamato da un timer invece che da un bottone.
 E proprio per questo non può scavalcare la regola su cui è costruito tutto il resto — **Salva e

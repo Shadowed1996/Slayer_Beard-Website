@@ -49,6 +49,10 @@ const testoricco = require('./testoricco.js');
 const tema = require('./tema.js');
 const font = require('./font');
 const backup = require('./backup');
+/* Solo per l'ultima lettura salvata di che cosa c'e in onda (la categoria
+   che mostra l'evento speciale acceso): niente rete da qui, genera() resta
+   sincrona. Chiedere a Twitch e sempre un passo prima, alla pubblicazione. */
+const twitch = require('./twitch');
 const schema = require('../../contenuti/schema.js');
 /* Le regole della schedule (CONTRATTO-5 §3.5). Sta sotto pannello/ perche
    lo stesso file lo carica il pannello: i giorni, i limiti e i conti con i
@@ -113,6 +117,38 @@ function momentoDi(scelte) {
   return Number.isFinite(letto) ? letto : Date.now();
 }
 
+/* Quanto vale l'ultima lettura di «che cosa c'e in onda» (server/lib/twitch.js,
+   aggiornaCategoria). La pubblicazione la chiede a Twitch un istante prima di
+   generare: se quella salvata e piu vecchia di cosi vuol dire che Twitch non
+   ha risposto, e allora meglio il gioco scritto a mano nel pannello che la
+   categoria di ieri sera. */
+const FRESCHEZZA_CATEGORIA_MS = 15 * 60 * 1000;
+
+/**
+ * La categoria che il canale sta trasmettendo davvero adesso, '' se non si sa.
+ *
+ * `scelte.categoriaDiretta` (una stringa) ha la precedenza e serve al
+ * collaudo e all'anteprima: cosi costruisciContesto() resta una funzione di
+ * dati, senza toccare il disco quando chi la chiama sa gia la risposta.
+ * Altrimenti si legge server/dati/twitch-diretta.json — un file, non la rete:
+ * la generazione resta sincrona come e sempre stata.
+ *
+ * Non lancia mai: senza collegamento a Twitch, senza file o con un file
+ * storto la risposta e '' e gli eventi mostrano il gioco scritto a mano.
+ */
+function categoriaDiretta(scelte, adesso) {
+  if (scelte && typeof scelte.categoriaDiretta === 'string') { return scelte.categoriaDiretta.trim(); }
+  let letta = null;
+  try { letta = twitch.direttaSalvata(); } catch (e) { return ''; }
+  if (!letta || !letta.inOnda || !letta.categoria) { return ''; }
+  const quando = Date.parse(letta.letteIl);
+  if (!Number.isFinite(quando)) { return ''; }
+  // Anche nel futuro: un orologio spostato indietro non deve far passare per
+  // fresca una lettura di chissa quando.
+  if (Math.abs(adesso - quando) > FRESCHEZZA_CATEGORIA_MS) { return ''; }
+  return letta.categoria.trim();
+}
+
 /* Numeri per l'attributo style (CONTRATTO-5 §2.2). Arrivano gia stretti da
    normalizza(), ma qui si ristringono lo stesso: nell'attributo esce solo
    quello che questi tre calcoli producono, cifre, punto e segno di
@@ -140,8 +176,16 @@ function stileImmagine(immagine, fuoco, nome, valore) {
  * immagine), cosi riaccendendolo torna com'era senza che nel frattempo il
  * sito mostri una locandina di un giorno di riposo.
  */
-function settimanaDi(config, testi) {
+function settimanaDi(config, testi, adesso) {
   const orari = orariDi(config);
+  // Un evento speciale acceso all'istante della generazione ha la
+  // precedenza: i giorni che gli finiscono sotto portano il suo titolo, e
+  // il loro programma regolare si legge come quello che non vale piu
+  // (modelli/parziali/settimana.html, css/sezioni.css). I testi del giorno
+  // restano in pagina apposta: quando l'evento finisce js/sito.js toglie
+  // is-sostituito e la serata di sempre torna, senza aspettare che qualcuno
+  // ripubblichi il sito.
+  const sostituito = SBOrari.programmaSostituito(orari, adesso);
   return SBOrari.ORDINE.map((indice) => {
     const giorno = SBOrari.GIORNI[indice];
     const diretta = orari.giorni.indexOf(indice) !== -1;
@@ -164,6 +208,11 @@ function settimanaDi(config, testi) {
       nota: nota,
       // Il modello non sa fare «se c'e almeno uno di tre»: gli arriva deciso.
       contenuto: !!(titolo || gioco || nota),
+      // Il titolo dell'evento che si prende questo giorno, '' se non ce n'e
+      // nessuno: il modello lo stampa e il giorno prende is-sostituito.
+      sostituito: sostituito.giorni[indice]
+        ? (sostituito.evento.titolo || testi['settimana.etichettaEvento'] || '')
+        : '',
       immagine: immagine,
       stile: stileImmagine(immagine, scheda.fuoco, 'velo', scheda.velo)
     };
@@ -179,12 +228,24 @@ function settimanaDi(config, testi) {
  * `fine` e letta sull'orologio del canale all'istante di termine, non
  * sommata a mano: una maratona a cavallo del cambio d'ora finisce all'ora
  * vera. `inizio` e `termine` sono ISO in UTC, per data-inizio e data-fine.
+ *
+ * `categoria` (facoltativa) e quello che il canale sta trasmettendo davvero
+ * in questo momento, letto da Twitch alla pubblicazione: la mostra SOLO
+ * l'evento acceso adesso, al posto del gioco scritto a mano. Per una
+ * maratona e proprio il campo che cambia di continuo, e nessuno torna nel
+ * pannello a ogni cambio di gioco. Senza categoria — Twitch giu, canale
+ * spento, collegamento non configurato — resta quello scritto a mano.
  */
-function eventiDi(orari, adesso) {
+function eventiDi(orari, adesso, categoria) {
+  const inOnda = typeof categoria === 'string' ? categoria.trim() : '';
+  const acceso = inOnda ? SBOrari.eventoAttivo(orari, adesso) : null;
   return SBOrari.eventiFuturi(orari, adesso).map((evento) => {
     const d = evento.data.split('-').map(Number);
     const giorno = SBOrari.GIORNI[SBOrari.giornoDellaSettimana(evento.data)];
     const mese = SBOrari.MESI[d[1] - 1];
+    // Solo l'evento acceso: quello di sabato prossimo mostra il gioco che
+    // gli e stato scritto, non la categoria di stasera.
+    const gioco = (acceso && acceso.indice === evento.indice) ? inOnda : evento.gioco;
     return {
       indice: evento.indice,
       data: evento.data,
@@ -202,9 +263,9 @@ function eventiDi(orari, adesso) {
       inizio: new Date(evento.inizio).toISOString(),
       termine: new Date(evento.termine).toISOString(),
       titolo: evento.titolo,
-      gioco: evento.gioco,
+      gioco: gioco,
       nota: evento.nota,
-      contenuto: !!(evento.gioco || evento.nota),
+      contenuto: !!(gioco || evento.nota),
       immagine: evento.immagine,
       stile: stileImmagine(evento.immagine, evento.fuoco, 'velo', evento.velo)
     };
@@ -644,7 +705,7 @@ function costruisciContesto(contenuti, opzioni) {
   // completo e pulito, anche per {{config.orari.ora}} della copertina.
   config.orari = orariDi(config);
   const adesso = momentoDi(scelte);
-  const eventi = eventiDi(config.orari, adesso);
+  const eventi = eventiDi(config.orari, adesso, categoriaDiretta(scelte, adesso));
 
   const cache = scelte.cache || new Map();
   const mancanti = [];
@@ -661,7 +722,7 @@ function costruisciContesto(contenuti, opzioni) {
     config: config,
     social: social,
     supporto: elencoVisibile(config.supporto, cache, mancanti),
-    settimana: settimanaDi(config, testi),
+    settimana: settimanaDi(config, testi, adesso),
     clip: clipDi(config, testi),
     sito: {
       urlCanale: urlCanale,
@@ -1483,7 +1544,7 @@ module.exports = {
   genera, anteprima, anteprimaDi, anteprimaEditor, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, jsonSicuro, chiaviRicche,
-  orariDi, orariDati, eventiDi, sfondoDi,
+  orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta,
   // togliCommenti si esporta per il collaudo: e una funzione di testo pura
   // e i casi da provare (l'attributo, lo <script>, il <pre>) si provano
   // meglio su di lei che su una generazione intera.
