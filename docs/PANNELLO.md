@@ -615,7 +615,7 @@ con il nome della parte e una riga che spiega cosa fa.
 | **Profilo del sito** | la tessera o il bottone *Collegati con Twitch* in cima alla *Diretta* | capitolo 19 |
 | **Il pollo** | la mascotte accanto al player | capitolo 22 |
 | **Modalità lurk** | il riquadro sotto il player | capitolo 20 |
-| **Le clip** | la vetrina in fondo alla *Diretta* | capitolo 21 |
+| **Le clip** | l'invito in fondo alla *Diretta* (titolo, riga, bottone «Vai alle clip») e la pagina `clip.html` | capitolo 21 |
 | **Nastro della settimana** | i sette giorni della *Settimana* | *Schedule della settimana*, aperta sulla linguetta **Settimana**, e le etichette scritte sui giorni |
 | **Eventi speciali** | le schede fuori programma sotto il nastro (ci sono solo se c'è almeno un evento in arrivo) | *Schedule della settimana*, aperta sulla linguetta **Eventi speciali**, il titolo del riquadro e l'etichetta degli eventi |
 | **Listino del supporto** | l'elenco delle righe in *Come dare una mano* | *Righe del listino* |

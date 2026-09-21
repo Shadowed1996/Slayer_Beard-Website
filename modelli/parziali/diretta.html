@@ -128,7 +128,7 @@
        `clip.attivo` è già «acceso E almeno una clip»: un titolo con sotto
        il vuoto è peggio di nessun titolo, e la distinzione la fa la
        generazione invece di lasciarla al modello. -->
-  {{#se clip.attivo}}{{> parziali/clip}}{{/se}}
+  {{#se clipPagina.attivo}}{{> parziali/clip}}{{/se}}
 
   <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
   <p class="diretta__nota" data-sb-testo="diretta.nota">{{{diretta.nota}}}</p>

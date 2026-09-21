@@ -84,6 +84,18 @@
   max-inline-size: 62ch;
 }
 
+/* L'invito che ha preso il posto della vetrina in home: titolo, una riga e
+   il bottone verso clip.html. Il bottone è la stessa pillola di quello in
+   testa alla «diretta», con l'accento acceso: qui è l'unica azione del
+   blocco, e deve vedersi. */
+.clip--invito .clip__testa { margin-block-end: var(--passo-2); }
+.clip__vai--invito {
+  margin-block-start: 0;
+  border-color: var(--ciano);
+  color: var(--ciano);
+}
+.clip__vai--invito:hover { background-color: var(--pannello-2); }
+
 .clip__titolo {
   margin-block: var(--passo) 0;
   font-family: var(--font-titolo);

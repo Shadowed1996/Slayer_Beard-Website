@@ -371,6 +371,15 @@ const gruppi = [
       { chiave: 'clip.titolo', etichetta: 'Titolo della vetrina', tipo: 'testo', max: 60 },
       { chiave: 'clip.testo', etichetta: 'Riga di presentazione', tipo: 'ricco', max: 220,
         aiuto: 'Una riga sotto al titolo. Può restare vuota.' },
+      // L'invito in home che ha preso il posto della vetrina: nati dopo la
+      // messa online, quindi con un predefinito (riquadro PREDEFINITO in cima).
+      { chiave: 'clip.invitoTitolo', etichetta: 'Home — titolo dell\'invito alle clip', tipo: 'testo', max: 60, predefinito: 'Migliori highlights',
+        aiuto: 'In home, in fondo a «La diretta», al posto delle clip: il titolo sopra il bottone che porta alla pagina.' },
+      { chiave: 'clip.invitoTesto', etichetta: 'Home — riga sotto il titolo', tipo: 'ricco', max: 160, facoltativo: true,
+        predefinito: 'I momenti più belli delle live, ritagliati da chi guardava. Tutti in una pagina: il periodo lo scegli tu.',
+        aiuto: 'Una riga breve. Può restare vuota.' },
+      { chiave: 'clip.invitoBottone', etichetta: 'Home — scritta del bottone', tipo: 'testo', max: 30, predefinito: 'Vai alle clip',
+        aiuto: 'Il bottone che porta alla pagina con tutte le clip.' },
       { chiave: 'clip.guarda', etichetta: 'Cosa fa il link della card, per chi non la vede', tipo: 'testo', max: 40,
         aiuto: 'Lo leggono i lettori di schermo, seguito dal titolo della clip: scrivi l\'azione («Guarda la clip»), non «clicca qui».' },
       { chiave: 'clip.visualizzazioni', etichetta: 'Parola per le visualizzazioni', tipo: 'testo', max: 30,

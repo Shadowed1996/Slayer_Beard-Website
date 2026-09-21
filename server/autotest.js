@@ -2247,9 +2247,9 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
     // d'accordo con quella: scritta nel pannello una volta sola.
     esigiDentro(diretta, '<span class="clip__vai-testo">' + documento.testi['clip.titolo'] + '</span>',
       'l etichetta del bottone non e il titolo della vetrina');
-    // E sotto la vetrina, il secondo modo di arrivarci.
-    esigiDentro(html, '>' + documento.testi['clip.paginaTitolo'] + '<',
-      'manca il link a tutte le clip sotto la vetrina');
+    // E in fondo alla diretta, l'invito con il suo bottone.
+    esigiDentro(html, 'class="clip__vai clip__vai--invito" href="clip.html"', 'manca il bottone dell invito');
+    esigiDentro(html, '>' + documento.testi['clip.invitoBottone'] + '<', 'manca la scritta del bottone dell invito');
   });
 
   await prova('senza clip da mostrare non si promette nessuna pagina', () => {
@@ -2281,25 +2281,31 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
     esigiUguale(costruisci.clipPaginaDi({ clip: accesa({ archivio: tre }) }, contenutiVeri.testi).quante, 12, 'tetto di serie');
   });
 
-  await prova('a vetrina accesa le card ci sono, e i valori arrivano protetti', () => {
+  await prova('in home solo l invito: le card stanno nella pagina delle clip, e i valori arrivano protetti', () => {
+    // Il proprietario non vuole clip in prima pagina: in home c e l invito
+    // («Migliori highlights», una riga, «Vai alle clip») e le card sono
+    // tutte in clip.html.
     const documento = archivio.leggi();
-    documento.config.clip = accesa({ voci: [
+    const due = [
       clipFinta({ titolo: 'Titolo con & e <b>', autore: 'Tizio' }),
       clipFinta({ id: 'due', titolo: 'La seconda', anteprima: '' })
-    ] });
-    const html = costruisci.anteprimaDi(documento);
+    ];
+    documento.config.clip = accesa({ voci: due, archivio: due });
+    const reso = costruisci.rendi(documento);
 
-    esigiDentro(html, 'clip__griglia', 'manca la griglia');
-    esigiUguale((html.match(/clip__card/g) || []).length, 2, 'quante card');
+    esigiDentro(reso.html, 'clip--invito', 'manca l invito in home');
+    esigiDentro(reso.html, '>' + documento.testi['clip.invitoTitolo'] + '<', 'manca il titolo dell invito');
+    esigi(reso.html.indexOf('clip__card') === -1, 'in home ci sono ancora delle card');
+    esigi(reso.html.indexOf('clip__griglia') === -1, 'in home c e ancora la griglia');
+
+    const pagina = reso.clip;
+    esigi(typeof pagina === 'string', 'la pagina delle clip non e stata resa');
+    esigiUguale((pagina.match(/class="clip__card/g) || []).length, 2, 'quante card nella pagina');
     // Il titolo di una clip lo scrive chi la ritaglia: e testo di terzi, e
     // deve arrivare in pagina protetto, non interpretato.
-    esigiDentro(html, 'Titolo con &amp; e &lt;b&gt;', 'il titolo non e stato protetto');
-    esigi(html.indexOf('<b>Titolo') === -1, 'il titolo e arrivato in pagina come markup');
-    // La seconda non ha anteprima: una sola <img> in tutta la vetrina.
-    const dentro = html.slice(html.indexOf('clip__griglia'));
-    esigiUguale((dentro.match(/clip__immagine/g) || []).length, 1, 'immagini stampate');
-    esigiDentro(html, '0:32', 'manca la durata');
-    esigiDentro(html, '1.234 visualizzazioni', 'mancano le visualizzazioni');
+    esigiDentro(pagina, 'Titolo con &amp; e &lt;b&gt;', 'il titolo non e stato protetto');
+    esigi(pagina.indexOf('<b>Titolo') === -1, 'il titolo e arrivato in pagina come markup');
+    esigiDentro(pagina, '0:32', 'manca la durata');
   });
 
   await prova('la vetrina non porta nessuna voce nuova nel binario', () => {
@@ -2308,13 +2314,13 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
     // proprio per non chiederla. Se un domani qualcuno aggiunge la voce,
     // questa prova glielo ricorda prima che lo scopra un telefono.
     const documento = archivio.leggi();
-    documento.config.clip = accesa();
+    documento.config.clip = accesa({ archivio: [clipFinta()] });
     const html = costruisci.anteprimaDi(documento);
     const nav = html.slice(html.indexOf('binario__nav'), html.indexOf('binario__stato'));
     esigiUguale((nav.match(/binario__voce/g) || []).length, 6, 'voci nel binario');
-    // E la vetrina sta davvero dentro la sezione della diretta.
+    // E l invito alle clip sta davvero dentro la sezione della diretta.
     const diretta = html.slice(html.indexOf('id="diretta"'), html.indexOf('id="settimana"'));
-    esigiDentro(diretta, 'clip__griglia', 'la vetrina non e dentro la sezione «diretta»');
+    esigiDentro(diretta, 'clip--invito', 'l invito non e dentro la sezione «diretta»');
   });
 
   await prova('gli host delle anteprime sono gli stessi nel modulo e nella CSP', () => {

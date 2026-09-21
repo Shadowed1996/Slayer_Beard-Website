@@ -116,7 +116,7 @@ sito/
 │  │                     di <main> le mette la generazione, nell'ordine scelto
 │  ├─ parziali/          le sezioni e i pezzi della pagina, con i marcatori data-sb-*
 │  │  ├─ lurk.html       il pannello della modalità lurk, dentro «diretta»
-│  │  └─ clip.html       la vetrina delle clip, in fondo a «diretta»
+│  │  └─ clip.html       l'invito alle clip in fondo a «diretta» (le card sono in clip.html)
 │  └─ icone/             le icone SVG, una per file
 ├─ server/               il CMS: generazione, API, sessioni, backup, media, tema
 │  ├─ lib/controlli.js   i controlli d'insieme: avvertimenti, mai errori
@@ -698,7 +698,14 @@ canale. La deroga è motivata nel CONTRATTO-3, §4.7.
 
 ## La vetrina delle clip
 
-In fondo alla sezione «diretta», sotto al riquadro del lurk, può comparire una griglia con le
+> **Dal 21/09/2026 in home non ci sono più card.** In fondo alla «diretta» resta solo un
+> invito — titolo («Migliori highlights»), una riga e il bottone «Vai alle clip» — che porta a
+> `clip.html`, dove stanno tutte le clip (`modelli/parziali/clip.html`, testi
+> `clip.invitoTitolo`, `clip.invitoTesto`, `clip.invitoBottone`, con un predefinito nello
+> schema). L'invito si stampa solo se quella pagina esiste (`clipPagina.attivo`). Quello che
+> segue sulle card vale ora per la pagina delle clip.
+
+In fondo alla sezione «diretta», sotto al riquadro del lurk, compariva una griglia con le
 clip più viste del canale: anteprima, durata, visualizzazioni, data e nome di chi l'ha ritagliata.
 
 **È tutta statica.** Nessun `id` è contratto con del JavaScript, e senza JS funziona per intero:

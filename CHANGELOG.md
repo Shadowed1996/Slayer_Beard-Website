@@ -364,6 +364,13 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - `.editorconfig` e `.gitattributes` allineati alle convenzioni del progetto.
 
 ### Modificato
+- **In home niente più clip: un invito alla pagina delle clip.** In fondo alla
+  «diretta», al posto della vetrina con le card, ci sono un titolo («Migliori
+  highlights»), una riga di presentazione e il bottone «Vai alle clip» verso
+  `clip.html`. I tre testi sono nuovi (`clip.invitoTitolo`, `clip.invitoTesto`,
+  `clip.invitoBottone`) e hanno un predefinito, quindi compaiono anche su un
+  sito già online senza toccare il pannello; si cambiano cliccandoli
+  nell'anteprima. L'invito esce solo se la pagina delle clip esiste.
 
 - **Il sito ha un dominio: `slayerbeard.com`.** `config.sitoUrl` nei contenuti è
   `https://slayerbeard.com`, e da lì la pubblicazione prende il link canonico,

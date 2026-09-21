@@ -1,51 +1,32 @@
-<!-- La vetrina delle clip, in fondo alla sezione «diretta».
+<!-- L'invito alle clip, in fondo alla sezione «diretta».
+
+     Qui c'era la vetrina: sei card con le clip più viste, dentro la home.
+     Il proprietario le preferisce fuori dalla prima pagina («preferisco non
+     ci siano clip nella home: un titolo tipo "Migliori highlights", una
+     microdescrizione e un bottone "Vai alle clip"»), quindi resta solo
+     l'invito e le clip stanno tutte nella pagina clip.html, dove il periodo
+     lo sceglie chi guarda.
 
      Non ha una voce nel binario, e non e una dimenticanza: css/base.css
      stringe il dock finche SEI etichette ci stanno anche a 320px, e la
-     settima le farebbe traboccare. Le clip sono l'archivio di quello che
-     succede nel monitor qui sopra, quindi stanno dentro la stessa sezione
-     invece di chiederne una propria — e il binario resta a sei voci.
+     settima le farebbe traboccare. L'id #clip resta perche un indirizzo gia
+     condiviso continui a portare dove portava.
 
-     Al posto della voce nel dock c'e un bottone in testa alla «diretta»
-     (modelli/parziali/diretta.html). Portava qui, all'id #clip; adesso porta
-     alla pagina clip.html, dove ci sono tutte le clip e il periodo lo sceglie
-     chi guarda. Questa vetrina resta l'assaggio: le piu viste, senza uscire
-     dalla pagina, per chi sta scorrendo la «diretta» e non sta cercando
-     l'archivio. L'id #clip resta perche un indirizzo gia condiviso continui
-     a portare dove portava.
-
-     Tutto statico: nessun id e contratto con nessun JavaScript, e senza JS
-     questa parte funziona per intero — il bottone e un'ancora, non un
-     comando. L'elenco lo riempie la generazione, da config.clip.voci, che
-     a sua volta arriva da server/lib/twitch.js. Stampata solo se c'e
-     almeno una clip: il ramo `clip.attivo` del contesto e gia «acceso E
-     non vuoto» (server/lib/costruisci.js). -->
-<div id="clip" class="clip" data-sb-parte="clip">
+     Tutto statico, senza JavaScript: il bottone e un'ancora. Si stampa solo
+     se la pagina delle clip esiste davvero (modelli/parziali/diretta.html
+     lo include sotto `clipPagina.attivo`, «le clip sono accese E ce n'e
+     almeno una con una data buona»): un invito verso un 404 sarebbe peggio
+     di nessun invito. -->
+<div id="clip" class="clip clip--invito" data-sb-parte="clip">
   <div class="clip__testa">
     <p class="sezione__occhiello" data-sb-testo="clip.occhiello">{{clip.occhiello}}</p>
-    <h3 class="clip__titolo" data-sb-testo="clip.titolo">{{clip.titolo}}</h3>
+    <h3 class="clip__titolo" data-sb-testo="clip.invitoTitolo">{{clip.invitoTitolo}}</h3>
     <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
-    <p class="clip__testo" data-sb-testo="clip.testo">{{{clip.testo}}}</p>
+    <p class="clip__testo" data-sb-testo="clip.invitoTesto">{{{clip.invitoTesto}}}</p>
   </div>
 
-  <ul class="clip__griglia">
-    {{#ogni clip.voci}}
-    <!-- Il link avvolge tutta la card: il bersaglio grosso è il punto, su un
-         telefono. La card è in parziali/clip-card.html perché è la stessa
-         della pagina di tutte le clip. -->
-    <li class="clip__voce">{{> parziali/clip-card}}</li>
-    {{/ogni}}
-  </ul>
-
-  <!-- Il modo di arrivare a tutte le altre. La vetrina è un assaggio — sei
-       clip di un periodo deciso nel pannello — e da qui in poi si continua
-       nella pagina, dove il periodo lo sceglie chi guarda. Si stampa solo se
-       quella pagina esiste davvero: `clipPagina.attivo` è «le clip sono
-       accese E ce n'è almeno una con una data buona». -->
-  {{#se clipPagina.attivo}}<p class="clip__tutte">
-    <a class="clip__vai" href="clip.html">
-      <span class="clip__vai-testo">{{clip.paginaTitolo}}</span>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-    </a>
-  </p>{{/se}}
+  <a class="clip__vai clip__vai--invito" href="clip.html">
+    <span class="clip__vai-testo" data-sb-testo="clip.invitoBottone">{{clip.invitoBottone}}</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+  </a>
 </div>
