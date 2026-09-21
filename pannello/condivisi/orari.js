@@ -762,22 +762,14 @@
    * Si guardano le date di calendario toccate dall'evento nel fuso del
    * canale, da quella prima del suo inizio (una diretta cominciata la sera
    * prima e non ancora finita) e per al massimo una settimana: il nastro è
-   * lungo sette giorni.
-   *
-   * Un evento SENZA durata (durataOre === null) non si prende niente: la
-   * sua fine non si sa, e il termine finto di un anno (ORE_APERTO) coprirebbe
-   * tutte le serate del nastro. Succedeva con la maratona: «SlayerFest | Day
-   * 4» senza durata cancellava tutte le altre date della settimana. Senza una
-   * fine vera non si può dire quali serate gli finiscano sotto, quindi restano
-   * tutte, come prima di questa regola; basta scrivere la durata perché
-   * l'evento si prenda la serata che copre davvero.
+   * lungo sette giorni, e un evento senza fine nota (ORE_APERTO) li copre
+   * comunque tutti.
    */
   function programmaSostituito(orari, adessoMs) {
     const pulito = normalizza(orari);
     const giorni = [false, false, false, false, false, false, false];
     const evento = eventoAttivo(pulito, adessoMs);
     if (!evento) { return { evento: null, giorni: giorni }; }
-    if (evento.durataOre === null) { return { evento: evento, giorni: giorni }; }
 
     for (let salto = -1; salto <= 7; salto++) {
       const ms = evento.inizio + salto * MS_GIORNO;

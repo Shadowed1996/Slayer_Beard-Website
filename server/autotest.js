@@ -2791,7 +2791,7 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     esigiUguale(dopo.evento + ' ' + dopo.giorni.join(','), 'null false,false,false,false,false,false,false', 'evento finito');
   });
 
-  await prova('programmaSostituito: sfiorarsi non e sovrapporsi, e un evento senza fine nota non si prende niente', () => {
+  await prova('programmaSostituito: sfiorarsi non e sovrapporsi, e un evento senza fine nota li copre tutti', () => {
     // La serata regolare comincia esattamente quando l evento finisce: quella
     // diretta si fa davvero, e non va sbarrata.
     const attaccati = Object.assign(orariBuoni(), {
@@ -2800,15 +2800,13 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     esigiUguale(O.programmaSostituito(attaccati, Date.parse('2026-09-27T16:00:00.000Z')).giorni.join(','),
       'false,false,false,false,false,false,false', 'una finestra che finisce dove l altra comincia');
 
-    // Senza durata (ORE_APERTO) la fine non si sa: l anno finto coprirebbe
-    // tutte le serate (la maratona «Day 4» cancellava la settimana intera).
-    // L evento resta acceso, ma nessun giorno gli viene dato.
+    // Senza durata (ORE_APERTO) l evento dura finche non lo si toglie: tutti
+    // i giorni accesi del nastro gli finiscono sotto.
     const aperto = Object.assign(orariBuoni(), {
       eventi: [evento({ data: '2026-09-27', ora: '15:00', durataOre: null, titolo: 'Maratona aperta' })]
     });
-    const senzaFine = O.programmaSostituito(aperto, Date.parse('2026-09-28T10:00:00.000Z'));
-    esigiUguale(senzaFine.giorni.join(','), 'false,false,false,false,false,false,false', 'le serate restano tutte');
-    esigi(!!senzaFine.evento, 'l evento resta acceso');
+    esigiUguale(O.programmaSostituito(aperto, Date.parse('2026-09-28T10:00:00.000Z')).giorni.join(','),
+      'true,true,false,true,false,true,false', 'tutti e quattro i giorni di diretta');
   });
 
   /* --- convalida del server ------------------------------------------ */

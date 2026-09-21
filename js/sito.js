@@ -39,9 +39,6 @@
   const EVENTI = eventiDi(ORARI.eventi);
 
   const ORA_MS = 3600000;
-  /* Durata finta di un evento senza durata: ORE_APERTO (24 * 365) di
-     pannello/condivisi/orari.js. Da lì in su l'evento non ha una fine vera. */
-  const APERTO_MS = 24 * 365 * ORA_MS;
   const GIORNO_MS = 86400000;
   const MESI = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
   const GIORNI_BREVI = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
@@ -352,12 +349,8 @@
     // regolare che gli finisce sotto non conta più — non è la «prossima»,
     // non è quella «in onda» e il conto alla rovescia non ci punta. Torna a
     // valere da sé appena l'evento finisce.
-    // Un evento senza durata non si prende niente: il suo data-fine è il
-    // termine finto di un anno (ORE_APERTO di pannello/condivisi/orari.js) e
-    // coprirebbe tutte le serate. Stessa regola di programmaSostituito().
-    const prende = !!attivo && attivo.termine - attivo.inizio < APERTO_MS;
     finestre.forEach(function (f) {
-      f.sostituita = prende && f.inizio < attivo.termine && f.termine > attivo.inizio;
+      f.sostituita = !!attivo && f.inizio < attivo.termine && f.termine > attivo.inizio;
     });
 
     // Le finestre escono già in ordine di inizio: i giorni sono in ordine e
