@@ -367,7 +367,11 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - **Il messaggio di lurk ora parte da solo ogni 10 minuti.** Con la modalità lurk
   accesa e l'utente collegato con Twitch, il primo messaggio parte
   all'accensione come prima; poi ne parte uno ogni dieci minuti, finché il lurk
-  resta acceso (`CADENZA_INVIO` in `js/lurk.js`). Le frasi girano **a mazzo**:
+  resta acceso. L'intervallo si sceglie nel pannello, campo «Ogni quanti minuti
+  ripetere il messaggio in chat» (`config.lurk.minutiFraMessaggi`, da 2 a 120, di
+  serie 10): ha un predefinito, quindi su un sito già online compare da solo
+  senza toccare i contenuti. Nei testi `lurk.preavviso` e `lurk.invito`,
+  `{minuti}` diventa quel numero. Le frasi girano **a mazzo**:
   si dicono tutte, in ordine casuale, prima di ripeterne una. Il tetto di tre
   messaggi per pagina non c'è più. Restano i freni: niente messaggi a canale
   spento, niente mentre il sito chiede «ci sei ancora?», e dopo `oreMax` ore

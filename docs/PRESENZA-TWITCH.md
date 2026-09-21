@@ -628,7 +628,8 @@ Più un freno di un invio al minuto.
 ### 6.3 B2 — invio periodico automatico ❌ **fuori perimetro**
 
 > **Aggiornamento del 21 settembre 2026.** Il committente ha deciso di farlo lo stesso: il
-> messaggio di lurk parte ogni 10 minuti a lurk acceso. La deroga, i motivi e i freni che la
+> messaggio di lurk si ripete a lurk acceso, ogni tanti minuti quanti ne dice
+> `config.lurk.minutiFraMessaggi` (di serie 10). La deroga, i motivi e i freni che la
 > accompagnano stanno nel `CONTRATTO-3.md` §4.1. L'analisi qui sotto resta com'era, perché
 > descrive i rischi che si sono accettati.
 

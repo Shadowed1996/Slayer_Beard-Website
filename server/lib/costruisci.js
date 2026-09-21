@@ -987,6 +987,13 @@ function lurkDi(config, testi, account) {
   if (!Number.isFinite(ore)) { ore = 3; }
   ore = Math.min(12, Math.max(1, Math.round(ore)));
 
+  // Ogni quanti minuti il messaggio si ripete a lurk acceso (CONTRATTO-3
+  // §4.1). Stessa regola di oreMax: fuori scala si stringe al bordo, e sotto
+  // i due minuti si finirebbe addosso al freno di un invio al minuto.
+  let minuti = Number(lurk.minutiFraMessaggi);
+  if (!Number.isFinite(minuti)) { minuti = 10; }
+  minuti = Math.min(120, Math.max(2, Math.round(minuti)));
+
   return {
     attivo: lurk.attivo === true,
     tieniSchermoAcceso: lurk.tieniSchermoAcceso === true,
@@ -997,7 +1004,8 @@ function lurkDi(config, testi, account) {
       // Il Client ID e l indirizzo di ritorno stanno nel ramo `account`: qui
       // sarebbero una seconda copia dello stesso valore, e due copie sono
       // due cose che possono smettere di essere d accordo.
-      frasi: messaggioAttivo ? frasi : []
+      frasi: messaggioAttivo ? frasi : [],
+      minuti: minuti
     },
     testi: {
       accendi: testi['lurk.accendi'] || '',

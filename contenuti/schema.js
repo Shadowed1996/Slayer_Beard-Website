@@ -289,10 +289,14 @@ const gruppi = [
         aiuto: 'ATTENZIONE: non aumenta il numero di spettatori — Twitch non conta chi scrive in chat, conta chi ha il video acceso. Serve solo a farsi vedere dalla chat e da chi trasmette. Richiede il profilo del sito acceso e il suo Client ID (gruppo «Profilo del sito»), altrimenti resta spento comunque.' },
       { chiave: 'config.lurk.frasi', etichetta: 'Frasi del messaggio di lurk', tipo: 'elencoTesti',
         aiuto: 'IMPORTANTE: devono DICHIARARE che si sta guardando in silenzio («Lurko dal sito»), non fingere presenza attiva («Ci sono, sono attivo!»). È la differenza fra un messaggio onesto e uno ingannevole, ed è l\'unica cosa che rende accettabile questa funzione: il codice è identico, cambia solo cosa c\'è scritto.' },
+      // Nato dopo la messa online (CONTRATTO-3 §4.1), quindi con un
+      // predefinito: sul sito già in piedi compare da solo con 10.
+      { chiave: 'config.lurk.minutiFraMessaggi', etichetta: 'Ogni quanti minuti ripetere il messaggio in chat', tipo: 'numero', min: 2, max: 120, predefinito: 10,
+        aiuto: 'Da 2 a 120, di serie 10. Col lurk acceso il primo messaggio parte all\'attivazione, poi uno ogni tot minuti finché resta acceso. Più è basso, più è facile che Twitch o i moderatori lo prendano per spam: e a rimetterci è l\'account di chi guarda.' },
       { chiave: 'lurk.preavviso', etichetta: 'Avviso di cosa verrà detto in chat', tipo: 'testo', max: 90,
-        aiuto: 'Compare a chi si è collegato, PRIMA che attivi il lurk: il messaggio parte da solo all\'attivazione, quindi va detto in anticipo cosa dirà. Usa {frase}, che viene sostituito dalla frase scelta.' },
+        aiuto: 'Compare a chi si è collegato, PRIMA che attivi il lurk: il messaggio parte da solo all\'attivazione e poi si ripete, quindi va detto in anticipo cosa dirà. Usa {frase}, che viene sostituito dalla frase scelta, e {minuti}, che diventa l\'intervallo impostato qui sopra.' },
       { chiave: 'lurk.invito', etichetta: 'Invito a collegarsi, all\'accensione', tipo: 'testo', max: 90,
-        aiuto: 'Compare a chi accende la modalità lurk e non si è collegato con Twitch, sopra al bottone del collegamento. Usa {frase}: va detto qui che cosa verrà scritto in chat, prima che quella persona decida di collegarsi.' },
+        aiuto: 'Compare a chi accende la modalità lurk e non si è collegato con Twitch, sopra al bottone del collegamento. Usa {frase}: va detto qui che cosa verrà scritto in chat, prima che quella persona decida di collegarsi. {minuti} diventa l\'intervallo fra un messaggio e l\'altro.' },
       { chiave: 'lurk.manda', etichetta: 'Bottone — dillo in chat', tipo: 'testo', max: 40,
         aiuto: 'Compare solo a chi ha un adblock che blocca l\'SDK di Twitch: lì il lurk non può riavviare niente e quindi non c\'è un\'attivazione a cui agganciare il messaggio, ma la persona sta guardando lo stesso. Un clic, un messaggio, con la frase dichiarata qui accanto.' },
       { chiave: 'lurk.inviato', etichetta: 'Conferma dopo l\'invio', tipo: 'testo', max: 80 }

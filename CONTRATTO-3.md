@@ -47,16 +47,16 @@ Da qui due blocchi distinti, che **non si mescolano nel codice**:
 |---|---|---|---|
 | **A — sessione viva** | sorveglia il player e lo fa ripartire quando il browser lo ferma | **no** | si costruisce |
 | **B — messaggio di lurk** | un clic, **un** messaggio in chat a nome dell'utente | sì | si costruisce, **spento** finché non c'è un Client ID |
-| ~~C — invio periodico~~ | ~~messaggi automatici a ripetizione~~ | — | **non si fa** — superato dalla deroga del §4.1: ora è il blocco B che ripete ogni 10 minuti |
+| ~~C — invio periodico~~ | ~~messaggi automatici a ripetizione~~ | — | **non si fa** — superato dalla deroga del §4.1: ora è il blocco B che ripete il messaggio, ogni `minutiFraMessaggi` minuti |
 
 Il terzo blocco è escluso e non va reintrodotto: viola le Community Guidelines e il Developer
 Services Agreement, non aumenta il conteggio spettatori, e nell'unico scenario in cui potrebbe
 girare in modo accettabile è ridondante rispetto ad A. Le motivazioni per esteso stanno nel §2 e
 nel §6.3 di `docs/PRESENZA-TWITCH.md`.
 
-**Conseguenza pratica sullo schema**: le chiavi `messaggioAutomatico`, `minutiFraMessaggi` e
-`messaggiMax` **non esistono**. Un campo che non c'è è un campo che nessuno accenderà per
-sbaglio fra un anno.
+**Conseguenza pratica sullo schema**: le chiavi `messaggioAutomatico` e `messaggiMax` **non
+esistono**. Un campo che non c'è è un campo che nessuno accenderà per sbaglio fra un anno.
+`minutiFraMessaggi` invece esiste dalla deroga del §4.1: è la cadenza del messaggio ripetuto.
 
 ---
 
@@ -197,12 +197,13 @@ La funzione **non si presenta mai** come «accumula punti canale mentre sei AFK�
 
 ## 4. Il blocco B — login e messaggio di lurk
 
-### 4.1 L'accensione, e poi ogni dieci minuti
+### 4.1 L'accensione, e poi ogni tot minuti
 
 > **Deroga del 21 settembre 2026.** Il testo originale di questo paragrafo diceva «Nessun
 > timer. Nessuna ripetizione. Un atto umano, un messaggio.» Il committente l'ha cambiato: col
-> lurk acceso e l'utente collegato, il messaggio parte all'accensione e **poi ogni dieci
-> minuti**, finché il lurk resta acceso. Nella sua esperienza sul canale, chi tiene soltanto
+> lurk acceso e l'utente collegato, il messaggio parte all'accensione e **poi a intervalli
+> regolari** (10 minuti di serie, si cambia dal pannello), finché il lurk resta
+> acceso. Nella sua esperienza sul canale, chi tiene soltanto
 > il player aperto non viene più considerato presente, e il lurk è stato costruito apposta per
 > questo.
 >
@@ -220,12 +221,15 @@ La funzione **non si presenta mai** come «accumula punti canale mentre sei AFK�
 > - **Il conto va sull'orologio**, dall'ultimo messaggio partito: dopo che la scheda è stata
 >   congelata ne parte uno solo, mai una raffica di recupero.
 > - **L'utente lo legge prima di accendere**: `lurk.preavviso` e `lurk.invito` devono dire che
->   il messaggio si ripete ogni 10 minuti. I ripieghi in `js/lurk.js` lo dicono già; i testi
+>   il messaggio si ripete, e ogni quanto (`{minuti}`). I ripieghi in `js/lurk.js` lo dicono già; i testi
 >   veri si scrivono dal pannello, perché i contenuti del sito online non si sovrascrivono.
 >
 > Il tetto di tre messaggi per pagina è stato tolto, perché con l'invio periodico non ha più
-> senso. La cadenza è la costante `CADENZA_INVIO` in `js/lurk.js`, e non è un campo del
-> pannello.
+> senso. La cadenza la sceglie il pannello: `config.lurk.minutiFraMessaggi`, da 2 a 120 minuti,
+> di serie 10, con un `predefinito` perché è nata dopo la messa online. Esce in
+> `window.DATI.lurk.messaggio.minuti`; `costruisci.js` e `js/lurk.js` la riportano tutti e due
+> dentro 2..120. Sotto i due minuti si finirebbe addosso al freno di un invio al minuto. Nei
+> testi `lurk.preavviso` e `lurk.invito`, `{minuti}` diventa quel numero.
 
 - **La frase si mostra PRIMA dell'invio.** L'utente deve vedere cosa sta per dire a suo nome,
   non scoprirlo dopo.

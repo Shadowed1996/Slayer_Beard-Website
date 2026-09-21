@@ -1188,6 +1188,24 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     }
   });
 
+  await prova('minutiFraMessaggi viene riportato dentro 2..120, di serie 10', () => {
+    // Il messaggio in chat si ripete a lurk acceso (CONTRATTO-3 §4.1): sotto i
+    // due minuti finirebbe addosso al freno di un invio al minuto.
+    const casi = [[0, 2], [-5, 2], [2, 2], [10, 10], [120, 120], [999, 120], [7.6, 8]];
+    for (const [dato, atteso] of casi) {
+      esigiUguale(ramo(sana({ minutiFraMessaggi: dato })).messaggio.minuti, atteso, 'minuti ' + JSON.stringify(dato));
+    }
+    esigiUguale(ramo(sana()).messaggio.minuti, 10, 'chiave mancante');
+    esigiUguale(ramo(undefined).messaggio.minuti, 10, 'ramo config.lurk mancante');
+    esigiUguale(ramo(sana({ minutiFraMessaggi: 'dieci' })).messaggio.minuti, 10, 'parola al posto del numero');
+    // Un contenuti.json già online non ha la chiave: completa() la mette col
+    // predefinito, così la prima Pubblica non fallisce.
+    const vecchio = JSON.parse(JSON.stringify(contenutiVeri));
+    if (vecchio.config.lurk) { delete vecchio.config.lurk.minutiFraMessaggi; }
+    esigi(schema.completa(vecchio).includes('config.lurk.minutiFraMessaggi'), 'completa() non aggiunge la chiave');
+    esigiUguale(vecchio.config.lurk.minutiFraMessaggi, 10, 'predefinito');
+  });
+
   await prova('gli interruttori si confrontano con true: la stringa non accende niente', () => {
     for (const chiave of ['attivo', 'tieniSchermoAcceso']) {
       esigiUguale(ramo(sana({ [chiave]: true }))[chiave], true, chiave + ' acceso');
@@ -1352,10 +1370,12 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigiUguale(ricchi.join(','), 'lurk.spiegazione,lurk.notaAccount,lurk.notaMobile', 'i campi ricchi del lurk');
   });
 
-  await prova('le chiavi dell invio periodico non esistono, e non devono esistere', () => {
-    // CONTRATTO-3 §0: il terzo blocco non si fa. Un campo che non c e e un
-    // campo che nessuno accendera per sbaglio fra un anno.
-    for (const nome of ['messaggioAutomatico', 'minutiFraMessaggi', 'messaggiMax']) {
+  await prova('dell invio periodico esiste solo la cadenza: niente interruttore, niente tetto', () => {
+    // CONTRATTO-3 §4.1: il messaggio si ripete a lurk acceso, e dal pannello
+    // si sceglie soltanto ogni quanti minuti (minutiFraMessaggi, provata qui
+    // sopra). Un interruttore a parte o un tetto di messaggi restano fuori:
+    // un campo che non c e e un campo che nessuno accendera per sbaglio.
+    for (const nome of ['messaggioAutomatico', 'messaggiMax']) {
       esigi(!schema.campo('config.lurk.' + nome), 'lo schema ha rimesso config.lurk.' + nome);
       esigi(!Object.prototype.hasOwnProperty.call(contenutiVeri.config.lurk, nome),
         'i contenuti hanno rimesso config.lurk.' + nome);

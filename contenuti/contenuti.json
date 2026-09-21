@@ -321,6 +321,7 @@
       "tieniSchermoAcceso": false,
       "oreMax": 3,
       "messaggioAttivo": true,
+      "minutiFraMessaggi": 10,
       "frasi": [
         "Hey! Lurko dal sito.",
         "Sono in lurk dal sito, buona diretta!",

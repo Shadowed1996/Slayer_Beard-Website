@@ -1563,7 +1563,10 @@ riquadro qui sotto **prima** di scriverle.
 l'avviso di cosa verrà detto in chat, il bottone *dillo in chat* e la conferma
 dopo l'invio. Nell'invito e nell'avviso puoi scrivere `{frase}`, che viene
 sostituito dalla frase vera: **toglierlo è una pessima idea**, perché è l'unico
-punto in cui chi sta per collegarsi legge che cosa verrà detto a nome suo.
+punto in cui chi sta per collegarsi legge che cosa verrà detto a nome suo. E
+puoi scrivere `{minuti}`, che diventa l'intervallo fra un messaggio e l'altro:
+per esempio *«Col lurk attivo dirò in chat, ogni {minuti} minuti, frasi come:
+«{frase}»»*.
 
 Come funziona, per quando devi spiegarlo a qualcuno:
 
@@ -1593,9 +1596,13 @@ Come funziona, per quando devi spiegarlo a qualcuno:
 5. Da lì in avanti, finché resta su quella scheda, accendere il lurk vuol dire
    dirlo in chat: il messaggio è la conseguenza dichiarata dell'accensione, non
    un bottone in più da premere.
-6. Da quella pagina può dirlo al massimo **tre volte**, e comunque non più di
-   una al minuto: spegnere e riaccendere il lurk dieci volte non deve
-   diventare dieci messaggi in chat. Per ricominciare si ricarica la pagina.
+6. Finché il lurk resta acceso, il messaggio **si ripete da solo** ogni tot
+   minuti, con le frasi a rotazione: si dicono tutte prima di ripeterne una.
+   L'intervallo lo scegli tu nel campo **Ogni quanti minuti ripetere il
+   messaggio in chat** (da 2 a 120, di serie 10). Si ferma quando il lurk si
+   spegne, quando finisce la diretta e mentre il sito chiede «ci sei ancora?».
+   Più l'intervallo è basso, più è facile che Twitch o i moderatori lo
+   prendano per spam, e a rimetterci è l'account di chi guarda.
 
 > **Se il browser blocca le finestrelle** il sito se ne accorge e passa alla
 > strada lunga: va su Twitch nella stessa scheda e poi torna indietro. In quel

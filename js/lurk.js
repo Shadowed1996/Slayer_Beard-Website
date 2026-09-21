@@ -13,7 +13,7 @@
 
      B — MESSAGGIO DI LURK. A lurk acceso e con l'utente collegato,
          un messaggio in chat a nome suo all'accensione e poi uno ogni
-         dieci minuti, con le frasi a rotazione. È la Strada B2 del
+         tot minuti (dal pannello), con le frasi a rotazione. È la Strada B2 del
          §6.3, prima esclusa e poi voluta dal committente: la deroga e
          i suoi rischi sono scritti nel CONTRATTO-3 §4.1. Questo blocco
          nasce spento e resta spento finché non ci sono un profilo del
@@ -107,10 +107,16 @@
   const FRENO_INVIO = 60000;     // un invio al minuto, e comunque uno per volta
 
   // Ogni quanto parte il messaggio da solo, a lurk acceso (CONTRATTO-3 §4.1).
-  // Si misura sull'orologio dentro battito(), non con un setInterval suo: in
-  // secondo piano i timer vengono rallentati, e un intervallo che scatta in
-  // ritardo non deve poi recuperare mandando due messaggi di fila.
-  const CADENZA_INVIO = 600000;  // dieci minuti
+  // Lo sceglie il pannello (config.lurk.minutiFraMessaggi, 2..120, di serie
+  // 10) e qui si ristringe comunque, come oreMax: dati.js si può ritoccare a
+  // mano. Si misura sull'orologio dentro battito(), non con un setInterval
+  // suo: in secondo piano i timer vengono rallentati, e un intervallo che
+  // scatta in ritardo non deve poi recuperare mandando due messaggi di fila.
+  const MINUTI_INVIO = (function () {
+    const m = Number(MESSAGGIO.minuti);
+    return isFinite(m) ? Math.min(120, Math.max(2, Math.round(m))) : 10;
+  }());
+  const CADENZA_INVIO = MINUTI_INVIO * 60000;
 
   // Nessun testo di stato è indispensabile: se il pannello è stato pubblicato
   // con un campo vuoto è meglio una frase di ripiego che una riga muta.
@@ -134,8 +140,8 @@
     statoNiente: 'Da qui non posso: non ho i comandi del player.',
     conto: 'Viva da {durata}',
     contoRiavvii: 'Viva da {durata} · {riavvii} riavvii',
-    preavviso: 'Col lurk attivo dirò in chat, ogni 10 minuti, frasi come: «{frase}»',
-    invito: 'Vuoi dire in chat che stai guardando? Ogni 10 minuti dirò frasi come: «{frase}»',
+    preavviso: 'Col lurk attivo dirò in chat, ogni {minuti} minuti, frasi come: «{frase}»',
+    invito: 'Vuoi dire in chat che stai guardando? Ogni {minuti} minuti dirò frasi come: «{frase}»',
     manda: 'Dillo in chat',
     inviato: 'Fatto: il messaggio è in chat.'
   };
@@ -652,7 +658,7 @@
     avvisa();
 
     // Il primo messaggio in chat parte QUI, come conseguenza dichiarata
-    // dell'accensione; i successivi li manda battito() ogni dieci minuti,
+    // dell'accensione; i successivi li manda battito() ogni MINUTI_INVIO minuti,
     // finché il lurk resta acceso (CONTRATTO-3 §4.1).
     //
     // Parte solo se l'utente si è collegato: senza account non c'è nessuno a
@@ -1158,7 +1164,7 @@
 
   // L'unico posto da cui parte un messaggio, chiamato dai quattro momenti in
   // cui può partire: l'accensione del lurk, il ritorno dalla finestrella del
-  // login a lurk già acceso, i dieci minuti di battito() a lurk acceso, e il
+  // login a lurk già acceso, la cadenza di battito() a lurk acceso, e il
   // bottone di ripiego di chi non ha i comandi del player. Manda SEMPRE la
   // frase annunciata, poi ne prepara un'altra:
   // due accensioni ravvicinate con la stessa frase le scarterebbe Twitch,
@@ -1166,7 +1172,7 @@
   function mandaOra() {
     const scelta = fraseProssima || pesca();
     fraseProssima = '';
-    // Col lurk acceso da qui parte anche il conto dei dieci minuti. Si segna
+    // Col lurk acceso da qui parte anche il conto della cadenza. Si segna
     // al tentativo e non all'esito: un invio rifiutato (slow mode, AutoMod)
     // si riprova al giro dopo, non a raffica ogni secondo.
     if (vivo.acceso) { ultimoAutomatico = Date.now(); }
@@ -1315,7 +1321,9 @@
       if (serveLogin) { riga = testo('invito'); }
       else if (vivo.collegato && !vivo.acceso) { riga = testo('preavviso'); }
       comandi.frase.hidden = !riga;
-      comandi.frase.textContent = riga.replace(/\{frase\}/g, fraseProssima || '');
+      comandi.frase.textContent = riga
+        .replace(/\{frase\}/g, fraseProssima || '')
+        .replace(/\{minuti\}/g, String(MINUTI_INVIO));
     }
 
     // Il bottone di ripiego, quando c'è: si disabilita solo mentre una
