@@ -15,6 +15,18 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Gli auguri del 21 settembre 2026, temporanei.** In fondo a
+  `modelli/index.html`, fra i commenti `AUGURI 21/09/2026 - inizio` e
+  `AUGURI - fine`: festone, palloncini, coriandoli e un riquadro «Tanti
+  Auguri!» che si chiude con la X, con Esc o con «Evviva!» (e allora piovono i
+  coriandoli). Si vede una volta per scheda (`sessionStorage`), rispetta
+  `prefers-reduced-motion`, e **si spegne da solo il 22/09/2026 alle 00:00 ora
+  italiana**: lo script controlla l'orologio e, passata la scadenza, toglie anche
+  il suo stile. Tutte le classi sono `sb-aug-*`, quindi non tocca niente del
+  sito. Lo script è inline, e per questo `modelli/parziali/testa-comune.html`
+  aggiunge il suo hash a `script-src` della Content-Security-Policy. **Per
+  toglierlo del tutto**: cancellare il blocco fra i due commenti, togliere l'hash
+  `'sha256-h5DNoJxrrsy4V9fk6jkWgvRejQD5aZxms0VMRHQ/hs0='` dalla CSP e pubblicare.
 - **Una pagina con tutte le clip, dove il periodo lo sceglie chi guarda.**
   `clip.html` è la seconda pagina del sito — il resto resta una pagina sola con
   sei sezioni — e nasce da `modelli/clip.html` come `index.html` nasce dal suo.
