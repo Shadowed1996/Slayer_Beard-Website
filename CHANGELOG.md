@@ -364,6 +364,20 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - `.editorconfig` e `.gitattributes` allineati alle convenzioni del progetto.
 
 ### Modificato
+- **Il messaggio di lurk ora parte da solo ogni 10 minuti.** Con la modalità lurk
+  accesa e l'utente collegato con Twitch, il primo messaggio parte
+  all'accensione come prima; poi ne parte uno ogni dieci minuti, finché il lurk
+  resta acceso (`CADENZA_INVIO` in `js/lurk.js`). Le frasi girano **a mazzo**:
+  si dicono tutte, in ordine casuale, prima di ripeterne una. Il tetto di tre
+  messaggi per pagina non c'è più. Restano i freni: niente messaggi a canale
+  spento, niente mentre il sito chiede «ci sei ancora?», e dopo `oreMax` ore
+  senza risposta si spegne tutto. È la Strada B2 che `docs/PRESENZA-TWITCH.md`
+  §6.3 escludeva: la deroga è motivata nel `CONTRATTO-3.md` §4.1, con i rischi
+  verso il regolamento di Twitch. I testi di ripiego di `lurk.preavviso` e
+  `lurk.invito` in `js/lurk.js` dicono che il messaggio si ripete; quelli veri
+  stanno nei contenuti del sito, che questa modifica non tocca, e si
+  aggiornano dal pannello.
+
 - **In home niente più clip: un invito alla pagina delle clip.** In fondo alla
   «diretta», al posto della vetrina con le card, ci sono un titolo («Migliori
   highlights»), una riga di presentazione e il bottone «Vai alle clip» verso

@@ -627,6 +627,11 @@ Più un freno di un invio al minuto.
 
 ### 6.3 B2 — invio periodico automatico ❌ **fuori perimetro**
 
+> **Aggiornamento del 21 settembre 2026.** Il committente ha deciso di farlo lo stesso: il
+> messaggio di lurk parte ogni 10 minuti a lurk acceso. La deroga, i motivi e i freni che la
+> accompagnano stanno nel `CONTRATTO-3.md` §4.1. L'analisi qui sotto resta com'era, perché
+> descrive i rischi che si sono accettati.
+
 Documentato perché era la richiesta iniziale, e perché serve sapere perché non si fa.
 
 **Non ottiene l'obiettivo** (§1.3): scrivere in chat ogni dieci minuti non rimette nessuno nel

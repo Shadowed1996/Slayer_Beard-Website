@@ -11,12 +11,13 @@
          è per un timeout AFK — che non esiste — ma perché la sessione
          video è morta (§1.4).
 
-     B — MESSAGGIO DI LURK. Un clic dell'utente, UN messaggio in chat a
-         nome suo. Niente timer, niente ripetizioni: quella era la
-         Strada B2 del §6.3, ed è fuori perimetro perché è spam e
-         perché non aggiunge un solo spettatore al conteggio (§1.3).
-         Questo blocco nasce spento e resta spento finché non ci sono
-         un profilo del sito acceso e almeno una frase.
+     B — MESSAGGIO DI LURK. A lurk acceso e con l'utente collegato,
+         un messaggio in chat a nome suo all'accensione e poi uno ogni
+         dieci minuti, con le frasi a rotazione. È la Strada B2 del
+         §6.3, prima esclusa e poi voluta dal committente: la deroga e
+         i suoi rischi sono scritti nel CONTRATTO-3 §4.1. Questo blocco
+         nasce spento e resta spento finché non ci sono un profilo del
+         sito acceso e almeno una frase.
 
    IL LOGIN NON STA PIÙ QUI. Il collegamento con Twitch è diventato il
    profilo del sito — js/account.js, window.Account — e vale su tutto il
@@ -105,11 +106,11 @@
 
   const FRENO_INVIO = 60000;     // un invio al minuto, e comunque uno per volta
 
-  // Tetto per caricamento di pagina. Il freno al minuto impedisce la raffica,
-  // non la goccia: spegni e riaccendi il lurk cinque volte in un'ora e in chat
-  // finiscono cinque messaggi, tutti voluti e tutti fastidiosi. Tre è il numero
-  // oltre il quale non è più «un atto umano, un messaggio» ma un tic.
-  const MESSAGGI_MAX = 3;
+  // Ogni quanto parte il messaggio da solo, a lurk acceso (CONTRATTO-3 §4.1).
+  // Si misura sull'orologio dentro battito(), non con un setInterval suo: in
+  // secondo piano i timer vengono rallentati, e un intervallo che scatta in
+  // ritardo non deve poi recuperare mandando due messaggi di fila.
+  const CADENZA_INVIO = 600000;  // dieci minuti
 
   // Nessun testo di stato è indispensabile: se il pannello è stato pubblicato
   // con un campo vuoto è meglio una frase di ripiego che una riga muta.
@@ -133,8 +134,8 @@
     statoNiente: 'Da qui non posso: non ho i comandi del player.',
     conto: 'Viva da {durata}',
     contoRiavvii: 'Viva da {durata} · {riavvii} riavvii',
-    preavviso: 'Attivando il lurk dirò in chat: «{frase}»',
-    invito: 'Vuoi dire in chat che stai guardando? Dirò: «{frase}»',
+    preavviso: 'Col lurk attivo dirò in chat, ogni 10 minuti, frasi come: «{frase}»',
+    invito: 'Vuoi dire in chat che stai guardando? Ogni 10 minuti dirò frasi come: «{frase}»',
     manda: 'Dillo in chat',
     inviato: 'Fatto: il messaggio è in chat.'
   };
@@ -209,6 +210,8 @@
   let ultimaFrase = '';
   let fraseProssima = '';   // la frase che partira alla prossima accensione
   let ultimoInvio = 0;
+  let ultimoAutomatico = 0;   // l'ultimo messaggio partito col lurk acceso; 0 = nessuno
+  let mazzo = [];             // le frasi ancora da dire in questo giro di rotazione
   let inVolo = false;
 
   /* ------------------------------------------------------------------
@@ -648,12 +651,9 @@
     aggiornaConto();
     avvisa();
 
-    // Il messaggio in chat parte QUI, da solo, come conseguenza dichiarata
-    // dell'accensione. Non è un timer: un gesto dell'utente, un messaggio —
-    // lo stesso rapporto 1:1 di un «!lurk» scritto a mano, che è ciò che lo
-    // tiene fuori dallo spam (docs/PRESENZA-TWITCH.md §2.7). Un bottone a
-    // parte da premere era solo attrito: chi deve premerlo tanto vale che
-    // scriva in chat da sé.
+    // Il primo messaggio in chat parte QUI, come conseguenza dichiarata
+    // dell'accensione; i successivi li manda battito() ogni dieci minuti,
+    // finché il lurk resta acceso (CONTRATTO-3 §4.1).
     //
     // Parte solo se l'utente si è collegato: senza account non c'è nessuno a
     // nome di cui parlare, e il lurk funziona lo stesso — il blocco A non ha
@@ -688,6 +688,7 @@
 
     vivo.acceso = false;
     vivo.daQuando = 0;
+    ultimoAutomatico = 0;
     chiestoPresenza = 0;
     tentativo = 0;
     azzeraAllarmi();
@@ -791,12 +792,23 @@
 
     if (chiestoPresenza) {
       // Nessuna risposta entro cinque minuti: si spegne tutto. È il punto del
-      // contratto che tiene la funzione dalla parte giusta del confine.
+      // contratto che tiene la funzione dalla parte giusta del confine. E
+      // mentre la domanda aspetta, in chat non parte niente: chi forse se n'è
+      // andato non continua a dire «lurko» a nome suo.
       if (ora - chiestoPresenza >= ATTESA_PRESENZA) { spegni(); }
       return;
     }
 
-    if (ora - ultimaPresenza >= oreMax() * 3600000) { chiediPresenza(); }
+    if (ora - ultimaPresenza >= oreMax() * 3600000) { chiediPresenza(); return; }
+
+    // Il messaggio periodico. Conta dall'ultimo partito, non da una griglia
+    // fissa: dopo un congelamento della scheda ne parte UNO, e il conto
+    // riparte da lì. Senza un primo messaggio (utente non ancora collegato)
+    // non si comincia: lo farà ascoltaAccount() al collegamento.
+    if (ultimoAutomatico && ora - ultimoAutomatico >= CADENZA_INVIO
+        && bAttivo() && vivo.collegato && canaleAcceso()) {
+      mandaOra();
+    }
   }
 
   function chiediPresenza() {
@@ -995,15 +1007,6 @@
       return;
     }
 
-    // Il tetto conta i messaggi ARRIVATI in chat, non i tentativi: un invio
-    // rifiutato da Twitch (slow mode, duplicato) non deve consumare il budget
-    // di chi non ha ancora detto niente. Si azzera solo ricaricando la pagina,
-    // che è un gesto abbastanza deliberato da non essere un tic.
-    if (vivo.inviati >= MESSAGGI_MAX) {
-      avviso('L’hai già detto ' + vivo.inviati + ' volte in chat da questa pagina: per ripeterlo, ricaricala.');
-      return;
-    }
-
     const resta = FRENO_INVIO - (Date.now() - ultimoInvio);
     if (ultimoInvio && resta > 0) {
       avviso('Un messaggio al minuto: riprova fra ' + Math.ceil(resta / 1000) + ' secondi.');
@@ -1121,20 +1124,28 @@
       .map(function (v) { return v.trim(); });
   }());
 
-  // Pescata a rotazione che evita di ripetere l'ultima. Serve contro il
-  // filtro anti-duplicato di Twitch, che scarta due messaggi identici
-  // ravvicinati dallo stesso utente: qui i messaggi sono uno per accensione,
-  // ma due accensioni ravvicinate sono del tutto normali.
+  // Rotazione a mazzo: si mescolano tutte le frasi e si dicono una alla volta,
+  // e solo quando sono finite si rimescola. Così con tante frasi la chat non
+  // rilegge la stessa prima di averle sentite tutte, e il filtro anti-duplicato
+  // di Twitch non scatta. Al cambio di mazzo si evita che la prima del nuovo
+  // sia l'ultima del vecchio.
   function pesca() {
     if (!FRASI.length) { return ''; }
     if (FRASI.length === 1) { return FRASI[0]; }
 
-    let scelta = ultimaFrase;
-    for (let i = 0; i < 6 && scelta === ultimaFrase; i++) {
-      scelta = FRASI[Math.floor(Math.random() * FRASI.length)];
+    if (!mazzo.length) {
+      mazzo = FRASI.slice();
+      for (let i = mazzo.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const t = mazzo[i]; mazzo[i] = mazzo[j]; mazzo[j] = t;
+      }
+      // Si pesca dalla coda: se in coda c'è l'ultima detta, va in testa.
+      if (mazzo[mazzo.length - 1] === ultimaFrase) {
+        const t = mazzo[0]; mazzo[0] = mazzo[mazzo.length - 1]; mazzo[mazzo.length - 1] = t;
+      }
     }
-    ultimaFrase = scelta;
-    return scelta;
+    ultimaFrase = mazzo.pop();
+    return ultimaFrase;
   }
 
   // La frase che partirà alla prossima accensione. Si sceglie in anticipo
@@ -1145,15 +1156,20 @@
     dipingiAccesso();
   }
 
-  // L'unico posto da cui parte un messaggio, chiamato dai tre momenti in cui
-  // può partire: l'accensione del lurk, il ritorno dalla finestrella del
-  // login a lurk già acceso, e il bottone di ripiego di chi non ha i comandi
-  // del player. Manda SEMPRE la frase annunciata, poi ne prepara un'altra:
+  // L'unico posto da cui parte un messaggio, chiamato dai quattro momenti in
+  // cui può partire: l'accensione del lurk, il ritorno dalla finestrella del
+  // login a lurk già acceso, i dieci minuti di battito() a lurk acceso, e il
+  // bottone di ripiego di chi non ha i comandi del player. Manda SEMPRE la
+  // frase annunciata, poi ne prepara un'altra:
   // due accensioni ravvicinate con la stessa frase le scarterebbe Twitch,
   // che rifiuta due messaggi identici di fila dallo stesso utente.
   function mandaOra() {
     const scelta = fraseProssima || pesca();
     fraseProssima = '';
+    // Col lurk acceso da qui parte anche il conto dei dieci minuti. Si segna
+    // al tentativo e non all'esito: un invio rifiutato (slow mode, AutoMod)
+    // si riprova al giro dopo, non a raffica ogni secondo.
+    if (vivo.acceso) { ultimoAutomatico = Date.now(); }
     invia(scelta);
     preparaFrase();
   }
