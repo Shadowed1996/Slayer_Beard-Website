@@ -492,6 +492,13 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   `docs/PANNELLO.md` §3.
 
 ### Corretto
+- **L'evento speciale si prende la schedule da mezzanotte del suo giorno.**
+  La maratona «SlayerFest | Day 4» comincia alle 11:00, e fino a quell'ora il
+  nastro tornava la settimana di sempre, senza orari sbarrati. Ora dalle 00:00
+  del giorno dell'evento ogni serata che gli cade sotto esce «Speciale», con il
+  titolo dell'evento e l'orario sbarrato (`programmaSostituito` in
+  `pannello/condivisi/orari.js`, stessa regola in `js/sito.js`). Il conto alla
+  rovescia e la categoria di Twitch guardano ancora l'ora vera di inizio.
 
 - **Le icone social nel binario a sinistra si vedono come devono.** Sono
   disegnate a tratto, ma `css/base.css` dava loro `fill: currentColor`: i

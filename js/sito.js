@@ -340,9 +340,16 @@
     // eventi sono in ordine di inizio: il primo che risponde è quello
     // cominciato prima, cioè quello che si sta guardando.
     let attivo = null;
+    // Per il nastro l'evento comanda da mezzanotte del suo giorno, non
+    // dall'ora di inizio: stessa regola di programmaSostituito() in
+    // pannello/condivisi/orari.js. Il conto alla rovescia punta ancora
+    // all'ora vera (prossimoEvento).
+    let attivoDa = 0;
     vivi.forEach(function (e) {
       if (!prossimoEvento && e.inizio > adesso) { prossimoEvento = e; }
-      if (!attivo && e.inizio <= adesso) { attivo = e; }
+      const p = partiFuso(new Date(e.inizio));
+      const da = Math.min(e.inizio, istanteFuso(p.year, p.month, p.day, 0, 0));
+      if (!attivo && da <= adesso) { attivo = e; attivoDa = da; }
     });
 
     // Finché un evento speciale è acceso è LUI il programma: la diretta
@@ -350,7 +357,7 @@
     // non è quella «in onda» e il conto alla rovescia non ci punta. Torna a
     // valere da sé appena l'evento finisce.
     finestre.forEach(function (f) {
-      f.sostituita = !!attivo && f.inizio < attivo.termine && f.termine > attivo.inizio;
+      f.sostituita = !!attivo && f.inizio < attivo.termine && f.termine > attivoDa;
     });
 
     // Le finestre escono già in ordine di inizio: i giorni sono in ordine e

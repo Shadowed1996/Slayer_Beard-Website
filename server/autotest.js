@@ -2783,8 +2783,12 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     esigiUguale(dentro.evento.titolo, 'Maratona', 'l evento acceso');
     esigiUguale(dentro.giorni.join(','), 'true,false,false,false,false,false,false', 'solo la domenica');
 
-    // Prima che cominci non si porta via niente: il nastro resta quello di sempre.
-    const prima = O.programmaSostituito(orari, Date.parse('2026-09-27T10:00:00.000Z'));
+    // Il giorno dell evento comanda da mezzanotte, non dalle 15:00: alle 12
+    // della domenica la serata e gia sua (orario sbarrato, «Speciale»).
+    const mattina = O.programmaSostituito(orari, Date.parse('2026-09-27T10:00:00.000Z'));
+    esigiUguale(mattina.evento.titolo + ' ' + mattina.giorni.join(','), 'Maratona true,false,false,false,false,false,false', 'dalla mezzanotte del suo giorno');
+    // Il giorno prima non si porta via niente: il nastro resta quello di sempre.
+    const prima = O.programmaSostituito(orari, Date.parse('2026-09-26T21:00:00.000Z'));
     esigiUguale(prima.evento + ' ' + prima.giorni.join(','), 'null false,false,false,false,false,false,false', 'evento non ancora acceso');
     // E dopo la fine torna tutto com era, senza ripubblicare niente.
     const dopo = O.programmaSostituito(orari, Date.parse('2026-09-28T02:00:00.000Z'));

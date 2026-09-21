@@ -2483,7 +2483,7 @@ carica con `require('../../pannello/condivisi/orari.js')`; nel pannello lo impor
 | `oraNelFuso(ms, fuso)` · `giornoDellaSettimana(data)` | `'HH:MM'` a quell'istante · 0–6, `-1` se la data non esiste |
 | `eventiFuturi(orari, adessoMs)` | gli eventi non ancora finiti, dal primo che parte: `[{ indice, inizio, termine, …evento }]`, istanti in ms ed evento normalizzato; quelli in corso ci sono |
 | `eventoAttivo(orari, adessoMs)` | l'evento **acceso adesso** (`inizio <= adesso < termine`) o `null`; a due sovrapposti vince quello cominciato prima, che è quello che si sta già guardando |
-| `programmaSostituito(orari, adessoMs)` | `{ evento, giorni }`: l'evento acceso e, giorno per giorno (0–6), se la sua diretta regolare **finisce sotto** all'evento. Sfiorarsi non conta: la serata che comincia quando la maratona finisce si fa davvero |
+| `programmaSostituito(orari, adessoMs)` | `{ evento, giorni }`: l'evento acceso e, giorno per giorno (0–6), se la sua diretta regolare **finisce sotto** all'evento. Sfiorarsi non conta: la serata che comincia quando la maratona finisce si fa davvero. L'evento comanda da **mezzanotte del suo giorno** (fuso del canale), non dall'ora di inizio; `js/sito.js` fa lo stesso nel browser |
 
 `normalizza` e `problemi` hanno due mestieri diversi. `normalizza` serve a **leggere**:
 generazione, anteprima e riassunti del pannello devono mostrare qualcosa anche con una

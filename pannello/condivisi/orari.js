@@ -764,11 +764,23 @@
    * prima e non ancora finita) e per al massimo una settimana: il nastro è
    * lungo sette giorni, e un evento senza fine nota (ORE_APERTO) li copre
    * comunque tutti.
+   *
+   * Qui l'evento comanda da MEZZANOTTE del suo giorno (nel fuso del canale),
+   * non dall'ora in cui comincia: in una maratona «Day 4» alle 11:00, già
+   * dalle 00:00 le serate sono sue (orario sbarrato, «Speciale»). Prima si
+   * guardava l'ora di inizio, e fino alle 11 la schedule tornava quella di
+   * sempre. eventoAttivo(), che serve alla categoria di Twitch, resta
+   * sull'ora vera.
    */
   function programmaSostituito(orari, adessoMs) {
     const pulito = normalizza(orari);
     const giorni = [false, false, false, false, false, false, false];
-    const evento = eventoAttivo(pulito, adessoMs);
+    const adesso = typeof adessoMs === 'number' && Number.isFinite(adessoMs) ? adessoMs : Date.now();
+    const evento = eventiFuturi(pulito, adesso).map(function (e) {
+      const mezzanotte = istante(e.data, '00:00', pulito.fuso);
+      e.accesoDa = Number.isFinite(mezzanotte) ? Math.min(mezzanotte, e.inizio) : e.inizio;
+      return e;
+    }).filter(function (e) { return e.accesoDa <= adesso; })[0] || null;
     if (!evento) { return { evento: null, giorni: giorni }; }
 
     for (let salto = -1; salto <= 7; salto++) {
@@ -786,7 +798,7 @@
       // che l'altra finisca. Sfiorarsi (una finisce dove l'altra comincia)
       // non è sovrapporsi: la serata regolare che comincia quando la
       // maratona finisce si fa davvero.
-      if (inizio < evento.termine && termine > evento.inizio) { giorni[g] = true; }
+      if (inizio < evento.termine && termine > evento.accesoDa) { giorni[g] = true; }
     }
 
     return { evento: evento, giorni: giorni };
