@@ -214,6 +214,10 @@ La funzione **non si presenta mai** come «accumula punti canale mentre sei AFK�
 > questi freni, che **non si tolgono**:
 >
 > - **Solo a lurk acceso e a canale in onda**: spento il lurk o finita la diretta, si smette.
+>   «Finita» vuol dire `fuoriOndaCerto()`, non `canaleAcceso()`: quest'ultima guarda anche il
+>   video, e il video fermato dal browser in secondo piano bloccava il messaggio proprio a chi è
+>   via. Un invio che non parte si riprova dopo un minuto, e il motivo resta scritto nel
+>   contatore del riquadro finché un invio non riesce.
 > - **Niente mentre si chiede «ci sei ancora?»** (§3.5), e senza risposta si spegne tutto: chi
 >   se n'è andato non continua a scrivere in chat.
 > - **Frasi a rotazione a mazzo**: si dicono tutte prima di ripeterne una. Devono restare

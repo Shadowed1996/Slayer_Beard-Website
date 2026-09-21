@@ -371,7 +371,11 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   ripetere il messaggio in chat» (`config.lurk.minutiFraMessaggi`, da 2 a 120, di
   serie 10): ha un predefinito, quindi su un sito già online compare da solo
   senza toccare i contenuti. Nei testi `lurk.preavviso` e `lurk.invito`,
-  `{minuti}` diventa quel numero. Le frasi girano **a mazzo**:
+  `{minuti}` diventa quel numero. Il messaggio ripetuto si ferma solo se Twitch
+  dice che la diretta è finita, non quando il browser mette in pausa il video;
+  se un invio non parte si riprova dopo un minuto, e il contatore del riquadro
+  dice fra quanto parte il prossimo e, se l'ultimo è fallito, perché (anche in
+  console, `[lurk]`). Le frasi girano **a mazzo**:
   si dicono tutte, in ordine casuale, prima di ripeterne una. Il tetto di tre
   messaggi per pagina non c'è più. Restano i freni: niente messaggi a canale
   spento, niente mentre il sito chiede «ci sei ancora?», e dopo `oreMax` ore

@@ -117,6 +117,7 @@
     return isFinite(m) ? Math.min(120, Math.max(2, Math.round(m))) : 10;
   }());
   const CADENZA_INVIO = MINUTI_INVIO * 60000;
+  const RIPROVA_INVIO = 60000;   // un invio automatico andato male si riprova dopo un minuto
 
   // Nessun testo di stato è indispensabile: se il pannello è stato pubblicato
   // con un campo vuoto è meglio una frase di ripiego che una riga muta.
@@ -217,6 +218,8 @@
   let fraseProssima = '';   // la frase che partira alla prossima accensione
   let ultimoInvio = 0;
   let ultimoAutomatico = 0;   // l'ultimo messaggio partito col lurk acceso; 0 = nessuno
+  let invioAutomatico = false; // l'invio in corso l'ha fatto partire la cadenza
+  let erroreInvio = '';       // perché l'ultimo messaggio non è partito; '' = è partito
   let mazzo = [];             // le frasi ancora da dire in questo giro di rotazione
   let inVolo = false;
 
@@ -370,9 +373,19 @@
     if (!vivo.acceso) { nodi.conto.textContent = ''; return; }
 
     const modello = vivo.riavvii > 0 ? testo('contoRiavvii') : testo('conto');
-    nodi.conto.textContent = modello
+    let riga = modello
       .replace(/\{durata\}/g, durata(Date.now() - vivo.daQuando))
       .replace(/\{riavvii\}/g, String(vivo.riavvii));
+
+    // Il messaggio ripetuto si vede: chi è in lurk sa quando parte il
+    // prossimo, e se l'ultimo non è partito ne legge il motivo anche
+    // tornando alla scheda dopo dieci minuti.
+    if (ultimoAutomatico && vivo.collegato) {
+      const manca = CADENZA_INVIO - (Date.now() - ultimoAutomatico);
+      riga += ' · prossimo messaggio in chat fra ' + durata(Math.max(0, manca));
+      if (erroreInvio) { riga += ' · l’ultimo non è partito: ' + erroreInvio; }
+    }
+    nodi.conto.textContent = riga;
   }
 
   /* ------------------------------------------------------------------
@@ -811,9 +824,12 @@
     // fissa: dopo un congelamento della scheda ne parte UNO, e il conto
     // riparte da lì. Senza un primo messaggio (utente non ancora collegato)
     // non si comincia: lo farà ascoltaAccount() al collegamento.
+    // Basta che la diretta non sia finita per certo: canaleAcceso() guarda
+    // anche il video, e il video fermato dal browser in secondo piano
+    // bloccava in silenzio proprio il messaggio che serve a chi è via.
     if (ultimoAutomatico && ora - ultimoAutomatico >= CADENZA_INVIO
-        && bAttivo() && vivo.collegato && canaleAcceso()) {
-      mandaOra();
+        && bAttivo() && vivo.collegato && !fuoriOndaCerto()) {
+      mandaOra(true);
     }
   }
 
@@ -997,25 +1013,45 @@
      è falso, si traduce drop_reason. Da sito statico non si può sapere in
      anticipo se il messaggio passerà: si prova e si dice com'è andata.
      ------------------------------------------------------------------ */
-  function invia(messaggio) {
+  /**
+   * Un messaggio che non è partito. L'avviso dura sette secondi, ed è troppo
+   * poco per chi torna alla scheda dopo dieci minuti: il motivo resta anche
+   * nella riga del contatore e in console, finché un invio non riesce. Col
+   * lurk acceso si riprova fra un minuto, non fra un giro intero.
+   */
+  function nonPartito(motivo) {
+    avviso(motivo);
+    erroreInvio = motivo;
+    console.warn('[lurk] messaggio in chat non partito:', motivo);
+    if (vivo.acceso && ultimoAutomatico) {
+      ultimoAutomatico = Date.now() - CADENZA_INVIO + RIPROVA_INVIO;
+    }
+    aggiornaConto();
+  }
+
+  function invia(messaggio, automatico) {
     if (inVolo || !messaggio) { return; }
+    invioAutomatico = automatico === true;
 
     const A = account();
     if (!A || !A.stato().collegato) {
-      avviso('Per dirlo in chat serve il collegamento con Twitch, qui in cima alla sezione.');
+      nonPartito('Per dirlo in chat serve il collegamento con Twitch, qui in cima alla sezione.');
       return;
     }
 
     // A canale spento non si scrive: «lurko dal sito» sotto una diretta finita
     // non lo legge nessuno, e il lurk stesso non si può nemmeno accendere.
-    if (!canaleAcceso()) {
-      avviso(testo('statoAttesa'));
+    // Per l'invio automatico basta che la diretta non sia FINITA: il video
+    // fermato dal browser in secondo piano fa dire al player «fuori onda»,
+    // ed è proprio il momento in cui chi è in lurk non sta guardando.
+    if (automatico ? fuoriOndaCerto() : !canaleAcceso()) {
+      nonPartito(testo('statoAttesa'));
       return;
     }
 
     const resta = FRENO_INVIO - (Date.now() - ultimoInvio);
     if (ultimoInvio && resta > 0) {
-      avviso('Un messaggio al minuto: riprova fra ' + Math.ceil(resta / 1000) + ' secondi.');
+      nonPartito('Un messaggio al minuto: riprova fra ' + Math.ceil(resta / 1000) + ' secondi.');
       return;
     }
 
@@ -1046,9 +1082,9 @@
       });
     }).then(rispostaInvio).then(null, function (err) {
       if (err && err.message === 'scollegato') {
-        avviso('Il collegamento con Twitch non è più valido: ricollegati e riprova.');
+        nonPartito('Il collegamento con Twitch non è più valido: ricollegati e riprova.');
       } else {
-        avviso('Twitch non ha risposto: controlla la connessione e riprova.');
+        nonPartito('Twitch non ha risposto: controlla la connessione e riprova.');
       }
     }).then(function () {
       inVolo = false;
@@ -1065,35 +1101,37 @@
       // soltanto com'è andata.
       const A = account();
       if (A) { A.valida(true); }
-      avviso('Il collegamento con Twitch è scaduto: ricollegati e riprova.');
+      nonPartito('Il collegamento con Twitch è scaduto: ricollegati e riprova.');
       return null;
     }
     if (r.status === 403) {
-      avviso('Twitch ha rifiutato la richiesta: manca il permesso di scrivere in chat, oppure il tuo account non può scrivere qui.');
+      nonPartito('Twitch ha rifiutato la richiesta: manca il permesso di scrivere in chat, oppure il tuo account non può scrivere qui.');
       return null;
     }
     if (r.status === 422) {
-      avviso('Twitch non ha accettato il messaggio: è troppo lungo o contiene qualcosa che la chat non ammette.');
+      nonPartito('Twitch non ha accettato il messaggio: è troppo lungo o contiene qualcosa che la chat non ammette.');
       return null;
     }
     if (r.status === 429) {
-      avviso('Troppe richieste in poco tempo: aspetta un minuto e riprova.');
+      nonPartito('Troppe richieste in poco tempo: aspetta un minuto e riprova.');
       return null;
     }
     if (!r.ok) {
-      avviso('Twitch ha risposto con un errore (' + r.status + '): riprova più tardi.');
+      nonPartito('Twitch ha risposto con un errore (' + r.status + '): riprova più tardi.');
       return null;
     }
 
     return r.json().then(function (d) {
       const voce = (d && Array.isArray(d.data)) ? d.data[0] : null;
       if (!voce) {
-        avviso('Twitch ha risposto senza dire com’è andata: controlla in chat.');
+        nonPartito('Twitch ha risposto senza dire com’è andata: controlla in chat.');
         return null;
       }
 
       if (voce.is_sent === true) {
         vivo.inviati++;
+        erroreInvio = '';
+        aggiornaConto();
         avvisa();
         avviso(testo('inviato'));
         return null;
@@ -1101,10 +1139,10 @@
 
       const motivo = voce.drop_reason || {};
       const codice = String(motivo.code || '');
-      avviso(MOTIVI[codice] || ('Twitch non ha pubblicato il messaggio' + (codice ? ' (' + codice + ')' : '') + '.'));
+      nonPartito(MOTIVI[codice] || ('Twitch non ha pubblicato il messaggio' + (codice ? ' (' + codice + ')' : '') + '.'));
       return null;
     }, function () {
-      avviso('La risposta di Twitch non si è lasciata leggere: controlla in chat.');
+      nonPartito('La risposta di Twitch non si è lasciata leggere: controlla in chat.');
       return null;
     });
   }
@@ -1169,14 +1207,14 @@
   // frase annunciata, poi ne prepara un'altra:
   // due accensioni ravvicinate con la stessa frase le scarterebbe Twitch,
   // che rifiuta due messaggi identici di fila dallo stesso utente.
-  function mandaOra() {
+  function mandaOra(automatico) {
     const scelta = fraseProssima || pesca();
     fraseProssima = '';
     // Col lurk acceso da qui parte anche il conto della cadenza. Si segna
     // al tentativo e non all'esito: un invio rifiutato (slow mode, AutoMod)
-    // si riprova al giro dopo, non a raffica ogni secondo.
+    // si riprova dopo un minuto (nonPartito), non a raffica ogni secondo.
     if (vivo.acceso) { ultimoAutomatico = Date.now(); }
-    invia(scelta);
+    invia(scelta, automatico === true);
     preparaFrase();
   }
 
