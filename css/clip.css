@@ -65,6 +65,14 @@
   color: var(--ciano);
 }
 
+/* Il bottone «I momenti migliori» in testa alla «diretta» non esiste più nel
+   modello (ripeteva l'invito agli highlights qui sotto). Un index.html
+   generato prima che venisse tolto lo contiene ancora finché non si ripubblica:
+   questa riga lo spegne subito, senza aspettare la Pubblica e senza toccare i
+   contenuti, così non resta a spingere la tessera del profilo nell'altra
+   colonna. */
+.diretta__testa .clip__vai { display: none; }
+
 .clip__testa {
   margin-block-end: var(--passo-3);
   max-inline-size: 62ch;

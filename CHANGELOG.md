@@ -499,7 +499,9 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 - **Il bottone «I momenti migliori» in testa a «La diretta».** Portava alla
   pagina delle clip esattamente come l'invito «Migliori highlights» poco sotto,
   e i due in fila erano ripetitivi. Resta l'invito. Tolti anche la regola di
-  `css/clip.css` che lo piazzava nella griglia e la prova che lo pretendeva:
+  `css/clip.css` che lo piazzava nella griglia (al suo posto una riga lo
+  nasconde, così sparisce anche da un `index.html` non ancora ripubblicato) e
+  la prova che lo pretendeva:
   ora il collaudo controlla che nella diretta ci sia **un solo** link a
   `clip.html`.
 - `img/avatar.png`, `img/banner.png`, `img/mascot.png` e `img/og.png`:
