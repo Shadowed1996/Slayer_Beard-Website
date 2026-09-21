@@ -65,29 +65,15 @@
   color: var(--ciano);
 }
 
-/* Da 900px la testa della «diretta» è una griglia a due colonne con i posti
-   assegnati a mano (css/diretta.css): occhiello e titolo a sinistra, il testo
-   a destra. Il bottone si prende una casella dichiarata — riga 3, colonna
-   del testo — e non una a caso: lasciato all'automatismo si infilava nella
-   prima libera e spingeva la tessera del profilo nell'altra colonna, cioè
-   spostava una parte che non c'entra niente con le clip. */
-@media (min-width: 900px) {
-  .diretta__testa .clip__vai {
-    grid-column: 2;
-    grid-row: 3;
-    justify-self: start;
-  }
-}
-
 .clip__testa {
   margin-block-end: var(--passo-3);
   max-inline-size: 62ch;
 }
 
 /* L'invito che ha preso il posto della vetrina in home: titolo, una riga e
-   il bottone verso clip.html. Il bottone è la stessa pillola di quello in
-   testa alla «diretta», con l'accento acceso: qui è l'unica azione del
-   blocco, e deve vedersi. */
+   il bottone verso clip.html, che è l'unica strada dalla home alle clip: il
+   bottone in testa alla «diretta» è stato tolto perché ripeteva questo. Ha
+   l'accento acceso: qui è l'unica azione del blocco, e deve vedersi. */
 .clip--invito .clip__testa { margin-block-end: var(--passo-2); }
 .clip__vai--invito {
   margin-block-start: 0;

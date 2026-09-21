@@ -2249,25 +2249,20 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
     esigi(html.indexOf('clip__vai') === -1, 'il bottone per la vetrina e in pagina senza la vetrina');
   });
 
-  await prova('il bottone in testa alla diretta porta alla pagina delle clip', () => {
-    // Le clip non hanno una voce nel binario (prova qui sotto) e la vetrina
-    // sta in fondo a una sezione lunga: senza questo bottone le trovava solo
-    // chi scorreva fino in fondo. Portava all'ancora #clip; adesso porta alla
-    // pagina, dove ci sono tutte e il periodo lo sceglie chi guarda.
+  await prova('alla pagina delle clip porta solo l invito, non un bottone in testa alla diretta', () => {
+    // In testa alla diretta c'era un secondo bottone, «I momenti migliori»,
+    // che ripeteva l'invito «Migliori highlights» poco sotto: e stato tolto.
     const documento = archivio.leggi();
     documento.config.clip = accesa({ archivio: [clipFinta()] });
     const html = costruisci.anteprimaDi(documento);
 
     const diretta = html.slice(html.indexOf('id="diretta"'), html.indexOf('id="settimana"'));
-    esigiDentro(diretta, 'class="clip__vai" href="clip.html"', 'manca il bottone che porta alla pagina');
+    esigiUguale((diretta.match(/href="clip\.html"/g) || []).length, 1, 'quanti link alla pagina delle clip nella diretta');
+    esigi(diretta.indexOf('class="clip__vai" href="clip.html"') === -1, 'il bottone in testa alla diretta e tornato');
     // L'ancora resta dov'era: un indirizzo gia condiviso deve continuare a
     // portare dove portava.
     esigiUguale((html.match(/id="clip"/g) || []).length, 1, 'quanti bersagli #clip');
-    // L'etichetta e il titolo della vetrina, non una stringa nuova da tenere
-    // d'accordo con quella: scritta nel pannello una volta sola.
-    esigiDentro(diretta, '<span class="clip__vai-testo">' + documento.testi['clip.titolo'] + '</span>',
-      'l etichetta del bottone non e il titolo della vetrina');
-    // E in fondo alla diretta, l'invito con il suo bottone.
+    // In fondo alla diretta, l'invito con il suo bottone.
     esigiDentro(html, 'class="clip__vai clip__vai--invito" href="clip.html"', 'manca il bottone dell invito');
     esigiDentro(html, '>' + documento.testi['clip.invitoBottone'] + '<', 'manca la scritta del bottone dell invito');
   });

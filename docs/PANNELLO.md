@@ -1759,13 +1759,14 @@ lurk, può comparire una griglia con **le clip più viste del canale**: anteprim
 durata, quante volte è stata guardata, quando, e il nome di chi l'ha ritagliata.
 Nel pannello è la parte **Le clip**: clicca la vetrina nell'anteprima.
 
-L'interruttore è **acceso**, e in testa a «La diretta» compare un bottone con
-scritto il titolo della vetrina che porta giù fino a lei. Si spegne — insieme al
-bottone — da *La diretta* → *Parti che si possono spegnere* → **Mostra le clip**.
+L'interruttore è **acceso**, e in fondo a «La diretta» compare l'invito
+«Migliori highlights» con il bottone che porta alla pagina di tutte le clip. Si
+spegne — insieme all'invito — da *La diretta* → *Parti che si possono spegnere*
+→ **Mostra le clip**.
 
 > Acceso non basta: la vetrina compare **dopo la prima Pubblica**, perché è lì
 > che il server va a prendere le clip su Twitch. Finché l'elenco è vuoto non si
-> stampa niente — né la griglia né il bottone — e il pannello te lo dice in
+> stampa niente — né l'invito né il bottone — e il pannello te lo dice in
 > chiaro fra le cose da guardare prima di mandare il sito online.
 
 ### Le clip non le scegli tu, e non è un limite
@@ -1786,8 +1787,8 @@ l'ennesimo campo che invecchia.
 
 **Mostra le clip** — l'interruttore principale. Spento, la vetrina non compare
 per nessuno, il resto della parte non ha effetto, e alla pubblicazione non
-viene chiesto niente a Twitch. Acceso, compare in fondo a «La diretta», col
-bottone in testa alla sezione che ci porta.
+viene chiesto niente a Twitch. Acceso, compare in fondo a «La diretta» l'invito
+alla pagina delle clip.
 
 **Quante clip mostrare** — da 1 a 12. Sei è un buon numero: due righe da tre sui
 monitor larghi, una colonna sul telefono. Se lo abbassi, la vetrina si accorcia

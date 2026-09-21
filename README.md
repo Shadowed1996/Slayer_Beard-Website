@@ -163,7 +163,7 @@ sono**, **supporto**, **saluti**. Dal pannello si possono riordinare e nasconder
 resta sempre prima e accesa); il binario laterale e il piede ci sono sempre. Il binario ha una
 voce per ogni sezione accesa, quindi al massimo sei — e resta a sei: la vetrina delle clip sta
 dentro «diretta» proprio per non chiederne una settima, che sotto i 400 px non ci starebbe. Ci si
-arriva da un bottone in testa a «diretta», non dal binario.
+arriva dall'invito «Migliori highlights» in fondo a «diretta», non dal binario.
 
 La versione precedente del sito è conservata fuori dal repository, in una cartella locale
 `sito-backup/`: serve solo come riferimento storico, non è collegata a niente.
@@ -720,13 +720,12 @@ etichette ci stanno anche a 320 px, e la settima le farebbe traboccare: il comme
 sopra, quindi stanno dentro la stessa sezione invece di chiederne una propria. Una prova del
 collaudo controlla che le voci restino sei.
 
-**Al posto della voce nel dock c'è un bottone in testa alla «diretta».** `.clip__vai` in
-`modelli/parziali/diretta.html` è un'ancora verso `#clip`, l'id della vetrina: funziona col
-JavaScript spento, si stampa con la stessa condizione della vetrina — `clip.attivo` nel contesto
-è già «acceso **e** almeno una clip», perché un bottone verso un'ancora inesistente porta in cima
-alla pagina e non lo spiega a nessuno — e porta l'etichetta di `clip.titolo`, la chiave che si
-scrive nel pannello, invece di una settima stringa da tenere d'accordo con la prima. Senza, la
-vetrina la trovava solo chi scorreva fino in fondo a una sezione lunga.
+**Al posto della voce nel dock c'è l'invito in fondo alla «diretta».** Titolo («Migliori
+highlights»), una riga e il bottone `.clip__vai--invito` verso `clip.html`, in
+`modelli/parziali/clip.html`. Si stampa solo se la pagina delle clip esiste, perché un bottone
+verso un file che la pubblicazione non ha scritto sarebbe un 404 promesso in prima pagina. In
+testa alla «diretta» c'era anche un secondo bottone, «I momenti migliori», verso la stessa
+pagina: è stato tolto perché ripeteva l'invito poco sotto.
 
 **Serve il collegamento con Twitch** (`node server/imposta-twitch.js`, capitolo qui sopra): è lo
 stesso app token che aggiorna «Ultima diretta». Senza, la vetrina resta spenta e nel pannello si

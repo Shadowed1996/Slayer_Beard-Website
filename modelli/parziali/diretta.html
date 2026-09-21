@@ -10,33 +10,6 @@
     <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
     <p class="sezione__testo" data-sb-testo="diretta.testo">{{{diretta.testo}}}</p>
 
-    <!-- La scorciatoia per le clip. È il posto della voce che il binario non
-         può avere: il dock si ferma a sei etichette (css/base.css, tarato a
-         320px), e senza questo bottone le clip le trovava solo chi scorreva
-         fino in fondo — cioè quasi nessuno su un telefono.
-
-         Porta alla PAGINA delle clip, non più alla vetrina qui sotto: lì ci
-         sono tutte quante e il periodo lo sceglie chi guarda (24 ore, 3
-         giorni, 7 giorni, 30 giorni), mentre la vetrina resta l'assaggio di
-         sei clip di un periodo deciso nel pannello. La freccia è cambiata con
-         la destinazione: puntava in giù perché si scendeva nella stessa
-         pagina, adesso punta avanti perché si cambia pagina.
-
-         L'etichetta è il titolo della vetrina, quello che si scrive nel
-         pannello: non è una settima stringa da tenere d'accordo con la
-         prima. Niente data-sb-testo, perché la chiave ha già il suo nodo giù
-         nella vetrina e l'editor deve continuare ad avere un solo posto in
-         cui modificarla.
-
-         La condizione è quella della pagina — `clipPagina.attivo`, cioè «le
-         clip sono accese E ce n'è almeno una da mostrare» — perché un
-         bottone che porta a un file che la pubblicazione non ha scritto
-         sarebbe un 404 promesso in prima pagina. -->
-    {{#se clipPagina.attivo}}<a class="clip__vai" href="clip.html">
-      <span class="clip__vai-testo">{{clip.titolo}}</span>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-    </a>{{/se}}
-
     <!-- Il profilo del sito. Sta qui in cima, staccato dai comandi del lurk,
          perché sono due cose diverse: questa dice CHI sei sul sito, quella
          sotto al monitor dice cosa fa il sito col video. Mescolarle in
