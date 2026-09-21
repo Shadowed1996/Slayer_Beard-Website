@@ -492,6 +492,14 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   `docs/PANNELLO.md` §3.
 
 ### Corretto
+- **Un evento speciale senza durata non cancella più le altre date.** Con la
+  maratona «SlayerFest | Day 4» salvata senza durata, l'anno finto con cui un
+  evento aperto resta acceso (`ORE_APERTO`) copriva tutte le serate del nastro,
+  e la settimana intera usciva sbarrata. Ora un evento senza fine nota resta
+  acceso ma non si prende nessun giorno, come prima della regola «l'evento
+  acceso è il programma»; con una durata scritta si prende solo la serata che
+  copre davvero (`programmaSostituito` in `pannello/condivisi/orari.js` e la
+  stessa regola in `js/sito.js`).
 
 - **Le icone social nel binario a sinistra si vedono come devono.** Sono
   disegnate a tratto, ma `css/base.css` dava loro `fill: currentColor`: i
