@@ -41,6 +41,7 @@ const controlli = require('./lib/controlli');
 const costruisci = require('./lib/costruisci');
 const chiavi = require('./lib/chiavi');
 const twitch = require('./lib/twitch');
+const youtube = require('./lib/youtube');
 const schema = require('../contenuti/schema.js');
 
 // PORT prima di SB_PORTA: e la variabile che passa l hosting (Plesk con
@@ -379,7 +380,7 @@ function aggiornamentoAutomatico(opzioni) {
   if (!Number.isFinite(AGGIORNA_MIN) || AGGIORNA_MIN <= 0) { return null; }
   // Col solo Client ID non c'e niente da chiedere a Twitch, ma c'e ancora
   // da portarlo dentro la pagina: il giro serve lo stesso.
-  if (!twitch.configurato() && !chiavi.configurato()) {
+  if (!twitch.configurato() && !chiavi.configurato() && !youtube.configurato()) {
     // Non e un errore: e lo stato di chi non ha registrato nessuna app.
     // Si dice una volta, perche il campo «Ultima diretta» scritto a mano e
     // proprio la cosa che qualcuno sta cercando di capire perche non cambia.
@@ -417,11 +418,12 @@ function aggiornamentoAutomatico(opzioni) {
       // La categoria in onda: durante un evento speciale e il campo che
       // cambia piu spesso, ed e proprio quello che il sito deve mostrare.
       const laCategoria = await twitch.aggiornaCategoria();
+      const gliIscritti = await youtube.aggiornaIscritti();
 
       const cambiato = daChiavi.stato === 'copiato' ||
         daTwitch.stato === 'aggiornato' || iFollower.stato === 'aggiornato' ||
         leClip.stato === 'aggiornato' || iNumeri.stato === 'aggiornato' ||
-        laCategoria.stato === 'aggiornato' ||
+        laCategoria.stato === 'aggiornato' || gliIscritti.stato === 'aggiornato' ||
         // Il canale si e spento mentre una categoria era in pagina: va tolta,
         // e per toglierla bisogna rigenerare.
         (laCategoria.stato === 'spenta' && !!laCategoria.precedente);
@@ -431,7 +433,7 @@ function aggiornamentoAutomatico(opzioni) {
       // minuti diventa rumore, e il rumore nasconde la riga che conta.
       const leRighe = [[daTwitch, twitch.racconta(daTwitch)], [iFollower, twitch.raccontaFollower(iFollower)],
         [leClip, twitch.raccontaClip(leClip)], [iNumeri, twitch.raccontaNumeri(iNumeri)],
-        [laCategoria, twitch.raccontaCategoria(laCategoria)]];
+        [laCategoria, twitch.raccontaCategoria(laCategoria)], [gliIscritti, youtube.racconta(gliIscritti)]];
       for (const [esito, riga] of leRighe) {
         if (!riga) { continue; }
         if (esito.stato !== 'aggiornato' && esito.stato !== 'fallito') { continue; }

@@ -59,7 +59,10 @@ function aiuto() {
 
 function scrivi(clientId, clientSecret) {
   assicuraCartella(P.dati);
-  scriviAtomico(P.chiavi, chiavi.componi({ twitch: { clientId: clientId, clientSecret: clientSecret } }));
+  // La chiave di YouTube sta nello stesso file: riscrivendolo non va persa.
+  let youtube = {};
+  try { youtube = chiavi.leggi().youtube; } catch (e) { youtube = {}; }
+  scriviAtomico(P.chiavi, chiavi.componi({ twitch: { clientId: clientId, clientSecret: clientSecret }, youtube: youtube }));
 
   // Su Linux e macOS toglie il file dagli occhi degli altri utenti del
   // computer. Su Windows i permessi POSIX non esistono e chmod non fa

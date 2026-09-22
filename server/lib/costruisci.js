@@ -53,6 +53,8 @@ const backup = require('./backup');
    che mostra l'evento speciale acceso): niente rete da qui, genera() resta
    sincrona. Chiedere a Twitch e sempre un passo prima, alla pubblicazione. */
 const twitch = require('./twitch');
+// Solo per leggere gli iscritti gia salvati: niente rete nemmeno qui.
+const youtube = require('./youtube');
 const schema = require('../../contenuti/schema.js');
 /* Le regole della schedule (CONTRATTO-5 §3.5). Sta sotto pannello/ perche
    lo stesso file lo carica il pannello: i giorni, i limiti e i conti con i
@@ -94,6 +96,31 @@ function elencoVisibile(voci, cache, mancanti) {
     fuori.push(Object.assign({}, voce, { svg: leggiIcona(String(voce.icona || ''), cache, mancanti) }));
   }
   return fuori;
+}
+
+/**
+ * Il numero accanto a una voce dei social («Iscritti 3.670 / Goal 5.000»).
+ * Twitch lo prende da config.dati.follower, YouTube da config.iscrittiYoutube
+ * (server/lib/youtube.js). Senza un numero letto la voce resta com'era: il
+ * goal da solo, senza il punto da cui si parte, non dice niente.
+ */
+function conContatore(voce, config) {
+  let numero = null;
+  if (voce.contatore === 'twitch') {
+    const follower = Number((config.dati || {}).follower);
+    numero = Number.isFinite(follower) && follower > 0 ? follower : null;
+  } else if (voce.contatore === 'youtube') {
+    numero = youtube.iscrittiDi(config, voce.url);
+  }
+  const goal = Number(voce.goal);
+  return Object.assign({}, voce, {
+    numeroTesto: numero === null ? '' : numeroTesto(numero),
+    numeroEtichetta: String(voce.contatoreEtichetta || '').trim() || 'Iscritti',
+    goalTesto: numero !== null && Number.isFinite(goal) && goal > 0 ? numeroTesto(goal) : '',
+    // Il numero di Twitch porta data-follower: js/canale.js lo tiene fresco
+    // dal vivo per chi e collegato, come quello della copertina.
+    eTwitch: voce.contatore === 'twitch'
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -768,7 +795,7 @@ function costruisciContesto(contenuti, opzioni) {
 
   const canale = String((config.twitch && config.twitch.canale) || '');
   const urlCanale = 'https://www.twitch.tv/' + canale;
-  const social = elencoVisibile(config.social, cache, mancanti);
+  const social = elencoVisibile(config.social, cache, mancanti).map((voce) => conContatore(voce, config));
 
   const attiva = {};
   for (const id of SB.SEZIONI_ORDINABILI) { attiva[id] = false; }

@@ -77,7 +77,7 @@ const SISTEMA = ['versione', 'aggiornatoIl'];
 // quattro periodi della pagina «clip.html», messe insieme una volta sola
 // alla pubblicazione perche il browser possa filtrarle senza chiedere
 // niente a nessuno (le chiavi di Twitch non escono da questo computer).
-const GENERATI = ['config.clip.voci', 'config.clip.archivio'];
+const GENERATI = ['config.clip.voci', 'config.clip.archivio', 'config.iscrittiYoutube'];
 
 // I rami che scrive l'editor con controlli suoi (CONTRATTO-4 §2.4): ordine
 // e visibilità delle sezioni, stile per elemento, blocchi posizionati. Non
@@ -515,6 +515,8 @@ const gruppi = [
       { chiave: 'saluti.copiaFatto', etichetta: 'Conferma dopo la copia', tipo: 'testo', max: 30 },
       { chiave: 'saluti.scriviBtn', etichetta: 'Bottone «scrivi una mail»', tipo: 'testo', max: 30 },
       { chiave: 'saluti.chiusura', etichetta: 'Riga di chiusura', tipo: 'ricco', max: 200 },
+      { chiave: 'saluti.goalEtichetta', etichetta: 'Parola prima del goal', tipo: 'testo', max: 20, predefinito: 'Goal',
+        aiuto: 'Accanto ai numeri dei social: «Iscritti 3.670 / Goal 5.000».' },
       { chiave: 'config.social', etichetta: 'Profili social', tipo: 'elenco', etichettaVoce: 'nome',
         aiuto: 'Compaiono nel binario e nella sezione dei saluti, nello stesso ordine.',
         campi: [
@@ -526,7 +528,24 @@ const gruppi = [
           { chiave: 'url', etichetta: 'Link', tipo: 'url', facoltativo: true,
             aiuto: 'Vuoto = la voce sparisce dal sito.' },
           { chiave: 'icona', etichetta: 'Icona', tipo: 'scelta', opzioni: ICONE_SOCIAL,
-            aiuto: 'Corrisponde al file modelli/icone/<nome>.svg.' }
+            aiuto: 'Corrisponde al file modelli/icone/<nome>.svg.' },
+          // I tre campi del contatore sono nati dopo la messa online: le voci
+          // di un contenuti.json vecchio li ricevono da completa(), e il
+          // contatore parte da quello che l'icona fa capire.
+          { chiave: 'contatore', etichetta: 'Numero accanto alla voce', tipo: 'scelta',
+            opzioni: [
+              { valore: 'nessuno', etichetta: 'Nessuno' },
+              { valore: 'twitch', etichetta: 'Follower di Twitch (automatico)' },
+              { valore: 'youtube', etichetta: 'Iscritti del canale YouTube nel link (automatico)' }
+            ],
+            predefinito: 'nessuno',
+            predefinitoVoce: (voce) => (voce.icona === 'twitch' || voce.icona === 'youtube' ? voce.icona : 'nessuno'),
+            aiuto: 'Il numero lo prende il server a ogni pubblicazione e ogni dieci minuti. Per YouTube serve la chiave API (docs/HOSTING.md).' },
+          { chiave: 'contatoreEtichetta', etichetta: 'Parola prima del numero', tipo: 'testo', max: 20, facoltativo: true,
+            predefinito: 'Iscritti',
+            aiuto: 'Per esempio Iscritti o Follower.' },
+          { chiave: 'goal', etichetta: 'Goal', tipo: 'numero', min: 0, max: 100000000, predefinito: 0,
+            aiuto: '0 = niente goal. Si vede solo accanto a un numero automatico.' }
         ] }
     ]
   },
@@ -729,12 +748,33 @@ function completa(contenuti) {
 
   const aggiunte = [];
   for (const c of campi()) {
+    if (c.tipo === 'elenco') { completaVoci(contenuti, c, aggiunte); }
     if (!Object.prototype.hasOwnProperty.call(c, 'predefinito')) { continue; }
     if (valoreDi(contenuti, c.chiave).trovato) { continue; }
     scrivi(contenuti, c.chiave, copiaValore(c.predefinito));
     aggiunte.push(c.chiave);
   }
   return aggiunte;
+}
+
+/**
+ * Lo stesso, dentro le voci di un elenco: un sottocampo nato dopo la messa
+ * online manca a tutte le voci che c'erano gia. `predefinitoVoce`, se c'e,
+ * sceglie il valore guardando il resto della voce.
+ */
+function completaVoci(contenuti, campo, aggiunte) {
+  const esito = valoreDi(contenuti, campo.chiave);
+  if (!esito.trovato || !Array.isArray(esito.valore)) { return; }
+  esito.valore.forEach((voce, i) => {
+    if (!voce || typeof voce !== 'object' || Array.isArray(voce)) { return; }
+    for (const sotto of campo.campi || []) {
+      if (!Object.prototype.hasOwnProperty.call(sotto, 'predefinito')) { continue; }
+      if (haChiave(voce, sotto.chiave)) { continue; }
+      voce[sotto.chiave] = typeof sotto.predefinitoVoce === 'function'
+        ? sotto.predefinitoVoce(voce) : copiaValore(sotto.predefinito);
+      aggiunte.push(campo.chiave + '[' + i + '].' + sotto.chiave);
+    }
+  });
 }
 
 /**

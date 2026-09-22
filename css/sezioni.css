@@ -1641,26 +1641,35 @@
   border-block-start: 1px solid var(--linea);
 }
 
-.social li {
+/* Ogni riga ha due blocchi: il link a sinistra e, se c'è, il contatore in un
+   blocco suo a destra. Lo sfondo al passaggio è della riga intera, così link e
+   numeri si accendono insieme. */
+.social__riga {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--passo-3);
+  margin-inline: calc(var(--passo) * -1);
+  padding-inline-end: var(--passo);
   border-block-end: 1px solid var(--linea);
+  transition: background-color var(--durata) var(--curva);
 }
 
+/* Icona, nome e handle in tre colonne: la colonna del nome ha una larghezza fissa,
+   tutte le righe, così gli handle partono tutti dallo stesso punto, un po'
+   verso il centro invece che attaccati al nome. */
 .social__voce {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 20px 13rem minmax(0, 1fr);
   align-items: center;
   gap: var(--passo) var(--passo-2);
-  margin-inline: calc(var(--passo) * -1);
   padding: calc(var(--passo) * 1.5) var(--passo);
   color: var(--testo-medio);
   text-decoration: none;
-  transition:
-    background-color var(--durata) var(--curva),
-    color            var(--durata) var(--curva);
+  transition: color var(--durata) var(--curva);
 }
 
 .social__voce svg {
-  flex: none;
   inline-size: 20px;
   block-size: 20px;
   color: var(--viola-chiaro);
@@ -1672,27 +1681,78 @@
   font-weight: 600;
 }
 
-/* L'handle va a fine riga; il margine automatico lo tiene a destra e, quando
-   la riga è troppo stretta, lo manda a capo invece di comprimere il nome. */
 .social__handle {
-  margin-inline-start: auto;
   min-inline-size: 0;
   color: var(--testo-tenue);
   font-family: var(--font-mono);
   font-size: var(--t-micro);
   letter-spacing: 0.01em;
-  text-align: end;
   overflow-wrap: anywhere;
 }
 
-.social__voce:hover {
+/* «Iscritti 3.670 / Goal 5.000», il blocco a destra. Cifre tabellari: i
+   numeri delle righe si allineano fra loro. */
+.social__conta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 0 var(--passo);
+  padding: calc(var(--passo) * 0.75) var(--passo-2);
+  border: 1px solid var(--linea);
+  border-radius: var(--raggio-s);
   background-color: var(--pannello);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.social__conta-etichetta {
+  color: var(--testo-tenue);
+}
+
+.social__conta-numero {
+  color: var(--testo);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: color var(--durata) var(--curva);
+}
+
+.social__conta-sep {
+  color: var(--linea-forte);
+}
+
+.social__riga:hover {
+  background-color: var(--pannello);
+}
+
+.social__riga:hover .social__voce {
   color: var(--testo);
 }
 
-.social__voce:hover svg,
-.social__voce:hover .social__handle {
+.social__riga:hover svg,
+.social__riga:hover .social__handle,
+.social__riga:hover .social__conta-numero {
   color: var(--ciano);
+}
+
+/* Sul telefono non ci sta tutto su una riga: l'handle torna accanto al nome
+   e il contatore scende sotto, allineato al nome. */
+@media (max-width: 599px) {
+  .social__riga {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .social__voce {
+    grid-template-columns: 20px auto minmax(0, 1fr);
+  }
+
+  .social__conta {
+    justify-self: start;
+    margin: 0 0 calc(var(--passo) * 1.5) calc(var(--passo) + 20px + var(--passo-2));
+  }
 }
 
 /* --- Contatti --------------------------------------------------------------- */

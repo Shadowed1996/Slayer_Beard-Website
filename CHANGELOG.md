@@ -15,6 +15,23 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **I numeri accanto ai social: «Iscritti 3.670 / Goal 5.000».** In «Dove mi
+  trovi» ogni riga è divisa in due blocchi: il link (icona, nome in una colonna
+  di larghezza fissa, handle allineato verso il centro) e, a destra, un
+  riquadro suo col contatore. Sul telefono il riquadro scende sotto il nome.
+  Ogni voce di `config.social` ha tre campi nuovi, modificabili dal pannello:
+  `contatore` (nessuno, follower di Twitch, iscritti YouTube),
+  `contatoreEtichetta` e `goal` (0 = niente goal). Twitch usa
+  `config.dati.follower`, con `data-follower` perché `js/canale.js` lo tenga
+  fresco dal vivo; YouTube è il nuovo `server/lib/youtube.js`, che chiede a
+  YouTube Data API v3 gli iscritti del canale nel link della voce, alla
+  pubblicazione e a ogni giro automatico, e li salva in
+  `config.iscrittiYoutube` (generato, non si vede nel pannello). La chiave sta
+  in `SB_YOUTUBE_CHIAVE` o in `server/dati/chiavi.js`. La parola prima del goal
+  è `saluti.goalEtichetta`. `schema.completa()` ora riempie anche i sottocampi
+  nuovi delle voci di un elenco (con `predefinitoVoce`), così un contenuti.json
+  già online riceve i campi da solo e il contatore parte da quello che dice
+  l'icona.
 - **Telegram, la lista dei desideri Amazon e il link affiliato Amazon fra i
   social.** Tre icone nuove in `modelli/icone/` (`telegram`, `amazon-wishlist`,
   `amazon`), aggiunte a `ICONE_SOCIAL` in `contenuti/schema.js`, e tre voci in

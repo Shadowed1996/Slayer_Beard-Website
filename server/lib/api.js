@@ -40,6 +40,7 @@ const backup = require('./backup');
 const tema = require('./tema.js');
 const chiavi = require('./chiavi');
 const twitch = require('./twitch');
+const youtube = require('./youtube');
 const schema = require('../../contenuti/schema.js');
 const SBStili = require('../../pannello/condivisi/stili.js');
 
@@ -312,6 +313,7 @@ async function rottaPubblica(req, res) {
   // Prima di generare: la categoria in onda finisce nell evento speciale
   // acceso, e genera() la rilegge da server/dati/twitch-diretta.json.
   const laCategoria = await twitch.aggiornaCategoria();
+  const gliIscritti = await youtube.aggiornaIscritti();
   const esito = costruisci.genera();
   // `controlli` sono avvertimenti d'insieme, non errori: la pubblicazione e
   // riuscita comunque, e il pannello li mostra dopo invece di trattarli come
@@ -324,6 +326,7 @@ async function rottaPubblica(req, res) {
     clip: { stato: leClip.stato, messaggio: twitch.raccontaClip(leClip) },
     numeri: { stato: iNumeri.stato, messaggio: twitch.raccontaNumeri(iNumeri) },
     categoria: { stato: laCategoria.stato, messaggio: twitch.raccontaCategoria(laCategoria) },
+    youtube: { stato: gliIscritti.stato, messaggio: youtube.racconta(gliIscritti) },
     chiavi: { stato: daChiavi.stato, messaggio: chiavi.racconta(daChiavi) }
   });
 }

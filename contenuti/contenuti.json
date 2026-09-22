@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-22T06:04:52.636Z",
+  "aggiornatoIl": "2026-09-22T06:27:29.964Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -128,6 +128,7 @@
     "saluti.copiaFatto": "Copiata",
     "saluti.scriviBtn": "Scrivi una mail",
     "saluti.chiusura": "Grazie per essere passato. Ci si vede in diretta.",
+    "saluti.goalEtichetta": "Goal",
     "footer.copy": "slayer_beard",
     "footer.disclaimer": "Sito personale, non affiliato a Twitch. Twitch è un marchio di Twitch Interactive, Inc. I nomi e i loghi dei social appartengono ai rispettivi proprietari.",
     "footer.nota": "Nessun pollo è stato maltrattato durante la costruzione di questo sito.",
@@ -392,56 +393,80 @@
         "nome": "Twitch",
         "handle": "twitch.tv/slayer_beard",
         "url": "https://www.twitch.tv/slayer_beard",
-        "icona": "twitch"
+        "icona": "twitch",
+        "contatore": "twitch",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 5000
       },
       {
         "chiave": "instagram",
         "nome": "Instagram",
         "handle": "@slayer_beard",
         "url": "https://www.instagram.com/slayer_beard/",
-        "icona": "instagram"
+        "icona": "instagram",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
       },
       {
         "chiave": "tiktok",
         "nome": "TikTok",
         "handle": "@slayer_beard",
         "url": "https://www.tiktok.com/@slayer_beard",
-        "icona": "tiktok"
+        "icona": "tiktok",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
       },
       {
         "chiave": "youtube",
         "nome": "YouTube",
         "handle": "slayer_beard",
         "url": "",
-        "icona": "youtube"
+        "icona": "youtube",
+        "contatore": "youtube",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
       },
       {
         "chiave": "youtubeVod",
         "nome": "YouTube VOD",
         "handle": "slayer_beard VOD",
         "url": "",
-        "icona": "youtube"
+        "icona": "youtube",
+        "contatore": "youtube",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
       },
       {
         "chiave": "telegram",
         "nome": "Telegram",
         "handle": "@slayer_beard",
         "url": "",
-        "icona": "telegram"
+        "icona": "telegram",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
       },
       {
         "chiave": "amazonWishlist",
         "nome": "Lista dei desideri",
         "handle": "Amazon",
         "url": "",
-        "icona": "amazon-wishlist"
+        "icona": "amazon-wishlist",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
       },
       {
         "chiave": "amazonAffiliato",
         "nome": "Amazon",
         "handle": "Link affiliato",
         "url": "",
-        "icona": "amazon"
+        "icona": "amazon",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
       }
     ],
     "supporto": [

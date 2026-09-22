@@ -20,6 +20,7 @@ const { P } = require('./lib/percorsi');
 const costruisci = require('./lib/costruisci');
 const chiavi = require('./lib/chiavi');
 const twitch = require('./lib/twitch');
+const youtube = require('./lib/youtube');
 
 /* Cosa e successo alla riga «Sitemap:» di robots.txt, detto in italiano.
    Il file non e della generazione: lo prepara chi mette in piedi l'hosting,
@@ -70,7 +71,11 @@ async function esegui() {
   // Va chiesto qui e non dentro genera(): la generazione resta sincrona.
   const laCategoria = await twitch.aggiornaCategoria();
   if (laCategoria.stato !== 'spento') { console.log('  ' + twitch.raccontaCategoria(laCategoria)); }
-  if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento' || iNumeri.stato !== 'spento' || chiavi.racconta(daChiavi)) { console.log(''); }
+  // Gli iscritti dei canali YouTube dei social (server/lib/youtube.js).
+  const gliIscritti = await youtube.aggiornaIscritti();
+  if (youtube.racconta(gliIscritti)) { console.log('  ' + youtube.racconta(gliIscritti)); }
+  if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento' || iNumeri.stato !== 'spento' || chiavi.racconta(daChiavi) ||
+      youtube.racconta(gliIscritti)) { console.log(''); }
 
   const esito = costruisci.genera();
 

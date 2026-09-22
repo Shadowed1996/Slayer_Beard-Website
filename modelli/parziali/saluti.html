@@ -7,8 +7,9 @@
 
       <ul id="social" class="social" data-sb-parte="social">
         {{#ogni social}}
-        <li>
+        <li class="social__riga">
           <a class="social__voce" href="{{url}}" target="_blank" rel="noopener">{{{svg}}}<span class="social__nome">{{nome}}</span><span class="social__handle">{{handle}}</span></a>
+          {{#se numeroTesto}}<div class="social__conta"><span class="social__conta-voce"><span class="social__conta-etichetta">{{numeroEtichetta}}</span> <b class="social__conta-numero"{{#se eTwitch}} data-follower{{/se}}>{{numeroTesto}}</b></span>{{#se goalTesto}}<span class="social__conta-sep" aria-hidden="true">/</span><span class="social__conta-voce"><span class="social__conta-etichetta">{{saluti.goalEtichetta}}</span> <b class="social__conta-numero">{{goalTesto}}</b></span>{{/se}}</div>{{/se}}
         </li>
         {{/ogni}}
       </ul>

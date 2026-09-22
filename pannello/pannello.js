@@ -712,6 +712,18 @@ async function pubblica() {
       });
     }
 
+    /* Gli iscritti YouTube dei social. «spento» qui si dice: vuol dire che
+       una voce chiede il numero e manca la chiave per averlo. */
+    const gliIscritti = risposta && risposta.youtube;
+    if (gliIscritti && gliIscritti.messaggio && ['aggiornato', 'fallito', 'spento'].includes(gliIscritti.stato)) {
+      const andataMale = gliIscritti.stato !== 'aggiornato';
+      avviso(gliIscritti.messaggio, {
+        tipo: andataMale ? 'info' : 'ok',
+        durata: andataMale ? 0 : 6000,
+        titolo: andataMale ? 'Iscritti YouTube non aggiornati' : 'Iscritti YouTube aggiornati'
+      });
+    }
+
     // Il server non è tenuto a rimandare la data: intanto si segna adesso,
     // e il prossimo caricamento dei contenuti la corregge se serve.
     stato.stato = {

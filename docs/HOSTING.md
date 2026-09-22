@@ -370,6 +370,28 @@ numeri del canale. Dieci è il valore di serie e va bene: si scrive solo se lo s
 vuole diverso. **`0` spegne l'aggiornamento automatico**, e allora quei dati si
 aggiornano soltanto quando premi Pubblica.
 
+#### `SB_YOUTUBE_CHIAVE`
+
+```
+SB_YOUTUBE_CHIAVE = AIza...
+```
+
+Facoltativa. È la chiave della **YouTube Data API v3**, e serve solo a una cosa:
+il numero degli iscritti accanto alle voci YouTube della sezione «Dove mi trovi»
+(nel pannello, «Profili social» → «Numero accanto alla voce» → YouTube). Senza,
+quelle voci non mostrano il numero, e la pubblicazione lo dice.
+
+Si crea gratis su <https://console.cloud.google.com>: un progetto qualsiasi →
+**API e servizi** → **Libreria** → abilita *YouTube Data API v3* →
+**Credenziali** → **Crea credenziali** → **Chiave API**. Conviene limitarla
+(«Limita chiave») alla sola YouTube Data API v3. Il sito ne usa poche centinaia
+di unità al giorno su diecimila gratuite.
+
+Il canale lo prende dal link della voce: deve essere della forma
+`https://www.youtube.com/@nome` oppure `https://www.youtube.com/channel/UC...`.
+In alternativa la chiave si può scrivere in `server/dati/chiavi.js`
+(`youtube.chiaveApi`); la variabile d'ambiente, se c'è, vince.
+
 #### `PORT`
 
 **Non si scrive.** La mette Passenger, e il programma la legge da lì. Se ne

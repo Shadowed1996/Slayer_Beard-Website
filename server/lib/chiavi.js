@@ -44,7 +44,7 @@ function testo(valore) {
  * condizione normale di chi non ha configurato niente, e non e un errore.
  */
 function leggi() {
-  const vuote = { twitch: { clientId: '', clientSecret: '' } };
+  const vuote = { twitch: { clientId: '', clientSecret: '' }, youtube: { chiaveApi: '' } };
 
   if (!fs.existsSync(P.chiavi)) { return vuote; }
 
@@ -66,7 +66,11 @@ function leggi() {
   }
 
   const twitch = (modulo.twitch && typeof modulo.twitch === 'object') ? modulo.twitch : {};
-  return { twitch: { clientId: testo(twitch.clientId), clientSecret: testo(twitch.clientSecret) } };
+  const youtube = (modulo.youtube && typeof modulo.youtube === 'object') ? modulo.youtube : {};
+  return {
+    twitch: { clientId: testo(twitch.clientId), clientSecret: testo(twitch.clientSecret) },
+    youtube: { chiaveApi: testo(youtube.chiaveApi) }
+  };
 }
 
 /**
@@ -88,6 +92,18 @@ function twitchComplete() {
   return { clientId: chiavi.twitch.clientId, clientSecret: chiavi.twitch.clientSecret };
 }
 
+/**
+ * La chiave API di YouTube (YouTube Data API v3), o vuota.
+ * La variabile d'ambiente SB_YOUTUBE_CHIAVE vince sul file: su Plesk si
+ * scrive nella pagina Node.js, senza bisogno di aprire server/dati/.
+ * Non lancia mai: un chiavi.js rotto qui vuol dire solo «niente YouTube».
+ */
+function youtubeChiave() {
+  const daAmbiente = testo(process.env.SB_YOUTUBE_CHIAVE);
+  if (daAmbiente) { return daAmbiente; }
+  try { return leggi().youtube.chiaveApi; } catch (e) { return ''; }
+}
+
 /** Vero se c'e almeno il Client ID: basta al login del sito. */
 function configurato() {
   try { return clientId() !== ''; } catch (e) { return false; }
@@ -97,6 +113,7 @@ function configurato() {
 function componi(valori) {
   const dati = valori || {};
   const twitch = (dati.twitch && typeof dati.twitch === 'object') ? dati.twitch : {};
+  const youtube = (dati.youtube && typeof dati.youtube === 'object') ? dati.youtube : {};
   const cita = (v) => JSON.stringify(testo(v));
 
   return [
@@ -124,6 +141,14 @@ function componi(valori) {
     '    // per prendere un app token e chiedere a Twitch il titolo',
     '    // dell\'ultima diretta e le clip. Si rigenera con «New Secret».',
     '    clientSecret: ' + cita(twitch.clientSecret),
+    '  },',
+    '',
+    '  // YouTube Data API v3: serve solo a contare gli iscritti dei canali',
+    '  // YouTube dei social. Si crea su https://console.cloud.google.com',
+    '  // (API e servizi → Credenziali → Crea credenziali → Chiave API).',
+    '  // La variabile d\'ambiente SB_YOUTUBE_CHIAVE, se c\'e, vince su questa.',
+    '  youtube: {',
+    '    chiaveApi: ' + cita(youtube.chiaveApi),
     '  }',
     '};',
     ''
@@ -197,4 +222,4 @@ function racconta(esito) {
   }
 }
 
-module.exports = { leggi, clientId, twitchComplete, configurato, componi, sincronizzaClientId, racconta };
+module.exports = { leggi, clientId, twitchComplete, youtubeChiave, configurato, componi, sincronizzaClientId, racconta };

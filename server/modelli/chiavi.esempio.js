@@ -47,5 +47,14 @@ module.exports = {
 
     // SEGRETO. Non finisce mai nella pagina, ne in contenuti.json.
     clientSecret: ''
+  },
+
+  // Facoltativa: conta gli iscritti dei canali YouTube dei social (le voci
+  // con «Numero accanto alla voce» su YouTube). Si crea su
+  // https://console.cloud.google.com → API e servizi → abilita «YouTube
+  // Data API v3» → Credenziali → Crea credenziali → Chiave API.
+  // In alternativa la variabile d'ambiente SB_YOUTUBE_CHIAVE, che vince.
+  youtube: {
+    chiaveApi: ''
   }
 };

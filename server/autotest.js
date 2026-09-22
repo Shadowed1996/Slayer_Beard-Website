@@ -39,6 +39,7 @@ const testoricco = require('./lib/testoricco');
 const tema = require('./lib/tema');
 const twitch = require('./lib/twitch');
 const chiavi = require('./lib/chiavi');
+const youtube = require('./lib/youtube');
 const schema = require('../contenuti/schema.js');
 
 /* --- MINIMO INDISPENSABILE PER PROVARE ------------------------------ */
@@ -1974,8 +1975,9 @@ async function proveTwitch(costruisci, archivio) {
       documento.config.dati.follower = 1234567;
       archivio.salva(documento);
       const reso = costruisci.rendi(archivio.leggi());
+      // Due: la copertina e la voce Twitch dei social, che ha il contatore.
       const trovati = reso.html.match(/data-follower>([^<]*)</g) || [];
-      esigiUguale(trovati.length, 1, 'nodi data-follower in pagina');
+      esigiUguale(trovati.length, 2, 'nodi data-follower in pagina');
       esigi(trovati.every((x) => x === 'data-follower>1.234.567<'), 'numero stampato: ' + trovati.join(' | '));
       esigi(reso.html.indexOf('deck.dato1Valore') === -1 && reso.html.indexOf('chi.dato1Valore') === -1, 'il valore scritto a mano e ancora in pagina');
     } finally {
@@ -1983,6 +1985,80 @@ async function proveTwitch(costruisci, archivio) {
       rimesso.config.dati.follower = originale;
       archivio.salva(rimesso);
     }
+  });
+
+  await prova('i social mostrano «Iscritti N / Goal M» accanto ai contatori, e il goal da solo no', () => {
+    const documento = archivio.leggi();
+    const prima = JSON.parse(JSON.stringify(documento.config));
+    try {
+      documento.config.dati.follower = 3670;
+      const voci = documento.config.social;
+      const tw = voci.find((v) => v.icona === 'twitch');
+      tw.contatore = 'twitch'; tw.contatoreEtichetta = 'Iscritti'; tw.goal = 5700;
+      const yt = voci.find((v) => v.icona === 'youtube');
+      yt.url = 'https://www.youtube.com/@slayer_beard'; yt.contatore = 'youtube'; yt.goal = 1000;
+      const ig = voci.find((v) => v.icona === 'instagram');
+      ig.contatore = 'nessuno'; ig.goal = 999;
+      documento.config.iscrittiYoutube = [{ url: 'https://youtube.com/@Slayer_Beard/', iscritti: 812, letteIl: '2026-09-22T10:00:00.000Z' }];
+      archivio.salva(documento);
+
+      const html = costruisci.rendi(archivio.leggi()).html;
+      const inizio = html.indexOf('id="social"');
+      const saluti = html.slice(inizio, html.indexOf('</ul>', inizio));
+      esigi(/Iscritti<\/span> <b class="social__conta-numero" data-follower>3\.670<\/b>/.test(saluti), 'numero di Twitch');
+      esigi(/Goal<\/span> <b class="social__conta-numero">5\.700<\/b>/.test(saluti), 'goal di Twitch');
+      esigi(/>812<\/b>/.test(saluti) && /1\.000<\/b>/.test(saluti), 'iscritti YouTube trovati col link scritto diverso');
+      esigi(saluti.indexOf('999') === -1, 'un goal senza contatore non si stampa');
+    } finally {
+      const rimesso = archivio.leggi();
+      rimesso.config = prima;
+      archivio.salva(rimesso);
+    }
+  });
+
+  await prova('youtube: dal link al canale, e senza chiave non chiede niente', async () => {
+    esigiUguale(JSON.stringify(youtube.canaleDaUrl('https://www.youtube.com/@slayer_beard/videos')), '{"parametro":"forHandle","valore":"@slayer_beard"}', '@handle');
+    esigiUguale(youtube.canaleDaUrl('https://youtube.com/channel/UC1234567890abcdef').parametro, 'id', 'channel/UC');
+    esigiUguale(youtube.canaleDaUrl('https://www.youtube.com/watch?v=abc'), null, 'un video non e un canale');
+    esigiUguale(youtube.canaleDaUrl('https://www.twitch.tv/slayer_beard'), null, 'un altro sito');
+    esigiUguale(youtube.totaleIscritti({ items: [{ statistics: { subscriberCount: '3670', hiddenSubscriberCount: false } }] }), 3670, 'totale');
+    esigiUguale(youtube.totaleIscritti({ items: [{ statistics: { hiddenSubscriberCount: true } }] }), null, 'iscritti nascosti');
+    esigiUguale(youtube.totaleIscritti({ items: [] }), null, 'canale inesistente');
+
+    const documento = archivio.leggi();
+    const prima = JSON.parse(JSON.stringify(documento.config.social));
+    const ambiente = process.env.SB_YOUTUBE_CHIAVE;
+    try {
+      delete process.env.SB_YOUTUBE_CHIAVE;
+      documento.config.social.forEach((v) => { v.contatore = 'nessuno'; });
+      archivio.salva(documento);
+      esigiUguale((await youtube.aggiornaIscritti()).stato, 'nessuno', 'nessuna voce da contare');
+      const yt = documento.config.social.find((v) => v.icona === 'youtube');
+      yt.contatore = 'youtube'; yt.url = 'https://www.youtube.com/@slayer_beard';
+      archivio.salva(documento);
+      if (!chiavi.youtubeChiave()) { esigiUguale((await youtube.aggiornaIscritti()).stato, 'spento', 'senza chiave'); }
+    } finally {
+      if (ambiente !== undefined) { process.env.SB_YOUTUBE_CHIAVE = ambiente; }
+      const rimesso = archivio.leggi();
+      rimesso.config.social = prima;
+      archivio.salva(rimesso);
+    }
+  });
+
+  await prova('un contenuti.json di prima dei contatori riceve i campi nuovi, col contatore dall icona', () => {
+    const vecchio = JSON.parse(JSON.stringify(archivio.leggi()));
+    for (const v of vecchio.config.social) { delete v.contatore; delete v.contatoreEtichetta; delete v.goal; }
+    delete vecchio.testi['saluti.goalEtichetta'];
+    const aggiunte = schema.completa(vecchio);
+    esigi(aggiunte.indexOf('saluti.goalEtichetta') !== -1, 'etichetta del goal');
+    esigiUguale(vecchio.testi['saluti.goalEtichetta'], 'Goal', 'valore di partenza');
+    for (const v of vecchio.config.social) {
+      const atteso = v.icona === 'twitch' || v.icona === 'youtube' ? v.icona : 'nessuno';
+      esigiUguale(v.contatore, atteso, 'contatore di ' + v.chiave);
+      esigiUguale(v.goal, 0, 'goal di ' + v.chiave);
+    }
+    esigiUguale(JSON.stringify(convalida.convalida(vecchio)), '[]', 'il documento completato passa la convalida');
+    esigiUguale(schema.verificaCopertura(vecchio).length, 0, 'e la copertura');
   });
 
   await prova('l aggiornamento automatico non parte senza collegamento', () => {
