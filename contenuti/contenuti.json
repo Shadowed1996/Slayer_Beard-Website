@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-20T16:04:08.280Z",
+  "aggiornatoIl": "2026-09-22T06:04:52.636Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -421,6 +421,27 @@
         "handle": "slayer_beard VOD",
         "url": "",
         "icona": "youtube"
+      },
+      {
+        "chiave": "telegram",
+        "nome": "Telegram",
+        "handle": "@slayer_beard",
+        "url": "",
+        "icona": "telegram"
+      },
+      {
+        "chiave": "amazonWishlist",
+        "nome": "Lista dei desideri",
+        "handle": "Amazon",
+        "url": "",
+        "icona": "amazon-wishlist"
+      },
+      {
+        "chiave": "amazonAffiliato",
+        "nome": "Amazon",
+        "handle": "Link affiliato",
+        "url": "",
+        "icona": "amazon"
       }
     ],
     "supporto": [

@@ -15,6 +15,14 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Telegram, la lista dei desideri Amazon e il link affiliato Amazon fra i
+  social.** Tre icone nuove in `modelli/icone/` (`telegram`, `amazon-wishlist`,
+  `amazon`), aggiunte a `ICONE_SOCIAL` in `contenuti/schema.js`, e tre voci in
+  `config.social` con il link vuoto: restano nascoste finché il link non si
+  scrive dal pannello, e poi compaiono nel binario e nei saluti come le altre.
+  Le due voci Amazon restano fuori dal `sameAs` del JSON-LD: non sono un
+  profilo della persona. Il link affiliato vuole la dicitura del programma
+  Affiliazione Amazon da qualche parte sul sito.
 - **Gli auguri del 21 settembre 2026, temporanei.** In fondo a
   `modelli/index.html`, fra i commenti `AUGURI 21/09/2026 - inizio` e
   `AUGURI - fine`: festone, palloncini, coriandoli e un riquadro «Tanti

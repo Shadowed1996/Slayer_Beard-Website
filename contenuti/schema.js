@@ -97,7 +97,7 @@ function diEditor(chiave) {
 
 // Le icone disponibili sono i file in modelli/icone/: se se ne aggiunge una
 // si aggiunge qui il nome, e la generazione la trova da sola.
-const ICONE_SOCIAL = ['twitch', 'youtube', 'instagram', 'tiktok'];
+const ICONE_SOCIAL = ['twitch', 'youtube', 'instagram', 'tiktok', 'telegram', 'amazon-wishlist', 'amazon'];
 const ICONE_SUPPORTO = ['star', 'crown', 'gem', 'heart', 'coffee', 'mail'];
 
 const gruppi = [

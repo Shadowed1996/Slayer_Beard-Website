@@ -1540,7 +1540,7 @@ async function proveApi(costruisci) {
       esigi(Object.keys(r.dati.testi).length === attese,
         'chiavi dei testi: ' + Object.keys(r.dati.testi).length + ', attese ' + attese);
       esigi('deck.titolo' in r.dati.testi, 'una chiave non passata nel PUT e sparita');
-      esigiUguale(r.dati.config.social.length, 5, 'social');
+      esigiUguale(r.dati.config.social.length, 8, 'social');
     });
 
     await prova('POST /api/pubblica genera i tre file e risponde con backup e durata', async () => {

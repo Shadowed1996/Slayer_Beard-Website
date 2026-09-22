@@ -552,10 +552,12 @@ function jsonLdPersona(testi, config, social, urlCanale) {
 
   // sameAs: il canale piu i social visibili, senza doppioni. La voce
   // «Twitch» dei social e lo stesso indirizzo di urlCanale, e ripeterlo due
-  // volte non e ridondanza, e un dato sbagliato.
+  // volte non e ridondanza, e un dato sbagliato. Le voci Amazon (lista dei
+  // desideri, link affiliato) restano fuori: non sono un profilo della persona.
   const visti = new Set();
   const sameAs = [];
-  for (const grezzo of [urlCanale].concat(social.map((voce) => voce.url))) {
+  const profili = social.filter((voce) => !String(voce.icona || '').startsWith('amazon'));
+  for (const grezzo of [urlCanale].concat(profili.map((voce) => voce.url))) {
     const url = String(grezzo || '').trim();
     if (!url) { continue; }
     // Il confronto ignora maiuscole e barra finale: sono lo stesso posto.
