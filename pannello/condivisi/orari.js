@@ -68,7 +68,11 @@
     durataEventoMax: 72,
     // Le durate vanno a mezz'ora: un «2,37 ore» non lo scrive nessuno, e il
     // cursore del pannello deve poter arrivare a ogni valore ammesso.
-    passoDurata: 0.5
+    passoDurata: 0.5,
+    // Giorni singoli saltati (motivi personali, non un evento): pochi alla
+    // volta, un motivo corto — è una scritta sopra il nastro, non una nota.
+    pause: 12,
+    motivoPausa: 60
   });
 
   /* I valori di serie quando il ramo stesso è rotto o assente. Sono quelli
@@ -243,11 +247,18 @@
      evento nuovo con una data inventata finirebbe sul sito prima che chi
      amministra l'abbia scelta. problemi() le chiede. */
   function eventoVuoto() {
-    return { data: '', ora: '', durataOre: null, titolo: '', gioco: '', nota: '', immagine: '', fuoco: fuocoVuoto(), velo: LIMITI.velo };
+    return { data: '', ora: '', durataOre: null, titolo: '', gioco: '', nota: '', immagine: '', fuoco: fuocoVuoto(), velo: LIMITI.velo, ultimoGiorno: '' };
   }
 
   function sfondoVuoto() {
     return { immagine: '', fuoco: fuocoVuoto(), intensita: LIMITI.intensita };
+  }
+
+  /* Un giorno singolo saltato per un motivo personale (non un evento): tiene
+     precedenza su tutto il resto di quel giorno, anche su un evento speciale
+     in corso — vedi pausaDi() più sotto. */
+  function pausaVuota() {
+    return { data: '', motivo: '' };
   }
 
   /* ------------------------------------------------------------------ */
@@ -331,6 +342,7 @@
   function normalizzaEvento(valore) {
     const e = oggetto(valore) ? valore : {};
     const data = leggiData(e.data);
+    const ultimo = leggiData(e.ultimoGiorno);
     return {
       data: data ? data.testo : '',
       ora: ora(e.ora, ''),
@@ -340,7 +352,20 @@
       nota: riga(e.nota, LIMITI.notaEvento),
       immagine: immagine(e.immagine),
       fuoco: fuoco(e.fuoco),
-      velo: intero(e.velo, LIMITI.veloMin, LIMITI.veloMax, LIMITI.velo)
+      velo: intero(e.velo, LIMITI.veloMin, LIMITI.veloMax, LIMITI.velo),
+      // Solo un avviso («massimo entro il...»): non spegne l'evento da solo,
+      // non entra nei conti di eventiFuturi()/eventoAttivo(). Chi amministra
+      // toglie l'evento (o gli dà una durata) quando è davvero finito.
+      ultimoGiorno: ultimo ? ultimo.testo : ''
+    };
+  }
+
+  function normalizzaPausa(valore) {
+    const p = oggetto(valore) ? valore : {};
+    const data = leggiData(p.data);
+    return {
+      data: data ? data.testo : '',
+      motivo: riga(p.motivo, LIMITI.motivoPausa)
     };
   }
 
@@ -359,6 +384,7 @@
     const o = oggetto(orari) ? orari : {};
     const schede = Array.isArray(o.schede) ? o.schede : [];
     const eventi = Array.isArray(o.eventi) ? o.eventi.slice(0, LIMITI.eventi) : [];
+    const pause = Array.isArray(o.pause) ? o.pause.slice(0, LIMITI.pause) : [];
     const sfondo = oggetto(o.sfondo) ? o.sfondo : null;
     return {
       giorni: giorni(o.giorni),
@@ -367,6 +393,7 @@
       fuso: fusoValido(o.fuso) ? o.fuso.trim() : PREDEFINITI.fuso,
       schede: [0, 1, 2, 3, 4, 5, 6].map(function (n) { return normalizzaScheda(schede[n]); }),
       eventi: eventi.map(normalizzaEvento),
+      pause: pause.map(normalizzaPausa),
       sfondo: sfondo ? {
         immagine: immagine(sfondo.immagine),
         fuoco: fuoco(sfondo.fuoco),
@@ -495,6 +522,45 @@
     problemiImmagine(evento.immagine, 'L\'immagine ' + di, dove + '.immagine', aggiungi);
     problemiFuoco(evento.fuoco, 'dell\'immagine ' + di, dove + '.fuoco', aggiungi);
     problemiVelo(evento.velo, di, dove + '.velo', aggiungi);
+
+    // Facoltativa quanto la durata, e per lo stesso motivo: è solo un
+    // avviso («massimo entro il...») sopra l'evento, non spegne niente da
+    // solo. Se c'è scritto qualcosa deve essere una data vera, altrimenti
+    // meglio dirlo che stampare una data storta sul sito.
+    if (evento.ultimoGiorno !== undefined && evento.ultimoGiorno !== null && evento.ultimoGiorno !== '') {
+      if (typeof evento.ultimoGiorno !== 'string' || !RE_DATA.test(evento.ultimoGiorno.trim())) {
+        aggiungi(dove + '.ultimoGiorno', 'La data limite ' + di + ' va scritta come 2026-10-10, oppure lasciata vuota.');
+      } else if (!leggiData(evento.ultimoGiorno)) {
+        aggiungi(dove + '.ultimoGiorno', 'La data limite ' + di + ' non esiste nel calendario: ' + evento.ultimoGiorno.trim() + '.');
+      }
+    }
+  }
+
+  function nomePausa(pausa, i) {
+    const data = typeof pausa.data === 'string' ? pausa.data.trim() : '';
+    return leggiData(data) ? 'del ' + data : 'numero ' + (i + 1);
+  }
+
+  function problemiPausa(pausa, i, aggiungi) {
+    const dove = 'pause.' + i;
+    if (!oggetto(pausa)) { aggiungi(dove, 'Il giorno saltato numero ' + (i + 1) + ' non è compilato.'); return; }
+    const di = nomePausa(pausa, i);
+
+    if (pausa.data === undefined || (typeof pausa.data === 'string' && pausa.data.trim() === '')) {
+      aggiungi(dove + '.data', 'Manca la data del giorno saltato ' + di + '.');
+    } else if (typeof pausa.data !== 'string' || !RE_DATA.test(pausa.data.trim())) {
+      aggiungi(dove + '.data', 'La data del giorno saltato ' + di + ' va scritta come 2026-10-02.');
+    } else if (!leggiData(pausa.data)) {
+      aggiungi(dove + '.data', 'La data del giorno saltato ' + di + ' non esiste nel calendario: ' + pausa.data.trim() + '.');
+    }
+
+    // Il motivo è facoltativo: un giorno si può saltare anche senza dirlo
+    // in pagina, l'etichetta «saltata» da sola basta.
+    if (pausa.motivo !== undefined && typeof pausa.motivo === 'string' && pausa.motivo.length > LIMITI.motivoPausa) {
+      aggiungi(dove + '.motivo', 'Il motivo del giorno saltato ' + di + ' supera i ' + LIMITI.motivoPausa + ' caratteri: adesso sono ' + pausa.motivo.length + '.');
+    } else if (pausa.motivo !== undefined && typeof pausa.motivo !== 'string') {
+      aggiungi(dove + '.motivo', 'Il motivo del giorno saltato ' + di + ' deve essere un testo.');
+    }
   }
 
   /**
@@ -568,6 +634,18 @@
           aggiungi('eventi', 'Gli eventi speciali sono al massimo ' + LIMITI.eventi + ': adesso sono ' + orari.eventi.length + '.');
         }
         orari.eventi.forEach(function (evento, i) { problemiEvento(evento, i, aggiungi); });
+      }
+    }
+
+    // --- giorni saltati
+    if (orari.pause !== undefined) {
+      if (!Array.isArray(orari.pause)) {
+        aggiungi('pause', 'I giorni saltati devono essere un elenco.');
+      } else {
+        if (orari.pause.length > LIMITI.pause) {
+          aggiungi('pause', 'I giorni saltati sono al massimo ' + LIMITI.pause + ': adesso sono ' + orari.pause.length + '.');
+        }
+        orari.pause.forEach(function (pausa, i) { problemiPausa(pausa, i, aggiungi); });
       }
     }
 
@@ -804,6 +882,21 @@
     return { evento: evento, giorni: giorni };
   }
 
+  /**
+   * La pausa che cade su quella data di calendario ('2026-10-02'), o null.
+   * Tiene la precedenza su tutto il resto di quel giorno — la scheda
+   * regolare E un evento speciale in corso — perché non è una regola del
+   * calendario, è chi amministra che dice «questo giorno preciso no»: chi
+   * chiama (server/lib/costruisci.js) guarda prima questa, poi il resto.
+   * Con più pause sulla stessa data (un errore) vince la prima.
+   */
+  function pausaDi(orari, data) {
+    const d = leggiData(data);
+    if (!d) { return null; }
+    const pulito = normalizza(orari);
+    return pulito.pause.filter(function (p) { return p.data === d.testo; })[0] || null;
+  }
+
   return {
     LIMITI: LIMITI,
     PREDEFINITI: PREDEFINITI,
@@ -816,9 +909,11 @@
 
     schedaVuota: schedaVuota,
     eventoVuoto: eventoVuoto,
+    pausaVuota: pausaVuota,
     sfondoVuoto: sfondoVuoto,
     normalizza: normalizza,
     problemi: problemi,
+    pausaDi: pausaDi,
     percorsoValido: percorsoValido,
     fusoValido: fusoValido,
     dataValida: function (data) { return leggiData(data) !== null; },

@@ -632,6 +632,41 @@
   overflow-wrap: anywhere;
 }
 
+/* --- Un giorno saltato per un motivo personale --------------------------
+   Vince su tutto il resto di quel giorno, anche su un evento speciale in
+   corso (server/lib/costruisci.js non scrive mai «sostituito» insieme a
+   «saltata»): niente orario, niente locandina, solo l'etichetta e il
+   motivo. Colore di attenzione, non ciano: non è un evento, è un'assenza. */
+.nastro__giorno.is-saltata { border-color: color-mix(in srgb, var(--allerta) 45%, transparent); }
+
+.nastro__saltata {
+  margin: 0;
+  margin-block-start: 2px;
+  display: grid;
+  gap: 2px;
+}
+
+.nastro__saltata .nastro__tag { color: var(--allerta); }
+
+.nastro__motivo {
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+  text-wrap: balance;
+}
+
+/* --- La data limite facoltativa di un evento speciale -------------------
+   Solo un avviso: stessa mano dell'etichetta di sempre, senza gridare. */
+.evento__limite {
+  margin: 0;
+  color: var(--testo-tenue);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+}
+
+.evento__limite .evento__tag { color: var(--allerta); }
+
 /* L'ora di chi guarda (sito.js), solo se è diversa da quella del canale. */
 .nastro__locale,
 .evento__locale {

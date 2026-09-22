@@ -17,7 +17,7 @@
        le date nel contenitore vuoto .nastro__data, i segni in .nastro__segni. -->
   <ol id="nastro" class="nastro"{{#se sito.orariTesto}} aria-label="{{sito.orariTesto}}"{{/se}} data-sb-parte="nastro" data-sb-blocco="settimana.nastro">
     {{#ogni settimana}}
-    <li class="nastro__giorno{{#se diretta}} is-diretta{{/se}}{{#se immagine}} con-immagine{{/se}}{{#se sostituito}} is-sostituito{{/se}}" data-giorno="{{indice}}"{{#se stile}} style="{{stile}}"{{/se}}>
+    <li class="nastro__giorno{{#se diretta}} is-diretta{{/se}}{{#se immagine}} con-immagine{{/se}}{{#se sostituito}} is-sostituito{{/se}}{{#se saltata}} is-saltata{{/se}}" data-giorno="{{indice}}"{{#se stile}} style="{{stile}}"{{/se}}>
       {{#se immagine}}<img class="nastro__sfondo" src="{{immagine}}" alt="" loading="lazy" decoding="async">{{/se}}
       {{#se diretta}}{{^se immagine}}<span class="nastro__filigrana" aria-hidden="true">{{nome}}</span>{{/se}}{{/se}}
       <div class="nastro__testa">
@@ -25,6 +25,11 @@
         <p class="nastro__segni"></p>
       </div>
       <div class="nastro__corpo">
+        <!-- Un giorno saltato per un motivo personale vince su tutto il resto di questo giorno — anche
+             su un evento speciale in corso: server/lib/costruisci.js non scrive mai «sostituito» insieme
+             a «saltata». Il motivo è facoltativo: senza, basta l'etichetta. -->
+        {{#se saltata}}<p class="nastro__saltata"><span class="nastro__tag">{{settimana.etichettaSaltata}}</span>{{#se motivoSaltata}} <span class="nastro__motivo">{{motivoSaltata}}</span>{{/se}}</p>{{/se}}
+        {{^se saltata}}
         <p class="nastro__quando"><span class="nastro__tag">{{tag}}</span>{{#se diretta}} <span class="nastro__orario"><b class="nastro__ora">{{ora}}</b><span class="nastro__fine"> – {{fine}}</span></span>{{/se}}</p>
         <!-- Il giorno che un evento speciale acceso si è preso: il suo programma resta scritto qui sotto
              ma si legge spento, e questa riga dice chi comanda adesso. sito.js la scrive e la toglie da
@@ -33,6 +38,7 @@
         {{#se titolo}}<p class="nastro__titolo">{{titolo}}</p>{{/se}}
         {{#se gioco}}<p class="nastro__gioco">{{gioco}}</p>{{/se}}
         {{#se nota}}<p class="nastro__nota">{{nota}}</p>{{/se}}
+        {{/se}}
       </div>
     </li>
     {{/ogni}}
@@ -54,6 +60,9 @@
         <div class="evento__corpo">
           <h4 class="evento__titolo">{{titolo}}</h4>
           <p class="evento__quando"><time class="evento__giorno-esteso" datetime="{{inizio}}">{{dataTesto}}</time> <span class="evento__orario"><b class="evento__ora">{{ora}}</b>{{#se fine}}<span class="evento__fine"> – {{fine}}</span>{{/se}}</span></p>
+          <!-- Solo un avviso, scritto da chi amministra: non è quello che spegne l'evento (quello resta
+               la durata, o lo si toglie a mano — vedi orari.js). Compare solo se compilato. -->
+          {{#se ultimoGiornoTesto}}<p class="evento__limite"><span class="evento__tag">{{settimana.etichettaFino}}</span> {{ultimoGiornoTesto}}</p>{{/se}}
           {{#se gioco}}<p class="evento__gioco">{{gioco}}</p>{{/se}}
           {{#se nota}}<p class="evento__nota">{{nota}}</p>{{/se}}
         </div>

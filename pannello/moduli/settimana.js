@@ -347,6 +347,7 @@ const ricordo = { vista: 'settimana', giorno: null, evento: null };
 const VISTE = [
   { id: 'settimana', nome: 'Settimana' },
   { id: 'eventi', nome: 'Eventi speciali' },
+  { id: 'pause', nome: 'Giorni saltati' },
   { id: 'fondale', nome: 'Fondale' }
 ];
 
@@ -1065,6 +1066,7 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
       if (!oggetto(orari.schede[n])) orari.schede[n] = R.schedaVuota();
     }
     if (!Array.isArray(orari.eventi)) orari.eventi = [];
+    if (!Array.isArray(orari.pause)) orari.pause = [];
     if (!oggetto(orari.sfondo)) orari.sfondo = R.sfondoVuoto();
     return orari;
   }
@@ -1077,6 +1079,9 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
       // Un evento rotto (non un oggetto) si rimette in piedi prima di scriverci.
       if (pezzi[0] === 'eventi' && pezzi.length > 2 && !oggetto(nuovo.eventi[Number(pezzi[1])])) {
         nuovo.eventi[Number(pezzi[1])] = R.eventoVuoto();
+      }
+      if (pezzi[0] === 'pause' && pezzi.length > 2 && !oggetto(nuovo.pause[Number(pezzi[1])])) {
+        nuovo.pause[Number(pezzi[1])] = R.pausaVuota();
       }
       scriviIn(nuovo, percorso, valore);
       if (tocca) ed.toccati.add(percorso);
@@ -1121,6 +1126,7 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     for (const n of R.ORDINE) aggiornaRigaGiorno(n);
     aggiornaSerie();
     aggiornaRigheEventi();
+    aggiornaRighePause();
     aggiornaFondale();
     calcolaErrori();
   }
@@ -1768,7 +1774,7 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     if (!ui) return;
     for (const [i, riga] of ed.ui.eventi) {
       if (riga.immagine) for (const pezzo of ['immagine', 'fuoco', 'velo']) ed.campi.delete('eventi.' + i + '.' + pezzo);
-      for (const pezzo of ['data', 'ora', 'durataOre', 'titolo', 'gioco', 'nota']) ed.campi.delete('eventi.' + i + '.' + pezzo);
+      for (const pezzo of ['data', 'ora', 'durataOre', 'ultimoGiorno', 'titolo', 'gioco', 'nota']) ed.campi.delete('eventi.' + i + '.' + pezzo);
     }
     ed.ui.eventi.clear();
     svuota(ui.elenco);
@@ -1935,6 +1941,16 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     registraCasella(base + '.ora', ora);
     registraCasella(base + '.durataOre', durata);
 
+    // Facoltativa, come la durata: solo un avviso sopra l'evento
+    // («massimo entro il...»), non spegne niente da sé — vedi orari.js.
+    const ultimoGiorno = casella({
+      etichetta: 'Data limite (facoltativa)', tipo: 'date',
+      aiuto: 'Solo un avviso sul sito, tipo «massimo entro il...»: non spegne l\'evento da solo — per quello serve la durata, o toglierlo a mano.'
+    });
+    ultimoGiorno.input.value = String(valoreDi(base + '.ultimoGiorno') ?? '');
+    ultimoGiorno.input.addEventListener('input', () => scrivi([[base + '.ultimoGiorno', ultimoGiorno.input.value]]));
+    registraCasella(base + '.ultimoGiorno', ultimoGiorno);
+
     const fine = el('p', { classe: 'palinsesto__fine', 'aria-live': 'polite' });
     const titolo = casellaTesto(base + '.titolo', 'Titolo', L.titolo);
     titolo.nodo.querySelector('label').append(el('span', { classe: 'palinsesto__obbligo', testo: ' · obbligatorio' }));
@@ -1951,6 +1967,7 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
         el('div', { classe: 'palinsesto__colonna' }, [
           el('div', { classe: 'palinsesto__griglia palinsesto__griglia--evento' }, [data.nodo, ora.nodo, durata.nodo]),
           fine,
+          ultimoGiorno.nodo,
           titolo.nodo, gioco.nodo, nota.nodo
         ]),
         el('div', { classe: 'palinsesto__colonna' }, [immagine.nodo])
@@ -2037,6 +2054,147 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
   }
 
   /* =================================================================
+     VISTA GIORNI SALTATI
+
+     Una data precisa spenta per un motivo personale: vince sia sulla
+     settimana di serie sia su un evento speciale che cade lo stesso
+     giorno (vedi orari.js e costruisci.js — «saltata» non convive mai con
+     «sostituito»). Solo due campi, niente da espandere: una riga per
+     ognuno basta.
+     ================================================================= */
+
+  function ordinePause() {
+    const orari = pulito();
+    const voci = orari.pause.map((pausa, indice) => ({ indice, pausa }));
+    const conData = voci.filter((v) => R.dataValida(v.pausa.data))
+      .sort((a, b) => (a.pausa.data < b.pausa.data ? -1 : (a.pausa.data > b.pausa.data ? 1 : a.indice - b.indice)));
+    const senza = voci.filter((v) => !R.dataValida(v.pausa.data));
+    return conData.concat(senza);
+  }
+
+  function costruisciPause() {
+    const pannello = el('div', { classe: 'palinsesto__vista palinsesto__vista--pause' });
+    const aggiungi = bottone({ testo: 'Aggiungi giorno saltato', ico: 'piu', classe: 'btn btn--primario', su: () => aggiungiPausa() });
+    const conta = el('span', { classe: 'palinsesto__conta' });
+    const limite = el('p', { classe: 'palinsesto__limite', hidden: true });
+    const errorePause = el('p', { classe: 'campo__errore', hidden: true, role: 'alert' });
+    ed.campi.set('pause', {
+      mostra(messaggi) {
+        errorePause.textContent = messaggi.join(' ');
+        errorePause.hidden = !messaggi.length;
+      },
+      fuoco: () => aggiungi.focus()
+    });
+    const elenco = el('ol', { classe: 'palinsesto__pause', 'aria-label': 'Giorni saltati per motivi personali' });
+    const vuoto = el('p', {
+      classe: 'palinsesto__vuoto',
+      testo: 'Nessun giorno saltato. Aggiungine uno per dire che un giorno preciso non c\'è, anche se cade di diretta o dentro un evento speciale.'
+    });
+
+    ed.ui.pauseUi = { aggiungi, conta, limite, elenco, vuoto };
+    pannello.append(
+      el('div', { classe: 'palinsesto__intesta' }, [
+        el('p', { classe: 'palinsesto__nota', testo: 'Un giorno preciso spento per un motivo tuo: vince sia sulla settimana di serie sia su un evento speciale che cade lo stesso giorno.' }),
+        el('div', { classe: 'palinsesto__azioni' }, [aggiungi, conta])
+      ]),
+      limite,
+      errorePause,
+      vuoto,
+      elenco
+    );
+    disegnaPause();
+    return pannello;
+  }
+
+  function disegnaPause() {
+    const ui = ed.ui.pauseUi;
+    if (!ui) return;
+    for (const i of ed.ui.pause.keys()) {
+      ed.campi.delete('pause.' + i + '.data');
+      ed.campi.delete('pause.' + i + '.motivo');
+    }
+    ed.ui.pause.clear();
+    svuota(ui.elenco);
+    for (const voce of ordinePause()) ui.elenco.append(costruisciRigaPausa(voce.indice));
+    aggiornaRighePause();
+  }
+
+  function aggiornaRighePause() {
+    const ui = ed.ui.pauseUi;
+    if (!ui) return;
+    const orari = pulito();
+    const quanti = Array.isArray(grezzo().pause) ? grezzo().pause.length : orari.pause.length;
+    ui.conta.textContent = quanti + ' / ' + L.pause;
+    const pieno = quanti >= L.pause;
+    ui.aggiungi.disabled = pieno;
+    ui.limite.hidden = !pieno;
+    ui.limite.textContent = pieno ? 'Sei a ' + L.pause + ' giorni saltati, il massimo: elimina quelli che non ti servono più per farne posto.' : '';
+    ui.vuoto.hidden = quanti > 0;
+  }
+
+  function costruisciRigaPausa(i) {
+    const base = 'pause.' + i;
+
+    const data = casella({ etichetta: 'Data', tipo: 'date' });
+    data.input.value = String(valoreDi(base + '.data') ?? '');
+    data.input.addEventListener('input', () => scrivi([[base + '.data', data.input.value]]));
+    registraCasella(base + '.data', data);
+
+    const motivo = casella({
+      etichetta: 'Motivo (facoltativo)', max: L.motivoPausa,
+      aiuto: 'Compare sul sito accanto all\'avviso, se lo scrivi. Lasciandolo vuoto resta solo l\'avviso.',
+      attributi: { spellcheck: 'true' }
+    });
+    motivo.input.value = String(valoreDi(base + '.motivo') ?? '');
+    motivo.conta();
+    motivo.input.addEventListener('input', () => { motivo.conta(); scrivi([[base + '.motivo', motivo.input.value]]); });
+    registraCasella(base + '.motivo', motivo);
+
+    const elimina = bottone({ testo: 'Elimina', ico: 'cestino', classe: 'btn btn--minimo btn--pericolo', su: () => eliminaPausa(i) });
+
+    const nodo = el('li', { classe: 'palinsesto-pausa', dati: { pausa: String(i) } }, [
+      el('div', { classe: 'palinsesto__griglia' }, [data.nodo, motivo.nodo]),
+      el('div', { classe: 'palinsesto-pausa__piede' }, [elimina])
+    ]);
+    ed.ui.pause.set(i, { nodo, data, motivo });
+    return nodo;
+  }
+
+  function aggiungiPausa() {
+    const orari = pulito();
+    const attuali = Array.isArray(grezzo().pause) ? grezzo().pause : [];
+    if (attuali.length >= L.pause) {
+      aggiornaRighePause();
+      avviso('I giorni saltati sono al massimo ' + L.pause + ': elimina quelli che non ti servono più per farne posto.', { tipo: 'info' });
+      return;
+    }
+    // Data di oggi di serie, da cambiare: si parte da un valore vero invece
+    // che da una casella vuota che il salvataggio rifiuta.
+    const nuovo = Object.assign(R.pausaVuota(), { data: oggiNelFuso(orari.fuso) });
+    const indice = attuali.length;
+    scrivi([['pause', attuali.concat([nuovo])]], { tocca: false });
+    disegnaPause();
+    const riga = ed.ui.pause.get(indice);
+    if (riga) riga.data.input.focus();
+    annuncia('Giorno saltato aggiunto: scegli la data giusta e, se vuoi, scrivi il motivo.');
+  }
+
+  function eliminaPausa(i) {
+    const attuali = Array.isArray(grezzo().pause) ? grezzo().pause.slice() : [];
+    if (i < 0 || i >= attuali.length) return;
+    attuali.splice(i, 1);
+    // Gli indici dopo quello tolto scalano: i segni «toccato» di quelli
+    // saltati non valgono più per la casella giusta.
+    for (const t of Array.from(ed.toccati)) if (t.startsWith('pause.')) ed.toccati.delete(t);
+    scrivi([['pause', attuali]], { tocca: false });
+    disegnaPause();
+    calcolaErrori();
+    aggiornaEvidenza();
+    ed.ui.pauseUi.aggiungi.focus();
+    annuncia('Giorno saltato eliminato.');
+  }
+
+  /* =================================================================
      VISTA FONDALE
      ================================================================= */
 
@@ -2066,7 +2224,7 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
   function disegnaTutto() {
     svuota(radice);
     ed.campi.clear();
-    ed.ui = { giorni: new Map(), eventi: new Map(), linguette: new Map(), pannelli: new Map(), contaLinguette: {} };
+    ed.ui = { giorni: new Map(), eventi: new Map(), pause: new Map(), linguette: new Map(), pannelli: new Map(), contaLinguette: {} };
 
     const riepilogo = creaRiepilogoOrari({ leggi: grezzo, suGiorno: (n) => apriGiorno(n, { scorriAnteprima: true }) });
     ed.ui.riepilogo = riepilogo;
@@ -2105,6 +2263,7 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
 
     ed.ui.pannelli.get('settimana').append(costruisciSettimana());
     ed.ui.pannelli.get('eventi').append(costruisciEventi());
+    ed.ui.pannelli.get('pause').append(costruisciPause());
     ed.ui.pannelli.get('fondale').append(costruisciFondale());
 
     radice.append(riepilogo.nodo, lista, ...ed.ui.pannelli.values(), annuncio);
@@ -2129,6 +2288,7 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
       selettoreEvidenza() {
         if (ed.vista === 'settimana' && ed.giorno !== null) return selettoreDi('schede.' + ed.giorno);
         if (ed.vista === 'eventi' && ed.evento !== null) return selettoreDi('eventi.' + ed.evento);
+        if (ed.vista === 'pause') return '#settimana';
         if (ed.vista === 'fondale') return '#settimana';
         return '';
       }

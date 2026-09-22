@@ -1,0 +1,128 @@
+.chi__ritratto.is-pollo {
+  cursor: pointer;
+  border-radius: var(--raggio);
+  transition: transform var(--durata) ease, filter var(--durata) ease;
+}
+
+.chi__ritratto.is-pollo:hover,
+.chi__ritratto.is-pollo:focus-visible {
+  transform: translateY(-2px) rotate(-1.5deg);
+  filter: drop-shadow(0 0 14px var(--linea-viva));
+}
+
+.chi__ritratto.is-pollo:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: var(--durata-lampo);
+}
+
+.spam {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 0;
+  block-size: 0;
+  z-index: var(--z-velo);
+  pointer-events: none;
+}
+
+.spam__carta {
+  position: absolute;
+  inline-size: min(280px, calc(100vw - var(--passo-4)));
+  pointer-events: none;
+
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--passo) var(--passo-2);
+  align-items: start;
+
+  padding: var(--passo-2);
+
+  border: 1px solid var(--linea-forte);
+  border-inline-start: 3px solid var(--viola);
+  border-radius: var(--raggio);
+  background-color: var(--fondo-2);
+  box-shadow: var(--ombra);
+
+  opacity: 0;
+  transform: rotate(var(--tilt, 0deg));
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .spam__carta {
+    background-color: var(--pannello-2);
+    -webkit-backdrop-filter: blur(var(--sfocatura)) saturate(140%);
+    backdrop-filter: blur(var(--sfocatura)) saturate(140%);
+  }
+}
+
+.spam__carta.is-dentro {
+  animation: spam-entra var(--durata-lunga) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.spam__carta.is-via {
+  animation: spam-esce var(--durata) ease both;
+}
+
+.spam__faccia {
+  align-self: start;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.spam__testo {
+  margin: 0;
+  color: var(--testo-medio);
+  font-family: var(--font-testo);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.spam__testo strong {
+  display: block;
+  margin-block-end: 2px;
+  color: var(--testo);
+  font-family: var(--font-titolo);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: var(--spazio-etichetta);
+  text-transform: uppercase;
+}
+
+@keyframes spam-entra {
+  from { opacity: 0; transform: rotate(var(--tilt, 0deg)) scale(0.86); }
+  to   { opacity: 1; transform: rotate(var(--tilt, 0deg)) scale(1); }
+}
+
+@keyframes spam-esce {
+  from { opacity: 1; transform: rotate(var(--tilt, 0deg)) scale(1); }
+  to   { opacity: 0; transform: rotate(var(--tilt, 0deg)) scale(0.92); }
+}
+
+@media (max-width: 420px) {
+  .spam__carta {
+    inline-size: min(280px, calc(100vw - var(--passo-3)));
+  }
+
+  .spam__testo { font-size: 0.85rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chi__ritratto.is-pollo,
+  .chi__ritratto.is-pollo:hover,
+  .chi__ritratto.is-pollo:focus-visible,
+  .chi__ritratto.is-pollo:active {
+    transform: none;
+    transition: filter var(--durata-lampo) linear;
+  }
+
+  .spam__carta.is-dentro {
+    animation: spam-appare var(--durata-lampo) linear both;
+  }
+
+  .spam__carta.is-via {
+    animation: spam-sparisce var(--durata-lampo) linear both;
+  }
+
+  @keyframes spam-appare    { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes spam-sparisce  { from { opacity: 1; } to { opacity: 0; } }
+}

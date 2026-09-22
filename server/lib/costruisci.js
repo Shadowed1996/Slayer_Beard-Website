@@ -203,6 +203,22 @@ function stileImmagine(immagine, fuoco, nome, valore) {
  * immagine), cosi riaccendendolo torna com'era senza che nel frattempo il
  * sito mostri una locandina di un giorno di riposo.
  */
+/**
+ * La data di calendario, nel fuso del canale, del prossimo giorno (oggi
+ * compreso) che cade sul giorno della settimana `indice`: è la data VERA
+ * che quella scheda del nastro rappresenta in QUESTA generazione, e serve
+ * solo a sapere se ci cade sopra un giorno saltato (SBOrari.pausaDi) — il
+ * nastro resta per il resto un modello astratto che si ripete ogni
+ * settimana, non lega nessun altro suo campo a una data.
+ */
+function dataDiQuestaSettimana(adesso, fuso, indice) {
+  for (let salto = 0; salto < 7; salto++) {
+    const data = SBOrari.dataNelFuso(adesso + salto * 86400000, fuso);
+    if (data && SBOrari.giornoDellaSettimana(data) === indice) { return data; }
+  }
+  return '';
+}
+
 function settimanaDi(config, testi, adesso) {
   const orari = orariDi(config);
   // Un evento speciale acceso all'istante della generazione ha la
@@ -222,6 +238,12 @@ function settimanaDi(config, testi, adesso) {
     const gioco = diretta ? scheda.gioco : '';
     const nota = diretta ? scheda.nota : '';
     const immagine = diretta ? scheda.immagine : '';
+    // Un giorno saltato per un motivo personale vince su tutto il resto —
+    // anche su un evento speciale in corso (`sostituito` qui sotto si spegne
+    // apposta con `!pausa &&`): non è una regola del calendario, è chi
+    // amministra che dice «questo giorno preciso no».
+    const dataOggi = dataDiQuestaSettimana(adesso, orari.fuso, indice);
+    const pausa = dataOggi ? SBOrari.pausaDi(orari, dataOggi) : null;
     return {
       indice: indice,
       abbr: giorno.abbr,
@@ -236,12 +258,15 @@ function settimanaDi(config, testi, adesso) {
       // Il modello non sa fare «se c'e almeno uno di tre»: gli arriva deciso.
       contenuto: !!(titolo || gioco || nota),
       // Il titolo dell'evento che si prende questo giorno, '' se non ce n'e
-      // nessuno: il modello lo stampa e il giorno prende is-sostituito.
-      sostituito: sostituito.giorni[indice]
+      // nessuno (o se il giorno e saltato): il modello lo stampa e il giorno
+      // prende is-sostituito.
+      sostituito: (!pausa && sostituito.giorni[indice])
         ? (sostituito.evento.titolo || testi['settimana.etichettaEvento'] || '')
         : '',
       immagine: immagine,
-      stile: stileImmagine(immagine, scheda.fuoco, 'velo', scheda.velo)
+      stile: stileImmagine(immagine, scheda.fuoco, 'velo', scheda.velo),
+      saltata: !!pausa,
+      motivoSaltata: pausa ? pausa.motivo : ''
     };
   });
 }
@@ -263,6 +288,14 @@ function settimanaDi(config, testi, adesso) {
  * pannello a ogni cambio di gioco. Senza categoria — Twitch giu, canale
  * spento, collegamento non configurato — resta quello scritto a mano.
  */
+/** «sabato 3 ottobre»: la stessa forma di dataTesto qui sotto, per una data qualsiasi. */
+function dataInParole(data) {
+  const d = data.split('-').map(Number);
+  const giorno = SBOrari.GIORNI[SBOrari.giornoDellaSettimana(data)];
+  const mese = SBOrari.MESI[d[1] - 1];
+  return giorno.minuscolo + ' ' + d[2] + ' ' + mese.nome;
+}
+
 function eventiDi(orari, adesso, categoria) {
   const inOnda = typeof categoria === 'string' ? categoria.trim() : '';
   const acceso = inOnda ? SBOrari.eventoAttivo(orari, adesso) : null;
@@ -294,7 +327,11 @@ function eventiDi(orari, adesso, categoria) {
       nota: evento.nota,
       contenuto: !!(gioco || evento.nota),
       immagine: evento.immagine,
-      stile: stileImmagine(evento.immagine, evento.fuoco, 'velo', evento.velo)
+      stile: stileImmagine(evento.immagine, evento.fuoco, 'velo', evento.velo),
+      // Solo un avviso («massimo entro il...»), scritto da chi amministra:
+      // non e quello che decide quando l'evento sparisce (quello resta
+      // durataOre, o la si toglie a mano — vedi orari.js, normalizzaEvento).
+      ultimoGiornoTesto: evento.ultimoGiorno ? dataInParole(evento.ultimoGiorno) : ''
     };
   });
 }
@@ -1167,7 +1204,16 @@ function oggettoDati(contenuti, opzioni) {
   }
 
   return {
-    twitch: { canale: String(twitch.canale || ''), idUtente: String(twitch.idUtente || ''), domini: domini },
+    twitch: {
+      canale: String(twitch.canale || ''),
+      idUtente: String(twitch.idUtente || ''),
+      /* Diretta condivisa: player e canale restano sempre i propri (siete
+         in onda tutti e due, ognuno vero sul suo), quindi qui non c'e'
+         nessuno scambio da fare. Il valore serve solo a js/lurk.js, per
+         mettere l'etichetta «[LURKO DA SLAYER_BEARD]» davanti al messaggio. */
+      direttaCondivisa: twitch.direttaCondivisa === true,
+      domini: domini
+    },
     orari: orariDati(config, momentoDi(opzioni)),
     email: String(config.email || ''),
     ultimaDiretta: String(config.ultimaDiretta || ''),

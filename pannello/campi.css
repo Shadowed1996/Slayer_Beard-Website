@@ -809,6 +809,29 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
   border-top: 1px solid var(--p-linea);
 }
 
+/* --- giorni saltati --------------------------------------------------
+   Solo due caselle a riga, niente da aprire: la riga mostra già tutto. */
+.palinsesto__pause {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.palinsesto-pausa {
+  min-width: 0;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+}
+.palinsesto-pausa__piede {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+}
+
 /* --- blocco immagine ------------------------------------------------ */
 .palinsesto-img { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .palinsesto-img__testa { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }

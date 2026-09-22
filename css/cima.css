@@ -1,0 +1,160 @@
+/* =============================================================================
+   cima.css — slayer_beard · il pulsante «GO TOP»
+
+   Un solo elemento: il bottone che riporta in cima, in basso a destra.
+   Non esiste nel markup: lo costruisce js/cima.js. Senza quel file qui non
+   c'è niente da dipingere, e il sito resta esattamente com'era.
+
+   TRE SCELTE CHE SPIEGANO IL FOGLIO
+
+   1. DOVE STA. In basso a DESTRA, perché a sinistra c'è il .binario, che da
+      1100px in su è una colonna fissa (--z-binario: 60). L'angolo destro è
+      l'unico libero a tutte le larghezze.
+   2. COME COMPARE. Non con display:none, ma con opacità + traslazione +
+      visibility. Così l'entrata si può animare e, da spento, il bottone non
+      è raggiungibile col Tab (visibility: hidden lo toglie dall'ordine di
+      tabulazione senza smontarlo).
+   3. CHI DECIDE. Il foglio non sa niente del footer: reagisce soltanto alla
+      classe .is-visibile che mette lo script. Tutta la logica sta nel JS,
+      qui c'è solo il vestito.
+
+   Colori: nessun esadecimale, solo var() di tokens.css (che è l'unico file
+   del progetto autorizzato a contenere colori).
+   ============================================================================= */
+
+.cima {
+  /* Sopra al contenuto e al binario, sotto ai veli e agli avvisi del player:
+     se parte un avviso sopra al monitor, deve coprire anche questo bottone. */
+  position: fixed;
+  z-index: calc(var(--z-velo) - 1);
+  inset-block-end: var(--passo-3);
+  inset-inline-end: var(--passo-3);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--passo);
+
+  margin: 0;
+  padding: var(--passo) var(--passo-2);
+
+  border: 1px solid var(--linea-viva);
+  border-radius: var(--raggio-pill);
+  background-color: var(--pannello-2);
+  /* Il vetro dei pannelli ha alpha: senza blur sopra il footer si leggerebbe
+     il testo sottostante attraverso il bottone. */
+  backdrop-filter: blur(10px);
+  box-shadow: var(--ombra);
+
+  color: var(--testo);
+  font-family: var(--font-titolo);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: var(--spazio-etichetta);
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  /* Stato di riposo: spento, scostato in basso, fuori dal giro del Tab. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--passo-2));
+  transition:
+    opacity    var(--durata) ease,
+    transform  var(--durata) ease,
+    visibility 0s linear var(--durata),
+    border-color var(--durata) ease,
+    background-color var(--durata) ease;
+}
+
+/* Acceso: lo script ha visto il footer entrare nello schermo. */
+.cima.is-visibile {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  /* La visibility torna immediata in entrata, ritardata solo in uscita. */
+  transition-delay: 0s, 0s, 0s, 0s, 0s;
+}
+
+.cima:hover,
+.cima:focus-visible {
+  border-color: var(--ciano);
+  background-color: var(--pannello);
+  color: var(--testo);
+}
+
+.cima:active {
+  transform: translateY(1px);
+  transition-duration: var(--durata-lampo);
+}
+
+/* La freccia. aria-hidden nel JS: il nome del comando è il testo «GO TOP»,
+   il disegno non va letto due volte dallo screen reader. */
+.cima__freccia {
+  flex: none;
+  width: 0.7em;
+  height: 0.7em;
+  border-top: 2px solid var(--ciano);
+  border-right: 2px solid var(--ciano);
+  transform: rotate(-45deg);
+  /* Il bordo alto/destro ruotato disegna una punta: va rialzata di un filo
+     per stare in asse ottico con le maiuscole. */
+  margin-block-start: 0.18em;
+}
+
+/* --- Sotto i 1100px: il binario diventa un dock in basso -------------------
+   Da 1100px in giu' .binario non e' piu' la colonna a sinistra ma una barra
+   galleggiante centrata in fondo, alta --dock-h. Il bottone deve salire sopra
+   di lei, safe-area compresa, o su mobile finisce sotto alla navigazione. */
+@media (max-width: 1099.98px) {
+  .cima {
+    inset-block-end: calc(var(--dock-h) + var(--passo-3) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* --- Schermi stretti --------------------------------------------------------
+   Sotto i 480px il footer è tutto testo e il bottone con la scritta ruba
+   larghezza: resta la sola freccia, in un cerchio. Il nome accessibile non
+   sparisce — lo script tiene l'aria-label anche quando il testo è nascosto. */
+@media (max-width: 480px) {
+  .cima {
+    inset-block-end: calc(var(--dock-h) + var(--passo-2) + env(safe-area-inset-bottom, 0px));
+    inset-inline-end: var(--passo-2);
+    padding: var(--passo-2);
+    border-radius: 50%;
+  }
+
+  .cima__testo {
+    /* Nascosto agli occhi, non al lettore di schermo. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .cima__freccia {
+    width: 0.85em;
+    height: 0.85em;
+  }
+}
+
+/* --- Meno movimento ---------------------------------------------------------
+   Chi ha chiesto meno animazioni vede il bottone comparire e sparire secco.
+   Lo scorrimento è gestito nel JS, che in questo caso salta lo smooth. */
+@media (prefers-reduced-motion: reduce) {
+  .cima {
+    transform: none;
+    transition: opacity var(--durata-lampo) linear,
+                visibility 0s linear var(--durata-lampo);
+  }
+
+  .cima.is-visibile {
+    transform: none;
+  }
+
+  .cima:active {
+    transform: none;
+  }
+}

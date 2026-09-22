@@ -474,7 +474,7 @@ async function proveSchema(contenutiVeri) {
     // che non stanno in nessun punto della pagina perche valgono ovunque:
     // "canale" (i dati tecnici) e "aspetto" (colori e font).
     const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'settimana', 'chi',
-      'supporto', 'saluti', 'piede', 'canale', 'aspetto'];
+      'supporto', 'saluti', 'piede', 'spotify', 'canale', 'aspetto'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
 
@@ -2623,7 +2623,7 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
   await prova('normalizza: la forma di prima (senza schede, eventi e fondale) diventa completa senza cambiare niente', () => {
     const vecchio = { giorni: [1, 3, 5, 0], ora: '21:00', fuso: 'Europe/Rome', durataOre: 4 };
     const pulito = O.normalizza(vecchio);
-    esigiUguale(Object.keys(pulito).join(','), 'giorni,ora,durataOre,fuso,schede,eventi,sfondo', 'chiavi del ramo');
+    esigiUguale(Object.keys(pulito).join(','), 'giorni,ora,durataOre,fuso,schede,eventi,pause,sfondo', 'chiavi del ramo');
     esigiUguale(pulito.giorni.join(','), '1,3,5,0', 'giorni (ordine compreso)');
     esigiUguale(pulito.ora + ' ' + pulito.durataOre + ' ' + pulito.fuso, '21:00 4 Europe/Rome', 'valori di serie');
     esigiUguale(pulito.schede.length, 7, 'schede');
@@ -3227,7 +3227,7 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
       const r = await scrivi({ giorni: [1, 3], ora: '20:30', fuso: 'Europe/Rome', durataOre: 3.5, eventi: [evento({ data: '2020-05-01', titolo: 'Vecchio' })] });
       esigiUguale(r.stato, 200, 'stato');
       const salvato = JSON.parse(fs.readFileSync(P.contenutiJson, 'utf8')).config.orari;
-      esigiUguale(Object.keys(salvato).join(','), 'giorni,ora,durataOre,fuso,schede,eventi,sfondo', 'forma salvata');
+      esigiUguale(Object.keys(salvato).join(','), 'giorni,ora,durataOre,fuso,schede,eventi,pause,sfondo', 'forma salvata');
       esigiUguale(salvato.schede.length + ' ' + salvato.eventi.length + ' ' + salvato.eventi[0].titolo, '7 1 Vecchio', 'schede ed evento passato');
       esigiUguale(salvato.sfondo.immagine, '', 'un fondale mai mandato non rinasce dal disco');
       const pagina = await chiama(porta, 'GET', '/api/anteprima', { biscotto: biscotto });

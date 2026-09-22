@@ -88,6 +88,13 @@
   // un canale a cui parlare e resta spento.
   const BROADCASTER = String(TWITCH.idUtente || '').trim();
 
+  // Diretta condivisa (campo «Diretta condivisa in corso» nel pannello):
+  // player e canale restano sempre i propri, quindi BROADCASTER non cambia —
+  // serve solo a mettere l'etichetta davanti al messaggio, per chi legge una
+  // chat unita a quella di un altro canale.
+  const DIRETTA_CONDIVISA = TWITCH.direttaCondivisa === true;
+  const ETICHETTA_CONDIVISA = '[LURKO DA SLAYER_BEARD] ';
+
   // Memoria della scelta, e l'unica cosa che questo file scrive: è una
   // preferenza, quindi localStorage. Del token non si occupa più nessuno qui
   // dentro — sta in sessionStorage, dentro js/account.js, e muore con la
@@ -1077,7 +1084,7 @@
         body: JSON.stringify({
           broadcaster_id: BROADCASTER,
           sender_id: chi,
-          message: messaggio
+          message: DIRETTA_CONDIVISA ? ETICHETTA_CONDIVISA + messaggio : messaggio
         })
       });
     }).then(rispostaInvio).then(null, function (err) {

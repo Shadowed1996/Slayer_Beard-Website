@@ -113,7 +113,9 @@ const gruppi = [
       { chiave: 'meta.ogDescrizione', etichetta: 'Descrizione per i social', tipo: 'testolungo', max: 200,
         aiuto: 'Quella che appare nell\'anteprima quando il link viene condiviso.' },
       { chiave: 'meta.ogImmagineAlt', etichetta: 'Descrizione dell\'immagine di anteprima', tipo: 'testolungo', max: 220,
-        aiuto: 'Serve a chi usa un lettore di schermo: descrivi cosa si vede nell\'immagine.' }
+        aiuto: 'Serve a chi usa un lettore di schermo: descrivi cosa si vede nell\'immagine.' },
+      { chiave: 'config.twitch.direttaCondivisa', etichetta: 'Diretta condivisa in corso', tipo: 'interruttore', facoltativo: true, predefinito: false,
+        aiuto: 'Quando fai una live insieme a un altro canale, ognuno resta sul proprio: il player e la diretta non cambiano. Acceso, il messaggio del pollo esce con «[LURKO DA SLAYER_BEARD]» davanti alla frase, così chi legge una chat unita alle due capisce da dove arriva. Accendilo prima di iniziare, spegnilo (e pubblica) quando la condivisa finisce.' }
     ]
   },
 
@@ -436,6 +438,10 @@ const gruppi = [
         aiuto: 'Sta sopra le dirette fuori programma. Senza eventi in arrivo non si vede.' },
       { chiave: 'settimana.etichettaEvento', etichetta: 'Etichetta di un evento speciale', tipo: 'testo', max: 20,
         aiuto: 'Il bollino su ogni evento, e sul giorno della settimana in cui ne cade uno.' },
+      { chiave: 'settimana.etichettaFino', etichetta: 'Etichetta «fino a»', tipo: 'testo', max: 20, facoltativo: true, predefinito: 'Al massimo fino a',
+        aiuto: 'Sta sopra la data limite di un evento speciale, quando la compili.' },
+      { chiave: 'settimana.etichettaSaltata', etichetta: 'Etichetta di una diretta saltata', tipo: 'testo', max: 20, facoltativo: true, predefinito: 'Niente live',
+        aiuto: 'Sta sopra il motivo, sul giorno che hai segnato come saltato.' },
       { chiave: 'settimana.cta', etichetta: 'Bottone in fondo alla sezione', tipo: 'testo', max: 30 },
       { chiave: 'config.orari', etichetta: 'Schedule della settimana', tipo: 'orari',
         aiuto: 'Giorni, ore, schede con immagine di sfondo, eventi speciali e fondale della sezione. Da qui nascono anche il conto alla rovescia della copertina e gli orari scritti nella pagina.' }
@@ -565,6 +571,40 @@ const gruppi = [
         aiuto: 'L\'anno viene aggiunto dalla generazione, non scriverlo qui.' },
       { chiave: 'footer.disclaimer', etichetta: 'Avvertenza sui marchi', tipo: 'ricco', max: 300 },
       { chiave: 'footer.nota', etichetta: 'Nota finale', tipo: 'ricco', max: 80 }
+    ]
+  },
+
+  // Chiavi trovate già in contenuti.json ma senza una voce qui: la funzione
+  // Spotify ha i suoi file (js/spotify.js, css/spotify.css,
+  // modelli/parziali/spotify.html, server/lib/spotify.js e ascolto.js —
+  // recuperati dal server e rimessi nel repository), ma non è mai stata
+  // agganciata a modelli/index.html (nessun {{> parziali/spotify}}) né a
+  // server/lib/costruisci.js: sul sito pubblicato non compare, in nessuna
+  // pagina. Non essendo in nessun punto della pagina, come «canale» e
+  // «aspetto» qui sotto, il gruppo va dopo di loro nell'ordine (vedi il test
+  // «i gruppi seguono l'ordine della pagina» in server/autotest.js). Qui la
+  // copertura serve solo perché il pannello deve comunque poter leggere e
+  // scrivere queste chiavi, altrimenti Pubblica si rifiuta (vedi la nota su
+  // PREDEFINITO in cima al file). Tipi e valori booleani verificati dal
+  // codice vero, non indovinati: server/lib/ascolto.js riga 35
+  // (`segui: voce.attivo === true && voce.segui === true`) e
+  // modelli/parziali/spotify.html.
+  {
+    id: 'spotify',
+    titolo: 'Spotify (non ancora collegata)',
+    descrizione: 'Questi campi esistono già nei tuoi contenuti e la funzione (un lettore dell\'ultimo ascolto) ha ancora tutto il suo codice sul server — ma non è mai stata agganciata alla pagina, quindi cambiarli qui non cambia niente sul sito finché qualcuno non finisce il collegamento.',
+    campi: [
+      { chiave: 'spotify.titolo', etichetta: 'Titolo del riquadro', tipo: 'testo', max: 60, facoltativo: true },
+      { chiave: 'spotify.ascolta', etichetta: 'Scritta del bottone «ascolta»', tipo: 'testo', max: 30, facoltativo: true },
+      { chiave: 'spotify.passa', etichetta: 'Scritta del bottone «cambia brano»', tipo: 'testo', max: 30, facoltativo: true },
+      { chiave: 'spotify.nascondi', etichetta: 'Scritta del bottone «nascondi»', tipo: 'testo', max: 30, facoltativo: true },
+      { chiave: 'spotify.mostra', etichetta: 'Scritta del bottone «mostra»', tipo: 'testo', max: 30, facoltativo: true },
+      { chiave: 'config.spotify.attivo', etichetta: 'Funzione attiva', tipo: 'interruttore', facoltativo: true, predefinito: false },
+      { chiave: 'config.spotify.segui', etichetta: 'Mostra il bottone «segui»', tipo: 'interruttore', facoltativo: true, predefinito: false },
+      { chiave: 'config.spotify.clientId', etichetta: 'Client ID di Spotify', tipo: 'testo', max: 100, facoltativo: true },
+      { chiave: 'config.spotify.link', etichetta: 'Link al profilo o alla playlist', tipo: 'url', facoltativo: true },
+      { chiave: 'config.spotify.formato', etichetta: 'Formato del riquadro', tipo: 'testo', max: 30, facoltativo: true },
+      { chiave: 'config.spotify.aperto', etichetta: 'Riquadro aperto di serie', tipo: 'interruttore', facoltativo: true, predefinito: false }
     ]
   },
 
