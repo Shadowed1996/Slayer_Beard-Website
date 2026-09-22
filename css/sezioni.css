@@ -655,17 +655,36 @@
 }
 
 /* --- La data limite facoltativa di un evento speciale -------------------
-   Solo un avviso: stessa mano dell'etichetta di sempre, senza gridare. */
+   Un piccolo box a parte, in alto a destra del corpo: e' un avviso fuori
+   dal racconto dell'evento (titolo/quando/gioco/nota), non una riga in
+   mezzo alle altre. .evento__corpo e' position:relative apposta. */
 .evento__limite {
+  position: absolute;
+  inset-block-start: clamp(14px, 1.8vw, 20px);
+  inset-inline-end: clamp(14px, 1.8vw, 20px);
+  z-index: 1;
   margin: 0;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  max-inline-size: min(85%, 14rem);
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--allerta) 40%, transparent);
+  border-radius: var(--raggio-s);
+  background-color: color-mix(in srgb, var(--fondo-2) 90%, transparent);
   color: var(--testo-tenue);
+  font-size: var(--t-piccolo);
+  text-align: center;
+  text-wrap: balance;
+}
+
+.evento__limite .evento__tag {
+  color: var(--allerta);
   font-family: var(--font-mono);
   font-size: var(--t-micro);
   text-transform: uppercase;
   letter-spacing: var(--spazio-etichetta);
 }
-
-.evento__limite .evento__tag { color: var(--allerta); }
 
 /* L'ora di chi guarda (sito.js), solo se è diversa da quella del canale. */
 .nastro__locale,
@@ -1097,6 +1116,7 @@
 }
 
 .evento__corpo {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
