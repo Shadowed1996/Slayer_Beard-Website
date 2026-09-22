@@ -82,6 +82,9 @@ function calcola(radice) {
     // file che cambia da se accanto ai contenuti farebbe sembrare che ci
     // sia sempre una bozza da pubblicare.
     direttaTwitch: path.join(radice, 'server', 'dati', 'twitch-diretta.json'),
+    // Le emote del canale e quelle globali, lette alla pubblicazione per le
+    // frasi del pollo in «Chi sono». Stessa ragione del file qui sopra.
+    emoteTwitch: path.join(radice, 'server', 'dati', 'twitch-emote.json'),
     backup: path.join(radice, 'server', 'backup'),
     modelloDati: path.join(radice, 'server', 'modelli', 'dati.js.tpl')
   };
@@ -143,6 +146,7 @@ function applicaAmbiente(percorsi) {
     percorsi.chiavi = path.join(dati, 'chiavi.js');
     percorsi.accessoTwitch = path.join(dati, 'twitch-accesso.json');
     percorsi.direttaTwitch = path.join(dati, 'twitch-diretta.json');
+    percorsi.emoteTwitch = path.join(dati, 'twitch-emote.json');
   }
 
   const backup = cartellaDaAmbiente('SB_BACKUP');

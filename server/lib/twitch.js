@@ -734,6 +734,112 @@ async function aggiornaCategoria() {
   return { stato: 'aggiornato', categoria: esito.categoria, precedente: precedente };
 }
 
+/* --- EMOTE ------------------------------------------------------------ */
+
+/*
+   Le frasi che il pollo dice in «Chi sono» si scrivono nel pannello, e
+   dentro ci si possono mettere le emote come in chat: il nome esatto
+   (slayer156Love, Kappa…) separato da spazi. Alla pubblicazione si chiede
+   a Twitch l'elenco delle emote del canale e di quelle globali, e la
+   generazione (costruisci.js, chiDi) mette in js/dati.js solo quelle che
+   compaiono davvero nelle frasi: il sito le mostra come immagini senza
+   chiamare nessuno.
+
+   L'elenco sta in server/dati/twitch-emote.json e non in contenuti.json,
+   per la stessa ragione della categoria: non lo scrive chi amministra.
+   Stesse regole del resto del file: non lancia mai, e un Twitch che non
+   risponde lascia l'elenco di prima invece di svuotarlo.
+*/
+
+/** L'elenco salvato: { nome: { id, animata } }, oppure {} se non c'e. Non lancia mai. */
+function emoteSalvate() {
+  try {
+    const dati = JSON.parse(fs.readFileSync(P.emoteTwitch, 'utf8'));
+    return (dati && dati.emote && typeof dati.emote === 'object') ? dati.emote : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+/** { nome: { id, animata } } da una risposta di helix/chat/emotes. */
+function elencoEmote(risposta) {
+  const elenco = {};
+  const voci = (risposta && Array.isArray(risposta.data)) ? risposta.data : [];
+  for (const voce of voci) {
+    const nome = voce && typeof voce.name === 'string' ? voce.name.trim() : '';
+    const id = voce && typeof voce.id === 'string' ? voce.id.trim() : '';
+    // L'id finisce in un indirizzo: si accetta solo la forma che Twitch usa.
+    if (!nome || !/^[A-Za-z0-9_]+$/.test(id)) { continue; }
+    elenco[nome] = { id: id, animata: Array.isArray(voce.format) && voce.format.indexOf('animated') !== -1 };
+  }
+  return elenco;
+}
+
+/**
+ * Aggiorna server/dati/twitch-emote.json, se si puo. NON LANCIA MAI e non
+ * tocca contenuti.json. Si salta quando non c'e nessuna frase da vestire.
+ *
+ * Stati: spento, senzaCanale, aggiornato, fallito.
+ */
+async function aggiornaEmote() {
+  let chiavi;
+  try {
+    chiavi = credenziali();
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+  if (!chiavi) { return { stato: 'spento' }; }
+
+  let idUtente;
+  try {
+    const contenuti = archivio.leggi();
+    const config = contenuti.config || {};
+    const frasi = (config.chi && Array.isArray(config.chi.frasi)) ? config.chi.frasi : [];
+    if (!frasi.length) { return { stato: 'spento', motivo: 'senzaFrasi' }; }
+    idUtente = config.twitch && typeof config.twitch.idUtente === 'string' ? config.twitch.idUtente.trim() : '';
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+  if (!idUtente) { return { stato: 'senzaCanale' }; }
+
+  let globali;
+  let delCanale;
+  try {
+    globali = elencoEmote(await helix('/chat/emotes/global'));
+    delCanale = elencoEmote(await helix('/chat/emotes?broadcaster_id=' + encodeURIComponent(idUtente)));
+  } catch (errore) {
+    return { stato: 'fallito', motivo: errore.message };
+  }
+
+  // Quelle del canale vincono su una globale con lo stesso nome.
+  const emote = Object.assign({}, globali, delCanale);
+  try {
+    assicuraCartella(P.dati);
+    scriviAtomico(P.emoteTwitch, JSON.stringify({ letteIl: new Date().toISOString(), emote: emote }, null, 2) + '\n');
+  } catch (errore) {
+    return { stato: 'fallito', motivo: 'non sono riuscito a scrivere server/dati/twitch-emote.json' };
+  }
+  return { stato: 'aggiornato', delCanale: Object.keys(delCanale).length, globali: Object.keys(globali).length };
+}
+
+/** La riga per il pannello. */
+function raccontaEmote(esito) {
+  if (!esito || !esito.stato) { return ''; }
+  switch (esito.stato) {
+    case 'spento':
+      return esito.motivo === 'senzaFrasi' ? ''
+        : 'Emote: il collegamento con Twitch non e configurato, nelle frasi del pollo i nomi delle emote restano scritti.';
+    case 'senzaCanale':
+      return 'Emote: manca l ID del canale (campo config.twitch.idUtente), non ho chiesto niente a Twitch.';
+    case 'aggiornato':
+      return 'Emote: ' + esito.delCanale + ' del canale e ' + esito.globali + ' globali, pronte per le frasi del pollo.';
+    case 'fallito':
+      return 'Emote: non sono riuscito a chiederle a Twitch (' + esito.motivo + '). Tengo l elenco di prima.';
+    default:
+      return '';
+  }
+}
+
 /* --- FOLLOWER E ABBONATI --------------------------------------------- */
 
 /*
@@ -1233,6 +1339,7 @@ module.exports = {
   totaleFollower, contaFollower, aggiornaFollower, raccontaFollower,
   clipMigliori, clipArchivio, aggiornaClip, raccontaClip, raccontaPaginaClip,
   categoriaInDiretta, aggiornaCategoria, raccontaCategoria, direttaSalvata, salvaDiretta,
+  emoteSalvate, elencoEmote, aggiornaEmote, raccontaEmote,
   collegato, scollega, iniziaCollegamento, completaCollegamento, tentaCollegamento, infoCollegamento, numeriCanale,
   applicaNumeri, aggiornaNumeri, raccontaNumeri, formattaNumero, eNumeroNudo,
   SCOPE_ACCESSO, CAMPI_NUMERI,

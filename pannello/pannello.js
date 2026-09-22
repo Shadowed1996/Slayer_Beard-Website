@@ -699,6 +699,13 @@ async function pubblica() {
       });
     }
 
+    /* Le emote per le frasi del pollo: si parla solo se qualcosa è andato
+       storto, quando va bene non c'è niente da sapere. */
+    const leEmote = risposta && risposta.emote;
+    if (leEmote && leEmote.messaggio && ['fallito', 'senzaCanale'].includes(leEmote.stato)) {
+      avviso(leEmote.messaggio, { tipo: 'info', durata: 0, titolo: 'Emote non aggiornate' });
+    }
+
     /* Follower e abbonati, stessa regola. «nonCollegato» non si dice a ogni
        pubblicazione: è lo stato di chi non ha ancora autorizzato il server,
        e il terminale lo spiega già. */

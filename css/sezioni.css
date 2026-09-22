@@ -1394,6 +1394,132 @@
   rotate: 2deg;
 }
 
+/* --- Il pollo che parla ------------------------------------------------------
+   Bottone e fumetto li crea js/sito.js solo se dal pannello arriva almeno una
+   frase. Il bottone è solo un involucro: l'aspetto resta quello della foto.
+
+   Il fumetto compare ogni volta in un punto a caso intorno al ritratto, come
+   le ore di un orologio. Il punto lo sceglie il JS e lo passa in variabili:
+     --fx, --fy   dove sta, in px dentro la figura (un punto del bordo del
+                  ritratto, un po' più in fuori);
+     --dx, --dy   da che parte cresce, fra -1 e 1: il fumetto si attacca a
+                  quel punto con il lato che guarda il pollo;
+     --ux, --uy   la stessa direzione lunga 1, per i due pallini che fanno
+                  da coda verso il pollo;
+     --sx         lo spostamento che lo tiene dentro lo schermo.
+   Compare con opacity e scale partendo dal lato del pollo, non scivola: da
+   un clic all'altro cambia posto e deve sembrare un fumetto nuovo. */
+
+.chi__parla {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raggio-g);
+  background: none;
+  cursor: pointer;
+}
+
+.chi__parla:focus-visible {
+  outline: 2px solid var(--ciano);
+  outline-offset: 6px;
+}
+
+.chi__fumetto {
+  --fx: 50%;
+  --fy: 0px;
+  --dx: 0;
+  --dy: -1;
+  --ux: 0;
+  --uy: -1;
+  --sx: 0px;
+  position: absolute;
+  z-index: 2;
+  inset-inline-start: 0;
+  inset-block-start: 0;
+  inline-size: max-content;
+  max-inline-size: min(16rem, 70vw);
+  margin: 0;
+  padding: var(--passo) var(--passo-2);
+  border: 1px solid var(--linea-forte);
+  border-radius: var(--raggio);
+  background-color: var(--pannello-2);
+  background-image: var(--grad-pannello);
+  box-shadow: var(--ombra-morbida);
+  color: var(--testo);
+  font-size: var(--t-piccolo);
+  line-height: 1.45;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  pointer-events: none;
+  translate:
+    calc(var(--fx) - 50% + 50% * var(--dx) + var(--sx))
+    calc(var(--fy) - 50% + 50% * var(--dy));
+  transform-origin: calc(50% - 50% * var(--dx)) calc(50% - 50% * var(--dy));
+  scale: 0.8;
+  transition:
+    opacity var(--durata) var(--curva),
+    scale var(--durata) var(--curva);
+}
+
+/* La coda: due pallini fuori dal lato che guarda il pollo, il secondo più
+   piccolo e più lontano, come nei fumetti dei pensieri. Con il fumetto
+   spostato per stare nello schermo puntano un po' di lato: si vede appena. */
+.chi__fumetto::before,
+.chi__fumetto::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: calc(50% - 50% * var(--dx) - var(--sx));
+  inset-block-start: calc(50% - 50% * var(--dy));
+  border: 1px solid var(--linea-forte);
+  border-radius: 50%;
+  background-color: var(--pannello-2);
+}
+
+.chi__fumetto::before {
+  inline-size: 10px;
+  block-size: 10px;
+  translate: calc(-50% - var(--ux) * 11px) calc(-50% - var(--uy) * 11px);
+}
+
+.chi__fumetto::after {
+  inline-size: 6px;
+  block-size: 6px;
+  translate: calc(-50% - var(--ux) * 22px) calc(-50% - var(--uy) * 22px);
+}
+
+/* Le emote di Twitch dentro la frase: alte come una riga e mezza, sulla
+   linea del testo come in chat. Il selettore batte `.chi__ritratto img` e
+   anche `.chi__ritratto:hover img`: le emote non ruotano e non saltano. */
+.chi__ritratto .chi__fumetto .chi__emote {
+  display: inline-block;
+  inline-size: 1.75em;
+  block-size: 1.75em;
+  margin: -0.35em 0.05em;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  object-fit: contain;
+  vertical-align: middle;
+  rotate: none;
+  animation: none;
+  aspect-ratio: auto;
+  position: static;
+}
+
+.chi__ritratto.is-parla .chi__fumetto {
+  opacity: 1;
+  scale: 1;
+}
+
+.chi__ritratto.is-parla img { animation: chi-saltello 420ms var(--curva); }
+
+@keyframes chi-saltello {
+  0%, 100% { translate: 0 0; }
+  40%      { translate: 0 -10px; }
+}
+
 /* Sul telefono la figurina non deve prendersi tutto lo schermo. */
 @media (max-width: 639.98px) {
   .chi__ritratto { --lato: min(100%, 220px); }
@@ -1456,6 +1582,8 @@
 @media (prefers-reduced-motion: reduce) {
   .chi__tag .tag:hover     { translate: none; rotate: none; }
   .chi__ritratto:hover img { rotate: -3deg; }
+  .chi__ritratto.is-parla img { animation: none; }
+  .chi__fumetto { transition: none; }
 }
 
 

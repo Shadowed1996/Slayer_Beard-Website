@@ -539,7 +539,8 @@ async function proveSchema(contenutiVeri) {
     for (const campo of nuovi) {
       const esito = schema.valoreDi(vecchio, campo.chiave);
       esigi(esito.trovato, 'manca ancora ' + campo.chiave);
-      esigiUguale(esito.valore, campo.predefinito, 'valore di partenza di ' + campo.chiave);
+      // Per JSON: un predefinito a elenco arriva copiato, mai lo stesso oggetto.
+      esigiUguale(JSON.stringify(esito.valore), JSON.stringify(campo.predefinito), 'valore di partenza di ' + campo.chiave);
     }
     esigiUguale(convalida.convalida(vecchio).length, 0, 'i valori di partenza non passano la convalida');
     // E una seconda passata non riscrive niente: chi ha gia scelto un suo
@@ -1962,6 +1963,47 @@ async function proveTwitch(costruisci, archivio) {
     esigiUguale(JSON.stringify(twitch.direttaSalvata()),
       JSON.stringify({ categoria: 'Elden Ring', inOnda: true, letteIl: '2026-09-20T10:00:00.000Z' }), 'lettura salvata');
     try { fs.unlinkSync(P.direttaTwitch); } catch (e) { /* gia sparito */ }
+  });
+
+  await prova('le frasi del pollo in «Chi sono» portano solo le emote che usano, con un indirizzo di Twitch', () => {
+    // elencoEmote(): nome e id puliti, e un id che non ha la forma di Twitch
+    // non entra (finirebbe dentro un indirizzo).
+    const elenco = twitch.elencoEmote({ data: [
+      { id: '123', name: 'slayer156Love', format: ['static', 'animated'] },
+      { id: '25', name: 'Kappa', format: ['static'] },
+      { id: '../x', name: 'Cattiva', format: ['static'] },
+      { id: '9', name: 'NonUsata', format: ['static'] }
+    ] });
+    esigiUguale(JSON.stringify(Object.keys(elenco)), JSON.stringify(['slayer156Love', 'Kappa', 'NonUsata']), 'emote tenute');
+
+    let primaDelFile = null;
+    try { primaDelFile = fs.readFileSync(P.emoteTwitch, 'utf8'); } catch (e) { /* non c era */ }
+    try {
+      fs.mkdirSync(path.dirname(P.emoteTwitch), { recursive: true });
+      fs.writeFileSync(P.emoteTwitch, JSON.stringify({ emote: Object.assign({ Cattiva: { id: '../x' } }, elenco) }));
+
+      const documento = archivio.leggi();
+      documento.config.chi = { frasi: ['Ti voglio bene slayer156Love', 'Kappa Kappa', 'Cattiva e <b>basta</b>', '  '] };
+      const chi = costruisci.oggettoDati(documento, {}).chi;
+      esigiUguale(chi.frasi.length, 3, 'la frase vuota si toglie');
+      esigiUguale(JSON.stringify(chi.emote), JSON.stringify({
+        slayer156Love: 'https://static-cdn.jtvnw.net/emoticons/v2/123/animated/dark/2.0',
+        Kappa: 'https://static-cdn.jtvnw.net/emoticons/v2/25/static/dark/2.0'
+      }), 'emote in pagina');
+
+      // Senza il file le frasi restano testo, e non si rompe niente.
+      fs.unlinkSync(P.emoteTwitch);
+      esigiUguale(JSON.stringify(costruisci.oggettoDati(documento, {}).chi.emote), '{}', 'senza file');
+    } finally {
+      if (primaDelFile !== null) { fs.writeFileSync(P.emoteTwitch, primaDelFile); }
+      else { try { fs.unlinkSync(P.emoteTwitch); } catch (e) { /* gia sparito */ } }
+    }
+
+    for (const stato of ['spento', 'senzaCanale', 'aggiornato', 'fallito']) {
+      const riga = twitch.raccontaEmote({ stato: stato, delCanale: 5, globali: 100, motivo: 'un motivo' });
+      esigi(typeof riga === 'string' && riga.length > 0, 'nessuna riga per lo stato ' + stato);
+    }
+    esigiUguale(twitch.raccontaEmote({ stato: 'spento', motivo: 'senzaFrasi' }), '', 'senza frasi si tace');
   });
 
   await prova('il numero dei follower stampato in pagina e quello dei contenuti, con il punto delle migliaia', () => {

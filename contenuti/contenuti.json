@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-22T06:27:29.964Z",
+  "aggiornatoIl": "2026-09-22T08:37:35.357Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -379,6 +379,9 @@
           "Luce spenta. Si riparte la prossima serata."
         ]
       }
+    },
+    "chi": {
+      "frasi": []
     },
     "clip": {
       "attivo": true,

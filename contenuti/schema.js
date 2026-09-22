@@ -468,7 +468,13 @@ const gruppi = [
       { chiave: 'chi.nota3Titolo', etichetta: 'Terza nota a margine — titolo', tipo: 'testo', max: 30 },
       { chiave: 'chi.nota3Testo', etichetta: 'Terza nota a margine — testo', tipo: 'ricco', max: 160 },
       { chiave: 'chi.ritrattoAlt', etichetta: 'Descrizione del ritratto', tipo: 'testolungo', max: 160,
-        aiuto: 'Finisce nell\'attributo alt dell\'immagine: solo testo, niente formattazione.' }
+        aiuto: 'Finisce nell\'attributo alt dell\'immagine: solo testo, niente formattazione.' },
+      // Nato dopo la messa online: col predefinito il sito già in piedi lo
+      // trova vuoto invece di rifiutare la prima Pubblica. Finisce in
+      // js/dati.js, quindi è testo semplice e non ricco.
+      { chiave: 'config.chi.frasi', etichetta: 'Frasi del pollo — quando si clicca il ritratto', tipo: 'elencoTesti',
+        facoltativo: true, predefinito: [],
+        aiuto: 'Cliccando il pollo del ritratto qui in «Chi sono» compare in un fumetto una di queste frasi, a caso, mai la stessa due volte di fila. Una riga per frase, lunghe quanto vuoi. EMOTE: scrivi il nome esatto come in chat (per esempio slayer156Love o Kappa), staccato da spazi: sul sito diventa l\'immagine dell\'emote. Valgono le emote del canale e quelle globali di Twitch, e compaiono dopo la Pubblica, quando il server le va a prendere. Le emoji normali (😂❤️) funzionano sempre. Lasciato vuoto, il ritratto resta una semplice immagine.' }
     ]
   },
 

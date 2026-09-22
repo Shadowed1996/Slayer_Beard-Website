@@ -932,6 +932,38 @@ function polloDi(config, testi) {
 }
 
 /**
+ * Il ramo `chi` di window.DATI, che legge js/sito.js: le frasi che il pollo
+ * del ritratto dice quando lo si clicca. Stessa pulizia delle frasi del
+ * pollo accanto alla chat; un elenco vuoto lascia il ritratto un'immagine.
+ *
+ * `emote` porta { nome: indirizzo } per le sole emote di Twitch che
+ * compaiono come parola intera in una frase: l'elenco completo lo salva la
+ * pubblicazione in server/dati/twitch-emote.json (twitch.aggiornaEmote) e
+ * in pagina non serve. Senza quel file le frasi restano testo e basta.
+ */
+function chiDi(config) {
+  const chi = (config.chi && typeof config.chi === 'object') ? config.chi : {};
+  const frasi = (Array.isArray(chi.frasi) ? chi.frasi : [])
+    .map((f) => String(f == null ? '' : f).trim())
+    .filter((f) => f !== '');
+
+  let tutte = {};
+  if (frasi.length) {
+    try { tutte = twitch.emoteSalvate(); } catch (e) { tutte = {}; }
+  }
+  const emote = {};
+  for (const frase of frasi) {
+    for (const parola of frase.split(/\s+/)) {
+      const voce = Object.prototype.hasOwnProperty.call(tutte, parola) ? tutte[parola] : null;
+      if (!voce || emote[parola] || !/^[A-Za-z0-9_]+$/.test(String(voce.id || ''))) { continue; }
+      emote[parola] = 'https://static-cdn.jtvnw.net/emoticons/v2/' + voce.id + '/'
+        + (voce.animata ? 'animated' : 'static') + '/dark/2.0';
+    }
+  }
+  return { frasi: frasi, emote: emote };
+}
+
+/**
  * Il ramo `account` di window.DATI, che legge js/account.js.
  *
  * E il profilo del sito: un login con Twitch che vale su tutto il sito e non
@@ -1159,6 +1191,7 @@ function oggettoDati(contenuti, opzioni) {
       copiaFatto: testi['saluti.copiaFatto'] || ''
     },
     pollo: polloDi(config, testi),
+    chi: chiDi(config),
     // L ordine conta: il ramo del lurk dipende da quello dell account, perche
     // senza profilo il messaggio in chat resta spento comunque.
     account: profilo,

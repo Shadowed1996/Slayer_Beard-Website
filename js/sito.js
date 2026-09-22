@@ -3,7 +3,7 @@
 
    Tutto ciò che non è il player e non è il pollo: voce di navigazione
    attiva, conto alla rovescia, schedule della settimana (nastro ed eventi
-   speciali), copia dell'email. Zero dipendenze, nessun import, un solo
+   speciali), copia dell'email, frasi del pollo nel ritratto. Zero dipendenze, nessun import, un solo
    IIFE.
 
    La mascotte non sta più qui. Era un'immagine dietro al telaio del
@@ -749,6 +749,132 @@
   }
 
   /* ===================================================================
+     6-bis. IL POLLO DEL RITRATTO
+     ===================================================================
+     In «Chi sono» il ritratto diventa un bottone solo se dal pannello
+     arriva almeno una frase: senza, resta l'immagine che è nell'HTML.
+     Il bottone nasce qui e non nel modello perché senza JS sarebbe un
+     bottone che non fa niente. Le frasi finiscono in pagina solo con
+     textContent; il fumetto ha aria-live, quindi viene anche letto.
+     A ogni clic frase e posto cambiano a caso: il fumetto spunta intorno
+     al ritratto, a un'ora dell'orologio (le variabili in css/sezioni.css).
+     =================================================================== */
+  function ritrattoParlante() {
+    const figura = document.querySelector('.chi__ritratto');
+    const immagine = figura && figura.querySelector('img');
+    const frasi = (DATI.chi && Array.isArray(DATI.chi.frasi) ? DATI.chi.frasi : [])
+      .filter(function (f) { return typeof f === 'string' && f.trim(); });
+    if (!immagine || !frasi.length) { return; }
+
+    const bottone = document.createElement('button');
+    bottone.type = 'button';
+    bottone.className = 'chi__parla';
+    immagine.parentNode.insertBefore(bottone, immagine);
+    bottone.appendChild(immagine);
+
+    const fumetto = document.createElement('p');
+    fumetto.className = 'chi__fumetto';
+    fumetto.setAttribute('aria-live', 'polite');
+    figura.insertBefore(fumetto, bottone);
+
+    // Le ore dell'orologio dove può comparire il fumetto. Manca le 6: lì
+    // sotto c'è la didascalia, e il fumetto la coprirebbe.
+    const ORE = [12, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11];
+    const DISTACCO = 28;   // px fra ritratto e fumetto: ci stanno i pallini
+    const BORDO = 8;       // px minimi fra fumetto e bordo dello schermo
+
+    let ultima = -1;
+    let oraUltima = -1;
+    let spegni = null;
+
+    // Le emote di Twitch usate nelle frasi: { nome: indirizzo }, già
+    // filtrate dalla generazione. Solo https://static-cdn.jtvnw.net, che è
+    // anche l'host che la CSP lascia passare per le immagini.
+    const EMOTE = (DATI.chi && DATI.chi.emote && typeof DATI.chi.emote === 'object') ? DATI.chi.emote : {};
+
+    // Il testo va in pagina a pezzi: le parole che sono il nome di
+    // un'emote diventano la sua immagine, tutto il resto resta testo.
+    function scriviFrase(testo) {
+      fumetto.textContent = '';
+      testo.split(/(\s+)/).forEach(function (pezzo) {
+        const indirizzo = Object.prototype.hasOwnProperty.call(EMOTE, pezzo) ? EMOTE[pezzo] : '';
+        if (typeof indirizzo === 'string' && indirizzo.indexOf('https://static-cdn.jtvnw.net/') === 0) {
+          const img = document.createElement('img');
+          img.className = 'chi__emote';
+          img.src = indirizzo;
+          img.alt = pezzo;
+          img.width = 28;
+          img.height = 28;
+          fumetto.appendChild(img);
+        } else {
+          fumetto.appendChild(document.createTextNode(pezzo));
+        }
+      });
+    }
+
+    // Pesca a caso, mai lo stesso indice due volte di fila.
+    function pesca(quante, prima) {
+      let scelta = Math.floor(Math.random() * quante);
+      if (quante > 1 && scelta === prima) { scelta = (scelta + 1 + Math.floor(Math.random() * (quante - 1))) % quante; }
+      return scelta;
+    }
+
+    function posiziona(ora) {
+      const angolo = ora / 12 * 2 * Math.PI;
+      const ux = Math.sin(angolo);
+      const uy = -Math.cos(angolo);
+      // Portata sul quadrato: il ritratto è quadrato, non tondo.
+      const lato = Math.max(Math.abs(ux), Math.abs(uy));
+      const dx = ux / lato;
+      const dy = uy / lato;
+
+      const f = figura.getBoundingClientRect();
+      const i = immagine.getBoundingClientRect();
+      const metà = i.width / 2;
+      const fx = i.left - f.left + metà + dx * (metà + DISTACCO);
+      const fy = i.top - f.top + i.height / 2 + dy * (i.height / 2 + DISTACCO);
+
+      // Dentro lo schermo in orizzontale; in verticale ci pensa lo scorrimento.
+      const largo = fumetto.offsetWidth;
+      const sinistra = f.left + fx + (dx - 1) / 2 * largo;
+      const schermo = document.documentElement.clientWidth;
+      let sx = 0;
+      if (sinistra < BORDO) { sx = BORDO - sinistra; }
+      else if (sinistra + largo > schermo - BORDO) { sx = schermo - BORDO - largo - sinistra; }
+
+      const s = fumetto.style;
+      s.setProperty('--fx', fx.toFixed(1) + 'px');
+      s.setProperty('--fy', fy.toFixed(1) + 'px');
+      s.setProperty('--dx', dx.toFixed(3));
+      s.setProperty('--dy', dy.toFixed(3));
+      s.setProperty('--ux', ux.toFixed(3));
+      s.setProperty('--uy', uy.toFixed(3));
+      s.setProperty('--sx', sx.toFixed(1) + 'px');
+    }
+
+    bottone.addEventListener('click', function () {
+      ultima = pesca(frasi.length, ultima);
+      oraUltima = pesca(ORE.length, oraUltima);
+
+      // Il fumetto di prima sparisce di colpo: quello nuovo sta altrove e
+      // deve spuntare da lì, non scivolare dal posto vecchio.
+      fumetto.style.transition = 'none';
+      figura.classList.remove('is-parla');
+      scriviFrase(frasi[ultima].trim());
+      posiziona(ORE[oraUltima]);
+      void figura.offsetWidth;   // fa ripartire saltello e comparsa anche a clic ravvicinati
+      fumetto.style.transition = '';
+      figura.classList.add('is-parla');
+
+      // Il tempo per leggerla: quattro secondi, più un po' per le lunghe.
+      clearTimeout(spegni);
+      spegni = setTimeout(function () {
+        figura.classList.remove('is-parla');
+      }, Math.min(12000, 4000 + frasi[ultima].length * 60));
+    });
+  }
+
+  /* ===================================================================
      7. Avvio
      ===================================================================
      Ogni blocco è isolato: se uno lancia, gli altri devono partire lo
@@ -756,7 +882,7 @@
      conto alla rovescia.
      =================================================================== */
   function avvia() {
-    [binario, tempo, copiaEmail].forEach(function (blocco) {
+    [binario, tempo, copiaEmail, ritrattoParlante].forEach(function (blocco) {
       try {
         blocco();
       } catch (err) {

@@ -313,6 +313,9 @@ async function rottaPubblica(req, res) {
   // Prima di generare: la categoria in onda finisce nell evento speciale
   // acceso, e genera() la rilegge da server/dati/twitch-diretta.json.
   const laCategoria = await twitch.aggiornaCategoria();
+  // Anche le emote prima di generare: genera() le rilegge da
+  // server/dati/twitch-emote.json per le frasi del pollo in «Chi sono».
+  const leEmote = await twitch.aggiornaEmote();
   const gliIscritti = await youtube.aggiornaIscritti();
   const esito = costruisci.genera();
   // `controlli` sono avvertimenti d'insieme, non errori: la pubblicazione e
@@ -326,6 +329,7 @@ async function rottaPubblica(req, res) {
     clip: { stato: leClip.stato, messaggio: twitch.raccontaClip(leClip) },
     numeri: { stato: iNumeri.stato, messaggio: twitch.raccontaNumeri(iNumeri) },
     categoria: { stato: laCategoria.stato, messaggio: twitch.raccontaCategoria(laCategoria) },
+    emote: { stato: leEmote.stato, messaggio: twitch.raccontaEmote(leEmote) },
     youtube: { stato: gliIscritti.stato, messaggio: youtube.racconta(gliIscritti) },
     chiavi: { stato: daChiavi.stato, messaggio: chiavi.racconta(daChiavi) }
   });
