@@ -1384,7 +1384,13 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigiDentro(acceso, 'css/musica.css', 'il foglio');
     esigiDentro(acceso, 'js/musica.js', 'lo script');
     esigiDentro(acceso, 'id="musica-audio"', 'l elemento audio');
-    esigiDentro(acceso, 'data-aperto="1"', 'aperto alla prima visita');
+
+    // Di serie si arriva col lettore ridotto a bottone tondo: la musica la
+    // sceglie chi visita. L'interruttore del pannello ribalta la cosa.
+    documento.config.musica.aperto = false;
+    esigiDentro(costruisci.anteprimaDi(documento), 'data-aperto="0"', 'ridotto alla prima visita');
+    documento.config.musica.aperto = true;
+    esigiDentro(costruisci.anteprimaDi(documento), 'data-aperto="1"', 'aperto alla prima visita');
 
     // I contenuti veri non sono stati toccati: anteprimaDi rende in memoria.
     esigiUguale(archivio.leggi().config.musica.attivo, comEra, 'i contenuti salvati sono stati toccati');

@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-23T07:35:52.472Z",
+  "aggiornatoIl": "2026-09-23T08:12:37.700Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -573,7 +573,7 @@
     },
     "musica": {
       "attivo": false,
-      "aperto": true,
+      "aperto": false,
       "cartella": "mp3"
     },
     "tracce": [],

@@ -593,8 +593,8 @@ const gruppi = [
     campi: [
       { chiave: 'config.musica.attivo', etichetta: 'Mostra il lettore', tipo: 'interruttore', predefinito: false,
         aiuto: 'Spento, il lettore non compare e la pagina non scarica nessuna traccia.' },
-      { chiave: 'config.musica.aperto', etichetta: 'Aperto alla prima visita', tipo: 'interruttore', predefinito: true,
-        aiuto: 'Acceso, chi arriva lo vede aperto; spento, vede solo il bottone tondo. Poi vale la scelta di ognuno, che il sito si ricorda.' },
+      { chiave: 'config.musica.aperto', etichetta: 'Aperto alla prima visita', tipo: 'interruttore', predefinito: false,
+        aiuto: 'Spento, chi arriva vede solo il bottone tondo e apre il lettore se gli va; acceso, lo trova già aperto. Poi vale la scelta di ognuno, che il sito si ricorda.' },
       { chiave: 'config.musica.cartella', etichetta: 'Cartella dei file', tipo: 'testo', max: 40, predefinito: 'mp3',
         aiuto: 'La cartella del sito dove hai caricato gli mp3, senza barre: «mp3». I file si caricano da Plesk, non da qui.' },
       { chiave: 'musica.titolo', etichetta: 'Scritta sopra il lettore', tipo: 'testo', max: 40, predefinito: 'In sottofondo',
