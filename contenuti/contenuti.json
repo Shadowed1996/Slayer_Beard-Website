@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-23T08:12:37.700Z",
+  "aggiornatoIl": "2026-09-23T08:31:39.204Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -160,7 +160,9 @@
     "saluti.referralTitolo": "Referral Amazon",
     "saluti.referralTesto": "Se entri su Amazon da questo link e compri qualcosa entro 24 ore, a te costa esattamente uguale ma ad Amazon risulta che sei passato di qui, e a me arriva una piccola percentuale. Non serve comprare quello che vedi: vale su tutto il sito.",
     "saluti.referralBtn": "Apri Amazon",
-    "saluti.referralNota": "In qualità di Affiliato Amazon, ricevo un guadagno dagli acquisti idonei."
+    "saluti.referralNota": "In qualità di Affiliato Amazon, ricevo un guadagno dagli acquisti idonei.",
+    "musica.casuale": "Mescola le tracce",
+    "musica.ordine": "Rimetti in ordine"
   },
   "config": {
     "twitch": {
@@ -574,7 +576,8 @@
     "musica": {
       "attivo": false,
       "aperto": false,
-      "cartella": "mp3"
+      "cartella": "mp3",
+      "casuale": false
     },
     "tracce": [],
     "referral": {

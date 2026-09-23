@@ -1384,6 +1384,8 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigiDentro(acceso, 'css/musica.css', 'il foglio');
     esigiDentro(acceso, 'js/musica.js', 'lo script');
     esigiDentro(acceso, 'id="musica-audio"', 'l elemento audio');
+    esigiDentro(acceso, 'id="musica-casuale"', 'il bottone del mescolamento');
+    esigiDentro(acceso, 'aria-pressed="false"', 'il mescolamento parte spento nel markup');
 
     // Di serie si arriva col lettore ridotto a bottone tondo: la musica la
     // sceglie chi visita. L'interruttore del pannello ribalta la cosa.

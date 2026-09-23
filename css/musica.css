@@ -522,8 +522,20 @@
   min-inline-size: 0;
 }
 
+.musica__btn--casuale,
 .musica__btn--muto {
   inline-size: 36px;
+}
+
+.musica__btn--casuale svg {
+  inline-size: 18px;
+  block-size: 18px;
+}
+
+.musica.is-casuale .musica__btn--casuale {
+  color: var(--ciano);
+  border-color: color-mix(in srgb, var(--ciano) 40%, transparent);
+  background-color: color-mix(in srgb, var(--ciano) 12%, transparent);
 }
 
 .musica__btn--muto svg {
@@ -673,8 +685,11 @@
     --musica-disco: 56px;
   }
 
+  /* Con il mescolamento i comandi sono cinque e a 320px non ci stanno piu.
+     Sparisce il cursore del volume, non il tasto muto: su un telefono il
+     volume si regola coi tasti del telefono, il muto no. */
   .musica__livello {
-    inline-size: 44px;
+    display: none;
   }
 
   .musica__elenco {

@@ -4,6 +4,7 @@
   var CHIAVE_APERTO = 'sb-musica-aperto';
   var CHIAVE_VOLUME = 'sb-musica-volume';
   var CHIAVE_MUTO = 'sb-musica-muto';
+  var CHIAVE_CASUALE = 'sb-musica-casuale';
 
   var VOLUME_DI_SERIE = 70;
   var BARRE = 56;
@@ -18,6 +19,9 @@
   var indice = 0;
   var caricata = -1;
   var trascina = false;
+  var casuale = false;
+  var ordine = [];
+  var posizione = 0;
   var videoAndava = false;
   var lurkAcceso = false;
   var iscritti = [];
@@ -351,6 +355,8 @@
   function carica(quale, poiSuona) {
     if (!tracce.length) { return; }
     indice = ((quale % tracce.length) + tracce.length) % tracce.length;
+    var dove = ordine.indexOf(indice);
+    if (dove > -1) { posizione = dove; }
     mostraTraccia();
 
     if (caricata !== indice) {
@@ -390,16 +396,67 @@
     if (suona()) { ferma(); } else { parti(); }
   }
 
+  function rimescola(primo) {
+    var lista = [];
+    for (var i = 0; i < tracce.length; i++) { lista.push(i); }
+
+    if (casuale) {
+      for (var j = lista.length - 1; j > 0; j--) {
+        var k = Math.floor(Math.random() * (j + 1));
+        var scambio = lista[j];
+        lista[j] = lista[k];
+        lista[k] = scambio;
+      }
+      var dove = lista.indexOf(primo);
+      if (dove > 0) {
+        lista.splice(dove, 1);
+        lista.unshift(primo);
+      }
+    }
+
+    ordine = lista;
+    posizione = Math.max(0, ordine.indexOf(primo));
+  }
+
   function successiva(automatica) {
-    carica(indice + 1, automatica || suona());
+    if (!tracce.length) { return; }
+    var poiSuona = automatica || suona();
+    var prossima = posizione + 1;
+    if (prossima >= ordine.length) {
+      if (casuale) {
+        rimescola(indice);
+        prossima = ordine.length > 1 ? 1 : 0;
+      } else {
+        prossima = 0;
+      }
+    }
+    carica(ordine[prossima], poiSuona);
   }
 
   function precedente() {
+    if (!tracce.length) { return; }
     if (nodi.audio.currentTime > 3) {
       nodi.audio.currentTime = 0;
       return;
     }
-    carica(indice - 1, suona());
+    var prima = posizione - 1;
+    if (prima < 0) { prima = ordine.length - 1; }
+    carica(ordine[prima], suona());
+  }
+
+  function alternaCasuale() {
+    casuale = !casuale;
+    scrivi(CHIAVE_CASUALE, casuale ? '1' : '0');
+    rimescola(indice);
+    dipingiCasuale();
+  }
+
+  function dipingiCasuale() {
+    nodi.guscio.classList.toggle('is-casuale', casuale);
+    nodi.casuale.setAttribute('aria-pressed', casuale ? 'true' : 'false');
+    var etichetta = casuale ? testi.ordine : testi.casuale;
+    nodi.casuale.setAttribute('aria-label', etichetta);
+    nodi.casuale.setAttribute('title', etichetta);
   }
 
   /* ---------------------------------------------------------------- */
@@ -497,6 +554,7 @@
       conta: document.getElementById('musica-conta'),
       titolo: document.getElementById('musica-titolo'),
       artista: document.getElementById('musica-artista'),
+      casuale: document.getElementById('musica-casuale'),
       cover: document.getElementById('musica-cover'),
       cursore: document.getElementById('musica-cursore'),
       tela: document.getElementById('musica-tela'),
@@ -541,7 +599,11 @@
     applicaVolume(isNaN(volume) ? VOLUME_DI_SERIE : volume, false);
     applicaMuto(leggi(CHIAVE_MUTO) === '1', false);
 
-    carica(0, false);
+    var salvatoCasuale = leggi(CHIAVE_CASUALE);
+    casuale = salvatoCasuale === null ? dati.casuale === true : salvatoCasuale === '1';
+    dipingiCasuale();
+    rimescola(casuale ? Math.floor(Math.random() * tracce.length) : 0);
+    carica(ordine[0], false);
 
     nodi.play.addEventListener('click', alterna);
     nodi.precedente.addEventListener('click', precedente);
@@ -549,6 +611,7 @@
     nodi.riduci.addEventListener('click', function () { apriChiudi(false, true); });
     nodi.apri.addEventListener('click', function () { apriChiudi(true, true); });
     nodi.muto.addEventListener('click', function () { applicaMuto(!nodi.audio.muted, true); });
+    nodi.casuale.addEventListener('click', alternaCasuale);
     nodi.elencoApri.addEventListener('click', function () { mostraElenco(nodi.elenco.hidden); });
 
     nodi.livello.addEventListener('input', function () {

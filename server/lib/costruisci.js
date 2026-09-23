@@ -841,6 +841,7 @@ function musicaDi(config, testi) {
     precedente: testi['musica.precedente'] || '',
     successiva: testi['musica.successiva'] || '',
     avanzamento: testi['musica.avanzamento'] || '',
+    casuale: testi['musica.casuale'] || '',
     volume: testi['musica.volume'] || '',
     muto: testi['musica.muto'] || '',
     suono: testi['musica.suono'] || '',
@@ -854,6 +855,7 @@ function musicaDati(config, testi) {
   const voce = (config.musica && typeof config.musica === 'object') ? config.musica : {};
   return {
     aperto: voce.aperto !== false,
+    casuale: voce.casuale === true,
     tracce: voce.attivo === true ? tracceDi(config) : [],
     testi: {
       play: testi['musica.play'] || '',
@@ -861,6 +863,8 @@ function musicaDati(config, testi) {
       muto: testi['musica.muto'] || '',
       suono: testi['musica.suono'] || '',
       errore: testi['musica.errore'] || '',
+      casuale: testi['musica.casuale'] || '',
+      ordine: testi['musica.ordine'] || '',
       bloccato: testi['musica.bloccato'] || ''
     }
   };
