@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-22T08:37:35.357Z",
+  "aggiornatoIl": "2026-09-23T06:33:05.261Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -94,6 +94,8 @@
     "settimana.etichettaDaTe": "Da te",
     "settimana.titoloEventi": "Fuori programma",
     "settimana.etichettaEvento": "Speciale",
+    "settimana.etichettaFino": "Al massimo fino a",
+    "settimana.etichettaSaltata": "Niente live",
     "settimana.cta": "Vai al canale",
     "chi.occhiello": "slayer_beard",
     "chi.titolo": "Chi sono",
@@ -146,6 +148,7 @@
     "twitch": {
       "canale": "slayer_beard",
       "idUtente": "47738247",
+      "direttaCondivisa": false,
       "domini": [
         "slayerbeard.com",
         "www.slayerbeard.com"
@@ -258,6 +261,7 @@
         }
       ],
       "eventi": [],
+      "pause": [],
       "sfondo": {
         "immagine": "img/settimana-sfondo.webp",
         "fuoco": {

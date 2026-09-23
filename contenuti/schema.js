@@ -574,40 +574,6 @@ const gruppi = [
     ]
   },
 
-  // Chiavi trovate già in contenuti.json ma senza una voce qui: la funzione
-  // Spotify ha i suoi file (js/spotify.js, css/spotify.css,
-  // modelli/parziali/spotify.html, server/lib/spotify.js e ascolto.js —
-  // recuperati dal server e rimessi nel repository), ma non è mai stata
-  // agganciata a modelli/index.html (nessun {{> parziali/spotify}}) né a
-  // server/lib/costruisci.js: sul sito pubblicato non compare, in nessuna
-  // pagina. Non essendo in nessun punto della pagina, come «canale» e
-  // «aspetto» qui sotto, il gruppo va dopo di loro nell'ordine (vedi il test
-  // «i gruppi seguono l'ordine della pagina» in server/autotest.js). Qui la
-  // copertura serve solo perché il pannello deve comunque poter leggere e
-  // scrivere queste chiavi, altrimenti Pubblica si rifiuta (vedi la nota su
-  // PREDEFINITO in cima al file). Tipi e valori booleani verificati dal
-  // codice vero, non indovinati: server/lib/ascolto.js riga 35
-  // (`segui: voce.attivo === true && voce.segui === true`) e
-  // modelli/parziali/spotify.html.
-  {
-    id: 'spotify',
-    titolo: 'Spotify (non ancora collegata)',
-    descrizione: 'Questi campi esistono già nei tuoi contenuti e la funzione (un lettore dell\'ultimo ascolto) ha ancora tutto il suo codice sul server — ma non è mai stata agganciata alla pagina, quindi cambiarli qui non cambia niente sul sito finché qualcuno non finisce il collegamento.',
-    campi: [
-      { chiave: 'spotify.titolo', etichetta: 'Titolo del riquadro', tipo: 'testo', max: 60, facoltativo: true },
-      { chiave: 'spotify.ascolta', etichetta: 'Scritta del bottone «ascolta»', tipo: 'testo', max: 30, facoltativo: true },
-      { chiave: 'spotify.passa', etichetta: 'Scritta del bottone «cambia brano»', tipo: 'testo', max: 30, facoltativo: true },
-      { chiave: 'spotify.nascondi', etichetta: 'Scritta del bottone «nascondi»', tipo: 'testo', max: 30, facoltativo: true },
-      { chiave: 'spotify.mostra', etichetta: 'Scritta del bottone «mostra»', tipo: 'testo', max: 30, facoltativo: true },
-      { chiave: 'config.spotify.attivo', etichetta: 'Funzione attiva', tipo: 'interruttore', facoltativo: true, predefinito: false },
-      { chiave: 'config.spotify.segui', etichetta: 'Mostra il bottone «segui»', tipo: 'interruttore', facoltativo: true, predefinito: false },
-      { chiave: 'config.spotify.clientId', etichetta: 'Client ID di Spotify', tipo: 'testo', max: 100, facoltativo: true },
-      { chiave: 'config.spotify.link', etichetta: 'Link al profilo o alla playlist', tipo: 'url', facoltativo: true },
-      { chiave: 'config.spotify.formato', etichetta: 'Formato del riquadro', tipo: 'testo', max: 30, facoltativo: true },
-      { chiave: 'config.spotify.aperto', etichetta: 'Riquadro aperto di serie', tipo: 'interruttore', facoltativo: true, predefinito: false }
-    ]
-  },
-
   {
     id: 'canale',
     titolo: 'Canale, contatti e immagini',

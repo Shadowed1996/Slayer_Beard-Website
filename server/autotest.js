@@ -474,7 +474,7 @@ async function proveSchema(contenutiVeri) {
     // che non stanno in nessun punto della pagina perche valgono ovunque:
     // "canale" (i dati tecnici) e "aspetto" (colori e font).
     const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'settimana', 'chi',
-      'supporto', 'saluti', 'piede', 'spotify', 'canale', 'aspetto'];
+      'supporto', 'saluti', 'piede', 'canale', 'aspetto'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
 
@@ -2996,7 +2996,7 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     const per = {};
     for (const voce of contesto.settimana) { per[voce.indice] = voce; }
     esigiUguale(contesto.settimana.map((v) => v.indice).join(','), '1,2,3,4,5,6,0', 'ordine');
-    const chiavi = 'indice,abbr,nome,diretta,ora,fine,tag,titolo,gioco,nota,contenuto,sostituito,immagine,stile';
+    const chiavi = 'indice,abbr,nome,diretta,ora,fine,tag,titolo,gioco,nota,contenuto,sostituito,immagine,stile,saltata,motivoSaltata';
     esigi(contesto.settimana.every((v) => Object.keys(v).join(',') === chiavi), 'le voci non hanno i nomi del contratto');
     const lun = per[1];
     esigiUguale([lun.diretta, lun.ora, lun.fine, lun.tag, lun.titolo, lun.gioco, lun.contenuto, lun.immagine, lun.stile].join('|'),
@@ -3017,7 +3017,7 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     esigiUguale(contesto.sito.haEventi, true, 'haEventi');
     esigiUguale(eventi.map((e) => e.indice + ':' + e.titolo).join(', '), '2:Maratona, 0:Speciale ottobre', 'eventi e ordine');
     const m = eventi[0];
-    esigiUguale(Object.keys(m).join(','), 'indice,data,ora,fine,abbr,giorno,numero,mese,dataTesto,inizio,termine,titolo,gioco,nota,contenuto,immagine,stile', 'nomi del contratto');
+    esigiUguale(Object.keys(m).join(','), 'indice,data,ora,fine,abbr,giorno,numero,mese,dataTesto,inizio,termine,titolo,gioco,nota,contenuto,immagine,stile,ultimoGiornoTesto', 'nomi del contratto');
     esigiUguale([m.data, m.ora, m.fine, m.abbr, m.giorno, m.numero, m.mese, m.dataTesto].join('|'),
       '2026-09-27|15:00|03:00|DOM|Domenica|27|set|domenica 27 settembre', 'data della maratona');
     esigiUguale(m.inizio + ' ' + m.termine, '2026-09-27T13:00:00.000Z 2026-09-28T01:00:00.000Z', 'istanti');
