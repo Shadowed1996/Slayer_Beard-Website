@@ -1923,12 +1923,29 @@ async function proveSondaggi(archivio) {
       esigiUguale(Object.keys(salvato.attivo.voti).sort().join(), '101,202', 'i voti stanno su disco');
     });
 
+    await prova('un voto scritto da un altra copia dell app si vede subito', async () => {
+      const suDisco = JSON.parse(fs.readFileSync(percorsi.P.sondaggi, 'utf8'));
+      suDisco.attivo.voti['909'] = 0;
+      fs.writeFileSync(percorsi.P.sondaggi, JSON.stringify(suDisco, null, 2) + '\n');
+      const futuro = new Date(Date.now() + 5000);
+      fs.utimesSync(percorsi.P.sondaggi, futuro, futuro);
+      const admin = await chiama(porta, 'GET', '/api/sondaggi', { biscotto });
+      esigiUguale(admin.dati.attivo.totale, 3, 'il pannello conta anche il voto dell altra copia');
+      const doppio = await vota('tokenanna0000001', { id, risposta: 0 });
+      esigiUguale(doppio.stato, 409, 'chi ha votato altrove non rivota');
+      const nuovo = { tokencarla000004: { user_id: '404', login: 'carla', client_id: clientId } };
+      sondaggi.sostituisciVerifica(async (token) => UTENTI[token] || nuovo[token] || null);
+      const carla = await vota('tokencarla000004', { id, risposta: 1 });
+      esigiUguale(carla.dati.sondaggio.conteggi.join(), '2,2', 'il voto nuovo non cancella quello scritto altrove');
+      sondaggi.sostituisciVerifica(finta);
+    });
+
     await prova('i voti sopravvivono a un riavvio e il sondaggio scaduto passa in archivio da solo', async () => {
       sondaggi.dimentica();
       const dopo = Date.now() + 61 * 60000;
       const vista = sondaggi.vistaPubblica(null, dopo);
       esigiUguale(vista.sondaggio.chiuso, true, 'chiuso');
-      esigiUguale(vista.sondaggio.conteggi.join(), '1,1', 'risultati per tutti');
+      esigiUguale(vista.sondaggio.conteggi.join(), '2,2', 'risultati per tutti');
       esigiErrore(() => sondaggi.vota('404', { id, risposta: 0 }, dopo), 'chiuso', 'voto dopo la scadenza');
       const admin = sondaggi.vistaAdmin(dopo);
       esigiUguale(admin.attivo, null, 'niente di aperto');

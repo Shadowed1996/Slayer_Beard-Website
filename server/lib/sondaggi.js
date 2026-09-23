@@ -25,6 +25,7 @@ const FORMA_TOKEN = /^[A-Za-z0-9]{10,120}$/;
 
 let stato = null;
 let caricatoDa = null;
+let firmaLetta = null;
 const cacheToken = new Map();
 let verificaSostituita = null;
 
@@ -36,9 +37,20 @@ function oggetto(valore) {
   return valore !== null && typeof valore === 'object' && !Array.isArray(valore);
 }
 
+function firmaDelFile() {
+  try {
+    const info = fs.statSync(P.sondaggi);
+    return info.mtimeMs + ':' + info.size + ':' + info.ino;
+  } catch (e) {
+    return 'assente';
+  }
+}
+
 function carica() {
-  if (stato && caricatoDa === P.sondaggi) { return stato; }
+  const firma = firmaDelFile();
+  if (stato && caricatoDa === P.sondaggi && firma === firmaLetta) { return stato; }
   caricatoDa = P.sondaggi;
+  firmaLetta = firma;
   stato = vuoto();
   const grezzo = file.leggiSeEsiste(P.sondaggi);
   if (grezzo === null) { return stato; }
@@ -51,12 +63,14 @@ function carica() {
     const daParte = P.sondaggi + '.rotto-' + Date.now();
     try { fs.renameSync(P.sondaggi, daParte); } catch (err) { }
     console.error('[sondaggi] ' + P.sondaggi + ' non si legge, messo da parte in ' + daParte + ': ' + e.message);
+    firmaLetta = firmaDelFile();
   }
   return stato;
 }
 
 function salva() {
   file.scriviAtomico(P.sondaggi, JSON.stringify(stato, null, 2) + '\n');
+  firmaLetta = firmaDelFile();
 }
 
 function conteggi(sondaggio) {
@@ -323,6 +337,7 @@ function sostituisciVerifica(fn) {
 function dimentica() {
   stato = null;
   caricatoDa = null;
+  firmaLetta = null;
   cacheToken.clear();
 }
 
