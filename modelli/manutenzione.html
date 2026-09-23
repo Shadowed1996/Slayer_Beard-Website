@@ -355,6 +355,34 @@
     letter-spacing: .08em;
   }
 
+  .mnt__musica {
+    position: fixed;
+    inset-inline-end: 16px;
+    inset-block-end: 52px;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    inline-size: 46px;
+    block-size: 46px;
+    padding: 0;
+    border: 1px solid var(--linea-viva);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--fondo-2) 90%, transparent);
+    color: var(--testo-tenue);
+    cursor: pointer;
+    box-shadow: var(--ombra-morbida);
+    transition: color var(--durata) var(--curva), border-color var(--durata) var(--curva), box-shadow var(--durata) var(--curva);
+  }
+
+  .mnt__musica[hidden] { display: none; }
+  .mnt__musica svg { inline-size: 22px; block-size: 22px; }
+  .mnt__musica .mnt__onda { display: none; }
+  .mnt__musica.is-suona { color: var(--ciano); border-color: var(--ciano); box-shadow: var(--bagliore-ciano); }
+  .mnt__musica.is-suona .mnt__onda { display: inline; }
+  .mnt__musica.is-suona .mnt__muto { display: none; }
+  .mnt__musica:hover,
+  .mnt__musica:focus-visible { color: var(--testo); border-color: var(--ciano); }
+
   @media (max-height: 820px) {
     .mnt__monitor { gap: 8px; padding: 16px 20px; }
     .mnt__avatar { inline-size: clamp(72px, 12vh, 120px); }
@@ -487,6 +515,10 @@
     <span>{{{manutenzione.nastro}}}</span>
   </div>
 </div>
+<audio id="mnt-audio" src="mp3/ElevatorMaintenance.mp3" loop preload="auto"></audio>
+<button type="button" class="mnt__musica" id="mnt-musica" aria-pressed="false" aria-label="Fai partire la musica d'attesa" title="Musica d'attesa">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="mnt__onda" d="M15.5 9a4 4 0 0 1 0 6"/><path class="mnt__onda" d="M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="mnt__muto" d="m16 9.5 5 5m0-5-5 5"/></svg>
+</button>
 <script>{{{manutenzione.script}}}</script>
 </body>
 </html>

@@ -30,6 +30,46 @@
   });
   window.addEventListener('pageshow', controlla);
 
+  var audio = document.getElementById('mnt-audio');
+  var tasto = document.getElementById('mnt-musica');
+  if (audio && tasto) {
+    var CHIAVE_MUSICA = 'sb-manutenzione-musica';
+    var spenta = false;
+    try { spenta = sessionStorage.getItem(CHIAVE_MUSICA) === 'no'; } catch (e) { }
+    audio.volume = 0.2;
+    var segna = function () {
+      var suona = !audio.paused;
+      tasto.classList.toggle('is-suona', suona);
+      tasto.setAttribute('aria-pressed', suona ? 'true' : 'false');
+      tasto.setAttribute('aria-label', suona ? 'Ferma la musica d’attesa' : 'Fai partire la musica d’attesa');
+    };
+    var parti = function () {
+      var promessa = audio.play();
+      if (promessa && typeof promessa.catch === 'function') { promessa.catch(function () { }); }
+    };
+    var alPrimoGesto = function (evento) {
+      if (evento && tasto.contains(evento.target)) { return; }
+      document.removeEventListener('pointerdown', alPrimoGesto, true);
+      document.removeEventListener('keydown', alPrimoGesto, true);
+      if (!spenta && audio.paused) { parti(); }
+    };
+    tasto.addEventListener('click', function () {
+      document.removeEventListener('pointerdown', alPrimoGesto, true);
+      document.removeEventListener('keydown', alPrimoGesto, true);
+      spenta = !audio.paused;
+      if (spenta) { audio.pause(); } else { parti(); }
+      try { sessionStorage.setItem(CHIAVE_MUSICA, spenta ? 'no' : 'si'); } catch (e) { }
+    });
+    audio.addEventListener('play', segna);
+    audio.addEventListener('pause', segna);
+    audio.addEventListener('error', function () { tasto.hidden = true; });
+    if (!spenta) {
+      document.addEventListener('pointerdown', alPrimoGesto, true);
+      document.addEventListener('keydown', alPrimoGesto, true);
+      if (!anteprima) { parti(); }
+    }
+  }
+
   var box = document.getElementById('mnt-conto');
   if (!box) { return; }
   var fine = Date.parse(box.getAttribute('data-fine'));

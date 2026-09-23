@@ -4208,6 +4208,22 @@ async function provePannelloEsposto() {
 async function proveManutenzione(contenutiVeri, costruisci, archivio) {
   apriSezione('11b. Modalita manutenzione');
 
+  await prova('gli script del sito e della manutenzione si compilano', async () => {
+    for (const file of [path.join(RADICE_VERA, 'modelli', 'manutenzione-conto.js'), path.join(RADICE_VERA, 'js', 'guardia.js')]) {
+      try { new Function(fs.readFileSync(file, 'utf8')); }
+      catch (errore) { throw new Error(path.basename(file) + ': ' + errore.message); }
+    }
+  });
+
+  await prova('la musica d attesa: file fisso, in loop, volume basso, bottone per fermarla', async () => {
+    const modello = fs.readFileSync(P.modelloManutenzione, 'utf8');
+    esigiDentro(modello, 'src="mp3/ElevatorMaintenance.mp3" loop', 'audio');
+    esigiDentro(modello, 'id="mnt-musica"', 'bottone');
+    const script = fs.readFileSync(P.scriptManutenzione, 'utf8');
+    esigiDentro(script, 'audio.volume = 0.2', 'volume');
+    esigiDentro(script, "addEventListener('pointerdown'", 'partenza al primo gesto');
+  });
+
   const backup = require('./lib/backup');
   const originale = fs.readFileSync(P.contenutiJson, 'utf8');
   const ADESSO = Date.UTC(2026, 8, 23, 9, 0, 0);
