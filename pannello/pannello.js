@@ -59,7 +59,8 @@ const dom = {
   statoLavoro: $('stato-lavoro'),
   ultimaPubblicazione: $('ultima-pubblicazione'),
   btnSalva: $('btn-salva'),
-  btnPubblica: $('btn-pubblica')
+  btnPubblica: $('btn-pubblica'),
+  spiaManutenzione: $('spia-manutenzione')
 };
 
 /* ------------------------------------------------------ preferenze */
@@ -131,7 +132,35 @@ function passoAdesso() {
   return stato.stato && stato.stato.daPubblicare ? 'pubblica' : 'modifica';
 }
 
+function manutenzioneInBozza() {
+  const ramo = stato.dati && stato.dati.config && stato.dati.config.manutenzione;
+  return Boolean(ramo && ramo.attiva === true);
+}
+
+function aggiornaManutenzione() {
+  const spia = dom.spiaManutenzione;
+  if (!spia) return;
+  const bozza = manutenzioneInBozza();
+  const online = Boolean(stato.stato && stato.stato.manutenzione === true);
+  spia.hidden = !bozza && !online;
+  if (spia.hidden) return;
+  let testo = 'Manutenzione attiva';
+  let titolo = 'Il sito pubblicato mostra a tutti la pagina di manutenzione. Per riaprirlo spegni «Sito in manutenzione», salva e pubblica.';
+  if (bozza && !online) {
+    testo = 'Manutenzione da pubblicare';
+    titolo = 'La modalità manutenzione è accesa ma il sito pubblicato non è ancora cambiato: salva e premi Pubblica per metterlo in manutenzione.';
+  } else if (!bozza && online) {
+    testo = 'Sito ancora in manutenzione';
+    titolo = 'Hai spento la modalità manutenzione, ma il pubblico vede ancora la pagina di manutenzione: salva e premi Pubblica per riaprire il sito.';
+  }
+  spia.dataset.stato = bozza && online ? 'online' : 'bozza';
+  spia.querySelector('.barra__manutenzione-testo').textContent = testo;
+  spia.title = titolo + ' Clicca per aprire le impostazioni della manutenzione.';
+  spia.setAttribute('aria-label', testo + '. ' + titolo);
+}
+
 function aggiornaStato() {
+  aggiornaManutenzione();
   if (stato.inCorso) return;   // durante una scrittura comanda il messaggio di lavoro
   const modificato = sporco();
   dom.corpo.dataset.sporco = modificato ? '1' : '0';
@@ -204,6 +233,7 @@ function testoPubblicazione() {
 }
 
 function aggiornaPubblicazione() {
+  aggiornaManutenzione();
   const info = testoPubblicazione();
   dom.ultimaPubblicazione.textContent = info.breve;
   dom.ultimaPubblicazione.title = info.testo + '. ' + info.titolo;
@@ -612,12 +642,18 @@ async function pubblica() {
     if (!salvato) return false;
   }
 
+  const testoConferma = [
+    'Il server riscrive dalla bozza salvata i tre file che il pubblico vede: la pagina, i dati che usa il JavaScript e il foglio dei colori. Da quel momento chiunque apra il sito vede queste modifiche.',
+    'Prima di scrivere mette da parte una copia di sicurezza: se qualcosa non va, si torna indietro da menu ☰ → Copie di sicurezza.'
+  ];
+  if (manutenzioneInBozza()) {
+    testoConferma.unshift('La modalità manutenzione è accesa: dopo la pubblicazione chiunque apra il sito vede la pagina di manutenzione, e player, lurk, pollo, musica e sondaggi si fermano.');
+  } else if (stato.stato && stato.stato.manutenzione === true) {
+    testoConferma.unshift('La modalità manutenzione è spenta: con questa pubblicazione il sito torna visibile a tutti.');
+  }
   const ok = await conferma({
     titolo: 'Pubblico il sito?',
-    testo: [
-      'Il server riscrive dalla bozza salvata i tre file che il pubblico vede: la pagina, i dati che usa il JavaScript e il foglio dei colori. Da quel momento chiunque apra il sito vede queste modifiche.',
-      'Prima di scrivere mette da parte una copia di sicurezza: se qualcosa non va, si torna indietro da menu ☰ → Copie di sicurezza.'
-    ],
+    testo: testoConferma,
     dettagli: el('div', { classe: 'dialogo__elenco' }, [
       el('span', { testo: '· index.html — la pagina' }),
       el('span', { testo: '· js/dati.js — orari, canale, testi che servono al JavaScript' }),
@@ -637,12 +673,20 @@ async function pubblica() {
     // `scritti` è l'elenco dei file rigenerati: se il server lo manda si
     // dice quanti sono, perché «pubblicato» da solo non dice cos'è successo.
     const scritti = risposta && Array.isArray(risposta.scritti) ? risposta.scritti.length : 0;
-    inCorso.riuscito(
-      'Il sito pubblicato è aggiornato' +
-      (scritti ? ': ' + scritti + (scritti === 1 ? ' file riscritto' : ' file riscritti') : '') +
-      (Number.isFinite(durata) ? (scritti ? ', ' : ' ') + 'in ' + durata + ' ms' : '') + '.',
-      'Pubblicato'
-    );
+    const inManutenzione = Boolean(risposta && risposta.manutenzione && risposta.manutenzione.attiva === true);
+    if (inManutenzione) {
+      inCorso.riuscito(
+        'Il sito adesso è in manutenzione: chi apre la home o clip.html vede la pagina di manutenzione, e player, lurk, pollo, musica e sondaggi sono fermi. Per riaprirlo spegni «Sito in manutenzione» (menu ☰ → Manutenzione), salva e pubblica.',
+        'Pubblicato · sito in manutenzione'
+      );
+    } else {
+      inCorso.riuscito(
+        'Il sito pubblicato è aggiornato' +
+        (scritti ? ': ' + scritti + (scritti === 1 ? ' file riscritto' : ' file riscritti') : '') +
+        (Number.isFinite(durata) ? (scritti ? ', ' : ' ') + 'in ' + durata + ' ms' : '') + '.',
+        'Pubblicato'
+      );
+    }
 
     /* I controlli d'insieme (server/lib/controlli.js): la pubblicazione è
        andata a buon fine, ma queste sono le cose che online non
@@ -736,7 +780,8 @@ async function pubblica() {
     stato.stato = {
       ...(stato.stato || {}),
       pubblicatoIl: new Date().toISOString(),
-      daPubblicare: false   // appena fatto: la spia «da pubblicare» si spegne
+      daPubblicare: false,   // appena fatto: la spia «da pubblicare» si spegne
+      manutenzione: inManutenzione
     };
     aggiornaPubblicazione();
     azzeraErrori();

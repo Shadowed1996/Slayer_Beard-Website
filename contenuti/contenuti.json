@@ -173,7 +173,13 @@
     "sondaggio.loginTitolo": "Per votare serve Twitch",
     "sondaggio.loginTesto": "Possono votare solo gli utenti collegati al sito con il proprio account Twitch: così ogni persona vota una volta sola.",
     "sondaggio.loginBtn": "Collegati con Twitch",
-    "sondaggio.loginChiudi": "Non ora"
+    "sondaggio.loginChiudi": "Non ora",
+    "manutenzione.stato": "Fuori onda · Manutenzione",
+    "manutenzione.occhiello": "Stiamo sistemando la regia",
+    "manutenzione.messaggio": "Il sito è in manutenzione e <strong>torna presto</strong>, più bello di prima. Nel frattempo la diretta non si ferma: ci vediamo su Twitch.",
+    "manutenzione.contoPrima": "Si riparte",
+    "manutenzione.contoFinito": "Ci siamo: riaccendiamo la regia…",
+    "manutenzione.bottone": "Guarda su Twitch"
   },
   "config": {
     "twitch": {
@@ -598,6 +604,17 @@
     "referral": {
       "attivo": false,
       "url": ""
+    },
+    "manutenzione": {
+      "attiva": false,
+      "fine": "",
+      "nastro": [
+        "Lavori in corso",
+        "La regia si sta rifacendo il look",
+        "Torniamo presto",
+        "Intanto: twitch.tv/slayer_beard",
+        "Il pollo sorveglia il cantiere"
+      ]
     }
   }
 }

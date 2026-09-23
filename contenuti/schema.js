@@ -56,7 +56,7 @@
 // l'agente 7 nel pannello e li controlla l'agente 5 nella convalida.
 const TIPI = ['testo', 'testolungo', 'url', 'email', 'numero', 'immagine',
   'orario', 'orari', 'scelta', 'elencoTesti', 'elenco',
-  'ricco', 'colore', 'font', 'interruttore'];
+  'ricco', 'colore', 'font', 'interruttore', 'dataora'];
 
 // Chiavi che il sistema gestisce da solo: non si modificano dal pannello e
 // non devono comparire fra quelle "scoperte".
@@ -739,6 +739,36 @@ const gruppi = [
         aiuto: 'In pixel: tutti i margini del sito sono suoi multipli. Alzarlo distanzia ogni cosa, non solo una sezione.' },
       { chiave: 'config.tema.sfondo.aloni', etichetta: 'Intensità degli aloni sullo sfondo', tipo: 'numero', min: 0, max: 200,
         aiuto: '0 = fondo piatto, 100 = come adesso, 200 = doppio.' }
+    ]
+  },
+
+  {
+    id: 'manutenzione',
+    titolo: 'Modalità manutenzione',
+    descrizione: 'Mette il sito in pausa: al posto delle pagine chi lo apre vede la pagina di manutenzione, con il link a Twitch e ai social.',
+    campi: [
+      { chiave: 'config.manutenzione.attiva', etichetta: 'Sito in manutenzione', tipo: 'interruttore', predefinito: false,
+        aiuto: 'Acceso, salva e premi Pubblica: da quel momento tutti i visitatori vedono la pagina di manutenzione, sulla home e su clip.html, e si fermano player di Twitch, modalità lurk con i suoi messaggi in chat, pollo, musica e sondaggi. Spento, salva e premi Pubblica: torna il sito normale. L\'anteprima qui nel pannello mostra sempre il sito vero, così puoi continuare a lavorarci.' },
+      { chiave: 'config.manutenzione.fine', etichetta: 'Si riparte il', tipo: 'dataora', facoltativo: true, predefinito: '',
+        aiuto: 'Giorno e ora italiana in cui pensi di riaprire: la pagina mostra il conto alla rovescia e, arrivata l\'ora, si ricarica da sola ogni 30 secondi finché non ripubblichi il sito normale. Vuoto: niente conto alla rovescia.' },
+      { chiave: 'manutenzione.stato', etichetta: 'Scritta nella pillola in alto', tipo: 'testo', max: 40,
+        predefinito: 'Fuori onda · Manutenzione' },
+      { chiave: 'manutenzione.occhiello', etichetta: 'Occhiello sopra al nome', tipo: 'testo', max: 60,
+        predefinito: 'Stiamo sistemando la regia' },
+      { chiave: 'manutenzione.messaggio', etichetta: 'Messaggio ai visitatori', tipo: 'ricco', max: 300,
+        predefinito: 'Il sito è in manutenzione e <strong>torna presto</strong>, più bello di prima. Nel frattempo la diretta non si ferma: ci vediamo su Twitch.',
+        aiuto: 'Il paragrafo sotto al conto alla rovescia. Puoi usare grassetto e corsivo.' },
+      { chiave: 'manutenzione.contoPrima', etichetta: 'Inizio della scritta del conto alla rovescia', tipo: 'testo', max: 30,
+        predefinito: 'Si riparte',
+        aiuto: 'La pagina ci aggiunge da sé giorno e ora: «Si riparte alle 13:30 · mancano», oppure «Si riparte il 24/09 alle 13:30 · mancano» se non è oggi.' },
+      { chiave: 'manutenzione.contoFinito', etichetta: 'Scritta a conto alla rovescia finito', tipo: 'testo', max: 80,
+        predefinito: 'Ci siamo: riaccendiamo la regia…',
+        aiuto: 'Compare quando il conto arriva a zero, mentre la pagina aspetta che il sito venga ripubblicato.' },
+      { chiave: 'manutenzione.bottone', etichetta: 'Bottone per Twitch', tipo: 'testo', max: 30,
+        predefinito: 'Guarda su Twitch' },
+      { chiave: 'config.manutenzione.nastro', etichetta: 'Frasi del nastro che scorre in basso', tipo: 'elencoTesti',
+        predefinito: ['Lavori in corso', 'La regia si sta rifacendo il look', 'Torniamo presto', 'Intanto: twitch.tv/slayer_beard', 'Il pollo sorveglia il cantiere'],
+        aiuto: 'Scorrono una dopo l\'altra, separate da un puntino.' }
     ]
   }
 ];

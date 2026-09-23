@@ -172,6 +172,35 @@
 .barra__pubblicazione[data-da-fare="1"] { color: var(--p-allerta); }
 .barra__pubblicazione:empty { display: none; }
 
+.barra__manutenzione {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--p-allerta-bordo);
+  border-radius: 999px;
+  background: var(--p-allerta-velo);
+  color: var(--p-allerta);
+  font-family: var(--p-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--p-durata-lampo) ease, background-color var(--p-durata-lampo) ease;
+}
+.barra__manutenzione[hidden] { display: none; }
+.barra__manutenzione .ico { width: 16px; height: 16px; }
+.barra__manutenzione:hover { border-color: var(--p-allerta); }
+.barra__manutenzione[data-stato="online"] {
+  border-color: var(--p-allerta);
+  background: var(--p-allerta);
+  color: var(--p-nero);
+}
+
 /* --------------------------------------------------------------- 2. */
 .banco {
   --lato-larghezza: 480px;
@@ -628,6 +657,8 @@
 }
 
 @media (max-width: 1279.98px) {
+  .barra__manutenzione { padding: 0 8px; }
+  .barra__manutenzione-testo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   .dispositivi__nome { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   .dispositivi__btn { padding: 0 9px; }
 }

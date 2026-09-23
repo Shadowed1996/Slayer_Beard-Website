@@ -474,7 +474,7 @@ async function proveSchema(contenutiVeri) {
     // che non stanno in nessun punto della pagina perche valgono ovunque:
     // "canale" (i dati tecnici) e "aspetto" (colori e font).
     const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'sondaggio', 'settimana', 'chi',
-      'supporto', 'saluti', 'piede', 'musica', 'canale', 'aspetto'];
+      'supporto', 'saluti', 'piede', 'musica', 'canale', 'aspetto', 'manutenzione'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
 
@@ -4205,6 +4205,299 @@ async function provePannelloEsposto() {
   }
 }
 
+async function proveManutenzione(contenutiVeri, costruisci, archivio) {
+  apriSezione('11b. Modalita manutenzione');
+
+  const backup = require('./lib/backup');
+  const originale = fs.readFileSync(P.contenutiJson, 'utf8');
+  const ADESSO = Date.UTC(2026, 8, 23, 9, 0, 0);
+  const SEGNO = '<meta name="sb-pagina" content="manutenzione">';
+  const CHIAVI_TESTI = ['manutenzione.stato', 'manutenzione.occhiello', 'manutenzione.messaggio',
+    'manutenzione.contoPrima', 'manutenzione.contoFinito', 'manutenzione.bottone'];
+
+  const conClip = (documento) => {
+    const voce = { id: 'm1', titolo: 'Una clip', url: 'https://clips.twitch.tv/m1',
+      anteprima: 'https://clips-media-assets2.twitch.tv/m1-preview-480x272.jpg',
+      durataSec: 30, visualizzazioni: 10, creataIl: '2026-09-01T20:00:00Z', autore: 'Qualcuno' };
+    documento.config.clip = Object.assign({}, documento.config.clip, { attivo: true, voci: [voce], archivio: [voce] });
+    return documento;
+  };
+  const senzaChiavi = (documento) => {
+    delete documento.config.manutenzione;
+    for (const chiave of CHIAVI_TESTI) { delete documento.testi[chiave]; }
+    return documento;
+  };
+  const documento = (ritocco) => {
+    const d = conClip(JSON.parse(JSON.stringify(contenutiVeri)));
+    if (ritocco) { ritocco(d); }
+    return d;
+  };
+  const accesa = (aggiunte) => (d) => {
+    d.config.manutenzione = Object.assign({ attiva: true, fine: '' }, aggiunte || {});
+  };
+  const pagina = (ritocco) => costruisci.rendi(documento(ritocco), { adesso: ADESSO }).manutenzione;
+  const scriptDi = (html) => {
+    const trovato = /<script>([\s\S]*?)<\/script>/.exec(html);
+    return trovato ? trovato[1] : null;
+  };
+  const scriptSrcDi = (html) => {
+    const trovato = /<meta http-equiv="Content-Security-Policy" content="[\s\S]*?script-src ([^;]*);/.exec(html);
+    return trovato ? trovato[1] : '';
+  };
+  const scrivi = (d) => { fs.writeFileSync(P.contenutiJson, JSON.stringify(d, null, 2) + '\n', 'utf8'); };
+
+  try {
+    await prova('ogni campo del gruppo manutenzione ha un predefinito', () => {
+      const gruppo = schema.gruppi.find((g) => g.id === 'manutenzione');
+      esigi(gruppo, 'manca il gruppo manutenzione');
+      esigiUguale(gruppo.titolo, 'Modalità manutenzione', 'titolo del gruppo');
+      for (const campo of gruppo.campi) {
+        esigi(Object.prototype.hasOwnProperty.call(campo, 'predefinito'), campo.chiave + ' senza predefinito');
+      }
+      esigiUguale(schema.campo('config.manutenzione.attiva').predefinito, false, 'interruttore spento di partenza');
+      esigiUguale(schema.campo('config.manutenzione.fine').tipo, 'dataora', 'tipo della fine');
+    });
+
+    await prova('a interruttore spento le pagine sono identiche byte per byte a quelle senza le chiavi nuove', () => {
+      const opzioni = { adesso: ADESSO, quando: '2026-09-23T09:00:00.000Z' };
+      const senza = costruisci.rendi(documento(senzaChiavi), opzioni);
+      esigi(senza.clip, 'la pagina delle clip di prova non si e resa');
+      const varianti = [
+        accesa({ attiva: false }),
+        accesa({ attiva: false, fine: '2026-09-24T13:30', nastro: ['Altro'] }),
+        (d) => { accesa({ attiva: false })(d); d.testi['manutenzione.stato'] = 'Diverso'; }
+      ];
+      for (const ritocco of varianti) {
+        const con = costruisci.rendi(documento(ritocco), opzioni);
+        esigiUguale(con.html, senza.html, 'index.html');
+        esigiUguale(con.clip, senza.clip, 'clip.html');
+        esigiUguale(con.dati, senza.dati, 'js/dati.js');
+        esigiUguale(con.tema, senza.tema, 'css/tema.css');
+        esigiUguale(con.manutenzione, null, 'pagina di manutenzione resa a interruttore spento');
+      }
+    });
+
+    await prova('l anteprima dell editor mostra il sito vero anche in manutenzione', () => {
+      const togliIstanti = (html) => html.replace(/20\d\d-\d\d-\d\dT[\d:.]+Z/g, '');
+      const spenta = costruisci.anteprimaEditor(documento(accesa({ attiva: false })));
+      const conManutenzione = costruisci.anteprimaEditor(documento(accesa({ fine: '2026-09-24T13:30' })));
+      esigi(conManutenzione.indexOf(SEGNO) === -1, 'l anteprima dell editor e diventata la pagina di manutenzione');
+      esigiUguale(togliIstanti(conManutenzione), togliIstanti(spenta), 'anteprima dell editor');
+      esigi(costruisci.anteprimaDi(documento(accesa())).indexOf(SEGNO) === -1, 'anteprimaDi mostra la manutenzione');
+    });
+
+    await prova('contenuti vecchi senza le chiavi nuove si pubblicano lo stesso', () => {
+      scrivi(senzaChiavi(JSON.parse(originale)));
+      esigiUguale(schema.verificaCopertura(JSON.parse(fs.readFileSync(P.contenutiJson, 'utf8'))).length, 0, 'copertura');
+      const letto = archivio.leggi();
+      esigiUguale(letto.config.manutenzione.attiva, false, 'predefinito dell interruttore');
+      esigiUguale(letto.config.manutenzione.fine, '', 'predefinito della fine');
+      esigiUguale(letto.testi['manutenzione.bottone'], 'Guarda su Twitch', 'predefinito del bottone');
+      const esito = costruisci.genera();
+      esigiUguale(esito.manutenzione.attiva, false, 'esito.manutenzione');
+      esigi(fs.readFileSync(P.indexHtml, 'utf8').indexOf(SEGNO) === -1, 'index.html e la pagina di manutenzione');
+      esigiUguale(costruisci.inManutenzione(), false, 'inManutenzione');
+    });
+
+    await prova('accesa, OGNI pagina pubblica diventa la pagina di manutenzione e niente di vivo parte', () => {
+      const d = JSON.parse(originale);
+      d.config.manutenzione = { attiva: true, fine: '2026-09-24T13:30' };
+      d.config.clip = Object.assign({}, d.config.clip, { attivo: false });
+      scrivi(d);
+      const esito = costruisci.genera();
+      esigiUguale(esito.manutenzione.attiva, true, 'esito.manutenzione.attiva');
+      esigiUguale(esito.manutenzione.pagine.join(','), 'index.html,clip.html', 'pagine coperte');
+      esigiUguale(esito.scritti.map((s) => s.file).join(', '), 'index.html, js/dati.js, css/tema.css', 'scritti');
+      const home = fs.readFileSync(P.indexHtml, 'utf8');
+      const clip = fs.readFileSync(P.clipHtml, 'utf8');
+      esigiUguale(clip, home, 'clip.html diversa dalla home in manutenzione');
+      esigiDentro(home, SEGNO, 'segno della pagina di manutenzione');
+      esigi(!/<script\b[^>]*\bsrc\s*=/i.test(home), 'la pagina carica uno script esterno');
+      for (const vietato of ['player.js', 'lurk', 'pollo.js', 'musica.js', 'sondaggio.js', 'embed.twitch.tv', 'irc-ws', 'js/dati.js', 'js/sito.js']) {
+        esigi(home.indexOf(vietato) === -1, 'la pagina di manutenzione contiene ' + vietato);
+      }
+      esigiUguale((home.match(/<script\b/gi) || []).length, 1, 'script in pagina');
+      esigiDentro(home, 'href="css/tema.css"', 'foglio del tema');
+      esigiDentro(home, 'href="css/tokens.css"', 'foglio dei token');
+      esigi(fs.existsSync(P.datiJs) && fs.existsSync(P.temaCss), 'js/dati.js o css/tema.css non scritti');
+      esigiUguale(fs.readFileSync(P.temaCss, 'utf8'), tema.css(archivio.leggi().config.tema), 'css/tema.css');
+      esigiUguale(costruisci.inManutenzione(), true, 'inManutenzione');
+    });
+
+    await prova('spenta di nuovo, tornano le pagine vere e clip.html sparisce se le clip sono spente', () => {
+      const d = JSON.parse(fs.readFileSync(P.contenutiJson, 'utf8'));
+      d.config.manutenzione.attiva = false;
+      scrivi(d);
+      const esito = costruisci.genera();
+      esigiUguale(esito.manutenzione.attiva, false, 'esito.manutenzione.attiva');
+      esigi(fs.readFileSync(P.indexHtml, 'utf8').indexOf(SEGNO) === -1, 'index.html e ancora la pagina di manutenzione');
+      esigiUguale(esito.paginaClip.stato, 'tolta', 'clip.html');
+      esigi(!fs.existsSync(P.clipHtml), 'clip.html e rimasta');
+    });
+
+    await prova('il conto alla rovescia porta l istante con lo scarto giusto di Roma', () => {
+      const domani = pagina(accesa({ fine: '2026-09-24T13:30' }));
+      esigiDentro(domani, 'data-fine="2026-09-24T13:30:00+02:00"', 'ora legale');
+      esigiDentro(domani, 'Si riparte il 24/09 alle 13:30 · mancano', 'etichetta di un altro giorno');
+      esigiDentro(pagina(accesa({ fine: '2026-09-23T13:30' })), 'Si riparte alle 13:30 · mancano', 'etichetta di oggi');
+      esigiDentro(pagina(accesa({ fine: '2026-12-01T09:05' })), 'data-fine="2026-12-01T09:05:00+01:00"', 'ora solare');
+      esigiDentro(pagina(accesa({ fine: '2027-01-02T10:00' })), 'Si riparte il 02/01/2027 alle 10:00 · mancano', 'un altro anno');
+      esigiUguale(Date.parse('2026-09-24T13:30:00+02:00'), Date.UTC(2026, 8, 24, 11, 30), 'istante');
+      esigiUguale(costruisci.fineManutenzione('2026-03-29T02:30').iso, '2026-03-29T03:30:00+02:00', 'ora saltata');
+      esigiUguale(costruisci.fineManutenzione('2026-10-25T02:30').iso, '2026-10-25T02:30:00+02:00', 'ora doppia');
+    });
+
+    await prova('senza fine niente conto alla rovescia e niente script', () => {
+      const html = pagina(accesa({ fine: '' }));
+      esigi(html.indexOf('mnt-conto') === -1, 'il riquadro del conto c e lo stesso');
+      esigi(!/<script\b/i.test(html), 'c e uno script');
+      esigiUguale(scriptSrcDi(html), '\'none\'', 'script-src senza script');
+      esigiDentro(html, 'Stiamo sistemando la regia', 'il resto della pagina');
+    });
+
+    await prova('la CSP porta l impronta sha256 dello script in pagina', () => {
+      const html = pagina(accesa({ fine: '2026-09-24T13:30' }));
+      const script = scriptDi(html);
+      esigi(script, 'manca lo script del conto alla rovescia');
+      const impronta = 'sha256-' + crypto.createHash('sha256').update(script, 'utf8').digest('base64');
+      esigiUguale(scriptSrcDi(html), '\'' + impronta + '\'', 'script-src');
+      esigiDentro(script, 'data-finito', 'lo script legge la scritta finale dalla pagina');
+    });
+
+    await prova('i testi predefiniti sono quelli della pagina approvata', () => {
+      const html = pagina((d) => { senzaChiavi(d); accesa({ fine: '2026-09-24T13:30' })(d); });
+      esigiDentro(html, '<span class="spia" aria-hidden="true"></span> Fuori onda · Manutenzione</p>', 'pillola');
+      esigiDentro(html, '<p class="sezione__occhiello">Stiamo sistemando la regia</p>', 'occhiello');
+      esigiDentro(html, 'Il sito è in manutenzione e <strong>torna presto</strong>, più bello di prima.', 'messaggio');
+      esigiDentro(html, 'data-finito="Ci siamo: riaccendiamo la regia…"', 'scritta finale');
+      esigiDentro(html, '\n      Guarda su Twitch\n', 'bottone');
+      esigiDentro(html, '<span>&nbsp;★ Lavori in corso &nbsp;·&nbsp; La regia si sta rifacendo il look &nbsp;·&nbsp; ' +
+        'Torniamo presto &nbsp;·&nbsp; Intanto: twitch.tv/slayer_beard &nbsp;·&nbsp; Il pollo sorveglia il cantiere &nbsp;</span>', 'nastro');
+      esigiDentro(html, '<title>slayer_beard — Sito in manutenzione</title>', 'titolo');
+      esigiDentro(html, 'href="https://www.twitch.tv/slayer_beard"', 'link a Twitch');
+    });
+
+    await prova('i testi scritti nel pannello finiscono in pagina, protetti', () => {
+      const html = pagina((d) => {
+        accesa({ fine: '2026-09-24T13:30', nastro: ['Prima <b>frase</b>', 'Seconda & ultima'] })(d);
+        d.testi['manutenzione.stato'] = 'Pausa <i>tecnica</i> & co';
+        d.testi['manutenzione.occhiello'] = 'Lavori "grossi"';
+        d.testi['manutenzione.messaggio'] = 'Torno <em>presto</em><script>alert(1)</script>';
+        d.testi['manutenzione.contoPrima'] = 'Riapriamo';
+        d.testi['manutenzione.contoFinito'] = 'Fatto "quasi" <ok>';
+        d.testi['manutenzione.bottone'] = 'Vieni in <live>';
+      });
+      esigiDentro(html, '</span> Pausa &lt;i&gt;tecnica&lt;/i&gt; &amp; co</p>', 'pillola');
+      esigiDentro(html, '>Lavori &quot;grossi&quot;</p>', 'occhiello');
+      esigiDentro(html, '<p class="mnt__testo">Torno <em>presto</em>', 'messaggio ricco');
+      esigiUguale((html.match(/<script\b/gi) || []).length, 1, 'script in pagina');
+      esigiDentro(html, 'Riapriamo il 24/09 alle 13:30 · mancano', 'etichetta del conto');
+      esigiDentro(html, 'data-finito="Fatto &quot;quasi&quot; &lt;ok&gt;"', 'scritta finale');
+      esigiDentro(html, 'Vieni in &lt;live&gt;', 'bottone');
+      esigiDentro(html, '&nbsp;★ Prima &lt;b&gt;frase&lt;/b&gt; &nbsp;·&nbsp; Seconda &amp; ultima &nbsp;', 'nastro');
+    });
+
+    await prova('i social vengono da config.social, senza Twitch e senza le voci vuote', () => {
+      const d = documento((x) => {
+        accesa()(x);
+        for (const voce of x.config.social) {
+          if (voce.chiave === 'youtube') { voce.url = 'https://www.youtube.com/@prova'; }
+          if (voce.chiave === 'telegram') { voce.url = ''; }
+        }
+      });
+      const html = costruisci.rendi(d, { adesso: ADESSO }).manutenzione;
+      const blocco = html.slice(html.indexOf('<ul class="mnt__social">'), html.indexOf('</ul>'));
+      esigiDentro(blocco, 'href="https://www.youtube.com/@prova"', 'youtube');
+      esigiDentro(blocco, 'aria-label="YouTube"', 'nome della voce');
+      esigi(blocco.indexOf('twitch.tv') === -1, 'Twitch sta anche fra i social');
+      esigi(blocco.indexOf('Telegram') === -1, 'una voce senza link e in pagina');
+      const attese = d.config.social.filter((v) => String(v.url || '').trim() && v.icona !== 'twitch').length;
+      esigiUguale((blocco.match(/<li>/g) || []).length, attese, 'voci');
+    });
+
+    await prova('la convalida rifiuta una fine scritta male e accetta quella buona o vuota', () => {
+      for (const storta of ['2026-02-30T10:00', '24/09/2026 13:30', '2026-09-24T25:00', '2026-09-24 13:30', '2026-09-24T13:30:00', 5]) {
+        esigi(convalida.convalidaCampo('config.manutenzione.fine', storta).length > 0, 'accettata: ' + JSON.stringify(storta));
+      }
+      for (const buona of ['', '2026-09-24T13:30', '2028-02-29T00:00']) {
+        esigiUguale(convalida.convalidaCampo('config.manutenzione.fine', buona).length, 0, 'rifiutata: ' + buona);
+      }
+      esigi(convalida.convalidaCampo('config.manutenzione.attiva', 'true').length > 0, 'l interruttore accetta una stringa');
+      const d = JSON.parse(originale);
+      d.config.manutenzione = { attiva: true, fine: '2026-13-01T10:00' };
+      esigi(convalida.convalida(d).some((e) => e.chiave === 'config.manutenzione.fine'), 'la convalida intera non la vede');
+    });
+
+    await prova('un ripristino riallinea clip.html alla home ripristinata', () => {
+      const d = JSON.parse(originale);
+      d.config.manutenzione = { attiva: false, fine: '' };
+      d.config.clip = Object.assign({}, d.config.clip, { attivo: false });
+      scrivi(d);
+      costruisci.genera();
+      d.config.manutenzione.attiva = true;
+      scrivi(d);
+      const conHomeVera = costruisci.genera().backup;
+      const conHomeInManutenzione = costruisci.genera().backup;
+      d.config.manutenzione.attiva = false;
+      scrivi(d);
+      costruisci.genera();
+      esigi(!fs.existsSync(P.clipHtml), 'clip.html rimasta a manutenzione spenta');
+
+      backup.ripristina(conHomeInManutenzione);
+      const home = fs.readFileSync(P.indexHtml, 'utf8');
+      esigiDentro(home, SEGNO, 'la home ripristinata non e in manutenzione');
+      esigiUguale((costruisci.allineaClipDopoRipristino() || {}).stato, 'scritta', 'clip.html riscritta');
+      esigiUguale(fs.readFileSync(P.clipHtml, 'utf8'), home, 'clip.html diversa dalla home in manutenzione');
+
+      backup.ripristina(conHomeVera);
+      esigi(fs.readFileSync(P.indexHtml, 'utf8').indexOf(SEGNO) === -1, 'index.html non ripristinata');
+      esigiUguale((costruisci.allineaClipDopoRipristino() || {}).stato, 'tolta', 'clip.html di manutenzione tolta');
+      esigi(!fs.existsSync(P.clipHtml), 'clip.html di manutenzione rimasta online');
+      esigiUguale(costruisci.allineaClipDopoRipristino(), null, 'senza manutenzione di mezzo non si tocca niente');
+    });
+
+    await prova('le API: anteprima della manutenzione dietro sessione, stato e pubblicazione', async () => {
+      const { creaServer } = require('./server.js');
+      const server = creaServer();
+      await new Promise((risolvi) => server.listen(0, '127.0.0.1', risolvi));
+      const porta = server.address().port;
+      try {
+        esigiUguale((await chiama(porta, 'GET', '/api/anteprima/manutenzione')).stato, 401, 'senza sessione');
+        const biscotto = biscottoDa(await chiama(porta, 'POST', '/api/entra', { json: { password: PASSWORD_COLLAUDO } }));
+        esigi(biscotto, 'nessuna sessione');
+        const d = JSON.parse(originale);
+        d.config.manutenzione = { attiva: false, fine: '2026-09-24T13:30' };
+        scrivi(d);
+        const vista = await chiama(porta, 'GET', '/api/anteprima/manutenzione', { biscotto: biscotto });
+        esigiUguale(vista.stato, 200, 'stato');
+        esigiDentro(vista.testo, '<head><base href="/">', 'base per gli indirizzi relativi');
+        esigiDentro(vista.testo, SEGNO, 'la pagina di manutenzione anche a interruttore spento');
+        esigiDentro(vista.testo, 'data-fine="2026-09-24T13:30:00+02:00"', 'conto alla rovescia');
+        esigiUguale((await chiama(porta, 'POST', '/api/anteprima/manutenzione', { biscotto: biscotto })).stato, 405, 'metodo');
+
+        let letti = await chiama(porta, 'GET', '/api/contenuti', { biscotto: biscotto });
+        esigiUguale(letti.dati.stato.manutenzione, false, 'stato.manutenzione prima');
+        d.config.manutenzione.attiva = true;
+        scrivi(d);
+        const pubblicata = await chiama(porta, 'POST', '/api/pubblica', { biscotto: biscotto });
+        esigiUguale(pubblicata.stato, 200, 'pubblicazione');
+        esigiUguale(pubblicata.dati.manutenzione.attiva, true, 'la risposta non dice della manutenzione');
+        letti = await chiama(porta, 'GET', '/api/contenuti', { biscotto: biscotto });
+        esigiUguale(letti.dati.stato.manutenzione, true, 'stato.manutenzione dopo');
+      } finally {
+        await new Promise((risolvi) => server.close(risolvi));
+      }
+    });
+  } finally {
+    fs.writeFileSync(P.contenutiJson, originale, 'utf8');
+    try {
+      costruisci.genera();
+    } catch (e) {
+      segna('contenuti rimessi com erano dopo la manutenzione', false, e && e.message ? e.message : String(e));
+    }
+  }
+}
+
 /* --- ESECUZIONE ------------------------------------------------------ */
 
 async function esegui() {
@@ -4239,6 +4532,7 @@ async function esegui() {
     await proveTwitch(costruisci, archivio);
     await proveClip(contenutiVeri, costruisci, archivio);
     await proveSchedule(contenutiVeri, costruisci, archivio);
+    await proveManutenzione(contenutiVeri, costruisci, archivio);
 
     // Le tre sezioni del CONTRATTO-6 stanno in fondo apposta: toccano
     // l'ambiente (SB_DATI, SB_SITO, SB_DIETRO_PROXY) e i percorsi, e quello

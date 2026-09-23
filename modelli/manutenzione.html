@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src {{{manutenzione.scriptSrc}}};
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  img-src 'self' data:;
+  base-uri 'self';
+  form-action 'none';
+  object-src 'none'">
+<meta name="sb-pagina" content="manutenzione">
+<title>{{manutenzione.nome}} — Sito in manutenzione</title>
+<meta name="description" content="Il sito di {{manutenzione.nome}} è in manutenzione: stiamo sistemando la regia. Nel frattempo ci vediamo in live su Twitch.">
+<meta name="theme-color" content="#07070c">
+<meta property="og:title" content="{{manutenzione.nome}} — Sito in manutenzione">
+<meta property="og:description" content="Stiamo sistemando la regia: il sito torna presto. Nel frattempo, ci vediamo su Twitch.">
+<meta property="og:image" content="{{manutenzione.og}}">
+<link rel="icon" href="{{manutenzione.favicon}}" type="image/png">
+{{#se manutenzione.fontUrl}}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{manutenzione.fontUrl}}">
+{{/se}}<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/tema.css">
+<link rel="stylesheet" href="css/base.css">
+<style>
+  body {
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  .mnt {
+    position: relative;
+    min-block-size: 100vh;
+    min-block-size: 100svh;
+    display: grid;
+    place-items: center;
+    padding: clamp(24px, 6vh, 64px) 16px clamp(120px, 18vh, 170px);
+    isolation: isolate;
+  }
+
+  .mnt__griglia {
+    position: fixed;
+    inset: -40px;
+    z-index: -2;
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--viola) 14%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--viola) 14%, transparent) 1px, transparent 1px);
+    background-size: 40px 40px;
+    -webkit-mask-image: radial-gradient(ellipse at 50% 45%, #000 20%, transparent 75%);
+    mask-image: radial-gradient(ellipse at 50% 45%, #000 20%, transparent 75%);
+    animation: mnt-griglia 12s linear infinite;
+    pointer-events: none;
+  }
+
+  .mnt__righe {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+  }
+
+  .mnt__righe::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    block-size: 120px;
+    background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--ciano) 7%, transparent), transparent);
+    animation: mnt-passa 7s linear infinite;
+  }
+
+  .mnt__monitor {
+    position: relative;
+    inline-size: min(640px, 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(14px, 2.2vh, 20px);
+    padding: clamp(26px, 5vw, 48px) clamp(18px, 5vw, 44px) clamp(22px, 4vw, 36px);
+    text-align: center;
+    border: 1px solid var(--linea-viva);
+    border-radius: var(--raggio-g);
+    background: color-mix(in srgb, var(--fondo-2) 88%, transparent);
+    -webkit-backdrop-filter: blur(var(--sfocatura));
+    backdrop-filter: blur(var(--sfocatura));
+    box-shadow: var(--ombra), var(--bagliore-viola);
+    animation: mnt-entra 800ms var(--curva) both;
+  }
+
+  .mnt__monitor::before,
+  .mnt__monitor::after {
+    content: "";
+    position: absolute;
+    inline-size: 22px;
+    block-size: 22px;
+    border: 2px solid var(--ciano);
+    filter: drop-shadow(0 0 6px var(--ciano));
+  }
+
+  .mnt__monitor::before { inset-block-start: 12px; inset-inline-start: 12px; border-inline-end: 0; border-block-end: 0; border-start-start-radius: 8px; }
+  .mnt__monitor::after { inset-block-end: 12px; inset-inline-end: 12px; border-inline-start: 0; border-block-start: 0; border-end-end-radius: 8px; }
+
+  .mnt__stato {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    border: 1px solid color-mix(in srgb, var(--allerta) 55%, transparent);
+    border-radius: var(--raggio-pill);
+    background: color-mix(in srgb, var(--allerta) 10%, transparent);
+    color: var(--allerta);
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    font-weight: 500;
+    letter-spacing: var(--spazio-etichetta);
+    text-transform: uppercase;
+  }
+
+  .mnt__stato .spia { color: var(--allerta); }
+  .mnt__stato .spia::after { animation: spia-pulsa 2.2s var(--curva) infinite; }
+
+  .mnt__avatar {
+    position: relative;
+    inline-size: clamp(116px, 26vw, 150px);
+    aspect-ratio: 1;
+  }
+
+  .mnt__anello {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--viola), var(--ciano), var(--magenta), var(--viola));
+    animation: mnt-gira 5s linear infinite;
+    box-shadow: 0 0 34px color-mix(in srgb, var(--viola) 60%, transparent);
+  }
+
+  .mnt__foto {
+    position: relative;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid var(--fondo);
+  }
+
+  .mnt__titolo {
+    position: relative;
+    margin: 0;
+    font-family: var(--font-titolo);
+    font-size: clamp(2.3rem, 1.3rem + 5.4vw, 4.2rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--testo);
+    background-image: var(--grad-titolo);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: mnt-glitch 5s steps(1) infinite;
+  }
+
+  .mnt__conto {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mnt__conto-etichetta {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    letter-spacing: var(--spazio-etichetta);
+    text-transform: uppercase;
+    color: var(--testo-tenue);
+  }
+
+  .mnt__conto-cifre {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
+  }
+
+  .mnt__cella {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-inline-size: 64px;
+    padding: 8px 10px 6px;
+    border: 1px solid var(--linea-viva);
+    border-radius: var(--raggio);
+    background: color-mix(in srgb, var(--viola) 10%, transparent);
+    box-shadow: inset 0 0 18px color-mix(in srgb, var(--viola) 18%, transparent);
+  }
+
+  .mnt__cella b {
+    font-family: var(--font-mono);
+    font-size: clamp(1.6rem, 1.2rem + 2vw, 2.2rem);
+    font-weight: 500;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--ciano);
+    text-shadow: 0 0 14px color-mix(in srgb, var(--ciano) 70%, transparent);
+  }
+
+  .mnt__cella small {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: var(--spazio-etichetta);
+    text-transform: uppercase;
+    color: var(--testo-tenue);
+  }
+
+  .mnt__due {
+    padding-block-start: 10px;
+    font-family: var(--font-mono);
+    font-size: 1.6rem;
+    color: var(--viola-chiaro);
+    animation: mnt-sfarfalla 1s steps(2) infinite;
+  }
+
+  .mnt__conto.is-finito .mnt__cella b { color: var(--ok); text-shadow: 0 0 14px color-mix(in srgb, var(--ok) 70%, transparent); }
+
+  .mnt__testo {
+    max-inline-size: 46ch;
+    margin: 0;
+    color: var(--testo-medio);
+  }
+
+  .mnt__testo strong { color: var(--testo); font-weight: 600; }
+
+  .mnt__barre {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    inline-size: min(360px, 90%);
+    block-size: 26px;
+    overflow: hidden;
+    border-radius: 6px;
+    border: 1px solid var(--linea-forte);
+  }
+
+  .mnt__barre span { animation: mnt-sfarfalla 3s steps(2) infinite; }
+  .mnt__barre span:nth-child(1) { background: var(--testo); animation-delay: -.4s; }
+  .mnt__barre span:nth-child(2) { background: var(--allerta); animation-delay: -1.1s; }
+  .mnt__barre span:nth-child(3) { background: var(--ciano); animation-delay: -2s; }
+  .mnt__barre span:nth-child(4) { background: var(--ok); animation-delay: -.8s; }
+  .mnt__barre span:nth-child(5) { background: var(--magenta); animation-delay: -1.6s; }
+  .mnt__barre span:nth-child(6) { background: var(--live); animation-delay: -2.4s; }
+  .mnt__barre span:nth-child(7) { background: var(--viola); animation-delay: -.2s; }
+
+  .mnt__eq {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    block-size: 22px;
+  }
+
+  .mnt__eq span {
+    inline-size: 5px;
+    block-size: 100%;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--ciano), var(--viola));
+    transform-origin: bottom;
+    animation: mnt-eq 1.1s ease-in-out infinite;
+  }
+
+  .mnt__eq span:nth-child(2) { animation-delay: -.3s; }
+  .mnt__eq span:nth-child(3) { animation-delay: -.6s; }
+  .mnt__eq span:nth-child(4) { animation-delay: -.15s; }
+  .mnt__eq span:nth-child(5) { animation-delay: -.45s; }
+
+  .mnt__social {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .mnt__icona {
+    display: grid;
+    place-items: center;
+    inline-size: 46px;
+    block-size: 46px;
+    border: 1px solid var(--linea-comando);
+    border-radius: 50%;
+    color: var(--testo);
+    transition: border-color var(--durata) var(--curva), color var(--durata) var(--curva), translate var(--durata-lampo) var(--curva), box-shadow var(--durata) var(--curva);
+  }
+
+  .mnt__icona svg { inline-size: 22px; block-size: 22px; }
+
+  .mnt__icona:hover,
+  .mnt__icona:focus-visible {
+    border-color: var(--ciano);
+    color: var(--ciano);
+    translate: 0 -2px;
+    box-shadow: var(--bagliore-ciano);
+  }
+
+  .mnt__nastro {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: 2;
+    overflow: hidden;
+    border-block-start: 1px solid var(--linea-viva);
+    background: color-mix(in srgb, var(--fondo) 92%, transparent);
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    letter-spacing: var(--spazio-etichetta);
+    text-transform: uppercase;
+    color: var(--viola-chiaro);
+  }
+
+  .mnt__scorre {
+    display: flex;
+    inline-size: max-content;
+    animation: mnt-scorri 30s linear infinite;
+  }
+
+  .mnt__scorre span {
+    padding: 10px 0;
+    white-space: nowrap;
+  }
+
+  .mnt__pollo {
+    position: fixed;
+    inset-block-end: 34px;
+    inset-inline-start: 0;
+    z-index: 1;
+    inline-size: clamp(58px, 9vw, 86px);
+    pointer-events: none;
+    animation: mnt-cammina 26s linear infinite;
+  }
+
+  .mnt__pollo img {
+    inline-size: 100%;
+    block-size: auto;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .6));
+    animation: mnt-saltella .5s ease-in-out infinite alternate;
+  }
+
+  .mnt__piede {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--t-micro);
+    color: var(--testo-tenue);
+    letter-spacing: .08em;
+  }
+
+  @keyframes mnt-entra {
+    from { opacity: 0; transform: translateY(20px) scale(.97); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @keyframes mnt-gira { to { rotate: 360deg; } }
+
+  @keyframes mnt-griglia { to { background-position: 0 40px, 40px 0; } }
+
+  @keyframes mnt-passa {
+    from { inset-block-start: -120px; }
+    to { inset-block-start: 100%; }
+  }
+
+  @keyframes mnt-glitch {
+    0%, 86%, 100% { transform: none; filter: none; }
+    87% { transform: translate(-3px, 1px) skewX(-6deg); filter: drop-shadow(3px 0 0 var(--magenta)) drop-shadow(-3px 0 0 var(--ciano)); }
+    89% { transform: translate(3px, -1px); filter: drop-shadow(-3px 0 0 var(--magenta)) drop-shadow(3px 0 0 var(--ciano)); }
+    91% { transform: none; filter: none; }
+    93% { transform: translate(-2px, 0) skewX(4deg); filter: drop-shadow(2px 0 0 var(--ciano)); }
+  }
+
+  @keyframes mnt-sfarfalla {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .72; }
+  }
+
+  @keyframes mnt-eq {
+    0%, 100% { transform: scaleY(.25); }
+    50% { transform: scaleY(1); }
+  }
+
+  @keyframes mnt-scorri { to { transform: translateX(-50%); } }
+
+  @keyframes mnt-cammina {
+    0% { transform: translateX(-120px) scaleX(1); }
+    49% { transform: translateX(calc(100vw + 20px)) scaleX(1); }
+    50% { transform: translateX(calc(100vw + 20px)) scaleX(-1); }
+    99% { transform: translateX(-120px) scaleX(-1); }
+    100% { transform: translateX(-120px) scaleX(1); }
+  }
+
+  @keyframes mnt-saltella {
+    from { translate: 0 0; rotate: -4deg; }
+    to { translate: 0 -6px; rotate: 4deg; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mnt__griglia,
+    .mnt__righe::after,
+    .mnt__monitor,
+    .mnt__anello,
+    .mnt__titolo,
+    .mnt__barre span,
+    .mnt__eq span,
+    .mnt__scorre,
+    .mnt__pollo,
+    .mnt__pollo img,
+    .mnt__stato .spia::after,
+    .mnt__due { animation: none; }
+    .mnt__pollo { inset-inline-start: auto; inset-inline-end: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="mnt__griglia" aria-hidden="true"></div>
+<div class="mnt__righe" aria-hidden="true"></div>
+
+<main class="mnt">
+  <section class="mnt__monitor" aria-labelledby="mnt-titolo">
+    <p class="mnt__stato"><span class="spia" aria-hidden="true"></span> {{manutenzione.stato}}</p>
+
+    <div class="mnt__avatar">
+      <span class="mnt__anello" aria-hidden="true"></span>
+      <img class="mnt__foto" src="{{manutenzione.avatar}}" alt="L'avatar di {{manutenzione.nome}}" width="300" height="300" decoding="async">
+    </div>
+
+    <p class="sezione__occhiello">{{manutenzione.occhiello}}</p>
+    <h1 id="mnt-titolo" class="mnt__titolo">{{manutenzione.nome}}</h1>
+
+    <div class="mnt__barre" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+{{#se manutenzione.conto}}
+    <div class="mnt__conto" id="mnt-conto" data-fine="{{manutenzione.fine}}" data-finito="{{manutenzione.contoFinito}}">
+      <p class="mnt__conto-etichetta" id="mnt-conto-etichetta">{{manutenzione.etichetta}}</p>
+      <p class="mnt__conto-cifre" aria-live="polite">
+        <span class="mnt__cella"><b id="mnt-ore">--</b><small>ore</small></span><span class="mnt__due" aria-hidden="true">:</span><span class="mnt__cella"><b id="mnt-min">--</b><small>min</small></span><span class="mnt__due" aria-hidden="true">:</span><span class="mnt__cella"><b id="mnt-sec">--</b><small>sec</small></span>
+      </p>
+    </div>
+{{/se}}
+    <p class="mnt__testo">{{{manutenzione.messaggio}}}</p>
+
+    <a class="btn btn--pieno" href="{{manutenzione.urlCanale}}" target="_blank" rel="noopener">
+      {{{manutenzione.iconaTwitch}}}
+      {{manutenzione.bottone}}
+    </a>
+
+    <div class="mnt__eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+{{#se manutenzione.social}}
+    <ul class="mnt__social">
+{{#ogni manutenzione.social}}      <li><a class="mnt__icona" href="{{url}}" target="_blank" rel="noopener" aria-label="{{nome}}">{{{svg}}}</a></li>
+{{/ogni}}    </ul>
+{{/se}}
+    <p class="mnt__piede">© {{manutenzione.anno}} {{manutenzione.nome}}</p>
+  </section>
+</main>
+
+<div class="mnt__pollo" aria-hidden="true"><img src="{{manutenzione.mascotte}}" alt="" width="386" height="556" decoding="async"></div>
+
+<div class="mnt__nastro" aria-hidden="true">
+  <div class="mnt__scorre">
+    <span>{{{manutenzione.nastro}}}</span>
+    <span>{{{manutenzione.nastro}}}</span>
+  </div>
+</div>
+{{#se manutenzione.conto}}<script>{{{manutenzione.script}}}</script>
+{{/se}}</body>
+</html>

@@ -225,6 +225,16 @@ export function erroreLocale(campo, valore) {
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(testo)) return 'L\'orario va scritto come 21:00.';
       return null;
 
+    case 'dataora': {
+      if (testo === '' || testo === null || testo === undefined) return facoltativo ? null : 'Serve un giorno e un\'ora.';
+      const pezzi = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):[0-5]\d$/.exec(String(testo));
+      const giorno = pezzi ? new Date(Date.UTC(Number(pezzi[1]), Number(pezzi[2]) - 1, Number(pezzi[3]))) : null;
+      if (!giorno || giorno.getUTCMonth() !== Number(pezzi[2]) - 1 || giorno.getUTCDate() !== Number(pezzi[3])) {
+        return 'Scegli giorno e ora dal calendario, per esempio 24/09/2026 13:30.';
+      }
+      return null;
+    }
+
     case 'numero': {
       if (testo === '' || testo === null || testo === undefined) return 'Serve un numero.';
       const n = Number(testo);
@@ -368,7 +378,7 @@ function campoTesto(campo, accesso, ctx) {
   // sopra i caratteri scriverebbe «2 / 32» sotto un arrotondamento di 14.
   const limite = campo.tipo !== 'numero' && Number(campo.max) > 0 ? Number(campo.max) : null;
 
-  const tipoHtml = { url: 'url', email: 'email', numero: 'number', orario: 'time' }[campo.tipo] || 'text';
+  const tipoHtml = { url: 'url', email: 'email', numero: 'number', orario: 'time', dataora: 'datetime-local' }[campo.tipo] || 'text';
 
   const input = multiriga
     ? el('textarea', {
@@ -1073,7 +1083,8 @@ function costruisci(campo, accesso, ctx) {
     case 'url':
     case 'email':
     case 'numero':
-    case 'orario':      return campoTesto(campo, accesso, ctx);
+    case 'orario':
+    case 'dataora':     return campoTesto(campo, accesso, ctx);
     default:
       // Tipo sconosciuto: meglio una casella di testo che un campo assente.
       // Cosi' un'estensione futura dello schema resta comunque modificabile

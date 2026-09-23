@@ -92,6 +92,7 @@ const MENU = [
   { vista: 'struttura', nome: 'Struttura della pagina', nota: 'Ordine e visibilità delle sezioni', ico: 'struttura' },
   { vista: 'canale', nome: 'Canale, contatti e immagini', nota: 'Canale Twitch, email, immagini del sito', ico: 'canale' },
   { vista: 'meta', nome: 'Google e social', nota: 'Come appare il sito nelle ricerche e nei link condivisi', ico: 'mondo' },
+  { vista: 'manutenzione', nome: 'Manutenzione', nota: 'Metti il sito in pausa: i visitatori vedono la pagina di manutenzione', ico: 'attenzione' },
   { vista: 'sondaggi', nome: 'Sondaggi', nota: 'Crea un sondaggio per chi è collegato con Twitch e guarda i risultati', ico: 'sondaggio' },
   { vista: 'immagini', nome: 'Immagini', nota: 'Carica e gestisci i file', ico: 'immagine' },
   { vista: 'backup', nome: 'Copie di sicurezza', nota: 'Torna a com\'era il sito prima di una pubblicazione', ico: 'backup' },
@@ -113,6 +114,11 @@ const VISTE = {
   struttura: { titolo: 'Struttura della pagina' },
   canale: { titolo: 'Canale, contatti e immagini', gruppo: 'canale' },
   meta: { titolo: 'Google e social', gruppo: 'meta' },
+  manutenzione: {
+    titolo: 'Manutenzione',
+    nota: 'Accendi «Sito in manutenzione», salva e premi Pubblica: la home e clip.html diventano la pagina di manutenzione per tutti, e player, lurk, pollo, musica e sondaggi si fermano. Per riaprire il sito spegnilo, salva e pubblica. L\'anteprima qui a fianco mostra sempre il sito vero.',
+    gruppo: 'manutenzione'
+  },
   immagini: {
     titolo: 'Immagini',
     nota: 'I file caricati qui restano sul server. Un\'immagine del sito si cambia anche cliccandola nell\'anteprima.'
@@ -126,7 +132,7 @@ const VISTE = {
 };
 
 /* I gruppi che hanno una vista loro invece di un punto della pagina. */
-const VISTA_DEL_GRUPPO = { aspetto: 'impostazioni', canale: 'canale', meta: 'meta' };
+const VISTA_DEL_GRUPPO = { aspetto: 'impostazioni', canale: 'canale', meta: 'meta', manutenzione: 'manutenzione' };
 
 const MODULI = [
   { nome: 'motore', file: './motore.js', cosa: 'l\'anteprima modificabile (editor/motore.js)' },
@@ -879,6 +885,21 @@ function disegnaGruppo(scorri, gruppo) {
   // passa da ponte.creaCampo. Vive solo nella vista «canale».
   if (gruppo.id === 'canale') scorri.append(creaCollegamentoTwitch());
   if (gruppo.id === 'sondaggio') scorri.prepend(rimandoSondaggi());
+  if (gruppo.id === 'manutenzione') scorri.append(anteprimaManutenzione());
+}
+
+function anteprimaManutenzione() {
+  return el('div', { classe: 'spiegazione' }, [
+    icona('info'),
+    el('div', {}, [
+      el('p', { testo: 'La pagina che vedrebbero i visitatori, con i valori già salvati: salva prima, se hai appena cambiato qualcosa qui sopra.' }),
+      el('div', { classe: 'lato__azioni' }, [
+        el('a', {
+          classe: 'btn btn--primario', href: '/api/anteprima/manutenzione', target: '_blank', rel: 'noopener'
+        }, [icona('esterno'), el('span', { testo: 'Guarda la pagina di manutenzione' })])
+      ])
+    ])
+  ]);
 }
 
 /* =====================================================================
@@ -1894,6 +1915,9 @@ function legaBarra() {
     if (sh.vista === 'menu' && (!stretto() || sh.cassetto)) chiudiVista(true);
     else apriVista('menu');
   });
+
+  const spiaManutenzione = $('spia-manutenzione');
+  if (spiaManutenzione) spiaManutenzione.addEventListener('click', () => apriVista('manutenzione'));
 
   ui.btnCassetto.addEventListener('click', () => {
     impostaCassetto(!sh.cassetto);

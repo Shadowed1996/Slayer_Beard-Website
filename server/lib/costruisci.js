@@ -36,6 +36,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const { P } = require('./percorsi');
 const { scriviAtomico, eFile } = require('./file');
@@ -1498,6 +1499,125 @@ function togliCommenti(html) {
   return fuori + righeVuote(normale);
 }
 
+const FUSO_MANUTENZIONE = 'Europe/Rome';
+const SEGNO_MANUTENZIONE = '<meta name="sb-pagina" content="manutenzione">';
+
+function manutenzioneAttiva(config) {
+  return !!(config && config.manutenzione && typeof config.manutenzione === 'object' &&
+    config.manutenzione.attiva === true);
+}
+
+function fineManutenzione(valore) {
+  const pezzi = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/.exec(String(valore || '').trim());
+  if (!pezzi) { return null; }
+  const ms = SBOrari.istante(pezzi[1], pezzi[2], FUSO_MANUTENZIONE);
+  if (!Number.isFinite(ms)) { return null; }
+  const data = SBOrari.dataNelFuso(ms, FUSO_MANUTENZIONE);
+  const ora = SBOrari.oraNelFuso(ms, FUSO_MANUTENZIONE);
+  const scarto = Math.round((Date.parse(data + 'T' + ora + ':00Z') - ms) / 60000);
+  const assoluto = Math.abs(scarto);
+  const due = (n) => String(n).padStart(2, '0');
+  return {
+    ms: ms,
+    data: data,
+    ora: ora,
+    iso: data + 'T' + ora + ':00' + (scarto < 0 ? '-' : '+') + due(Math.floor(assoluto / 60)) + ':' + due(assoluto % 60)
+  };
+}
+
+function etichettaManutenzione(prima, fine, adesso) {
+  const oggi = SBOrari.dataNelFuso(adesso, FUSO_MANUTENZIONE);
+  if (fine.data === oggi) { return prima + ' alle ' + fine.ora + ' · mancano'; }
+  const pezzi = fine.data.split('-');
+  const giorno = pezzi[2] + '/' + pezzi[1] + (pezzi[0] === oggi.slice(0, 4) ? '' : '/' + pezzi[0]);
+  return prima + ' il ' + giorno + ' alle ' + fine.ora + ' · mancano';
+}
+
+function contestoManutenzione(contenuti, adesso, cache) {
+  const testi = (contenuti && contenuti.testi) || {};
+  const config = (contenuti && contenuti.config) || {};
+  const ramo = (config.manutenzione && typeof config.manutenzione === 'object') ? config.manutenzione : {};
+  const immagini = config.immagini || {};
+  const canale = String((config.twitch && config.twitch.canale) || '');
+
+  const mancanti = [];
+  const social = elencoVisibile(config.social, cache, mancanti)
+    .filter((voce) => voce.icona !== 'twitch')
+    .map((voce) => ({ nome: String(voce.nome || voce.icona || ''), url: voce.url.trim(), svg: voce.svg }));
+  const iconaTwitch = leggiIcona('twitch', cache, mancanti);
+  if (mancanti.length) {
+    throw erroreHttp(500, 'Mancano le icone della pagina di manutenzione: ' + mancanti.join(', ') + '.');
+  }
+
+  const fine = fineManutenzione(ramo.fine);
+  let script = '';
+  if (fine) {
+    if (!eFile(P.scriptManutenzione)) {
+      throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.scriptManutenzione) +
+        ': e il conto alla rovescia della pagina di manutenzione.');
+    }
+    script = '\n' + fs.readFileSync(P.scriptManutenzione, 'utf8');
+  }
+  const impronta = 'sha256-' + crypto.createHash('sha256').update(script, 'utf8').digest('base64');
+
+  const testoDi = (chiave) => (typeof testi[chiave] === 'string' && testi[chiave].trim()
+    ? testi[chiave] : schema.campo(chiave).predefinito);
+  const frasi = (Array.isArray(ramo.nastro) ? ramo.nastro : [])
+    .filter((frase) => typeof frase === 'string' && frase.trim())
+    .map((frase) => frase.trim());
+  const nastro = '&nbsp;★ ' + (frasi.length ? frasi : schema.campo('config.manutenzione.nastro').predefinito)
+    .map((frase) => modello.proteggi(frase)).join(' &nbsp;·&nbsp; ') + ' &nbsp;';
+
+  return {
+    stato: testoDi('manutenzione.stato'),
+    occhiello: testoDi('manutenzione.occhiello'),
+    contoFinito: testoDi('manutenzione.contoFinito'),
+    bottone: testoDi('manutenzione.bottone'),
+    nastro: nastro,
+    nome: String(testi['marchio.nome'] || canale),
+    urlCanale: 'https://www.twitch.tv/' + canale,
+    iconaTwitch: iconaTwitch,
+    social: social,
+    messaggio: testoricco.sanifica(testoDi('manutenzione.messaggio')),
+    avatar: String(immagini.avatar || ''),
+    mascotte: String(immagini.mascotte || ''),
+    og: String(immagini.og || ''),
+    favicon: String(immagini.favicon || ''),
+    fontUrl: tema.urlGoogleFonts(config.tema, []),
+    anno: SBOrari.dataNelFuso(adesso, FUSO_MANUTENZIONE).slice(0, 4),
+    conto: !!fine,
+    fine: fine ? fine.iso : '',
+    etichetta: fine ? etichettaManutenzione(testoDi('manutenzione.contoPrima').trim(), fine, adesso) : '',
+    script: script,
+    impronta: fine ? impronta : '',
+    scriptSrc: fine ? '\'' + impronta + '\'' : '\'none\''
+  };
+}
+
+function rendiManutenzione(contenuti, opzioni) {
+  const scelte = opzioni || {};
+  const cache = scelte.cache || new Map();
+  if (!eFile(P.modelloManutenzione)) {
+    throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.modelloManutenzione) +
+      ': e il modello della pagina di manutenzione.');
+  }
+  const contesto = { manutenzione: contestoManutenzione(contenuti, momentoDi(scelte), cache) };
+  return togliCommenti(modello.rendiFile(P.modelloManutenzione, contesto,
+    { file: 'modelli/manutenzione.html', cartella: P.modelli, cache: cache }));
+}
+
+function anteprimaManutenzione(contenuti) {
+  return rendiManutenzione(contenuti);
+}
+
+function inManutenzione() {
+  try {
+    return fs.readFileSync(P.indexHtml, 'utf8').indexOf(SEGNO_MANUTENZIONE) !== -1;
+  } catch (e) {
+    return false;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* RESA                                                                */
 /* ------------------------------------------------------------------ */
@@ -1545,8 +1665,9 @@ function rendi(contenuti, opzioni) {
   // Il foglio del tema non passa dal motore di template: e calcolato, non
   // riempito. tema.css() non lancia mai, nemmeno con un tema mezzo scritto.
   const foglio = tema.css(contenuti.config.tema);
+  const manutenzione = manutenzioneAttiva(contenuti.config) ? rendiManutenzione(contenuti, scelte) : null;
 
-  return { html: html, clip: clip, dati: dati, tema: foglio, contesto: contesto };
+  return { html: html, clip: clip, dati: dati, tema: foglio, contesto: contesto, manutenzione: manutenzione };
 }
 
 /** Solo l'HTML, per l'anteprima: si rende al volo e non tocca il disco. */
@@ -1787,6 +1908,23 @@ function scriviPaginaClip(html) {
   }
 }
 
+function allineaClipDopoRipristino() {
+  const leggi = (percorso) => {
+    try { return fs.readFileSync(percorso, 'utf8'); } catch (e) { return ''; }
+  };
+  const home = leggi(P.indexHtml);
+  const prima = leggi(P.clipHtml);
+  try {
+    if (home.indexOf(SEGNO_MANUTENZIONE) !== -1) {
+      return home === prima ? null : scriviPaginaClip(home);
+    }
+    if (prima.indexOf(SEGNO_MANUTENZIONE) === -1) { return null; }
+    return scriviPaginaClip(rendi(archivio.leggi()).clip);
+  } catch (e) {
+    return { file: 'clip.html', stato: 'non allineata', byte: 0, errore: (e && e.message) ? e.message : String(e) };
+  }
+}
+
 /**
  * L'ordine e quello del contratto e non va cambiato:
  *   0. copertura dello schema   (se lo schema mente, tutto il resto mente)
@@ -1826,7 +1964,8 @@ function genera(opzioni) {
 
   // scriviAtomico crea da se la cartella che manca: js/ e css/ esistono
   // sempre, ma il collaudo genera anche dentro cartelle temporanee vuote.
-  scriviGenerato(P.indexHtml, reso.html);
+  const pagina = reso.manutenzione || reso.html;
+  scriviGenerato(P.indexHtml, pagina);
   scriviGenerato(P.datiJs, reso.dati);
   scriviGenerato(P.temaCss, reso.tema);
 
@@ -1835,7 +1974,7 @@ function genera(opzioni) {
   // c'e solo se il sito ha delle clip. Tenerla dentro `scritti` vorrebbe
   // dire un elenco che a volte ha tre voci e a volte quattro, e chi lo legge
   // — il pannello, il collaudo — dovrebbe mettersi a distinguere.
-  const paginaClip = scriviPaginaClip(reso.clip);
+  const paginaClip = scriviPaginaClip(reso.manutenzione || reso.clip);
 
   const quando = archivio.salva(contenuti);
 
@@ -1853,8 +1992,12 @@ function genera(opzioni) {
     aggiornatoIl: quando,
     sitemap: mappa,
     paginaClip: paginaClip,
+    manutenzione: {
+      attiva: !!reso.manutenzione,
+      pagine: reso.manutenzione ? ['index.html', 'clip.html'] : []
+    },
     scritti: [
-      { file: 'index.html', byte: Buffer.byteLength(reso.html, 'utf8') },
+      { file: 'index.html', byte: Buffer.byteLength(pagina, 'utf8') },
       { file: 'js/dati.js', byte: Buffer.byteLength(reso.dati, 'utf8') },
       { file: 'css/tema.css', byte: Buffer.byteLength(reso.tema, 'utf8') }
     ],
@@ -1869,7 +2012,8 @@ function genera(opzioni) {
 }
 
 module.exports = {
-  genera, anteprima, anteprimaDi, anteprimaEditor, rendi, costruisciContesto,
+  genera, anteprima, anteprimaDi, anteprimaEditor, anteprimaManutenzione, inManutenzione,
+  allineaClipDopoRipristino, fineManutenzione, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, jsonSicuro, chiaviRicche,
   orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta,

@@ -233,6 +233,7 @@ function statoDelSito(contenuti) {
     // Se i contenuti sono piu recenti della pagina, c e da ripubblicare.
     daPubblicare: !generatoIl || !temaGenerato || (contenutiIl !== null && contenutiIl > generatoIl),
     modelloPresente: fs.existsSync(P.modelloIndex),
+    manutenzione: costruisci.inManutenzione(),
     backup: backup.elenco().length,
     media: media.elenco().length,
     scoperte: schema.verificaCopertura(contenuti),
@@ -324,7 +325,7 @@ async function rottaPubblica(req, res) {
   // un fallimento.
   json(res, 200, {
     ok: true, backup: esito.backup, durataMs: esito.durataMs,
-    scritti: esito.scritti, controlli: esito.controlli,
+    scritti: esito.scritti, controlli: esito.controlli, manutenzione: esito.manutenzione,
     twitch: { stato: daTwitch.stato, messaggio: twitch.racconta(daTwitch) },
     follower: { stato: iFollower.stato, messaggio: twitch.raccontaFollower(iFollower) },
     clip: { stato: leClip.stato, messaggio: twitch.raccontaClip(leClip) },
@@ -338,6 +339,12 @@ async function rottaPubblica(req, res) {
 
 function rottaAnteprima(req, res) {
   testo(res, 200, costruisci.anteprima(), 'text/html; charset=utf-8');
+}
+
+function rottaAnteprimaManutenzione(req, res) {
+  const pagina = costruisci.anteprimaManutenzione(archivio.leggi())
+    .replace(/<head\b[^>]*>/i, (testa) => testa + '<base href="/">');
+  testo(res, 200, pagina, 'text/html; charset=utf-8');
 }
 
 /**
@@ -546,7 +553,8 @@ function rottaElencoBackup(req, res) {
 
 function rottaRipristina(req, res, id) {
   const esito = backup.ripristina(id);
-  json(res, 200, { ok: true, ripristinati: esito.ripristinati, backup: esito.backup });
+  const clip = costruisci.allineaClipDopoRipristino();
+  json(res, 200, { ok: true, ripristinati: esito.ripristinati, backup: esito.backup, clip: clip });
 }
 
 /* --- SONDAGGI ------------------------------------------------------ */
@@ -645,6 +653,9 @@ async function gestisci(req, res, percorso) {
     if (metodo === 'GET') { return rottaAnteprima(req, res); }
     if (metodo === 'POST') { return rottaAnteprimaDiProva(req, res); }
     return metodoNonAmmesso(res, 'GET, POST');
+  }
+  if (percorso === '/api/anteprima/manutenzione') {
+    return metodo === 'GET' ? rottaAnteprimaManutenzione(req, res) : metodoNonAmmesso(res, 'GET');
   }
   if (percorso === '/api/tema') {
     return metodo === 'POST' ? rottaTema(req, res) : metodoNonAmmesso(res, 'POST');

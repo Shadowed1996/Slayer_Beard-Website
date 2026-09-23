@@ -23,6 +23,7 @@ const SBOrari = require('../../pannello/condivisi/orari.js');
 // Estensioni ammesse nei campi immagine: quelle che il sito sa mostrare.
 const ESTENSIONI_IMMAGINE = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'ico', 'gif', 'avif'];
 const RE_ORARIO = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+const RE_DATAORA = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/;
 // Esadecimale a 6 cifre col cancelletto: la forma corta (#abc) non si
 // accetta perche il tema.css calcola le sfumature dalle sei cifre.
 const RE_COLORE = /^#[0-9a-fA-F]{6}$/;
@@ -241,6 +242,13 @@ function controllaValore(campo, valore, aggiungi, chiave) {
   }
   if (campo.tipo === 'orario') {
     if (!RE_ORARIO.test(testo)) { aggiungi('«' + etichetta + '» va scritto come HH:MM, per esempio 21:00.'); }
+    return;
+  }
+  if (campo.tipo === 'dataora') {
+    const pezzi = RE_DATAORA.exec(testo);
+    if (!pezzi || !SBOrari.dataValida(pezzi[1]) || !RE_ORARIO.test(pezzi[2])) {
+      aggiungi('«' + etichetta + '» va scritto come AAAA-MM-GGTHH:MM, per esempio 2026-09-24T13:30.');
+    }
     return;
   }
   if (campo.tipo === 'immagine') {
