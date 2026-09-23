@@ -474,7 +474,7 @@ async function proveSchema(contenutiVeri) {
     // che non stanno in nessun punto della pagina perche valgono ovunque:
     // "canale" (i dati tecnici) e "aspetto" (colori e font).
     const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'settimana', 'chi',
-      'supporto', 'saluti', 'piede', 'canale', 'aspetto'];
+      'supporto', 'saluti', 'piede', 'musica', 'canale', 'aspetto'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
 
@@ -1289,7 +1289,14 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     // account.js pubblica window.Account, canale.js e lurk.js ci si
     // iscrivono, e pollo.js si iscrive a window.Lurk — che deve gia esistere.
     const soloNostri = script.map((s) => s.src).filter((s) => s.indexOf('js/') === 0);
-    esigiUguale(soloNostri.join(','),
+    // js/musica.js c e solo con il lettore acceso, e quando c e sta in fondo:
+    // non si iscrive a nessuno, e chi lo ascolta non esiste ancora.
+    const facoltativi = ['js/musica.js'];
+    const fissi = soloNostri.filter((s) => facoltativi.indexOf(s) === -1);
+    const coda = soloNostri.slice(fissi.length);
+    esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
+      'gli script facoltativi non stanno in fondo: ' + soloNostri.join(','));
+    esigiUguale(fissi.join(','),
       'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js,js/cima.js',
       'ordine degli script del sito');
   });
@@ -1308,6 +1315,77 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigiDentro(html, 'id="diretta"', 'la sezione della diretta');
     esigiDentro(html, 'id="twitch-embed"', 'il posto del player');
     esigiUguale(archivio.leggi().config.lurk.attivo, true, 'i contenuti salvati sono stati toccati');
+  });
+
+  await prova('chiavi superate: un contenuti.json che ha ancora lo Spotify sul disco non blocca la pubblicazione', () => {
+    const documento = archivio.leggi();
+    documento.testi['spotify.titolo'] = 'In sottofondo';
+    documento.testi['spotify.ascolta'] = 'Sta ascoltando';
+    documento.testi['spotify.passa'] = 'Passa';
+    documento.testi['spotify.nascondi'] = 'Riduci';
+    documento.testi['spotify.mostra'] = 'Apri';
+    documento.config.spotify = { attivo: true, segui: false, clientId: 'a'.repeat(32), link: 'https://open.spotify.com/x', formato: 'compatto', aperto: true };
+
+    // Prima: sono undici chiavi che nessun campo dello schema descrive.
+    const prima = schema.verificaCopertura(documento).filter((p) => p.tipo === 'scoperta');
+    esigiUguale(prima.length, 11, 'chiavi scoperte attese');
+
+    // Dopo completa() — cioe quello che fa archivio.leggi() — non ce n e piu
+    // nessuna, e il resto dei contenuti non e stato toccato.
+    schema.completa(documento);
+    esigiUguale(schema.verificaCopertura(documento).filter((p) => p.tipo === 'scoperta').length, 0, 'chiavi scoperte dopo la pulizia');
+    esigiUguale(convalida.convalida(documento).length, 0, 'la convalida deve passare');
+    esigi(documento.config.spotify === undefined, 'config.spotify e rimasto');
+    esigi(documento.testi['spotify.titolo'] === undefined, 'spotify.titolo e rimasto');
+    esigiDentro(JSON.stringify(Object.keys(documento.testi)), 'meta.titolo', 'gli altri testi devono restare');
+    esigi(typeof documento.config.email === 'string' && documento.config.email !== '', 'la email e sparita');
+  });
+
+  await prova('musica: spenta non lascia niente in pagina, accesa porta lettore, foglio e script', () => {
+    const documento = archivio.leggi();
+    const comEra = documento.config.musica.attivo;
+    documento.config.musica.attivo = false;
+    const spento = costruisci.anteprimaDi(documento);
+    esigi(spento.indexOf('id="musica"') === -1, 'il lettore e stato stampato lo stesso');
+    esigi(spento.indexOf('css/musica.css') === -1, 'il foglio del lettore e rimasto');
+    esigi(spento.indexOf('js/musica.js') === -1, 'lo script del lettore e rimasto');
+
+    documento.config.musica.attivo = true;
+    documento.config.tracce = [
+      { titolo: 'Uno', artista: 'Tizio', file: 'uno.mp3', link: '' },
+      { titolo: 'Due', artista: '', file: 'due con spazi.mp3', link: 'https://example.org/' }
+    ];
+    const acceso = costruisci.anteprimaDi(documento);
+    esigiDentro(acceso, 'id="musica"', 'il lettore in pagina');
+    esigiDentro(acceso, 'css/musica.css', 'il foglio');
+    esigiDentro(acceso, 'js/musica.js', 'lo script');
+    esigiDentro(acceso, 'id="musica-audio"', 'l elemento audio');
+    esigiDentro(acceso, 'data-aperto="1"', 'aperto alla prima visita');
+
+    // I contenuti veri non sono stati toccati: anteprimaDi rende in memoria.
+    esigiUguale(archivio.leggi().config.musica.attivo, comEra, 'i contenuti salvati sono stati toccati');
+  });
+
+  await prova('musica: gli indirizzi delle tracce nascono dalla cartella, e un nome storto non entra', () => {
+    const documento = archivio.leggi();
+    documento.config.musica.attivo = true;
+    documento.config.musica.cartella = 'mp3';
+    documento.config.tracce = [
+      { titolo: 'Buona', artista: 'Tizio', file: 'keygen funk.mp3', cover: 'contenuti/media/x.webp', link: '' },
+      { titolo: 'Fuori', artista: '', file: '../server/dati/auth.json', link: '' },
+      { titolo: 'Fuori pure', artista: '', file: 'sotto/cartella.mp3', link: '' },
+      { titolo: 'Senza file', artista: '', file: '', link: '' }
+    ];
+    const dati = costruisci.oggettoDati(documento, {});
+    esigiUguale(dati.musica.tracce.length, 1, 'solo la traccia buona deve passare');
+    esigiUguale(dati.musica.tracce[0].src, 'mp3/keygen%20funk.mp3', 'indirizzo della traccia');
+    esigiUguale(dati.musica.tracce[0].titolo, 'Buona', 'titolo');
+    esigiUguale(dati.musica.tracce[0].cover, 'contenuti/media/x.webp', 'copertina');
+
+    // Spenta, in js/dati.js non finisce nessuna traccia: la pagina non deve
+    // nemmeno sapere che esistono.
+    documento.config.musica.attivo = false;
+    esigiUguale(costruisci.oggettoDati(documento, {}).musica.tracce.length, 0, 'spenta non si pubblica nessuna traccia');
   });
 
   await prova('nessun foglio oltre tokens.css e tema.css contiene un esadecimale', () => {

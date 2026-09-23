@@ -163,6 +163,7 @@ function cacheDi(file) {
   const relativo = path.relative(P.radice, file);
   if (!relativo || relativo.startsWith('..')) { return 'no-cache'; }
   const pezzi = relativo.toLowerCase().split(path.sep);
+  if (pezzi[0] === 'mp3') { return CACHE_LUNGA; }
   if (pezzi[0] === 'img') { return CACHE_LUNGA; }
   if (pezzi[0] === 'contenuti' && (pezzi[1] === 'media' || pezzi[1] === 'font')) { return CACHE_LUNGA; }
   return 'no-cache';

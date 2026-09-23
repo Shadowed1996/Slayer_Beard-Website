@@ -792,6 +792,69 @@ function cssInPagina(css) {
  * il punto e restano cosi), la configurazione sotto `config`, gli elenchi
  * al primo livello perche il modello ci cicla sopra per nome.
  */
+function nomeTracciaSicuro(valore) {
+  const pulito = String(valore || '').trim().replace(/\\/g, '/');
+  if (!pulito || pulito.indexOf('/') > -1 || pulito.indexOf('..') > -1) { return ''; }
+  return pulito;
+}
+
+function tracceDi(config) {
+  const cartella = String((config.musica && config.musica.cartella) || 'mp3').trim().replace(/^\/+|\/+$/g, '');
+  const elenco = Array.isArray(config.tracce) ? config.tracce : [];
+  const fuori = [];
+  for (const voce of elenco) {
+    if (!voce || typeof voce !== 'object') { continue; }
+    const file = nomeTracciaSicuro(voce.file);
+    if (!file) { continue; }
+    fuori.push({
+      titolo: String(voce.titolo || '').trim(),
+      artista: String(voce.artista || '').trim(),
+      src: (cartella ? cartella + '/' : '') + file.split('/').map(encodeURIComponent).join('/'),
+      cover: String(voce.cover || '').trim(),
+      link: String(voce.link || '').trim()
+    });
+  }
+  return fuori;
+}
+
+function musicaDi(config, testi) {
+  const voce = (config.musica && typeof config.musica === 'object') ? config.musica : {};
+  const tracce = tracceDi(config);
+  return {
+    attivo: voce.attivo === true && tracce.length > 0,
+    aperto: voce.aperto !== false,
+    quante: tracce.length,
+    titolo: testi['musica.titolo'] || '',
+    play: testi['musica.play'] || '',
+    pausa: testi['musica.pausa'] || '',
+    precedente: testi['musica.precedente'] || '',
+    successiva: testi['musica.successiva'] || '',
+    avanzamento: testi['musica.avanzamento'] || '',
+    volume: testi['musica.volume'] || '',
+    muto: testi['musica.muto'] || '',
+    suono: testi['musica.suono'] || '',
+    riduci: testi['musica.riduci'] || '',
+    apri: testi['musica.apri'] || '',
+    elenco: testi['musica.elenco'] || ''
+  };
+}
+
+function musicaDati(config, testi) {
+  const voce = (config.musica && typeof config.musica === 'object') ? config.musica : {};
+  return {
+    aperto: voce.aperto !== false,
+    tracce: voce.attivo === true ? tracceDi(config) : [],
+    testi: {
+      play: testi['musica.play'] || '',
+      pausa: testi['musica.pausa'] || '',
+      muto: testi['musica.muto'] || '',
+      suono: testi['musica.suono'] || '',
+      errore: testi['musica.errore'] || '',
+      bloccato: testi['musica.bloccato'] || ''
+    }
+  };
+}
+
 function costruisciContesto(contenuti, opzioni) {
   const scelte = opzioni || {};
   // Copia: da qui in avanti si riscrivono i valori ricchi, e il documento
@@ -860,6 +923,7 @@ function costruisciContesto(contenuti, opzioni) {
       // sezione con lo stile gia costruito dai numeri puliti.
       eventi: eventi,
       haEventi: eventi.length > 0,
+      musica: musicaDi(config, testi),
       settimanaSfondo: sfondoDi(config.orari),
       // Indirizzo dei font scelti nel gruppo «Aspetto» e di quelli del
       // catalogo scelti negli stili dei singoli elementi. Vuoto se sono tutti
@@ -1236,6 +1300,7 @@ function oggettoDati(contenuti, opzioni) {
       copiaBtn: testi['saluti.copiaBtn'] || '',
       copiaFatto: testi['saluti.copiaFatto'] || ''
     },
+    musica: musicaDati(config, testi),
     pollo: polloDi(config, testi),
     chi: chiDi(config),
     // L ordine conta: il ramo del lurk dipende da quello dell account, perche

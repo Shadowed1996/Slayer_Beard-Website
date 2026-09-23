@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-23T06:33:22.162Z",
+  "aggiornatoIl": "2026-09-23T07:05:44.716Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -142,7 +142,21 @@
     "clip.filtro3giorni": "3 giorni",
     "clip.filtro7giorni": "7 giorni",
     "clip.filtro30giorni": "30 giorni",
-    "clip.vuoto": "Nessuna clip in questo periodo."
+    "clip.vuoto": "Nessuna clip in questo periodo.",
+    "musica.titolo": "In sottofondo",
+    "musica.play": "Fai partire la musica",
+    "musica.pausa": "Metti in pausa",
+    "musica.precedente": "Traccia precedente",
+    "musica.successiva": "Traccia successiva",
+    "musica.avanzamento": "Punto della traccia",
+    "musica.volume": "Volume",
+    "musica.muto": "Togli l'audio",
+    "musica.suono": "Rimetti l'audio",
+    "musica.riduci": "Riduci il lettore",
+    "musica.apri": "Apri il lettore",
+    "musica.errore": "Questa traccia non si carica.",
+    "musica.bloccato": "Premi di nuovo play.",
+    "musica.elenco": "Scegli la traccia"
   },
   "config": {
     "twitch": {
@@ -552,6 +566,12 @@
     "stili": {},
     "disposizione": {
       "blocchi": {}
-    }
+    },
+    "musica": {
+      "attivo": false,
+      "aperto": true,
+      "cartella": "mp3"
+    },
+    "tracce": []
   }
 }

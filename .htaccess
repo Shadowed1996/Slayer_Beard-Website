@@ -144,6 +144,10 @@
   # stanno qui.
   RewriteRule ^contenuti/media/ - [L]
 
+  # Le tracce del lettore di sottofondo. Le carica chi amministra da Plesk,
+  # non dal pannello: sono file grossi e si mettono una volta sola.
+  RewriteRule ^mp3/[^/]+\.(mp3|m4a|ogg|opus|webm)$ - [L]
+
   # I font caricati dal pannello. Solo i file dei font: elenco.json, che
   # sta nella stessa cartella, e un file di lavoro e resta fuori (lo nega
   # la riga su contenuti/ piu sotto).

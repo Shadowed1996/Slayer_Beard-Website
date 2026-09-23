@@ -36,3 +36,6 @@ $RECYCLE.BIN/
 *.tmp
 *.bak
 *.orig
+
+# le tracce del lettore di sottofondo: si caricano da Plesk, non stanno in git
+mp3/

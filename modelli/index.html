@@ -19,7 +19,8 @@
 <link rel="stylesheet" href="css/account.css">
 <link rel="stylesheet" href="css/lurk.css">
 <link rel="stylesheet" href="css/cima.css">
-{{#se sito.cssDisposizione}}<style id="sb-disposizione">
+{{#se sito.musica.attivo}}<link rel="stylesheet" href="css/musica.css">
+{{/se}}{{#se sito.cssDisposizione}}<style id="sb-disposizione">
 {{{sito.cssDisposizione}}}
 </style>
 {{/se}}{{#se sito.cssStili}}<style id="sb-stili">
@@ -37,6 +38,8 @@
 
 {{> parziali/piede}}
 
+{{#se sito.musica.attivo}}{{> parziali/musica}}
+{{/se}}
 <!-- ritorno.js prima di tutto e SENZA defer, ed è l'unico punto in cui l'ordine è una
      questione di sostanza e non di dipendenze: quando questa pagina è la finestrella
      che torna dal login di Twitch, quel file consegna il token a chi l'ha aperta e la
@@ -60,7 +63,8 @@
 <script src="js/lurk.js" defer></script>
 <script src="js/pollo.js" defer></script>
 <script src="js/cima.js" defer></script>
-<!-- AUGURI 21/09/2026 - inizio. Si spegne da solo il 22/09/2026 alle 00:00 (ora italiana).
+{{#se sito.musica.attivo}}<script src="js/musica.js" defer></script>
+{{/se}}<!-- AUGURI 21/09/2026 - inizio. Si spegne da solo il 22/09/2026 alle 00:00 (ora italiana).
      Per toglierlo del tutto: rimettere il file ripristino/index.html, oppure cancellare da qui a "AUGURI - fine"
      e togliere l'hash 'sha256-h5DNoJxrrsy4V9fk6jkWgvRejQD5aZxms0VMRHQ/hs0=' dalla riga script-src della Content-Security-Policy. -->
 <style id="sb-auguri-stile">

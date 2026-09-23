@@ -575,6 +575,52 @@ const gruppi = [
   },
 
   {
+    id: 'musica',
+    titolo: 'Musica di sottofondo',
+    descrizione: 'Un lettore piccolo in basso a destra, con le tracce che carichi tu nella cartella del sito. Parte sempre in pausa: la musica la sceglie chi visita, non la pagina.',
+    campi: [
+      { chiave: 'config.musica.attivo', etichetta: 'Mostra il lettore', tipo: 'interruttore', predefinito: false,
+        aiuto: 'Spento, il lettore non compare e la pagina non scarica nessuna traccia.' },
+      { chiave: 'config.musica.aperto', etichetta: 'Aperto alla prima visita', tipo: 'interruttore', predefinito: true,
+        aiuto: 'Acceso, chi arriva lo vede aperto; spento, vede solo il bottone tondo. Poi vale la scelta di ognuno, che il sito si ricorda.' },
+      { chiave: 'config.musica.cartella', etichetta: 'Cartella dei file', tipo: 'testo', max: 40, predefinito: 'mp3',
+        aiuto: 'La cartella del sito dove hai caricato gli mp3, senza barre: «mp3». I file si caricano da Plesk, non da qui.' },
+      { chiave: 'musica.titolo', etichetta: 'Scritta sopra il lettore', tipo: 'testo', max: 40, predefinito: 'In sottofondo',
+        aiuto: 'Una parola o due, per esempio «In sottofondo» o «La playlist del canale».' },
+      { chiave: 'musica.play', etichetta: 'Bottone play', tipo: 'testo', max: 40, predefinito: 'Fai partire la musica',
+        aiuto: 'Lo leggono i lettori di schermo e compare passandoci sopra col mouse.' },
+      { chiave: 'musica.pausa', etichetta: 'Bottone pausa', tipo: 'testo', max: 40, predefinito: 'Metti in pausa' },
+      { chiave: 'musica.precedente', etichetta: 'Bottone traccia precedente', tipo: 'testo', max: 40, predefinito: 'Traccia precedente' },
+      { chiave: 'musica.successiva', etichetta: 'Bottone traccia successiva', tipo: 'testo', max: 40, predefinito: 'Traccia successiva' },
+      { chiave: 'musica.avanzamento', etichetta: 'Barra di avanzamento', tipo: 'testo', max: 40, predefinito: 'Punto della traccia' },
+      { chiave: 'musica.volume', etichetta: 'Cursore del volume', tipo: 'testo', max: 40, predefinito: 'Volume' },
+      { chiave: 'musica.muto', etichetta: 'Bottone per togliere l\'audio', tipo: 'testo', max: 40, predefinito: 'Togli l\'audio' },
+      { chiave: 'musica.suono', etichetta: 'Bottone per rimettere l\'audio', tipo: 'testo', max: 40, predefinito: 'Rimetti l\'audio' },
+      { chiave: 'musica.elenco', etichetta: 'Bottone che apre la lista delle tracce', tipo: 'testo', max: 40, predefinito: 'Scegli la traccia',
+        aiuto: 'Si apre cliccando il titolo della traccia nel lettore.' },
+      { chiave: 'musica.riduci', etichetta: 'Bottone per ridurre il lettore', tipo: 'testo', max: 40, predefinito: 'Riduci il lettore' },
+      { chiave: 'musica.apri', etichetta: 'Bottone per riaprire il lettore', tipo: 'testo', max: 40, predefinito: 'Apri il lettore',
+        aiuto: 'Il bottone tondo che resta quando il lettore e ridotto.' },
+      { chiave: 'musica.errore', etichetta: 'Avviso se una traccia non si carica', tipo: 'testo', max: 80, predefinito: 'Questa traccia non si carica.',
+        aiuto: 'Compare sotto i comandi. Quasi sempre vuol dire che il nome del file qui sotto non corrisponde a quello caricato su Plesk.' },
+      { chiave: 'musica.bloccato', etichetta: 'Avviso se il browser rifiuta di suonare', tipo: 'testo', max: 80, predefinito: 'Premi di nuovo play.',
+        aiuto: 'I browser non fanno partire l\'audio senza un clic: capita se la musica prova a ripartire da sola.' },
+      { chiave: 'config.tracce', etichetta: 'Le tracce', tipo: 'elenco', etichettaVoce: 'titolo', predefinito: [],
+        aiuto: 'Suonano nell\'ordine in cui stanno qui. La durata la legge il lettore dal file, non va scritta.',
+        campi: [
+          { chiave: 'titolo', etichetta: 'Titolo', tipo: 'testo', max: 60 },
+          { chiave: 'artista', etichetta: 'Artista', tipo: 'testo', max: 60 },
+          { chiave: 'file', etichetta: 'Nome del file', tipo: 'testo', max: 120,
+            aiuto: 'Esattamente come si chiama nella cartella, estensione compresa: «keygen-funk.mp3».' },
+          { chiave: 'cover', etichetta: 'Copertina', tipo: 'immagine', facoltativo: true, predefinito: '',
+            aiuto: 'Quadrata, almeno 200x200. Si carica da «Immagini» come tutte le altre. Dal suo colore il lettore tinge anche il proprio sfondo. Vuota: resta il vinile.' },
+          { chiave: 'link', etichetta: 'Link alla traccia', tipo: 'url', facoltativo: true,
+            aiuto: 'La pagina dell\'artista o della traccia, per dare credito. Vuoto = nessun link.' }
+        ] }
+    ]
+  },
+
+  {
     id: 'canale',
     titolo: 'Canale, contatti e immagini',
     descrizione: 'I dati tecnici: da qui passano il player, il conto alla rovescia e le immagini del sito.',
@@ -743,6 +789,65 @@ function scrivi(contenuti, chiave, valore) {
   corrente[pezzi[pezzi.length - 1]] = valore;
 }
 
+/*
+ * SUPERATE — il contrario di "predefinito". Non chiavi nuove da aggiungere,
+ * ma chiavi vecchie di una funzione TOLTA che un contenuti.json gia
+ * pubblicato puo ancora avere scritte sul disco. Senza questo elenco la
+ * copertura le vedrebbe come chiavi scoperte e Pubblica si fermerebbe con
+ * un 422, su un sito che fino a un momento prima funzionava.
+ *
+ * Si tolgono appena letto il file, come i predefiniti si aggiungono: da li
+ * in giu nessuno deve sapere che siano mai esistite. Un percorso che finisce
+ * su un oggetto (config.spotify) porta via tutto quello che c'e sotto.
+ *
+ * Una voce qui non si cancella mai per pulizia: finche esiste un sito con
+ * quella chiave sul disco, questa riga e l'unica cosa che lo tiene in piedi.
+ */
+const SUPERATE = [
+  'spotify.titolo',
+  'spotify.ascolta',
+  'spotify.passa',
+  'spotify.nascondi',
+  'spotify.mostra',
+  'config.spotify'
+];
+
+/** Toglie una chiave dai contenuti. Vero se c'era davvero. */
+function cancella(contenuti, chiave) {
+  if (!chiave.startsWith('config.')) {
+    if (!haChiave(contenuti.testi, chiave)) { return false; }
+    delete contenuti.testi[chiave];
+    return true;
+  }
+  const pezzi = chiave.slice('config.'.length).split('.');
+  let corrente = contenuti.config;
+  for (let i = 0; i < pezzi.length - 1; i++) {
+    const nome = pezzi[i];
+    if (!haChiave(corrente, nome) || corrente[nome] === null || typeof corrente[nome] !== 'object') { return false; }
+    corrente = corrente[nome];
+  }
+  const ultimo = pezzi[pezzi.length - 1];
+  if (!haChiave(corrente, ultimo)) { return false; }
+  delete corrente[ultimo];
+  return true;
+}
+
+/**
+ * Toglie le chiavi di SUPERATE. Muta il documento e restituisce l'elenco di
+ * quelle che c'erano davvero.
+ */
+function dimentica(contenuti) {
+  if (!contenuti || typeof contenuti !== 'object') { return []; }
+  if (!contenuti.testi || typeof contenuti.testi !== 'object') { return []; }
+  if (!contenuti.config || typeof contenuti.config !== 'object') { return []; }
+
+  const tolte = [];
+  for (const chiave of SUPERATE) {
+    if (cancella(contenuti, chiave)) { tolte.push(chiave); }
+  }
+  return tolte;
+}
+
 /**
  * Mette a posto i campi nati dopo la messa online: quelli che hanno un
  * "predefinito" e che in questo contenuti.json ancora non ci sono.
@@ -757,6 +862,8 @@ function completa(contenuti) {
   if (!contenuti || typeof contenuti !== 'object') { return []; }
   if (!contenuti.testi || typeof contenuti.testi !== 'object') { return []; }
   if (!contenuti.config || typeof contenuti.config !== 'object') { return []; }
+
+  dimentica(contenuti);
 
   const aggiunte = [];
   for (const c of campi()) {
@@ -888,4 +995,4 @@ function verificaCopertura(contenuti) {
   return problemi;
 }
 
-module.exports = { gruppi, TIPI, SISTEMA, GENERATI, EDITOR, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura, completa };
+module.exports = { gruppi, TIPI, SISTEMA, GENERATI, EDITOR, SUPERATE, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura, completa, dimentica };
