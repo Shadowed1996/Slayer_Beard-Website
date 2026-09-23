@@ -9,6 +9,7 @@
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
   img-src 'self' data:;
+  connect-src 'self';
   base-uri 'self';
   form-action 'none';
   object-src 'none'">
@@ -486,6 +487,6 @@
     <span>{{{manutenzione.nastro}}}</span>
   </div>
 </div>
-{{#se manutenzione.conto}}<script>{{{manutenzione.script}}}</script>
-{{/se}}</body>
+<script>{{{manutenzione.script}}}</script>
+</body>
 </html>

@@ -1550,14 +1550,11 @@ function contestoManutenzione(contenuti, adesso, cache) {
   }
 
   const fine = fineManutenzione(ramo.fine);
-  let script = '';
-  if (fine) {
-    if (!eFile(P.scriptManutenzione)) {
-      throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.scriptManutenzione) +
-        ': e il conto alla rovescia della pagina di manutenzione.');
-    }
-    script = '\n' + fs.readFileSync(P.scriptManutenzione, 'utf8');
+  if (!eFile(P.scriptManutenzione)) {
+    throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.scriptManutenzione) +
+      ': e lo script della pagina di manutenzione.');
   }
+  const script = '\n' + fs.readFileSync(P.scriptManutenzione, 'utf8');
   const impronta = 'sha256-' + crypto.createHash('sha256').update(script, 'utf8').digest('base64');
 
   const testoDi = (chiave) => (typeof testi[chiave] === 'string' && testi[chiave].trim()
@@ -1589,8 +1586,8 @@ function contestoManutenzione(contenuti, adesso, cache) {
     fine: fine ? fine.iso : '',
     etichetta: fine ? etichettaManutenzione(testoDi('manutenzione.contoPrima').trim(), fine, adesso) : '',
     script: script,
-    impronta: fine ? impronta : '',
-    scriptSrc: fine ? '\'' + impronta + '\'' : '\'none\''
+    impronta: impronta,
+    scriptSrc: '\'' + impronta + '\''
   };
 }
 
@@ -1908,6 +1905,21 @@ function scriviPaginaClip(html) {
   }
 }
 
+function scriviStatoSito(manutenzione, quando) {
+  const testo = JSON.stringify({ manutenzione: !!manutenzione, pubblicatoIl: quando || new Date().toISOString() }) + '\n';
+  try {
+    scriviGenerato(P.statoSito, testo);
+    return { file: 'stato-sito.json', manutenzione: !!manutenzione, byte: Buffer.byteLength(testo, 'utf8') };
+  } catch (e) {
+    return { file: 'stato-sito.json', manutenzione: !!manutenzione, byte: 0,
+      errore: (e && e.message) ? e.message : String(e) };
+  }
+}
+
+function allineaStatoDopoRipristino() {
+  return scriviStatoSito(inManutenzione());
+}
+
 function allineaClipDopoRipristino() {
   const leggi = (percorso) => {
     try { return fs.readFileSync(percorso, 'utf8'); } catch (e) { return ''; }
@@ -1977,6 +1989,7 @@ function genera(opzioni) {
   const paginaClip = scriviPaginaClip(reso.manutenzione || reso.clip);
 
   const quando = archivio.salva(contenuti);
+  const statoSito = scriviStatoSito(!!reso.manutenzione, quando);
 
   // La sitemap dopo il timbro, non prima: `lastmod` e la data dell'ultima
   // pubblicazione, e la pubblicazione e questa. Resta fuori da `scritti`
@@ -1992,6 +2005,7 @@ function genera(opzioni) {
     aggiornatoIl: quando,
     sitemap: mappa,
     paginaClip: paginaClip,
+    statoSito: statoSito,
     manutenzione: {
       attiva: !!reso.manutenzione,
       pagine: reso.manutenzione ? ['index.html', 'clip.html'] : []
@@ -2013,7 +2027,7 @@ function genera(opzioni) {
 
 module.exports = {
   genera, anteprima, anteprimaDi, anteprimaEditor, anteprimaManutenzione, inManutenzione,
-  allineaClipDopoRipristino, fineManutenzione, rendi, costruisciContesto,
+  allineaClipDopoRipristino, allineaStatoDopoRipristino, fineManutenzione, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, jsonSicuro, chiaviRicche,
   orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta,

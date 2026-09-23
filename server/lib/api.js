@@ -554,7 +554,8 @@ function rottaElencoBackup(req, res) {
 function rottaRipristina(req, res, id) {
   const esito = backup.ripristina(id);
   const clip = costruisci.allineaClipDopoRipristino();
-  json(res, 200, { ok: true, ripristinati: esito.ripristinati, backup: esito.backup, clip: clip });
+  const statoSito = costruisci.allineaStatoDopoRipristino();
+  json(res, 200, { ok: true, ripristinati: esito.ripristinati, backup: esito.backup, clip: clip, statoSito: statoSito });
 }
 
 /* --- SONDAGGI ------------------------------------------------------ */

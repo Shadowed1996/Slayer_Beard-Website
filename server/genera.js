@@ -109,6 +109,13 @@ async function esegui() {
     console.log('  sitemap   niente: manca l indirizzo pubblico (campo del pannello o SB_SITO)');
   }
 
+  const stato = esito.statoSito;
+  if (stato && stato.byte) {
+    console.log('  scritto   ' + stato.file + '  ' + byteLeggibili(stato.byte) + '   manutenzione: ' + (stato.manutenzione ? 'si' : 'no'));
+  } else if (stato) {
+    console.log('  ' + stato.file + ' non scritto (' + stato.errore + '): le pagine gia aperte non se ne accorgono');
+  }
+
   if (esito.manutenzione && esito.manutenzione.attiva) {
     console.log('  manutenzione ' + esito.manutenzione.pagine.join(' e ') +
       ' sono la pagina di manutenzione: per riaprire il sito spegni la modalita e ripubblica');

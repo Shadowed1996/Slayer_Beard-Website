@@ -37,6 +37,7 @@ function calcola(radice) {
     cartellaJs: path.join(radice, 'js'),
     datiJs: path.join(radice, 'js', 'dati.js'),
     temaCss: path.join(radice, 'css', 'tema.css'),
+    statoSito: path.join(radice, 'stato-sito.json'),
 
     // Contenuti e schema.
     cartellaContenuti: path.join(radice, 'contenuti'),

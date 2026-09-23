@@ -1297,7 +1297,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
       'gli script facoltativi non stanno in fondo: ' + soloNostri.join(','));
     esigiUguale(fissi.join(','),
-      'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js,js/cima.js,js/sondaggio.js',
+      'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js,js/cima.js,js/guardia.js,js/sondaggio.js',
       'ordine degli script del sito');
   });
 
@@ -4245,6 +4245,7 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
     return trovato ? trovato[1] : '';
   };
   const scrivi = (d) => { fs.writeFileSync(P.contenutiJson, JSON.stringify(d, null, 2) + '\n', 'utf8'); };
+  const statoSito = () => JSON.parse(fs.readFileSync(P.statoSito, 'utf8'));
 
   try {
     await prova('ogni campo del gruppo manutenzione ha un predefinito', () => {
@@ -4297,6 +4298,19 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       esigiUguale(esito.manutenzione.attiva, false, 'esito.manutenzione');
       esigi(fs.readFileSync(P.indexHtml, 'utf8').indexOf(SEGNO) === -1, 'index.html e la pagina di manutenzione');
       esigiUguale(costruisci.inManutenzione(), false, 'inManutenzione');
+      esigiUguale(statoSito().manutenzione, false, 'stato-sito.json a manutenzione spenta');
+    });
+
+    await prova('le pagine vere caricano la guardia che ascolta stato-sito.json', () => {
+      const reso = costruisci.rendi(documento(), { adesso: ADESSO });
+      esigiDentro(reso.html, '<script src="js/guardia.js" defer></script>', 'guardia in index.html');
+      esigi(reso.clip, 'la pagina delle clip non e stata resa');
+      esigiDentro(reso.clip, '<script src="js/guardia.js" defer></script>', 'guardia in clip.html');
+      const guardia = fs.readFileSync(path.join(RADICE_VERA, 'js', 'guardia.js'), 'utf8');
+      esigiDentro(guardia, '\'stato-sito.json\'', 'la guardia legge stato-sito.json');
+      esigiDentro(guardia, 'cache: \'no-store\'', 'la guardia salta la cache');
+      esigiDentro(guardia, 'stato.manutenzione !== true', 'la guardia ricarica solo a manutenzione accesa');
+      esigiDentro(guardia, 'content="manutenzione"', 'la guardia si spegne nella pagina di manutenzione');
     });
 
     await prova('accesa, OGNI pagina pubblica diventa la pagina di manutenzione e niente di vivo parte', () => {
@@ -4322,6 +4336,12 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       esigi(fs.existsSync(P.datiJs) && fs.existsSync(P.temaCss), 'js/dati.js o css/tema.css non scritti');
       esigiUguale(fs.readFileSync(P.temaCss, 'utf8'), tema.css(archivio.leggi().config.tema), 'css/tema.css');
       esigiUguale(costruisci.inManutenzione(), true, 'inManutenzione');
+      const stato = statoSito();
+      esigiUguale(stato.manutenzione, true, 'stato-sito.json a manutenzione accesa');
+      esigiUguale(stato.pubblicatoIl, esito.aggiornatoIl, 'pubblicatoIl');
+      esigiUguale(Object.keys(stato).join(','), 'manutenzione,pubblicatoIl', 'chiavi di stato-sito.json');
+      esigiUguale(esito.statoSito.manutenzione, true, 'esito.statoSito');
+      esigi(!esito.statoSito.errore, 'stato-sito.json non scritto');
     });
 
     await prova('spenta di nuovo, tornano le pagine vere e clip.html sparisce se le clip sono spente', () => {
@@ -4333,6 +4353,8 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       esigi(fs.readFileSync(P.indexHtml, 'utf8').indexOf(SEGNO) === -1, 'index.html e ancora la pagina di manutenzione');
       esigiUguale(esito.paginaClip.stato, 'tolta', 'clip.html');
       esigi(!fs.existsSync(P.clipHtml), 'clip.html e rimasta');
+      esigiUguale(statoSito().manutenzione, false, 'stato-sito.json dopo lo spegnimento');
+      esigiUguale(statoSito().pubblicatoIl, esito.aggiornatoIl, 'pubblicatoIl');
     });
 
     await prova('il conto alla rovescia porta l istante con lo scarto giusto di Roma', () => {
@@ -4347,11 +4369,17 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       esigiUguale(costruisci.fineManutenzione('2026-10-25T02:30').iso, '2026-10-25T02:30:00+02:00', 'ora doppia');
     });
 
-    await prova('senza fine niente conto alla rovescia e niente script', () => {
+    await prova('senza fine niente conto alla rovescia, ma lo script che ascolta lo stato c e', () => {
       const html = pagina(accesa({ fine: '' }));
-      esigi(html.indexOf('mnt-conto') === -1, 'il riquadro del conto c e lo stesso');
-      esigi(!/<script\b/i.test(html), 'c e uno script');
-      esigiUguale(scriptSrcDi(html), '\'none\'', 'script-src senza script');
+      esigi(html.indexOf('id="mnt-conto"') === -1, 'il riquadro del conto c e lo stesso');
+      esigiUguale((html.match(/<script\b/gi) || []).length, 1, 'script in pagina');
+      const script = scriptDi(html);
+      esigi(script, 'manca lo script della pagina');
+      const impronta = 'sha256-' + crypto.createHash('sha256').update(script, 'utf8').digest('base64');
+      esigiUguale(scriptSrcDi(html), '\'' + impronta + '\'', 'script-src');
+      esigiDentro(script, '\'stato-sito.json?t=\'', 'lo script legge stato-sito.json');
+      esigiDentro(script, 'stato.manutenzione !== false', 'lo script ricarica solo a manutenzione spenta');
+      esigi(script.indexOf('location.reload()') === script.lastIndexOf('location.reload()'), 'piu di una ricarica nello script');
       esigiDentro(html, 'Stiamo sistemando la regia', 'il resto della pagina');
     });
 
@@ -4362,6 +4390,8 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       const impronta = 'sha256-' + crypto.createHash('sha256').update(script, 'utf8').digest('base64');
       esigiUguale(scriptSrcDi(html), '\'' + impronta + '\'', 'script-src');
       esigiDentro(script, 'data-finito', 'lo script legge la scritta finale dalla pagina');
+      esigiDentro(script, 'stato-sito.json', 'lo script legge anche lo stato del sito');
+      esigi(/<meta http-equiv="Content-Security-Policy" content="[\s\S]*?connect-src 'self';/.test(html), 'connect-src');
     });
 
     await prova('i testi predefiniti sono quelli della pagina approvata', () => {
@@ -4448,9 +4478,13 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       esigiDentro(home, SEGNO, 'la home ripristinata non e in manutenzione');
       esigiUguale((costruisci.allineaClipDopoRipristino() || {}).stato, 'scritta', 'clip.html riscritta');
       esigiUguale(fs.readFileSync(P.clipHtml, 'utf8'), home, 'clip.html diversa dalla home in manutenzione');
+      esigiUguale(costruisci.allineaStatoDopoRipristino().manutenzione, true, 'stato dopo il ripristino in manutenzione');
+      esigiUguale(statoSito().manutenzione, true, 'stato-sito.json dopo il ripristino in manutenzione');
 
       backup.ripristina(conHomeVera);
       esigi(fs.readFileSync(P.indexHtml, 'utf8').indexOf(SEGNO) === -1, 'index.html non ripristinata');
+      esigiUguale(costruisci.allineaStatoDopoRipristino().manutenzione, false, 'stato dopo il ripristino vero');
+      esigiUguale(statoSito().manutenzione, false, 'stato-sito.json dopo il ripristino vero');
       esigiUguale((costruisci.allineaClipDopoRipristino() || {}).stato, 'tolta', 'clip.html di manutenzione tolta');
       esigi(!fs.existsSync(P.clipHtml), 'clip.html di manutenzione rimasta online');
       esigiUguale(costruisci.allineaClipDopoRipristino(), null, 'senza manutenzione di mezzo non si tocca niente');
@@ -4484,6 +4518,9 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
         esigiUguale(pubblicata.dati.manutenzione.attiva, true, 'la risposta non dice della manutenzione');
         letti = await chiama(porta, 'GET', '/api/contenuti', { biscotto: biscotto });
         esigiUguale(letti.dati.stato.manutenzione, true, 'stato.manutenzione dopo');
+        const pubblico = await chiama(porta, 'GET', '/stato-sito.json?t=1');
+        esigiUguale(pubblico.stato, 200, 'stato-sito.json servito a chiunque');
+        esigiUguale(JSON.parse(pubblico.testo).manutenzione, true, 'stato-sito.json servito');
       } finally {
         await new Promise((risolvi) => server.close(risolvi));
       }

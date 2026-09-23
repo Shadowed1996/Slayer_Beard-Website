@@ -272,6 +272,10 @@
     Header set Cache-Control "no-cache"
   </FilesMatch>
 
+  <FilesMatch "^stato-sito\.json$">
+    Header set Cache-Control "no-store"
+  </FilesMatch>
+
   <FilesMatch "\.(webp|avif|png|jpe?g|gif|svg|ico|woff2|woff|ttf|otf|mp4|webm)$">
     Header set Cache-Control "public, max-age=2592000"
   </FilesMatch>
