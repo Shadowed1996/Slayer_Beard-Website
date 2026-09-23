@@ -765,12 +765,20 @@ function costruisciSezione(id) {
   const interruttori = id === 'diretta' ? interruttoriDiretta() : null;
   const contiene = el('div', { classe: 'parti__blocco parti__contiene' });
   const nascosti = el('div', { classe: 'parti__blocco parti__nascosti', hidden: true });
+  const rimando = id === 'sondaggio' ? el('div', { classe: 'parti__blocco' }, [
+    el('p', { classe: 'parti__nota', testo: 'Qui ci sono solo le scritte fisse del riquadro. Domanda, risposte e durata si scrivono nella schermata Sondaggi, e vanno online subito.' }),
+    el('button', {
+      type: 'button', classe: 'btn btn--primario',
+      su: { click: () => document.dispatchEvent(new CustomEvent('sb:apri-vista', { detail: { vista: 'sondaggi' } })) }
+    }, [el('span', { testo: 'Crea o gestisci i sondaggi' })])
+  ]) : null;
 
   const radice = el('section', {
     classe: 'parti parti--sezione', 'aria-labelledby': idTitolo,
     dati: { parti: 'sezione', sezione: id }
   }, [
     testa('Sezione', nomeSezione(id), descrizioneSezione(id), idTitolo),
+    rimando,
     vis.nodo,
     interruttori ? interruttori.nodo : null,
     contiene,

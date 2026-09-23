@@ -878,6 +878,7 @@ function disegnaGruppo(scorri, gruppo) {
   // c'è niente da scrivere a mano: o si è autorizzati o no), quindi non
   // passa da ponte.creaCampo. Vive solo nella vista «canale».
   if (gruppo.id === 'canale') scorri.append(creaCollegamentoTwitch());
+  if (gruppo.id === 'sondaggio') scorri.prepend(rimandoSondaggi());
 }
 
 /* =====================================================================
@@ -899,6 +900,18 @@ function disegnaGruppo(scorri, gruppo) {
    vecchio che si risveglia con `mia !== generazione` si ferma da sé senza
    dover essere inseguito con un flag di cancellazione a parte.
    ===================================================================== */
+
+function rimandoSondaggi() {
+  return el('div', { classe: 'spiegazione' }, [
+    icona('info'),
+    el('div', {}, [
+      el('p', { testo: 'Qui ci sono solo le scritte fisse del riquadro. Domanda, risposte e durata si scrivono nella schermata Sondaggi.' }),
+      el('div', { classe: 'lato__azioni' }, [
+        bottone({ testo: 'Crea o gestisci i sondaggi', ico: 'sondaggio', classe: 'btn btn--primario', su: () => apriVista('sondaggi') })
+      ])
+    ])
+  ]);
+}
 
 function creaCollegamentoTwitch() {
   const corpo = el('div', { classe: 'lato__campi' });
@@ -1901,6 +1914,10 @@ function legaBarra() {
 
   // Il motore avvisa a ogni cambio di dispositivo, anche quelli chiesti da STILE.
   document.addEventListener('sb:dispositivo', () => sincronizzaDispositivo());
+  document.addEventListener('sb:apri-vista', (evento) => {
+    const d = (evento && evento.detail) || {};
+    if (d.vista) apriVista(d.vista);
+  });
   /* La scrittura sul posto può partire con un doppio clic nell'anteprima
      mentre è aperta Stile o Avanzate, o una vista del menu: la barra di
      formattazione, il contatore e «Fatto» stanno nella scheda Contenuto
