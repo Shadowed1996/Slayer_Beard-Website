@@ -1,0 +1,22 @@
+<section id="sondaggio" class="sondaggio" aria-labelledby="sondaggio-titolo" data-sb-sezione="sondaggio">
+  <div class="sondaggio__scheda">
+    <div class="sondaggio__testa">
+      <p class="sezione__occhiello" data-sb-testo="sondaggio.occhiello">{{sondaggio.occhiello}}</p>
+      <h2 id="sondaggio-titolo" class="sezione__titolo" data-sb-testo="sondaggio.titolo">{{sondaggio.titolo}}</h2>
+    </div>
+    <p id="sondaggio-domanda" class="sondaggio__domanda">La domanda del sondaggio aperto compare qui: i sondaggi si creano dal menu del pannello, alla voce «Sondaggi».</p>
+    <p id="sondaggio-stato" class="sondaggio__stato" aria-live="polite"></p>
+    <ul id="sondaggio-risposte" class="sondaggio__risposte"></ul>
+    <p id="sondaggio-errore" class="sondaggio__errore" role="alert" hidden></p>
+    <p id="sondaggio-nota" class="sondaggio__nota" data-sb-testo="sondaggio.nota">{{sondaggio.nota}}</p>
+  </div>
+
+  <dialog id="sondaggio-login" class="sondaggio-login" aria-labelledby="sondaggio-login-titolo" aria-describedby="sondaggio-login-testo">
+    <h3 id="sondaggio-login-titolo" class="sondaggio-login__titolo" data-sb-testo="sondaggio.loginTitolo">{{sondaggio.loginTitolo}}</h3>
+    <p id="sondaggio-login-testo" class="sondaggio-login__testo" data-sb-testo="sondaggio.loginTesto">{{sondaggio.loginTesto}}</p>
+    <div class="sondaggio-login__azioni">
+      <button type="button" id="sondaggio-login-entra" class="btn btn--pieno" data-sb-testo="sondaggio.loginBtn">{{sondaggio.loginBtn}}</button>
+      <button type="button" id="sondaggio-login-chiudi" class="btn btn--vuoto" data-sb-testo="sondaggio.loginChiudi">{{sondaggio.loginChiudi}}</button>
+    </div>
+  </dialog>
+</section>

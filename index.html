@@ -79,6 +79,7 @@
 <link rel="stylesheet" href="css/account.css">
 <link rel="stylesheet" href="css/lurk.css">
 <link rel="stylesheet" href="css/cima.css">
+<link rel="stylesheet" href="css/sondaggio.css">
 </head>
 <body>
 <a class="salta" href="#contenuto">Salta al contenuto</a>
@@ -251,6 +252,29 @@
 </section>
 
   <p class="diretta__nota" data-sb-testo="diretta.nota">Se lo schermo resta nero è quasi sempre il browser: cookie di terze parti bloccati, oppure un&#39;estensione che ferma gli iframe. In quel caso il canale si apre lo stesso su Twitch.</p>
+</section>
+
+<section id="sondaggio" class="sondaggio" aria-labelledby="sondaggio-titolo" data-sb-sezione="sondaggio">
+  <div class="sondaggio__scheda">
+    <div class="sondaggio__testa">
+      <p class="sezione__occhiello" data-sb-testo="sondaggio.occhiello">Sondaggio</p>
+      <h2 id="sondaggio-titolo" class="sezione__titolo" data-sb-testo="sondaggio.titolo">Dì la tua</h2>
+    </div>
+    <p id="sondaggio-domanda" class="sondaggio__domanda">La domanda del sondaggio aperto compare qui: i sondaggi si creano dal menu del pannello, alla voce «Sondaggi».</p>
+    <p id="sondaggio-stato" class="sondaggio__stato" aria-live="polite"></p>
+    <ul id="sondaggio-risposte" class="sondaggio__risposte"></ul>
+    <p id="sondaggio-errore" class="sondaggio__errore" role="alert" hidden></p>
+    <p id="sondaggio-nota" class="sondaggio__nota" data-sb-testo="sondaggio.nota">Si vota una volta sola, con il proprio account Twitch.</p>
+  </div>
+
+  <dialog id="sondaggio-login" class="sondaggio-login" aria-labelledby="sondaggio-login-titolo" aria-describedby="sondaggio-login-testo">
+    <h3 id="sondaggio-login-titolo" class="sondaggio-login__titolo" data-sb-testo="sondaggio.loginTitolo">Per votare serve Twitch</h3>
+    <p id="sondaggio-login-testo" class="sondaggio-login__testo" data-sb-testo="sondaggio.loginTesto">Possono votare solo gli utenti collegati al sito con il proprio account Twitch: così ogni persona vota una volta sola.</p>
+    <div class="sondaggio-login__azioni">
+      <button type="button" id="sondaggio-login-entra" class="btn btn--pieno" data-sb-testo="sondaggio.loginBtn">Collegati con Twitch</button>
+      <button type="button" id="sondaggio-login-chiudi" class="btn btn--vuoto" data-sb-testo="sondaggio.loginChiudi">Non ora</button>
+    </div>
+  </dialog>
 </section>
 
 <section id="settimana" class="settimana" aria-labelledby="settimana-titolo" data-sb-sezione="settimana" data-sb-riquadro="settimana">
@@ -534,6 +558,7 @@
 <script src="js/lurk.js" defer></script>
 <script src="js/pollo.js" defer></script>
 <script src="js/cima.js" defer></script>
+<script src="js/sondaggio.js" defer></script>
 <style id="sb-auguri-stile">
 /* Auguri del 21/09/2026: tutto quello che segue colpisce SOLO elementi creati da questo blocco
    (classi sb-aug-*). Senza lo script non esiste nessuno di quegli elementi, quindi non si vede nulla.

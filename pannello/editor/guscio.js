@@ -44,6 +44,7 @@ import { avviso, conferma } from '../moduli/avvisi.js';
 import { apriVoci } from '../moduli/elenchi.js';
 import { creaLibreria } from '../moduli/media.js';
 import { creaBackup } from '../moduli/backup.js';
+import { creaSondaggi } from '../moduli/sondaggi.js';
 
 /* =====================================================================
    1. COSTANTI
@@ -91,6 +92,7 @@ const MENU = [
   { vista: 'struttura', nome: 'Struttura della pagina', nota: 'Ordine e visibilità delle sezioni', ico: 'struttura' },
   { vista: 'canale', nome: 'Canale, contatti e immagini', nota: 'Canale Twitch, email, immagini del sito', ico: 'canale' },
   { vista: 'meta', nome: 'Google e social', nota: 'Come appare il sito nelle ricerche e nei link condivisi', ico: 'mondo' },
+  { vista: 'sondaggi', nome: 'Sondaggi', nota: 'Crea un sondaggio per chi è collegato con Twitch e guarda i risultati', ico: 'sondaggio' },
   { vista: 'immagini', nome: 'Immagini', nota: 'Carica e gestisci i file', ico: 'immagine' },
   { vista: 'backup', nome: 'Copie di sicurezza', nota: 'Torna a com\'era il sito prima di una pubblicazione', ico: 'backup' },
   { vista: 'password', nome: 'Password', nota: 'Cambia la password del pannello', ico: 'chiave' },
@@ -114,6 +116,10 @@ const VISTE = {
   immagini: {
     titolo: 'Immagini',
     nota: 'I file caricati qui restano sul server. Un\'immagine del sito si cambia anche cliccandola nell\'anteprima.'
+  },
+  sondaggi: {
+    titolo: 'Sondaggi',
+    nota: 'Un sondaggio alla volta. Va online appena lo crei, senza pubblicare: vota solo chi è collegato al sito con Twitch, una volta a testa.'
   },
   backup: { titolo: 'Copie di sicurezza', nota: 'Le copie che il server tiene da parte a ogni pubblicazione.' },
   password: { titolo: 'Password', nota: 'La password che serve per entrare in questo pannello.' }
@@ -734,7 +740,7 @@ function titoloVista(nome) {
 /* Viste che si ridisegnano da sole su sb:sostituito e sb:pronto (lo
    dicono TEMA e PARTI), e quelle che non mostrano la bozza: rifarle da
    capo perderebbe scorrimento e fuoco senza guadagnare niente. */
-const VISTE_AUTONOME = new Set(['menu', 'impostazioni', 'struttura', 'immagini', 'backup', 'password']);
+const VISTE_AUTONOME = new Set(['menu', 'impostazioni', 'struttura', 'immagini', 'sondaggi', 'backup', 'password']);
 
 function disegnaVista(opzioni) {
   const ui = sh.ui;
@@ -775,6 +781,7 @@ function disegnaVista(opzioni) {
     else if (nome === 'impostazioni') disegnaImpostazioni(scorri);
     else if (nome === 'struttura') disegnaStruttura(scorri);
     else if (nome === 'immagini') disegnaImmagini(scorri);
+    else if (nome === 'sondaggi') scorri.append(creaSondaggi().nodo);
     else if (nome === 'backup') disegnaCopie(scorri);
     else if (nome === 'password') disegnaPassword(scorri);
     else if (gruppo) disegnaGruppo(scorri, gruppo);

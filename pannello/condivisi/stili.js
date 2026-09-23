@@ -84,8 +84,8 @@
     testoTenue: '--testo-tenue'
   });
 
-  const SEZIONI = congela(['binario', 'regia', 'diretta', 'settimana', 'chi', 'supporto', 'saluti', 'piede']);
-  const SEZIONI_ORDINABILI = congela(['regia', 'diretta', 'settimana', 'chi', 'supporto', 'saluti']);
+  const SEZIONI = congela(['binario', 'regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti', 'piede']);
+  const SEZIONI_ORDINABILI = congela(['regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti']);
 
   /* `regia` è la copertina e contiene l'unico <h1>: una pagina che comincia
      da un'altra sezione, o senza <h1>, è un'altra pagina. */
@@ -865,8 +865,16 @@
       // Un valore che non è un booleano non spegne niente: nel dubbio si mostra.
       fuori.push({ id: id, attiva: typeof voce.attiva === 'boolean' ? voce.attiva : true });
     }
-    SEZIONI_ORDINABILI.forEach(function (id) {
-      if (!propria(visti, id)) fuori.push({ id: id, attiva: true });
+    SEZIONI_ORDINABILI.forEach(function (id, i) {
+      if (propria(visti, id)) return;
+      let dopo = -1;
+      for (let j = i - 1; j >= 0 && dopo === -1; j--) {
+        for (let k = 0; k < fuori.length; k++) {
+          if (fuori[k].id === SEZIONI_ORDINABILI[j]) { dopo = k; break; }
+        }
+      }
+      fuori.splice(dopo + 1, 0, { id: id, attiva: true });
+      visti[id] = true;
     });
     const regia = fuori.filter(function (v) { return v.id === SEZIONE_BLOCCATA; })[0];
     regia.attiva = true;

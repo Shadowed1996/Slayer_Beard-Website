@@ -954,7 +954,7 @@ function costruisciContesto(contenuti, opzioni) {
       // sezione spenta non lascia ancore morte; `voci` per il binario.
       sezioni: attive.map((voce) => ({ id: voce.id, attiva: true })),
       attiva: attiva,
-      voci: attive.map((voce) => ({
+      voci: attive.filter((voce) => voce.id !== 'sondaggio').map((voce) => ({
         id: voce.id,
         chiave: 'nav.' + voce.id,
         testo: typeof testi['nav.' + voce.id] === 'string' ? testi['nav.' + voce.id] : ''
@@ -1317,6 +1317,14 @@ function oggettoDati(contenuti, opzioni) {
       copiaFatto: testi['saluti.copiaFatto'] || ''
     },
     musica: musicaDati(config, testi),
+    sondaggio: {
+      testi: {
+        scadeTra: testi['sondaggio.scadeTra'] || '',
+        chiuso: testi['sondaggio.chiuso'] || '',
+        votato: testi['sondaggio.votato'] || '',
+        voti: testi['sondaggio.voti'] || ''
+      }
+    },
     pollo: polloDi(config, testi),
     chi: chiDi(config),
     // L ordine conta: il ramo del lurk dipende da quello dell account, perche

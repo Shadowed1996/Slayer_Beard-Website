@@ -66,7 +66,7 @@ const FASCE_DI_SERIE = {
   computer: '(min-width: 1100px)'
 };
 const RIQUADRI_DI_SERIE = ['regia', 'settimana', 'chi', 'supporto', 'saluti', 'piede'];
-const SEZIONI_DI_SERIE = ['binario', 'regia', 'diretta', 'settimana', 'chi', 'supporto', 'saluti', 'piede'];
+const SEZIONI_DI_SERIE = ['binario', 'regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti', 'piede'];
 
 const SCHEDE = ['contenuto', 'stile', 'avanzate'];
 // I soli tipi che MARCATORI mette su data-sb-testo (§5.1.4): gli altri non si scrivono sul posto.

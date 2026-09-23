@@ -473,7 +473,7 @@ async function proveSchema(contenutiVeri) {
     // Prima i gruppi nell ordine in cui si incontrano scendendo, poi i due
     // che non stanno in nessun punto della pagina perche valgono ovunque:
     // "canale" (i dati tecnici) e "aspetto" (colori e font).
-    const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'settimana', 'chi',
+    const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'sondaggio', 'settimana', 'chi',
       'supporto', 'saluti', 'piede', 'musica', 'canale', 'aspetto'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
@@ -1297,7 +1297,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
       'gli script facoltativi non stanno in fondo: ' + soloNostri.join(','));
     esigiUguale(fissi.join(','),
-      'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js,js/cima.js',
+      'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js,js/cima.js,js/sondaggio.js',
       'ordine degli script del sito');
   });
 
@@ -1839,6 +1839,148 @@ async function proveApi(costruisci) {
    cui Twitch e giu, cioe esattamente il giorno in cui questo file deve
    dimostrare di reggere.
 */
+async function proveSondaggi(archivio) {
+  apriSezione('8b. Sondaggi con il login di Twitch');
+
+  const sondaggi = require('./lib/sondaggi');
+  const { creaServer } = require('./server.js');
+  const auth = require('./lib/autenticazione');
+  const SBStili = require('../pannello/condivisi/stili.js');
+  const server = creaServer();
+  await new Promise((risolvi) => server.listen(0, '127.0.0.1', risolvi));
+  const porta = server.address().port;
+  const clientId = archivio.leggi().config.account.clientId;
+  const UTENTI = {
+    tokenanna0000001: { user_id: '101', login: 'anna', client_id: clientId },
+    tokenbruno000002: { user_id: '202', login: 'bruno', client_id: clientId },
+    tokenaltraapp003: { user_id: '303', login: 'carlo', client_id: 'unaltraapp' }
+  };
+  const finta = async (token) => UTENTI[token] || null;
+  sondaggi.sostituisciVerifica(finta);
+  sondaggi.dimentica();
+  fs.rmSync(percorsi.P.sondaggi, { force: true });
+  auth.azzeraTutto();
+  const conToken = (token) => ({ Authorization: 'Bearer ' + token });
+  const vota = (token, corpo) => chiama(porta, 'POST', '/api/sondaggio/voto', { intestazioni: token ? conToken(token) : {}, json: corpo });
+
+  try {
+    const entra = await chiama(porta, 'POST', '/api/entra', { json: { password: PASSWORD_COLLAUDO } });
+    const biscotto = biscottoDa(entra);
+    const crea = (corpo) => chiama(porta, 'POST', '/api/sondaggi', { biscotto, json: corpo });
+
+    await prova('senza sondaggi la rotta pubblica risponde vuota, e quelle di gestione vogliono la sessione', async () => {
+      const r = await chiama(porta, 'GET', '/api/sondaggio');
+      esigiUguale(r.stato, 200, 'stato');
+      esigiUguale(r.dati.sondaggio, null, 'sondaggio');
+      esigiUguale((await chiama(porta, 'GET', '/api/sondaggi')).stato, 401, 'elenco senza sessione');
+      esigiUguale((await chiama(porta, 'POST', '/api/sondaggi', { json: { domanda: 'x', risposte: ['a', 'b'], durataMinuti: 5 } })).stato, 401, 'creazione senza sessione');
+    });
+
+    await prova('la creazione controlla domanda, risposte e durata', async () => {
+      esigiUguale((await crea({ domanda: 'Che gioco?', risposte: ['Solo una'], durataMinuti: 60 })).stato, 422, 'una risposta sola');
+      esigiUguale((await crea({ domanda: 'Che gioco?', risposte: ['Elden Ring', 'elden ring'], durataMinuti: 60 })).stato, 422, 'risposte uguali');
+      esigiUguale((await crea({ domanda: 'Che gioco?', risposte: ['A', 'B'], durataMinuti: 0 })).stato, 422, 'durata zero');
+      esigiUguale((await crea({ domanda: '', risposte: ['A', 'B'], durataMinuti: 5 })).stato, 422, 'domanda vuota');
+    });
+
+    let id = '';
+    await prova('un sondaggio creato e subito pubblico, senza conteggi per chi non ha votato', async () => {
+      const creato = await crea({ domanda: ' Che gioco  stasera? ', risposte: ['Elden Ring', 'Hollow Knight', ''], durataMinuti: 60 });
+      esigiUguale(creato.stato, 201, 'stato');
+      esigiUguale(creato.dati.attivo.domanda, 'Che gioco stasera?', 'domanda ripulita');
+      esigiUguale(creato.dati.attivo.risposte.length, 2, 'la risposta vuota sparisce');
+      id = creato.dati.attivo.id;
+      esigiUguale((await crea({ domanda: 'Altro?', risposte: ['A', 'B'], durataMinuti: 5 })).stato, 409, 'un solo sondaggio aperto alla volta');
+      const r = await chiama(porta, 'GET', '/api/sondaggio');
+      esigiUguale(r.dati.sondaggio.id, id, 'id');
+      esigiUguale(r.dati.sondaggio.conteggi, null, 'i conteggi restano nascosti');
+      esigiUguale(r.testa['cache-control'], 'no-store', 'cache');
+    });
+
+    await prova('senza login, con un token finto o di un altra app non si vota', async () => {
+      esigiUguale((await vota('', { id, risposta: 0 })).stato, 401, 'senza token');
+      esigiUguale((await vota('tokeninventato99', { id, risposta: 0 })).stato, 401, 'token finto');
+      esigiUguale((await vota('tokenaltraapp003', { id, risposta: 0 })).stato, 401, 'altra app');
+      esigiUguale((await vota('corto', { id, risposta: 0 })).stato, 401, 'token storto');
+    });
+
+    await prova('un voto per account: il secondo e un 409 che riporta i risultati', async () => {
+      esigiUguale((await vota('tokenanna0000001', { id, risposta: 7 })).stato, 400, 'risposta che non esiste');
+      esigiUguale((await vota('tokenanna0000001', { id: 'vecchio', risposta: 0 })).stato, 410, 'sondaggio che non e quello aperto');
+      const primo = await vota('tokenanna0000001', { id, risposta: 1 });
+      esigiUguale(primo.stato, 200, 'primo voto');
+      esigiUguale(primo.dati.sondaggio.votato, 1, 'votato');
+      esigiUguale(primo.dati.sondaggio.conteggi.join(), '0,1', 'conteggi');
+      const ancora = await vota('tokenanna0000001', { id, risposta: 0 });
+      esigiUguale(ancora.stato, 409, 'secondo voto');
+      esigiUguale(ancora.dati.sondaggio.conteggi.join(), '0,1', 'il secondo voto non conta');
+      const bruno = await vota('tokenbruno000002', { id, risposta: 0 });
+      esigiUguale(bruno.dati.sondaggio.conteggi.join(), '1,1', 'voto di un altro');
+      const letto = await chiama(porta, 'GET', '/api/sondaggio', { intestazioni: conToken('tokenanna0000001') });
+      esigiUguale(letto.dati.sondaggio.votato, 1, 'chi ha votato lo ritrova');
+      esigiUguale(letto.dati.riconosciuto, true, 'riconosciuto');
+      const salvato = JSON.parse(fs.readFileSync(percorsi.P.sondaggi, 'utf8'));
+      esigiUguale(Object.keys(salvato.attivo.voti).sort().join(), '101,202', 'i voti stanno su disco');
+    });
+
+    await prova('i voti sopravvivono a un riavvio e il sondaggio scaduto passa in archivio da solo', async () => {
+      sondaggi.dimentica();
+      const dopo = Date.now() + 61 * 60000;
+      const vista = sondaggi.vistaPubblica(null, dopo);
+      esigiUguale(vista.sondaggio.chiuso, true, 'chiuso');
+      esigiUguale(vista.sondaggio.conteggi.join(), '1,1', 'risultati per tutti');
+      esigiErrore(() => sondaggi.vota('404', { id, risposta: 0 }, dopo), 'chiuso', 'voto dopo la scadenza');
+      const admin = sondaggi.vistaAdmin(dopo);
+      esigiUguale(admin.attivo, null, 'niente di aperto');
+      esigiUguale(admin.archivio.length, 1, 'in archivio');
+      esigi(!('voti' in admin.archivio[0]), 'in archivio non restano gli id di chi ha votato');
+    });
+
+    await prova('chiudi ora ed elimina dal pannello', async () => {
+      const creato = await crea({ domanda: 'Pizza o sushi?', risposte: ['Pizza', 'Sushi'], durataMinuti: 5 });
+      esigiUguale(creato.stato, 201, 'creato');
+      const chiuso = await chiama(porta, 'POST', '/api/sondaggi/chiudi', { biscotto });
+      esigiUguale(chiuso.stato, 200, 'chiuso');
+      esigiUguale(chiuso.dati.attivo, null, 'niente di aperto');
+      const pubblico = await chiama(porta, 'GET', '/api/sondaggio');
+      esigiUguale(pubblico.dati.sondaggio.domanda, 'Pizza o sushi?', 'il sito mostra l ultimo chiuso');
+      esigiUguale(pubblico.dati.sondaggio.chiuso, true, 'chiuso');
+      esigiUguale((await chiama(porta, 'DELETE', '/api/sondaggi/' + creato.dati.attivo.id, { biscotto })).stato, 200, 'eliminato');
+      esigiUguale((await chiama(porta, 'DELETE', '/api/sondaggi/nonesiste', { biscotto })).stato, 404, 'id sconosciuto');
+      esigiUguale((await chiama(porta, 'POST', '/api/sondaggi/chiudi', { biscotto })).stato, 404, 'niente da chiudere');
+    });
+
+    await prova('un file dei voti rotto non ferma il sito: si mette da parte', async () => {
+      fs.writeFileSync(percorsi.P.sondaggi, '{rotto');
+      sondaggi.dimentica();
+      const errore = console.error;
+      console.error = () => {};
+      try {
+        const r = await chiama(porta, 'GET', '/api/sondaggio');
+        esigiUguale(r.stato, 200, 'stato');
+        esigiUguale(r.dati.sondaggio, null, 'vuoto');
+      } finally { console.error = errore; }
+      const cartella = path.dirname(percorsi.P.sondaggi);
+      const messi = fs.readdirSync(cartella).filter((n) => n.startsWith(path.basename(percorsi.P.sondaggi) + '.rotto-'));
+      esigiUguale(messi.length, 1, 'copia del file rotto');
+      messi.forEach((n) => fs.rmSync(path.join(cartella, n), { force: true }));
+    });
+
+    await prova('una sezione nuova si mette dopo quella che la precede, non in fondo', async () => {
+      const vecchie = ['regia', 'diretta', 'settimana', 'chi', 'supporto', 'saluti'].map((voce) => ({ id: voce, attiva: voce !== 'chi' }));
+      const pulite = SBStili.pulisciSezioni(vecchie);
+      esigiUguale(pulite.map((v) => v.id).join(','), 'regia,diretta,sondaggio,settimana,chi,supporto,saluti', 'ordine');
+      esigiUguale(pulite.find((v) => v.id === 'chi').attiva, false, 'le scelte di prima restano');
+    });
+  } finally {
+    sondaggi.sostituisciVerifica(null);
+    sondaggi.dimentica();
+    fs.rmSync(percorsi.P.sondaggi, { force: true });
+    auth.azzeraTutto();
+    await new Promise((risolvi) => server.close(risolvi));
+  }
+}
+
 async function proveTwitch(costruisci, archivio) {
   apriSezione('9. Collegamento con Twitch (server/lib/twitch.js)');
 
@@ -4076,6 +4218,7 @@ async function esegui() {
     await proveGenerazione(progetto, costruisci, archivio);
     await proveLurk(contenutiVeri, costruisci, archivio);
     await proveApi(costruisci);
+    await proveSondaggi(archivio);
     await proveTwitch(costruisci, archivio);
     await proveClip(contenutiVeri, costruisci, archivio);
     await proveSchedule(contenutiVeri, costruisci, archivio);

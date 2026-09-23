@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-23T08:31:39.204Z",
+  "aggiornatoIl": "2026-09-23T09:40:14.376Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -162,7 +162,18 @@
     "saluti.referralBtn": "Apri Amazon",
     "saluti.referralNota": "In qualità di Affiliato Amazon, ricevo un guadagno dagli acquisti idonei.",
     "musica.casuale": "Mescola le tracce",
-    "musica.ordine": "Rimetti in ordine"
+    "musica.ordine": "Rimetti in ordine",
+    "sondaggio.occhiello": "Sondaggio",
+    "sondaggio.titolo": "Dì la tua",
+    "sondaggio.nota": "Si vota una volta sola, con il proprio account Twitch.",
+    "sondaggio.scadeTra": "Chiude tra",
+    "sondaggio.chiuso": "Sondaggio chiuso: ecco com'è andata.",
+    "sondaggio.votato": "Hai votato: ecco come sta andando.",
+    "sondaggio.voti": "voti",
+    "sondaggio.loginTitolo": "Per votare serve Twitch",
+    "sondaggio.loginTesto": "Possono votare solo gli utenti collegati al sito con il proprio account Twitch: così ogni persona vota una volta sola.",
+    "sondaggio.loginBtn": "Collegati con Twitch",
+    "sondaggio.loginChiudi": "Non ora"
   },
   "config": {
     "twitch": {
@@ -550,6 +561,10 @@
       },
       {
         "id": "diretta",
+        "attiva": true
+      },
+      {
+        "id": "sondaggio",
         "attiva": true
       },
       {

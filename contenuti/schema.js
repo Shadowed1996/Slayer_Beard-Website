@@ -415,6 +415,30 @@ const gruppi = [
   },
 
   {
+    id: 'sondaggio',
+    titolo: 'Il sondaggio',
+    descrizione: 'Le scritte del riquadro del sondaggio. Domanda, risposte e durata non stanno qui: si creano dal menu, alla voce «Sondaggi», e vanno online subito, senza pubblicare.',
+    campi: [
+      { chiave: 'sondaggio.occhiello', etichetta: 'Occhiello', tipo: 'testo', max: 40, predefinito: 'Sondaggio' },
+      { chiave: 'sondaggio.titolo', etichetta: 'Titolo della sezione', tipo: 'testo', max: 60, predefinito: 'Dì la tua',
+        aiuto: 'Sta sopra alla domanda, che invece cambia a ogni sondaggio.' },
+      { chiave: 'sondaggio.nota', etichetta: 'Riga sotto alle risposte', tipo: 'testo', max: 120, predefinito: 'Si vota una volta sola, con il proprio account Twitch.' },
+      { chiave: 'sondaggio.scadeTra', etichetta: 'Prima del conto alla rovescia', tipo: 'testo', max: 30, predefinito: 'Chiude tra',
+        aiuto: 'Per esempio «Chiude tra 2 h 15 min».' },
+      { chiave: 'sondaggio.chiuso', etichetta: 'Quando il sondaggio è finito', tipo: 'testo', max: 60, predefinito: 'Sondaggio chiuso: ecco com\'è andata.' },
+      { chiave: 'sondaggio.votato', etichetta: 'Dopo il voto', tipo: 'testo', max: 80, predefinito: 'Hai votato: ecco come sta andando.' },
+      { chiave: 'sondaggio.voti', etichetta: 'Parola dopo il numero dei voti', tipo: 'testo', max: 20, predefinito: 'voti',
+        aiuto: 'Per esempio «42 voti».' },
+      { chiave: 'sondaggio.loginTitolo', etichetta: 'Avviso di login — titolo', tipo: 'testo', max: 60, predefinito: 'Per votare serve Twitch',
+        aiuto: 'Si apre quando chi non è collegato clicca una risposta.' },
+      { chiave: 'sondaggio.loginTesto', etichetta: 'Avviso di login — testo', tipo: 'testolungo', max: 240,
+        predefinito: 'Possono votare solo gli utenti collegati al sito con il proprio account Twitch: così ogni persona vota una volta sola.' },
+      { chiave: 'sondaggio.loginBtn', etichetta: 'Avviso di login — bottone', tipo: 'testo', max: 30, predefinito: 'Collegati con Twitch' },
+      { chiave: 'sondaggio.loginChiudi', etichetta: 'Avviso di login — chiudi', tipo: 'testo', max: 30, predefinito: 'Non ora' }
+    ]
+  },
+
+  {
     id: 'settimana',
     titolo: 'La settimana',
     descrizione: 'La schedule: i sette giorni con le loro locandine, gli eventi fuori programma e il fondale della sezione. Si imposta tutto qui, e la sezione si ricalcola da sola.',

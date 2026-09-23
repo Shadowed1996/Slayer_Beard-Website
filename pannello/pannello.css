@@ -545,6 +545,38 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
 .backup__data { font-size: 14px; }
 .backup__meta { font-family: var(--p-mono); font-size: 11px; color: var(--p-testo-tenue); }
 
+.sondaggi { display: flex; flex-direction: column; gap: 18px; }
+.sondaggi__blocco { display: flex; flex-direction: column; gap: 10px; }
+.sondaggi__blocco:empty { display: none; }
+.sondaggi__scheda {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 13px;
+  border: 1px solid var(--p-linea);
+  border-radius: var(--p-raggio-s);
+  background: var(--p-pannello);
+}
+.sondaggi__scheda.is-aperto { border-color: var(--p-viola-bordo); background: var(--p-viola-velo); }
+.sondaggi__domanda { font-size: 15px; font-weight: 600; color: var(--p-testo); overflow-wrap: anywhere; }
+.sondaggi__risultati { display: flex; flex-direction: column; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.sondaggi__riga {
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 6px 9px; overflow: hidden; isolation: isolate;
+  border: 1px solid var(--p-linea); border-radius: var(--p-raggio-s);
+  font-size: 13px;
+}
+.sondaggi__riga.is-prima { border-color: var(--p-viola-bordo); }
+.sondaggi__barra {
+  position: absolute; inset: 0 auto 0 0; z-index: -1;
+  width: var(--quota, 0%); background: var(--p-viola-bordo);
+}
+.sondaggi__risposta { min-width: 0; overflow-wrap: anywhere; }
+.sondaggi__numero { flex: none; font-family: var(--p-mono); font-size: 12px; color: var(--p-testo-medio); }
+.sondaggi__opzioni { display: flex; flex-direction: column; gap: 6px; }
+.sondaggi__opzione { display: flex; gap: 6px; align-items: center; }
+.sondaggi__opzione .campo__input { flex: 1 1 auto; min-width: 0; }
+.sondaggi__durata { display: flex; gap: 6px; align-items: center; }
+.sondaggi__durata .campo__scelta { width: auto; }
+
 /* --------------------------------------------------------------- 9. */
 .dialogo {
   border: 1px solid var(--p-linea-forte);

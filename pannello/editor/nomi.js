@@ -40,6 +40,10 @@ const SEZIONI = {
     nome: 'La diretta',
     descrizione: 'Il player di Twitch con la chat, il profilo del sito, il pollo, la modalità lurk e la vetrina delle clip.'
   },
+  sondaggio: {
+    nome: 'Il sondaggio',
+    descrizione: 'La domanda del sondaggio aperto, con le risposte da votare dopo il login con Twitch e i risultati. Senza un sondaggio aperto (o chiuso da meno di una settimana) non si vede. I sondaggi si creano dal menu, alla voce «Sondaggi».'
+  },
   settimana: {
     nome: 'La settimana',
     descrizione: 'I sette giorni come locandine, con titolo, gioco e immagine di ogni diretta; gli eventi speciali con la loro data; il fondale dietro la sezione; la nota con il bottone in fondo.'
@@ -286,6 +290,7 @@ const SEZIONE_DEL_GRUPPO = Object.freeze({
   lurk: 'diretta',
   pollo: 'diretta',
   clip: 'diretta',
+  sondaggio: 'sondaggio',
   settimana: 'settimana',
   chi: 'chi',
   supporto: 'supporto',
@@ -299,6 +304,7 @@ const GRUPPO_DELLA_SEZIONE = Object.freeze({
   binario: 'marchio',
   regia: 'deck',
   diretta: 'diretta',
+  sondaggio: 'sondaggio',
   settimana: 'settimana',
   chi: 'chi',
   supporto: 'supporto',

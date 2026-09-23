@@ -41,6 +41,7 @@ const tema = require('./tema.js');
 const chiavi = require('./chiavi');
 const twitch = require('./twitch');
 const youtube = require('./youtube');
+const sondaggi = require('./sondaggi');
 const schema = require('../../contenuti/schema.js');
 const SBStili = require('../../pannello/condivisi/stili.js');
 
@@ -48,7 +49,7 @@ const MAX_JSON = 1024 * 1024;
 const MAX_FILE = 4 * 1024 * 1024 + 64 * 1024;   // 4 MB piu il contorno multipart
 const MAX_FONT = font.MAX_BYTE + 64 * 1024;      // 2 MB piu il contorno multipart
 
-const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra']);
+const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra', '/api/sondaggio', '/api/sondaggio/voto']);
 
 /* --- CORPO DELLA RICHIESTA ----------------------------------------- */
 
@@ -548,6 +549,41 @@ function rottaRipristina(req, res, id) {
   json(res, 200, { ok: true, ripristinati: esito.ripristinati, backup: esito.backup });
 }
 
+/* --- SONDAGGI ------------------------------------------------------ */
+
+async function rottaSondaggioPubblico(req, res) {
+  const vista = sondaggi.vistaPubblica(null);
+  const token = sondaggi.tokenDa(req);
+  if (!token || !vista.sondaggio || vista.sondaggio.chiuso) { json(res, 200, vista); return; }
+  if (!sondaggi.inCache(token) && !auth.autenticato(req)) {
+    const attesa = auth.frenoScritture(req);
+    if (attesa > 0) {
+      errore(res, 429, 'Troppe richieste da questo indirizzo. Riprova fra ' + durataLeggibile(attesa) + '.');
+      return;
+    }
+  }
+  let utente = null;
+  try { utente = await sondaggi.verificaToken(token); } catch (e) {
+    if (e.stato !== 401 && e.stato !== 503) { throw e; }
+  }
+  json(res, 200, Object.assign(sondaggi.vistaPubblica(utente ? utente.id : null), { riconosciuto: !!utente }));
+}
+
+async function rottaVota(req, res) {
+  const token = sondaggi.tokenDa(req);
+  if (!token) { errore(res, 401, 'Per votare collegati con Twitch.'); return; }
+  const corpo = await leggiJson(req);
+  const utente = await sondaggi.verificaToken(token);
+  const esito = sondaggi.vota(utente.id, corpo);
+  if (esito.giaVotato) { errore(res, 409, 'Hai già votato questo sondaggio.', esito.vista); return; }
+  json(res, 200, esito.vista);
+}
+
+async function rottaCreaSondaggio(req, res) {
+  const corpo = await leggiJson(req);
+  json(res, 201, sondaggi.crea(corpo));
+}
+
 /* --- ROUTER -------------------------------------------------------- */
 
 function metodoNonAmmesso(res, ammessi) {
@@ -648,6 +684,24 @@ async function gestisci(req, res, percorso) {
   }
   if (percorso === '/api/password') {
     return metodo === 'POST' ? rottaPassword(req, res) : metodoNonAmmesso(res, 'POST');
+  }
+  if (percorso === '/api/sondaggio') {
+    return metodo === 'GET' ? rottaSondaggioPubblico(req, res) : metodoNonAmmesso(res, 'GET');
+  }
+  if (percorso === '/api/sondaggio/voto') {
+    return metodo === 'POST' ? rottaVota(req, res) : metodoNonAmmesso(res, 'POST');
+  }
+  if (percorso === '/api/sondaggi') {
+    if (metodo === 'GET') { return json(res, 200, sondaggi.vistaAdmin()); }
+    if (metodo === 'POST') { return rottaCreaSondaggio(req, res); }
+    return metodoNonAmmesso(res, 'GET, POST');
+  }
+  if (percorso === '/api/sondaggi/chiudi') {
+    return metodo === 'POST' ? json(res, 200, sondaggi.chiudi()) : metodoNonAmmesso(res, 'POST');
+  }
+  if (percorso.startsWith('/api/sondaggi/')) {
+    if (metodo !== 'DELETE') { return metodoNonAmmesso(res, 'DELETE'); }
+    return json(res, 200, sondaggi.elimina(decodifica(percorso.slice('/api/sondaggi/'.length))));
   }
   if (percorso === '/api/backup') {
     return metodo === 'GET' ? rottaElencoBackup(req, res) : metodoNonAmmesso(res, 'GET');

@@ -46,7 +46,7 @@ export { REGISTRO_PARTI, PARTI_REGISTRATE, chiaviParte, partiDellaChiave } from 
 /* Il §4.1 alla lettera. Si usa solo se pannello/condivisi/stili.js non
    c'è: con SBStili caricato comandano le sue costanti e la sua pulizia,
    così pannello e generazione non possono pensarla in due modi. */
-const SEZIONI_DI_PARTENZA = ['regia', 'diretta', 'settimana', 'chi', 'supporto', 'saluti'];
+const SEZIONI_DI_PARTENZA = ['regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti'];
 
 /* La copertina contiene l'unico <h1>: sempre prima, sempre accesa. */
 const BLOCCATA = 'regia';
@@ -276,7 +276,7 @@ function sezioniOrdinabili() {
 }
 
 /* La stessa regola di pulisciSezioni (§4.1), per quando stili.js manca:
-   id sconosciuti via, doppioni al primo, mancanti in coda accesi, la
+   id sconosciuti via, doppioni al primo, mancanti accesi dopo chi li precede, la
    copertina prima e accesa comunque sia scritto l'elenco. */
 function pulisciLocale(grezze) {
   const ammesse = sezioniOrdinabili();
@@ -288,9 +288,13 @@ function pulisciLocale(grezze) {
     viste.add(id);
     pulite.push({ id, attiva: voce.attiva !== false });
   }
-  for (const id of ammesse) {
-    if (!viste.has(id)) pulite.push({ id, attiva: true });
-  }
+  ammesse.forEach((id, i) => {
+    if (viste.has(id)) return;
+    const prima = ammesse.slice(0, i).reverse().find((altro) => pulite.some((voce) => voce.id === altro));
+    const dopo = prima ? pulite.findIndex((voce) => voce.id === prima) : -1;
+    pulite.splice(dopo + 1, 0, { id, attiva: true });
+    viste.add(id);
+  });
   const senzaCopertina = pulite.filter((voce) => voce.id !== BLOCCATA);
   return ammesse.includes(BLOCCATA) ? [{ id: BLOCCATA, attiva: true }, ...senzaCopertina] : senzaCopertina;
 }

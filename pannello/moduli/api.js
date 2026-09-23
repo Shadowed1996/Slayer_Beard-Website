@@ -405,5 +405,10 @@ export const api = {
   /** Un tentativo: il chiamante la richiama ogni pochi secondi finche' dura. */
   twitchCollegaStato: () => richiesta('POST', '/api/twitch/collega/stato'),
 
-  twitchScollega: () => richiesta('POST', '/api/twitch/scollega')
+  twitchScollega: () => richiesta('POST', '/api/twitch/scollega'),
+
+  sondaggi: () => richiesta('GET', '/api/sondaggi'),
+  creaSondaggio: (dati) => richiesta('POST', '/api/sondaggi', dati),
+  chiudiSondaggio: () => richiesta('POST', '/api/sondaggi/chiudi'),
+  eliminaSondaggio: (id) => richiesta('DELETE', '/api/sondaggi/' + encodeURIComponent(id))
 };

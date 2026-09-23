@@ -85,6 +85,7 @@ function calcola(radice) {
     // Le emote del canale e quelle globali, lette alla pubblicazione per le
     // frasi del pollo in «Chi sono». Stessa ragione del file qui sopra.
     emoteTwitch: path.join(radice, 'server', 'dati', 'twitch-emote.json'),
+    sondaggi: path.join(radice, 'server', 'dati', 'sondaggi.json'),
     backup: path.join(radice, 'server', 'backup'),
     modelloDati: path.join(radice, 'server', 'modelli', 'dati.js.tpl')
   };
@@ -147,6 +148,7 @@ function applicaAmbiente(percorsi) {
     percorsi.accessoTwitch = path.join(dati, 'twitch-accesso.json');
     percorsi.direttaTwitch = path.join(dati, 'twitch-diretta.json');
     percorsi.emoteTwitch = path.join(dati, 'twitch-emote.json');
+    percorsi.sondaggi = path.join(dati, 'sondaggi.json');
   }
 
   const backup = cartellaDaAmbiente('SB_BACKUP');
