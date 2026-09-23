@@ -5,8 +5,13 @@ amministrazione che lo genera. Le due parti hanno un'esposizione molto diversa,
 e conviene tenerle distinte fin da subito:
 
 - **il sito pubblicato è statico** — `index.html`, `css/`, `js/`, `img/`: non
-  parla con nessun server del progetto, non ha un database e non conserva dati
-  dei visitatori;
+  ha un database. Parla con il server del progetto in due punti soli: i
+  **sondaggi** (`GET /api/sondaggio` e `POST /api/sondaggio/voto`, senza
+  sessione del pannello, con il token Twitch di chi vota controllato su
+  `id.twitch.tv`) e `stato-sito.json`, che dice se il sito è in manutenzione.
+  L'unico dato dei visitatori che il server conserva è l'id Twitch di chi ha
+  votato il sondaggio aperto, in `server/dati/sondaggi.json`: quando il
+  sondaggio si chiude restano solo i conteggi;
 - **il server e il pannello si usano in due modi**: sul computer di chi
   amministra (`127.0.0.1:4173` di serie, come è sempre stato) oppure su un
   **hosting con Node**, dove li avvia `app.js` e il pannello sta su

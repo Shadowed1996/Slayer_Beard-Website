@@ -82,7 +82,7 @@ o sul generatore.
 5. Apri la PR compilando il [template](.github/PULL_REQUEST_TEMPLATE.md).
 
 > **Il metro è zero fallimenti.** `node server/autotest.js` passa per intero su
-> `main` — **182 prove su 182** — e una modifica che ne rompe una è una modifica
+> `main` — **262 prove su 262** — e una modifica che ne rompe una è una modifica
 > da sistemare, non un numero da confrontare. Se la tua modifica cambia un
 > comportamento di proposito, aggiorna la prova che lo descriveva: una prova che
 > racconta un programma che non esiste più è peggio di nessuna prova.

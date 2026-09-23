@@ -15,6 +15,105 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **La musica d'attesa nella pagina di manutenzione** (23/09/2026). Durante la
+  manutenzione la pagina suona in loop `mp3/ElevatorMaintenance.mp3` al 20% del
+  volume. I browser di solito bloccano l'audio che parte da solo: in quel caso
+  la musica parte al primo clic, tocco o tasto premuto sulla pagina. Un bottone
+  tondo in basso a destra la ferma e la fa ripartire, e la scelta vale per tutta
+  la sessione della scheda (`sb-manutenzione-musica` in `sessionStorage`). Se il
+  file non c'è il bottone sparisce. Il file non sta in git (`mp3/` è ignorata):
+  va caricato da Plesk in `httpdocs/mp3/`.
+- **Le schede già aperte si accorgono della manutenzione** (23/09/2026). Ogni
+  generazione scrive `stato-sito.json` nella cartella del sito
+  (`{ "manutenzione": true|false, "pubblicatoIl": "…" }`, `no-store` in
+  `.htaccess`). Il nuovo `js/guardia.js`, caricato da `index.html` e
+  `clip.html`, lo rilegge ogni minuto e quando la scheda torna in primo piano:
+  se la manutenzione è accesa ricarica la pagina, così chi aveva il sito aperto
+  non resta con player, lurk, pollo e musica accesi. La pagina di manutenzione fa
+  il contrario, ogni 30 secondi: appena la modalità è spenta e ripubblicata si
+  ricarica sul sito vero. Un solo ricaricamento per pubblicazione (il timbro
+  `pubblicatoIl` finisce in `sessionStorage`), niente cicli. Il ripristino di una
+  copia di sicurezza riallinea anche `stato-sito.json`. Il file è generato,
+  ignorato da git e non va mai caricato a mano.
+- **La modalità manutenzione, dal pannello** (23/09/2026). Menu ☰ →
+  **Manutenzione**: si accende **Sito in manutenzione**, si salva e si preme
+  **Pubblica**, e `index.html` e `clip.html` diventano la pagina di manutenzione
+  (`modelli/manutenzione.html`), in cui player di Twitch, lurk, pollo, musica e
+  sondaggi non si caricano. Spenta e ripubblicata, torna il sito vero.
+  L'anteprima dell'editor mostra sempre il sito vero; la pagina di manutenzione
+  si guarda col bottone **Guarda la pagina di manutenzione**
+  (`/api/anteprima/manutenzione`).
+  - **Si riparte il** (`config.manutenzione.fine`, data e ora italiane, anche a
+    cavallo del cambio d'ora) accende il conto alla rovescia; vuoto, niente
+    conto. Arrivato a zero, la pagina mostra la scritta di fine e aspetta la
+    ripubblicazione.
+  - Testi modificabili dal gruppo `manutenzione` dello schema: la pillola in
+    alto, l'occhiello, il messaggio (testo ricco), l'inizio della scritta del
+    conto, la scritta a conto finito, il bottone per Twitch e le frasi del
+    nastro che scorre in basso. Il resto (nome, avatar, mascotte, icone dei
+    social) viene dai contenuti del sito.
+  - Lo script della pagina (`modelli/manutenzione-conto.js`) entra inline, e la
+    Content-Security-Policy lo ammette con l'hash `sha256` calcolato a ogni
+    pubblicazione.
+  - Nella barra del pannello un'etichetta dice lo stato: *Manutenzione attiva*,
+    *Manutenzione da pubblicare* o *Sito ancora in manutenzione*; cliccandola si
+    apre la vista **Manutenzione**. Anche la conferma di **Pubblica** avvisa.
+  - Si accende e si spegne dal pannello, senza caricare né togliere file
+    sull'hosting.
+- **I sondaggi in home, per chi è collegato con Twitch** (23/09/2026). Dal menu
+  ☰ → **Sondaggi** si scrive la domanda, da 2 a 6 risposte e la durata (da 1
+  minuto a 30 giorni), poi **Apri il sondaggio**. Va online subito, **senza
+  Pubblica**: i voti stanno in `server/dati/sondaggi.json` (che segue
+  `SB_DATI`, è ignorato da git e non si carica mai), e il riquadro «Il
+  sondaggio» in home li legge da `/api/sondaggio` ogni 20 secondi.
+  - Un sondaggio aperto alla volta; quelli chiusi finiscono in archivio con i
+    soli conteggi (al massimo 50). Allo scadere si chiude da solo; dal pannello
+    si può anche **Chiudi ora**, **Annulla il sondaggio** (sparisce con i voti)
+    o **Elimina** uno dall'archivio.
+  - Vota solo chi ha fatto il login con Twitch: il server controlla il token con
+    `id.twitch.tv/oauth2/validate` e accetta un voto per account, che non si
+    cambia. Chi non è collegato e clicca una risposta vede un avviso con il
+    bottone per collegarsi, e dopo il login il voto parte da solo.
+  - I risultati si vedono dopo aver votato; a sondaggio chiuso li vedono tutti,
+    per una settimana.
+  - La nuova sezione `sondaggio` si mette dopo «La diretta» anche su un
+    `contenuti.json` già online: `pulisciSezioni` ora inserisce le sezioni
+    mancanti dopo quella che le precede. Non ha una voce nel binario.
+- **Dal riquadro «Il sondaggio» un bottone porta ai sondaggi** (23/09/2026).
+  Cliccando il riquadro nell'anteprima si trovano solo le sue scritte fisse:
+  in cima ora c'è **Crea o gestisci i sondaggi**, che apre la schermata del
+  menu.
+- **Il lettore di musica di sottofondo** (23/09/2026). Gruppo «Musica di
+  sottofondo» del pannello (`config.musica`, `config.tracce`): un riquadro in
+  basso a destra con play, pausa, avanti, indietro, forma d'onda, volume, muto,
+  lista delle tracce e copertina. Le tracce si caricano da Plesk nella cartella
+  `mp3/` (non dal pannello, e non stanno in git). Parte sempre in pausa, e si
+  ferma da sé quando parte il video di Twitch o la modalità lurk. Di serie
+  arriva ridotto a bottone tondo (**Aperto alla prima visita** spento), e c'è il
+  mescolamento delle tracce (**Ordine casuale alla prima visita**): la coda si
+  rimescola intera, ogni traccia esce una volta per giro e mai due volte di
+  fila. CSP: `media-src 'self'`.
+- **Il riquadro del referral Amazon** (23/09/2026), sotto «Scrivimi» in «Dove mi
+  trovi»: titolo, spiegazione, bottone e la dichiarazione obbligatoria del
+  programma Affiliazione Amazon. Nasce spento (`config.referral.attivo`) e senza
+  link non compare; il link ha `rel="noopener sponsored"`. Nuovo token
+  `--amazon`.
+- **Il bottone GO TOP** in basso a destra (`css/cima.css`, `js/cima.js`), che
+  c'erano già nel repository ma nessun modello caricava (23/09/2026).
+- **I giorni saltati nella schedule** (22/09/2026). Nuova vista **Giorni
+  saltati** nell'editor della schedule (`config.orari.pause`): un giorno preciso
+  spento per un motivo personale, con il motivo facoltativo. Vince sia sulla
+  settimana di serie sia su un evento speciale di quel giorno.
+- **La data limite di un evento speciale** (22/09/2026, `ultimoGiorno`): un
+  avviso facoltativo «massimo entro», in un riquadro a parte in alto a destra
+  dell'evento. È solo un'informazione, e l'evento non si spegne da solo.
+- **Diretta condivisa** (22/09/2026, `config.twitch.direttaCondivisa`, in
+  *Google e social*): acceso, il messaggio automatico di lurk esce con
+  «[LURKO DA SLAYER_BEARD]» davanti, per le live fatte insieme a un altro canale.
+- **`SUPERATE` in `contenuti/schema.js`**: le chiavi di una funzione tolta che
+  un `contenuti.json` già pubblicato può ancora avere scritte. Si tolgono appena
+  il file viene letto, così la copertura non le vede come chiavi scoperte e
+  **Pubblica** non si ferma. Non si tolgono voci da questa lista.
 - **I numeri accanto ai social: «Iscritti 3.670 / Goal 5.000».** In «Dove mi
   trovi» ogni riga è divisa in due blocchi: il link (icona, nome in una colonna
   di larghezza fissa, handle allineato verso il centro) e, a destra, un
@@ -533,6 +632,14 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Rimosso
 
+- **L'integrazione con Spotify** (23/09/2026): il widget «sto ascoltando» non
+  permetteva di regolare il volume, e a seconda dell'account Spotify di chi
+  guardava faceva sentire solo un'anteprima di 30 secondi. Tolti `css/spotify.css`, `js/spotify.js`,
+  `modelli/parziali/spotify.html`, `server/lib/spotify.js`,
+  `server/lib/ascolto.js` e il gruppo dello schema; le sue chiavi stanno in
+  `SUPERATE`. Al suo posto c'è il lettore di sottofondo. Tolto anche
+  `riepilogo-spotify-2026-09-23.md`, l'appunto di quella sessione: quello che
+  resta da sapere è qui.
 - **Il bottone «I momenti migliori» in testa a «La diretta».** Portava alla
   pagina delle clip esattamente come l'invito «Migliori highlights» poco sotto,
   e i due in fila erano ripetitivi. Resta l'invito. Tolti anche la regola di
@@ -566,6 +673,18 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   `docs/PANNELLO.md` §3.
 
 ### Corretto
+- **La pagina di manutenzione sta in una schermata, senza scorrimento**
+  (23/09/2026). Sui portatili era più alta dello schermo: ora il margine è
+  contato dentro l'altezza, sotto gli 820 px di altezza le misure si
+  compattano e sotto i 760 e i 680 px spariscono i decori.
+- **I voti dei sondaggi non si perdono con più copie dell'app** (23/09/2026).
+  Passenger su Plesk può tenere accese più copie di `app.js`, e ognuna teneva i
+  sondaggi in memoria: un voto arrivato a una copia non si vedeva dall'altra e
+  la sua scrittura successiva poteva cancellarlo. Ora ogni lettura controlla
+  data, dimensione e inode di `sondaggi.json` e lo rilegge se è cambiato.
+- **Pubblica torna a funzionare dopo la rimozione di Spotify** (23/09/2026): le
+  chiavi `spotify.*` e `config.spotify` rimaste nel `contenuti.json` online
+  fermavano ogni pubblicazione; ora le toglie `SUPERATE`.
 - **L'evento speciale si prende la schedule da mezzanotte del suo giorno.**
   La maratona «SlayerFest | Day 4» comincia alle 11:00, e fino a quell'ora il
   nastro tornava la settimana di sempre, senza orari sbarrati. Ora dalle 00:00

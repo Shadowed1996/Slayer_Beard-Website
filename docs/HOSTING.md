@@ -40,8 +40,10 @@ scrivere nei messaggi e da dare a Twitch, è uno solo ed è senza `www`.
 ## 1. Com'è fatto il sito, in dieci righe
 
 Il sito che vede la gente è **statico**: è un file `index.html` più i fogli di
-stile, il JavaScript e le immagini. Nessun visitatore parla con nessun
-programma: apre una pagina già scritta, e basta.
+stile, il JavaScript e le immagini. Chi visita apre una pagina già scritta. Le
+sole eccezioni sono i **sondaggi**, che leggono e mandano i voti al programma
+Node (`/api/sondaggio`), e il piccolo file `stato-sito.json`, che la pagina
+rilegge ogni minuto per accorgersi della **manutenzione**.
 
 Accanto al sito c'è un **piccolo programma Node**, che serve solo a chi
 amministra. Fa due cose: tiene in piedi il pannello di modifica su `/pannello/`,
@@ -108,6 +110,7 @@ Alla fine, dentro `httpdocs`, ci devono essere:
 |---|---|
 | `index.html` | la pagina del sito, già generata |
 | `css/` `js/` `img/` | stili, script e immagini fisse |
+| `mp3/` | le tracce del lettore di sottofondo e **`ElevatorMaintenance.mp3`**, la musica d'attesa della pagina di manutenzione. Non sta nell'archivio: la carichi tu da Plesk, una volta sola (vedi qui sotto) |
 | `contenuti/` | i testi e la configurazione, più `media/` (la libreria delle immagini) e `font/` |
 | `modelli/` | la struttura da cui nasce `index.html` |
 | `pannello/` | il pannello di modifica |
@@ -124,6 +127,19 @@ programmi sono nascosti: nel File Manager di Plesk si vedono spuntando
 *Show Hidden Files* nelle impostazioni in alto a destra. Se dopo il caricamento
 `.htaccess` non c'è, il sito funziona lo stesso ma **senza le protezioni**: è
 proprio il file che non deve mancare.
+
+**La cartella `mp3/`** non viaggia con l'archivio né con il repository: i file
+audio sono grossi e si mettono una volta sola. In File Manager crea
+`httpdocs/mp3/` e caricaci le tracce del lettore e il file
+**`ElevatorMaintenance.mp3`**, con questo nome esatto (maiuscole comprese): è la
+musica che suona nella pagina di manutenzione. Se manca, la pagina di
+manutenzione funziona lo stesso ma senza musica, e il suo bottone non compare.
+
+**Alcuni file li scrive il programma, e non si caricano mai:** `index.html`,
+`clip.html`, `js/dati.js`, `css/tema.css` e **`stato-sito.json`** nascono a ogni
+**Pubblica** dai contenuti che stanno sull'hosting. Alla prima installazione li
+porta l'archivio (o li crea la prima Pubblica); dopo, non si sovrascrivono più
+(capitolo 9).
 
 Il capitolo 10 dice cosa invece **non** deve finire lì dentro, ed è altrettanto
 importante.
@@ -775,8 +791,17 @@ E due prove sul sito, guardandolo:
 **Non si ricarica niente.** Si entra nel pannello su
 `https://slayerbeard.com/pannello/`, si modifica, si preme **Salva** e poi
 **Pubblica**. Il sito
-cambia da solo: il programma riscrive `index.html`, `js/dati.js` e
-`css/tema.css` direttamente sull'hosting.
+cambia da solo: il programma riscrive `index.html`, `clip.html`, `js/dati.js`,
+`css/tema.css` e `stato-sito.json` direttamente sull'hosting.
+
+Due cose del pannello non seguono questa regola, o la seguono a modo loro:
+
+- **i sondaggi** vanno online appena creati, senza Pubblica: i voti stanno sul
+  server, in `sondaggi.json` dentro la cartella dei dati (quella di `SB_DATI`);
+- **la manutenzione** (menu ☰ → *Manutenzione*) si accende e si spegne con
+  Salva e **Pubblica** come tutto il resto. Chi ha il sito già aperto se ne
+  accorge da solo entro un minuto circa, perché la pagina rilegge
+  `stato-sito.json`.
 
 Ricorda la differenza, che è tutta la logica del pannello:
 
@@ -794,13 +819,28 @@ così:
 
 1. Nel pannello, **Pubblica** (per essere sicuri che i contenuti sull'hosting
    siano quelli buoni), poi menu ☰ → *Copie di sicurezza* → scarica una copia.
-2. Carica i file nuovi in `httpdocs`, sovrascrivendo. **Non toccare**
-   `contenuti/contenuti.json` e `contenuti/media/`: sono i tuoi testi e le tue
-   immagini, e la versione nuova non li porta.
-3. Plesk → **Node.js** → **Restart App**.
+2. Carica i file nuovi in `httpdocs`, sovrascrivendo. Il pacchetto di
+   aggiornamento **non deve contenere**, e tu non devi toccare:
+   - `contenuti/contenuti.json`, `contenuti/media/` e `contenuti/font/`: sono i
+     tuoi testi, le tue immagini e i tuoi font, e sull'hosting sono più nuovi di
+     qualunque copia;
+   - `server/dati/` (password, chiavi, autorizzazione di Twitch e i voti dei
+     sondaggi) e `server/backup/`;
+   - i file generati: `index.html`, `clip.html`, `js/dati.js`, `css/tema.css`
+     e `stato-sito.json`. Quelli di un computer di casa sono fatti con contenuti
+     vecchi: caricati, il sito mostrerebbe per un po' testi superati;
+   - la cartella `mp3/`, che si carica a parte (capitolo 3);
+   - i file del repository che non sono il sito: `README.md`, `CHANGELOG.md`, i
+     contratti e gli altri `.md` della cartella principale, `.github/`, i file
+     che cominciano con un punto (tranne `.htaccess` ed `.env.esempio`),
+     `Cattura.PNG`, `LICENSE`.
+3. Plesk → **Node.js** → **Restart App**. Senza, il programma continua a girare
+   con il codice vecchio che ha in memoria.
 4. Entra nel pannello e premi **Pubblica**: rigenera la pagina con il codice
-   nuovo.
-5. Guarda il sito.
+   nuovo. **Finché non la premi il sito resta com'era**: non è un caricamento
+   andato male, sono i file generati che aspettano la pubblicazione.
+5. Guarda il sito. Se era in manutenzione, resta in manutenzione: la modalità è
+   scritta nei contenuti, e l'aggiornamento non la tocca.
 
 Se qualcosa non torna, dalla stessa pagina di Plesk c'è il **log** (voce *Logs*
 del dominio, file `error_log`): il programma scrive lì quello che non gli piace,
@@ -823,11 +863,13 @@ tocca i file del sito: si può lanciare quando si vuole, anche a sito acceso.
 
 ## 10. Cosa non si carica mai
 
-Tre cose, e sono tre cose serie.
+Tre cose, e sono tre cose serie. Più una, che non è pericolosa ma fa danni lo
+stesso, in fondo.
 
 **1. `server/dati/`** — la cartella con `auth.json` (l'impronta della password
-del pannello), `chiavi.js` (il Client Secret di Twitch) e `twitch-accesso.json`
-(l'autorizzazione del canale). Non si carica da un computer all'altro, non si
+del pannello), `chiavi.js` (il Client Secret di Twitch), `twitch-accesso.json`
+(l'autorizzazione del canale) e `sondaggi.json` (i sondaggi e i voti, con l'id
+Twitch di chi ha votato quello aperto). Non si carica da un computer all'altro, non si
 copia dentro un archivio, non si manda per posta. Quei file **si ricreano
 sull'hosting**: la password come dice il capitolo 6, le chiavi e
 l'autorizzazione del canale come dice il capitolo 8, punto 7. E vanno messi dove
@@ -841,6 +883,14 @@ cartella si crea vuota da sé.
 `README`, la licenza, le catture dello schermo, i file di configurazione degli
 editor. Non fanno danno, ma stanno nella cartella pubblica senza motivo, e ogni
 file in più è una cosa in più da tenere chiusa.
+
+**E i file generati** — `index.html`, `clip.html`, `js/dati.js`,
+`css/tema.css` e `stato-sito.json` li scrive la **Pubblica** sull'hosting.
+Dopo la prima installazione non si caricano più: una copia che arriva da un altro computer è fatta con altri contenuti: sovrascrive
+quella buona e fa vedere un sito vecchio fino alla pubblicazione successiva.
+`stato-sito.json`, in particolare, dice alle pagine aperte se il sito è in
+manutenzione: una copia sbagliata può farle ricaricare sulla pagina sbagliata.
+Non è nel repository e non va creato a mano.
 
 > E una regola che vale per tutte e tre: **niente che riporti a una persona**.
 > Nome, cognome, indirizzo di posta personale. Nella cartella pubblica ci va il
@@ -869,6 +919,11 @@ file in più è una cosa in più da tenere chiusa.
 | **`www.slayerbeard.com` non rimanda al sito** | in Plesk `www` non è un alias del dominio, oppure la sezione 2 di `.htaccess` è stata modificata. Il dominio compare in due punti soli del file, tutti e due nella prima metà |
 | **In `robots.txt` manca la riga `Sitemap:`** | dopo aver messo `SB_SITO` non è stata premuta **Pubblica**: quella riga la scrive la pubblicazione, non si mette a mano |
 | **Chi era nel pannello è stato buttato fuori** | c'è stato un **Restart App**: le sessioni stanno in memoria, si rientra con la password e le modifiche salvate ci sono ancora |
+| **Dopo aver caricato una versione nuova il sito non è cambiato** | è normale: premi **Restart App** e poi **Pubblica** (capitolo 9). I file generati non viaggiano nel pacchetto |
+| **Il sondaggio non compare sul sito** | non c'è un sondaggio aperto (o chiuso da meno di una settimana), oppure l'app Node è spenta: i voti passano da lei. Plesk → Node.js → **Restart App** |
+| **Nel pannello, «Il server non ha ancora i sondaggi: va aggiornato»** | sull'hosting gira il programma vecchio: carica la versione nuova e **Restart App** |
+| **Il sito è ancora in manutenzione dopo averla spenta** | hai salvato ma non pubblicato: l'etichetta *Sito ancora in manutenzione* in alto nel pannello lo ricorda. Premi **Pubblica** |
+| **Nella pagina di manutenzione manca il bottone della musica** | manca `httpdocs/mp3/ElevatorMaintenance.mp3`, o il nome è scritto diverso (capitolo 3) |
 | **«Ultima diretta» e i numeri non si aggiornano** | manca il collegamento con Twitch (`node server/imposta-twitch.js`), oppure `SB_AGGIORNA_MIN` è a `0` |
 
 Dove guardare, in ordine: il **`error_log`** del dominio (Plesk → il dominio →

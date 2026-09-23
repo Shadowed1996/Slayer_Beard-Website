@@ -133,7 +133,7 @@ Da sinistra a destra:
 - **☰** — il menu del pannello: impostazioni, immagini, copie di sicurezza,
   password, uscita (capitolo 14);
 - **Pannello** — c'è solo quando la finestra è stretta: apre e chiude il
-  pannello laterale (capitolo 24);
+  pannello laterale (capitolo 26);
 - l'avatar e **slayer_beard** — un clic apre il sito pubblicato in una scheda
   nuova. Accanto c'è il nome di quello che hai selezionato adesso: «Pagina»
   quando non hai selezionato niente, oppure per esempio «Titolo», «Chi sono»,
@@ -141,6 +141,10 @@ Da sinistra a destra:
 - **Telefono · Tablet · Computer** — su quale schermo guardi e lavori (qui
   sotto);
 - **↶ ↷** — Annulla e Ripeti (qui sotto);
+- l'etichetta della **manutenzione**, solo quando c'entra la
+  manutenzione: *Manutenzione attiva*, *Manutenzione da pubblicare* o *Sito
+  ancora in manutenzione*. Un clic apre la schermata **Manutenzione**
+  (capitolo 24);
 - la **spia**: *Tutto salvato* (verde) oppure *Modifiche non salvate*
   (arancione, lampeggia). Mentre il pannello lavora dice *Sto salvando…* o
   *Sto pubblicando…*;
@@ -196,7 +200,7 @@ portano da nessuna parte e i moduli non si inviano.
 
 L'anteprima mostra la pagina **senza il JavaScript del sito**: niente player vivo,
 niente chat, niente conto alla rovescia, niente pollo che parla. È voluto, e il
-perché sta nel capitolo 26. Testi, immagini, colori, stili e posizioni si vedono
+perché sta nel capitolo 28. Testi, immagini, colori, stili e posizioni si vedono
 invece come sul sito vero.
 
 Quando l'anteprima si sta caricando compare *Carico l'anteprima del sito…*;
@@ -596,7 +600,7 @@ Sempre in **Avanzate**:
   c'è scritto su quali dispositivi l'elemento ha uno stile cambiato.
 
 La sezione *La diretta* e il *Monitor del player* hanno meno scelte degli altri:
-il perché sta nel capitolo 26.
+il perché sta nel capitolo 28.
 
 ---
 
@@ -810,7 +814,7 @@ hai scritto.
 - **↶** e **↷** funzionano anche qui: l'editor si ridisegna con i dati di prima e
   riapre la stessa linguetta e lo stesso giorno.
 - Nell'anteprima non ci sono le **date** sui giorni, i segni **Oggi**, **Prossima** e
-  **In onda**, né l'ora di chi guarda: li aggiunge il sito mentre gira (capitolo 26).
+  **In onda**, né l'ora di chi guarda: li aggiunge il sito mentre gira (capitolo 28).
 
 #### Sul sito
 
@@ -922,7 +926,7 @@ cambia dopo **Salva** e **Pubblica**.
 
 > Spegnere **La diretta** toglie dalla pagina anche il player, il pollo, la
 > modalità lurk e le clip. È l'unico modo di togliere il player: nascosto,
-> trasparente o rimpicciolito non si può (capitolo 26).
+> trasparente o rimpicciolito non si può (capitolo 28).
 
 ---
 
@@ -985,7 +989,7 @@ I bottoni della scheda Avanzate:
 - **Riporta tutto il riquadro** — tutti i blocchi della sezione tornano come nel
   sito, su questo dispositivo.
 
-Prima di spostare blocchi leggi il capitolo 26: quando un blocco esce dal suo posto
+Prima di spostare blocchi leggi il capitolo 28: quando un blocco esce dal suo posto
 la sezione può cambiare un poco di altezza, e un blocco reso molto stretto può
 schiacciarsi.
 
@@ -1004,8 +1008,10 @@ clic nell'anteprima fa tornare all'editor anche lui.
 | **Struttura della pagina** | ordine e visibilità delle sezioni: il Navigatore — capitolo 12 |
 | **Canale, contatti e immagini** | canale Twitch, email, numeri del canale, immagini del sito |
 | **Google e social** | come appare il sito nelle ricerche e nei link condivisi |
+| **Manutenzione** | mette il sito in pausa: i visitatori vedono la pagina di manutenzione — capitolo 24 |
+| **Sondaggi** | crea un sondaggio per chi è collegato con Twitch e guarda i risultati — capitolo 23 |
 | **Immagini** | la libreria: carica e gestisci i file — capitolo 8 |
-| **Copie di sicurezza** | torna a com'era il sito prima di una pubblicazione — capitolo 23 |
+| **Copie di sicurezza** | torna a com'era il sito prima di una pubblicazione — capitolo 25 |
 | **Password** | cambia la password del pannello |
 | **Esci** | chiude la sessione |
 
@@ -1968,7 +1974,210 @@ scrive»* non dovrebbero dare per certo che il messaggio sia stato inviato.
 
 ---
 
-## 23. Se qualcosa va storto: tornare indietro
+## 23. I sondaggi
+
+Un sondaggio è una domanda con da 2 a 6 risposte, che compare in un riquadro
+sulla home, subito sotto «La diretta». Può votare solo chi si è collegato al sito
+con il suo account Twitch, e ognuno vota **una volta sola**: il voto non si
+cambia.
+
+La cosa da sapere prima di tutto: **i sondaggi non passano da Salva e
+Pubblica.** Appena crei un sondaggio è già sul sito; appena lo chiudi o lo
+annulli, il sito lo sa già. Non c'è niente da pubblicare.
+
+### Dove si fa
+
+Menu ☰ → **Sondaggi**. Ci si arriva anche cliccando il riquadro del sondaggio
+nell'anteprima: in cima alla scheda **Contenuto** c'è il bottone **Crea o
+gestisci i sondaggi**.
+
+### Crearne uno
+
+Quando non c'è un sondaggio aperto, la schermata mostra il modulo **Nuovo
+sondaggio**:
+
+1. **Domanda** — fino a 200 caratteri.
+2. **Risposte (da 2 a 6)** — una per riga, fino a 80 caratteri l'una. Si
+   aggiunge una riga con **Aggiungi una risposta** e se ne toglie una col
+   cestino accanto. Due risposte uguali non sono ammesse.
+3. **Resta aperto per** — un numero e l'unità (**minuti**, **ore**, **giorni**).
+   Di serie 1 giorno; il massimo è 30 giorni.
+4. **Apri il sondaggio**.
+
+Compare l'avviso *«Il sondaggio è online: si vede già sul sito.»* Se manca
+qualcosa, il pannello lo dice sotto il modulo (*Scrivi la domanda.*, *Servono
+almeno 2 risposte.*…).
+
+Si può tenere **un sondaggio aperto alla volta**: finché ce n'è uno, il modulo
+per crearne un altro non compare.
+
+### Mentre è aperto
+
+In cima alla schermata c'è **Aperto adesso**: la domanda, quanto manca alla
+chiusura, quanti voti ci sono e, per ogni risposta, la barra con la percentuale
+e il numero dei voti. La risposta in testa è evidenziata. I numeri si aggiornano
+da soli ogni dieci secondi.
+
+Due bottoni:
+
+- **Chiudi ora** — chiude il sondaggio prima della scadenza. Non si vota più; sul
+  sito restano i risultati, visibili a tutti per una settimana. Il pannello chiede
+  conferma (**Chiudi il sondaggio**).
+- **Annulla il sondaggio** — lo fa sparire dal sito **insieme a tutti i voti**,
+  senza metterlo in archivio. Serve per un sondaggio sbagliato. Anche qui il
+  pannello chiede conferma.
+
+Allo scadere del tempo il sondaggio **si chiude da solo**: non devi fare niente.
+
+### L'archivio
+
+Sotto, **Archivio** elenca i sondaggi chiusi, dal più recente, ognuno con la data
+di chiusura, il numero dei voti e i risultati. **Elimina** ne toglie uno
+dall'archivio (e dal sito, se era l'ultimo chiuso ed è ancora in vista): i voti
+non si recuperano. L'archivio tiene gli ultimi 50.
+
+### Cosa vede chi visita il sito
+
+- **Con un sondaggio aperto**: la domanda, le risposte da cliccare e il tempo che
+  manca.
+- **Chi non è collegato con Twitch** e clicca una risposta vede un avviso che
+  spiega che per votare serve Twitch, con il bottone per collegarsi. Dopo il
+  collegamento il voto parte da solo, senza dover cliccare di nuovo.
+- **Dopo aver votato** vede i risultati, che si aggiornano da soli.
+- **A sondaggio chiuso** i risultati li vedono tutti, per una settimana. Poi il
+  riquadro sparisce, finché non apri un sondaggio nuovo.
+
+Serve il **profilo del sito** acceso (capitolo 19): è lui il collegamento con
+Twitch. Senza, nell'avviso manca il bottone per collegarsi e nessuno può votare.
+
+Il sondaggio non ha una voce nel menu laterale del sito.
+
+### Le scritte del riquadro
+
+Le parole che restano uguali da un sondaggio all'altro — occhiello, titolo della
+sezione, riga sotto alle risposte, «Chiude tra», la frase dopo il voto, quella a
+sondaggio chiuso, la parola dopo il numero dei voti e le quattro scritte
+dell'avviso di login — si cambiano come tutti gli altri testi: clic sul riquadro
+nell'anteprima, scheda **Contenuto**. **Queste sì** vanno salvate e
+pubblicate. Il riquadro si sposta o si nasconde da **Struttura della pagina**
+come le altre sezioni.
+
+### Da sapere
+
+- I voti stanno sul server, in un file che il pannello non mostra e che nessuno
+  deve caricare o sovrascrivere: sono dati del sito vivo, come i tuoi testi.
+- Del sondaggio aperto il server ricorda **chi** ha votato (l'account Twitch),
+  per non far votare due volte la stessa persona. Quando il sondaggio si chiude
+  restano solo i numeri.
+- Se nella schermata compare *«Il server non ha ancora i sondaggi: va
+  aggiornato.»*, sull'hosting gira una versione vecchia del programma: va caricata
+  quella nuova (`docs/HOSTING.md`, capitolo 9).
+
+---
+
+## 24. La manutenzione
+
+Quando lavori a qualcosa di grosso, o semplicemente vuoi chiudere il sito per un
+po', puoi metterlo **in manutenzione**: chi apre il sito, al posto della pagina
+solita, vede una pagina che dice che si torna presto, con il nome del canale, il
+bottone per andare su Twitch, i link ai social e, se vuoi, il conto alla rovescia
+per la riapertura.
+
+Mentre il sito è in manutenzione **si fermano** il player di Twitch, la modalità
+lurk con i suoi messaggi in chat, il pollo, la musica di sottofondo e i sondaggi.
+Vale sia per la home sia per la pagina delle clip.
+
+### Accenderla
+
+1. Menu ☰ → **Manutenzione**.
+2. Accendi **Sito in manutenzione**.
+3. Se vuoi, compila **Si riparte il** (vedi sotto) e cambia i testi.
+4. **Salva**, poi **Pubblica**. Prima di pubblicare, il pannello ti ricorda che
+   il sito andrà in manutenzione.
+
+Da quel momento il sito è chiuso. Chi aveva già il sito aperto in una scheda se
+ne accorge da solo **entro un minuto circa**: la sua pagina si ricarica e mostra
+la manutenzione.
+
+### Spegnerla
+
+1. Menu ☰ → **Manutenzione**.
+2. Spegni **Sito in manutenzione**.
+3. **Salva**, poi **Pubblica**.
+
+Il sito torna com'era. Chi era rimasto sulla pagina di manutenzione torna al sito
+vero da solo, entro mezzo minuto circa, senza dover ricaricare.
+
+> **Solo spegnere l'interruttore non basta**, come per ogni altra modifica:
+> senza **Pubblica** il sito resta chiuso. Per questo, finché c'è qualcosa in
+> sospeso, nella barra in alto compare un'etichetta:
+>
+> - *Manutenzione da pubblicare* — l'hai accesa ma non hai ancora pubblicato:
+>   il sito è ancora aperto;
+> - *Manutenzione attiva* — il sito è in manutenzione;
+> - *Sito ancora in manutenzione* — l'hai spenta ma non hai ancora pubblicato: il
+>   sito è ancora chiuso.
+>
+> Un clic sull'etichetta apre la schermata **Manutenzione**.
+
+### Mentre è accesa, il pannello funziona come sempre
+
+L'anteprima al centro mostra **sempre il sito vero**, non la pagina di
+manutenzione: puoi continuare a lavorarci, salvare e pubblicare. Finché
+l'interruttore resta acceso, ogni pubblicazione aggiorna il sito dietro le
+quinte ma il pubblico continua a vedere la manutenzione.
+
+Per vedere la pagina di manutenzione com'è, in fondo alla schermata c'è **Guarda
+la pagina di manutenzione**: la apre in una scheda nuova, con i valori **già
+salvati** (se hai appena cambiato un testo, salva prima). Anche prima di
+accenderla, per provarla.
+
+### Il conto alla rovescia: «Si riparte il»
+
+Giorno e ora (italiana) in cui pensi di riaprire. La pagina mostra ore, minuti e
+secondi che mancano, con una scritta del tipo *«Si riparte alle 13:30 ·
+mancano»*, oppure *«Si riparte il 24/09 alle 13:30 · mancano»* se non è oggi.
+
+Il conto è solo un'indicazione: **il sito non si riapre da solo** quando arriva a
+zero. A zero la pagina mostra la *scritta a conto finito* e aspetta che tu spenga
+la manutenzione e pubblichi. Lascia il campo vuoto e il conto non compare.
+
+### I testi
+
+Tutti nella stessa schermata:
+
+| Campo | Dove si vede |
+|---|---|
+| **Scritta nella pillola in alto** | la piccola etichetta in cima alla pagina |
+| **Occhiello sopra al nome** | la riga sopra al nome del canale |
+| **Messaggio ai visitatori** | il paragrafo sotto il conto alla rovescia; si possono usare grassetto e corsivo |
+| **Inizio della scritta del conto alla rovescia** | la prima parola della scritta sopra il conto: giorno e ora li aggiunge la pagina |
+| **Scritta a conto alla rovescia finito** | compare quando il conto arriva a zero |
+| **Bottone per Twitch** | il bottone che porta al canale |
+| **Frasi del nastro che scorre in basso** | le frasi della striscia in fondo, una dopo l'altra |
+
+Il resto viene da solo dal sito: il nome del canale, l'avatar, il pollo, le
+icone dei social che hanno un link, i colori e i caratteri.
+
+La pagina è fatta per stare **tutta in una schermata**, senza scorrere, anche sui
+portatili con lo schermo basso: lì si stringe e toglie qualche decorazione.
+
+### La musica d'attesa
+
+La pagina di manutenzione ha una musichetta d'attesa, a volume basso (un quinto
+del massimo), che si ripete. Quasi tutti i browser non fanno partire l'audio da
+soli: in quel caso la musica comincia appena il visitatore clicca, tocca lo
+schermo o preme un tasto sulla pagina. In basso a destra c'è un bottone tondo per
+fermarla e farla ripartire; la scelta vale finché il visitatore tiene aperta
+quella scheda.
+
+Il file è `mp3/ElevatorMaintenance.mp3`, e **non si carica dal pannello**: sta
+nella cartella `mp3` del sito, e si mette da Plesk (`docs/HOSTING.md`). Se il file
+non c'è, la pagina funziona lo stesso e il bottone della musica non compare.
+
+---
+
+## 25. Se qualcosa va storto: tornare indietro
 
 Ogni volta che pubblichi, il server mette da parte una **copia di sicurezza** del
 sito com'era prima: la pagina, i dati, il foglio dei colori e i contenuti (testi,
@@ -1997,7 +2206,7 @@ di ripiego; un'immagine va ricaricata.
 
 ---
 
-## 24. Il pannello su uno schermo stretto
+## 26. Il pannello su uno schermo stretto
 
 Sotto i 1024 pixel di larghezza (un portatile piccolo, una finestra stretta, un
 tablet) l'anteprima prende tutto lo spazio e il pannello diventa **un cassetto**
@@ -2018,7 +2227,7 @@ lunghi, però, uno schermo largo è molto più comodo.
 
 ---
 
-## 25. Scorciatoie da tastiera
+## 27. Scorciatoie da tastiera
 
 | Tasti | Cosa fanno |
 |---|---|
@@ -2044,7 +2253,7 @@ sempre un bordo ben visibile.
 
 ---
 
-## 26. Da sapere: i limiti veri
+## 28. Da sapere: i limiti veri
 
 Qui ci sono le cose che il pannello non fa, o fa in un modo che è bene conoscere
 prima. Nessuna è un guasto: sono scelte, ognuna col suo perché.
@@ -2144,7 +2353,7 @@ per modificarli. Il sito vero, con il player e tutto il resto, si guarda da menu
 
 ---
 
-## 27. Quando qualcosa non funziona
+## 29. Quando qualcosa non funziona
 
 **«Non riesco a contattare il server»**
 La finestra nera con `node server/server.js` è stata chiusa o il computer è stato
@@ -2226,7 +2435,7 @@ il fumetto non nomina mai nessuno, può essere che *Ascolta la chat vera del
 canale* sia spento, o che in chat non stia scrivendo nessuno. Ricorda anche che
 se hai chiuso il pollo con la «x» quel browser non te lo rimostra: apri il sito
 in una finestra anonima per controllare. Nell'anteprima del pannello il pollo non
-parla mai: capitolo 26.
+parla mai: capitolo 28.
 
 **La modalità lurk non compare, o non riavvia niente**
 Controlla che *Mostra la modalità lurk* sia acceso e di aver **pubblicato** dopo
@@ -2241,7 +2450,7 @@ L'elenco completo è nel capitolo 20. E ricorda che quel messaggio **non fa
 salire il numero di spettatori**: non serve a quello.
 
 **Il player di Twitch non parte nell'anteprima**
-Nell'anteprima del pannello non parte mai, apposta (capitolo 26). Sul sito, se non
+Nell'anteprima del pannello non parte mai, apposta (capitolo 28). Sul sito, se non
 parte in locale, dipende di solito dal browser che blocca i contenuti di terze
 parti.
 
@@ -2280,11 +2489,11 @@ messaggio resta, segnalalo a chi ha fatto il sito.
 Se non l'hai ancora pubblicato, premi **↶** finché serve, oppure ricarica la pagina
 del pannello senza salvare: le modifiche non salvate spariscono e torna la bozza di
 prima. Se l'hai pubblicato, vai in *Copie di sicurezza* e ripristina la copia di
-prima (capitolo 23).
+prima (capitolo 25).
 
 ---
 
-## 28. Per chi mette le mani nel codice
+## 30. Per chi mette le mani nel codice
 
 Questo capitolo è per chi lavora sui file. Le regole vincolanti, i nomi e i
 formati esatti stanno in [`CONTRATTO-4.md`](../CONTRATTO-4.md) per l'editor e in
@@ -2398,6 +2607,22 @@ Tre ricette:
 - I moduli dell'editor si parlano con eventi sul `document` del pannello:
   `sb:pronto`, `sb:modifica`, `sb:sostituito`, `sb:dispositivo`,
   `sb:anteprima-pronta`, `sb:ispettori`, `sb:scrittura`.
+- **Sondaggi**: `server/lib/sondaggi.js` tiene lo stato in
+  `server/dati/sondaggi.json` (segue `SB_DATI`), lo scrive in modo atomico e lo
+  rilegge quando cambiano data, dimensione o inode del file (più copie di
+  `app.js` sotto Passenger). Rotte del pannello, con sessione: `GET`/`POST
+  /api/sondaggi`, `POST /api/sondaggi/chiudi`, `DELETE /api/sondaggi/<id>`.
+  Rotte pubbliche, senza sessione: `GET /api/sondaggio` e `POST
+  /api/sondaggio/voto`, con il token Twitch nell'intestazione `Authorization`,
+  controllato su `id.twitch.tv/oauth2/validate`. La schermata è
+  `pannello/moduli/sondaggi.js`, il riquadro sul sito `js/sondaggio.js`.
+- **Manutenzione**: con `config.manutenzione.attiva` la generazione scrive
+  `modelli/manutenzione.html` al posto di `index.html` e di `clip.html`;
+  `modelli/manutenzione-conto.js` entra inline e la CSP lo ammette con il suo
+  hash. Ogni generazione, e ogni ripristino di una copia, scrive
+  `stato-sito.json` (`manutenzione`, `pubblicatoIl`), che `js/guardia.js` e lo
+  script della pagina di manutenzione rileggono. `GET /api/anteprima/manutenzione`
+  rende la pagina dai contenuti salvati.
 
 ### La schedule: il ramo `config.orari`
 
@@ -2756,10 +2981,10 @@ in tutto.
 
 ---
 
-## 29. Riassunto in cinque righe
+## 31. Riassunto in cinque righe
 
 1. `node server/server.js`, poi `http://localhost:4173/pannello/`.
 2. Clicca nell'anteprima la cosa da cambiare (o trovala con `Ctrl+K`).
 3. Cambiala dalle schede **Contenuto**, **Stile** e **Avanzate**, guardando anche Telefono e Tablet.
 4. **Salva** (`Ctrl+S`) — il sito non cambia ancora.
-5. **Pubblica** — adesso lo vedono tutti.
+5. **Pubblica** — adesso lo vedono tutti. (I sondaggi fanno eccezione: vanno online appena li crei.)

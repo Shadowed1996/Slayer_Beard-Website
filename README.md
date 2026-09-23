@@ -11,8 +11,11 @@ di codice: si clicca la cosa da cambiare direttamente nell'anteprima del sito.
 
 Due cose da tenere a mente, perché spiegano tutto il resto:
 
-1. **Il sito pubblicato è statico.** `index.html` è un file generato: chi visita il sito non
-   scarica nessun JSON e non parla con nessun server. Va bene qualsiasi hosting.
+1. **Il sito pubblicato è statico.** `index.html` è un file generato: chi visita il sito legge
+   una pagina già scritta. Le eccezioni sono due e piccole: il riquadro dei **sondaggi**, che
+   legge e manda i voti a `/api/sondaggio` (serve il server Node acceso), e `js/guardia.js`, che
+   ogni minuto rilegge `stato-sito.json` per accorgersi della **manutenzione**. Senza il server
+   il sito si vede lo stesso: il sondaggio semplicemente non compare.
 2. **Il server serve solo a chi amministra.** Gira in due modi: sul computer di chi lavora
    (`node server/server.js`, come è sempre stato) oppure su un hosting con Node, dove lo avvia
    `app.js`, per avere il pannello online. Chi visita il sito non lo tocca in nessuno dei due casi.
@@ -26,8 +29,12 @@ modelli/index.html         ← la struttura, con i segnaposto {{...}}
 index.html + js/dati.js + css/tema.css   ← file statici, pronti da caricare online
 ```
 
-I file generati sono **tre**, non due: dalla configurazione dei colori e dei caratteri nasce
-`css/tema.css` esattamente come dai testi nasce `index.html`.
+I file generati sono **cinque**, non due: dalla configurazione dei colori e dei caratteri nasce
+`css/tema.css` esattamente come dai testi nasce `index.html`; dallo stesso giro nascono anche
+`clip.html` (la pagina di tutte le clip, quando la vetrina è accesa) e `stato-sito.json` (una
+riga: se il sito è in manutenzione e quando è stato pubblicato). Con la manutenzione accesa,
+`index.html` e `clip.html` sono la pagina di manutenzione. `clip.html` non è nel repository e
+`stato-sito.json` è ignorato da git: li scrive solo la pubblicazione.
 
 ---
 
@@ -66,7 +73,7 @@ video non parte. Serve un server, anche banale.
 | `node server/imposta-password.js` | crea o cambia la password del pannello |
 | `node server/imposta-twitch.js <clientId> <secret>` | scrive `server/dati/chiavi.js`, l'unico file in cui stanno le chiavi (facoltativo, vedi sotto) |
 | `node server/imposta-twitch.js --prova` | chiede subito il titolo a Twitch e dice com'è andata, senza scrivere niente |
-| `node server/autotest.js` | collaudo: motore dei modelli, convalida, testo ricco, tema, generazione, API, modalità lurk, collegamento con Twitch, vetrina delle clip, schedule |
+| `node server/autotest.js` | collaudo: motore dei modelli, convalida, testo ricco, tema, generazione, API, modalità lurk, collegamento con Twitch, vetrina delle clip, schedule, musica, sondaggi, manutenzione |
 
 La porta si cambia con la variabile d'ambiente `SB_PORTA` (per esempio
 `SB_PORTA=4174 node server/server.js`). Il collaudo lavora in una cartella temporanea e non
@@ -80,6 +87,11 @@ tocca i file del progetto: si può lanciare quando si vuole.
 sito/
 ├─ index.html            ← GENERATO. Non modificarlo a mano: la prossima
 │                          pubblicazione lo riscrive e perdi tutto.
+├─ clip.html             ← GENERATO: la pagina di tutte le clip (non è nel repository)
+├─ stato-sito.json       ← GENERATO a ogni pubblicazione: manutenzione sì/no e quando.
+│                          Ignorato da git, non si carica mai a mano
+├─ mp3/                  le tracce del lettore e ElevatorMaintenance.mp3, la musica
+│                        d'attesa della manutenzione. Si caricano da Plesk: fuori da git
 ├─ js/
 │  ├─ dati.js            ← GENERATO. Configurazione letta dal front-end.
 │  ├─ player.js          player Twitch: embed, stato in onda, chat
@@ -88,7 +100,13 @@ sito/
 │  ├─ canale.js          per chi è collegato: stato del canale e titolo dell'ultima diretta
 │  ├─ lurk.js            la modalità lurk: sorveglia il video e lo fa ripartire
 │  ├─ ritorno.js         la finestrella del login Twitch: consegna il token e si chiude
-│  └─ pollo.js           la mascotte: reagisce alla chat (vedi sotto)
+│  ├─ pollo.js           la mascotte: reagisce alla chat (vedi sotto)
+│  ├─ clip.js            i filtri 24 ore / 3 / 7 / 30 giorni di clip.html
+│  ├─ cima.js            il bottone GO TOP
+│  ├─ musica.js          il lettore di musica di sottofondo (solo se acceso)
+│  ├─ sondaggio.js       il riquadro del sondaggio: voto, login, risultati
+│  └─ guardia.js         rilegge stato-sito.json ogni minuto e ricarica la pagina
+│                        se il sito è appena andato in manutenzione
 ├─ css/
 │  ├─ tokens.css         valori di partenza: palette, misure, tipografia
 │  ├─ tema.css           ← GENERATO dal gruppo «Aspetto»: riscrive i token
@@ -100,7 +118,10 @@ sito/
 │  ├─ pollo.css          il pollo: posizione, fumetto, animazioni
 │  ├─ clip.css           la vetrina delle clip, in fondo alla «diretta»
 │  ├─ account.css        la tessera di chi si è collegato con Twitch
-│  └─ lurk.css           il pannello della modalità lurk, sotto al monitor
+│  ├─ lurk.css           il pannello della modalità lurk, sotto al monitor
+│  ├─ cima.css           il bottone GO TOP
+│  ├─ musica.css         il lettore di sottofondo
+│  └─ sondaggio.css      il riquadro del sondaggio e l'avviso di login
 ├─ img/                  le immagini fisse: avatar, mascotte, copertina, anteprima
 │                        social, favicon, fondale della schedule (capitolo «Le immagini»)
 │
@@ -114,18 +135,27 @@ sito/
 ├─ modelli/
 │  ├─ index.html         la struttura della pagina, con i {{segnaposto}}; le sezioni
 │  │                     di <main> le mette la generazione, nell'ordine scelto
+│  ├─ clip.html          la pagina di tutte le clip
+│  ├─ manutenzione.html  la pagina di manutenzione, che prende il posto di index.html
+│  │                     e clip.html quando la modalità è accesa
+│  ├─ manutenzione-conto.js  il suo script (conto alla rovescia, musica d'attesa,
+│  │                     ritorno al sito): entra inline, ammesso dalla CSP con l'hash
 │  ├─ parziali/          le sezioni e i pezzi della pagina, con i marcatori data-sb-*
 │  │  ├─ lurk.html       il pannello della modalità lurk, dentro «diretta»
-│  │  └─ clip.html       l'invito alle clip in fondo a «diretta» (le card sono in clip.html)
+│  │  ├─ clip.html       l'invito alle clip in fondo a «diretta» (le card sono in clip.html)
+│  │  ├─ sondaggio.html  il riquadro del sondaggio
+│  │  └─ musica.html     il lettore di sottofondo
 │  └─ icone/             le icone SVG, una per file
 ├─ server/               il CMS: generazione, API, sessioni, backup, media, tema
 │  ├─ lib/controlli.js   i controlli d'insieme: avvertimenti, mai errori
 │  ├─ lib/chiavi.js      LE CHIAVI: un file solo, e da lì le prende tutto
 │  ├─ lib/twitch.js      l'unico punto in cui il server locale chiama Twitch
 │  ├─ lib/font.js        i font caricati: formato, limite di 2 MB, elenco, dove sono usati
+│  ├─ lib/youtube.js     gli iscritti del canale YouTube, per il numero accanto ai social
+│  ├─ lib/sondaggi.js    i sondaggi: creazione, voti, archivio, controllo del login Twitch
 │  ├─ modelli/chiavi.esempio.js  il modello da copiare, con le istruzioni
-│  └─ dati/              password del pannello e chiavi.js. Non si carica
-│                        online e non sta nel controllo di versione.
+│  └─ dati/              password del pannello, chiavi.js e sondaggi.json (i voti).
+│                        Non si carica online e non sta nel controllo di versione.
 ├─ pannello/             l'interfaccia di amministrazione: l'editor unico
 │  ├─ index.html         barra alta, pannello laterale, anteprima al centro
 │  ├─ pannello.js        la base: accesso, bozza, Salva, Pubblica, convalida
@@ -136,7 +166,8 @@ sito/
 │  ├─ condivisi/orari.js le regole della schedule: limiti, forma pulita, errori, fusi
 │  │                     orari. Anche lui un file solo per pannello e server
 │  └─ moduli/            i mattoni comuni: API, campi dallo schema, testo ricco, media
-│                        (con la riduzione in WebP), backup, l'editor della schedule
+│                        (con la riduzione in WebP), backup, l'editor della schedule,
+│                        la schermata dei sondaggi (sondaggi.js)
 ├─ app.js                il file d'avvio per un hosting con Node: fuso, porta e
 │                        indirizzo dall'ambiente, poi lo stesso server di server/
 ├─ package.json          avvio e metadati (`npm start`), zero dipendenze
@@ -158,10 +189,11 @@ sito/
 ```
 
 Le sezioni della pagina, nell'ordine di partenza: **regia** (la copertina), **diretta** (il player,
-grande, con la chat e il pollo accanto, e in fondo la vetrina delle clip), **settimana**, **chi
+grande, con la chat e il pollo accanto, e in fondo la vetrina delle clip), **sondaggio** (si vede
+solo con un sondaggio aperto o chiuso da meno di una settimana), **settimana**, **chi
 sono**, **supporto**, **saluti**. Dal pannello si possono riordinare e nascondere (la copertina
 resta sempre prima e accesa); il binario laterale e il piede ci sono sempre. Il binario ha una
-voce per ogni sezione accesa, quindi al massimo sei — e resta a sei: la vetrina delle clip sta
+voce per ogni sezione accesa tranne il sondaggio, quindi al massimo sei — e resta a sei: la vetrina delle clip sta
 dentro «diretta» proprio per non chiederne una settima, che sotto i 400 px non ci starebbe. Ci si
 arriva dall'invito «Migliori highlights» in fondo a «diretta», non dal binario.
 
@@ -191,16 +223,19 @@ largo quanto vuoi, mostra i controlli dell'elemento scelto in tre schede:
 
 Le sezioni si riordinano e si nascondono dal Navigatore (il menu laterale del sito le segue da
 solo), e dal menu ☰ si arriva a colori, combinazioni pronte e font del sito — **anche caricati
-dal computer** —, alla libreria delle immagini, alle copie di sicurezza e al cambio della
-password. Ci sono Annulla e Ripeti, la ricerca dei campi con `Ctrl+K`, e sugli schermi stretti il
+dal computer** —, alla **manutenzione**, ai **sondaggi**, alla libreria delle immagini, alle
+copie di sicurezza e al cambio della password. Ci sono Annulla e Ripeti, la ricerca dei campi con `Ctrl+K`, e sugli schermi stretti il
 pannello diventa un cassetto.
 
 Ci sono due bottoni distinti, e la differenza conta:
 
 - **Salva** scrive in `contenuti/contenuti.json`. Il sito pubblicato **non cambia**. Puoi
   salvare venti volte e pensarci su.
-- **Pubblica** rigenera `index.html`, `js/dati.js` e `css/tema.css`. Da quel momento il sito
-  è cambiato.
+- **Pubblica** rigenera `index.html`, `js/dati.js`, `css/tema.css`, `clip.html` e
+  `stato-sito.json`. Da quel momento il sito è cambiato.
+
+I **sondaggi** sono l'unica cosa che non passa da qui: vanno online appena creati, senza
+Pubblica (capitolo «I sondaggi» qui sotto).
 
 L'anteprima nel pannello mostra anche le modifiche **non ancora salvate**: la pagina viene resa
 al volo dal server e buttata via, senza toccare niente sul disco. È la pagina **senza il
@@ -1029,6 +1064,76 @@ La guida per chi amministra è il capitolo *La modalità lurk* di
 
 ---
 
+## I sondaggi
+
+Un riquadro in home, subito dopo «La diretta», con una domanda e da 2 a 6 risposte. Si crea dal
+pannello, menu ☰ → **Sondaggi**, e **va online subito, senza Pubblica**: è l'unica parte del sito
+che non sta nella pagina generata ma arriva dal server.
+
+- **Chi vota.** Solo chi ha fatto il login con Twitch sul sito (il profilo di `js/account.js`).
+  Il browser manda il token, il server lo controlla con
+  `id.twitch.tv/oauth2/validate` e tiene **un voto per account**, che non si cambia. Chi non è
+  collegato e clicca una risposta vede un avviso con il bottone per collegarsi; dopo il login il
+  voto parte da solo.
+- **Cosa si vede.** I risultati compaiono dopo aver votato. Allo scadere il sondaggio si chiude da
+  solo e i risultati restano visibili a tutti per una settimana; poi il riquadro sparisce finché
+  non se ne apre un altro. Uno aperto alla volta.
+- **Dove stanno i voti.** In `server/dati/sondaggi.json` (o nella cartella di `SB_DATI`),
+  scritto in modo atomico. Per il sondaggio aperto il file tiene l'id Twitch di chi ha votato,
+  per poter dire «hai già votato»; quando si chiude, nell'archivio restano solo i conteggi (al
+  massimo 50 sondaggi). Il file non sta in git e non si carica mai: sono dati del sito vivo.
+- **Più copie dell'app.** Passenger può tenere accese più copie di `app.js`: ogni lettura
+  controlla data, dimensione e inode del file e lo rilegge se un'altra copia l'ha cambiato.
+- **Le rotte.** Pubbliche: `GET /api/sondaggio` e `POST /api/sondaggio/voto`. Del pannello,
+  dietro la password: `GET`/`POST /api/sondaggi`, `POST /api/sondaggi/chiudi`,
+  `DELETE /api/sondaggi/<id>`.
+
+Le scritte fisse del riquadro (occhiello, titolo, avviso di login…) sono nel gruppo «Il
+sondaggio» dello schema e si cambiano cliccando il riquadro nell'anteprima; quelle sì, vanno
+pubblicate.
+
+---
+
+## La modalità manutenzione
+
+Menu ☰ → **Manutenzione**: si accende **Sito in manutenzione**, si salva e si preme **Pubblica**.
+Da quel momento `index.html` e `clip.html` sono la pagina di manutenzione
+(`modelli/manutenzione.html`), che non carica player, lurk, pollo, musica e sondaggi. Si spegne
+allo stesso modo: interruttore spento, Salva, Pubblica. L'anteprima del pannello mostra sempre il
+sito vero; la pagina di manutenzione si guarda con **Guarda la pagina di manutenzione**.
+
+- **Si riparte il** (facoltativo): giorno e ora italiana. La pagina mostra il conto alla
+  rovescia; arrivato a zero mostra la scritta di fine e aspetta che il sito venga ripubblicato.
+- **I testi**: pillola in alto, occhiello, messaggio, inizio della scritta del conto, scritta a
+  conto finito, bottone per Twitch, frasi del nastro. Nome, avatar, mascotte e social arrivano
+  dal resto dei contenuti.
+- **La pagina sta in una schermata**, senza scorrimento, anche sui portatili bassi.
+- **La musica d'attesa**: `mp3/ElevatorMaintenance.mp3`, in loop al 20% del volume, con un
+  bottone in basso a destra per fermarla e farla ripartire. Se il browser blocca l'audio
+  automatico parte al primo clic, tocco o tasto. Se il file manca, il bottone sparisce.
+- **Le schede già aperte.** Ogni pubblicazione scrive `stato-sito.json`; `js/guardia.js` lo
+  rilegge ogni minuto (e quando la scheda torna in primo piano) e ricarica la pagina se il sito è
+  andato in manutenzione. La pagina di manutenzione lo rilegge ogni 30 secondi e torna al sito
+  vero appena la modalità è spenta e pubblicata. Una sola ricarica per pubblicazione.
+- **La CSP.** Lo script della pagina (`modelli/manutenzione-conto.js`) entra inline e la
+  Content-Security-Policy lo ammette con il suo hash `sha256`, calcolato a ogni pubblicazione.
+
+Nella barra del pannello un'etichetta ricorda lo stato: *Manutenzione attiva*, *Manutenzione da
+pubblicare*, *Sito ancora in manutenzione*.
+
+---
+
+## La musica di sottofondo
+
+Un lettore piccolo in basso a destra, acceso dal gruppo «Musica di sottofondo» del pannello. Le
+tracce sono file audio caricati **da Plesk** nella cartella `mp3/` (non dal pannello: sono file
+grossi e si mettono una volta sola); nel pannello si scrivono titolo, artista, nome del file,
+copertina e link di ogni traccia. Parte sempre in pausa e si ferma da sé quando parte il video di
+Twitch o la modalità lurk. Di serie arriva ridotto a bottone tondo, e ha il mescolamento delle
+tracce. La cartella `mp3/` non sta in git.
+
+---
+
 ## Accessibilità e compatibilità
 
 Contrasti verificati secondo WCAG AA — e il pannello mostra il rapporto di contrasto mentre si
@@ -1066,7 +1171,7 @@ d'ingresso: qui sotto c'è cosa leggere e quando.
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Il codice di condotta della comunità. |
 | [`CHANGELOG.md`](CHANGELOG.md) | Il registro delle modifiche, versione per versione. |
 
-`node server/autotest.js` passa per intero: **182 prove su 182**. Il collaudo non
+`node server/autotest.js` passa per intero: **262 prove su 262**. Il collaudo non
 tocca la rete nemmeno nella sezione sul collegamento con Twitch — quello che si
 prova lì è che una pubblicazione regga quando Twitch non risponde, e un collaudo
 che dipendesse da Twitch sarebbe rosso proprio il giorno in cui deve dimostrarlo.
@@ -1082,7 +1187,9 @@ soggetti esterni, e vale la pena sapere quali:
   l'SDK servito da Twitch stessa. Se il collegamento è configurato, alla
   pubblicazione anche il **server locale** chiama `id.twitch.tv` e
   `api.twitch.tv` per il titolo dell'ultima diretta: succede sul computer di
-  chi amministra, non nel browser di chi visita. Marchio, logo e colore istituzionale sono di
+  chi amministra, non nel browser di chi visita. Per ogni voto a un sondaggio il
+  server chiede a `id.twitch.tv/oauth2/validate` di chi è il token (con una
+  memoria di cinque minuti). Marchio, logo e colore istituzionale sono di
   Twitch Interactive, Inc.; il loro uso qui identifica il canale e nient'altro.
   Il player, la chat e il collegamento facoltativo con l'account sono soggetti
   alle condizioni d'uso e alle Community Guidelines di Twitch.
