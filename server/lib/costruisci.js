@@ -817,6 +817,17 @@ function tracceDi(config) {
   return fuori;
 }
 
+function referralDi(config, testi) {
+  const voce = (config.referral && typeof config.referral === 'object') ? config.referral : {};
+  const url = String(voce.url || '').trim();
+  return {
+    attivo: voce.attivo === true && url !== '',
+    url: url,
+    titolo: testi['saluti.referralTitolo'] || '',
+    btn: testi['saluti.referralBtn'] || ''
+  };
+}
+
 function musicaDi(config, testi) {
   const voce = (config.musica && typeof config.musica === 'object') ? config.musica : {};
   const tracce = tracceDi(config);
@@ -923,6 +934,7 @@ function costruisciContesto(contenuti, opzioni) {
       // sezione con lo stile gia costruito dai numeri puliti.
       eventi: eventi,
       haEventi: eventi.length > 0,
+      referral: referralDi(config, testi),
       musica: musicaDi(config, testi),
       settimanaSfondo: sfondoDi(config.orari),
       // Indirizzo dei font scelti nel gruppo «Aspetto» e di quelli del

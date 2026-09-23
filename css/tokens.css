@@ -91,6 +91,8 @@
                                (bianco sopra: 11.7:1) */
   --viola-chiaro: #c5a4ff;  /* viola LEGGIBILE: testo e icone  9.7:1 · 7.7:1 — AAA */
   --twitch:       #9146ff;  /* viola ufficiale Twitch (bianco sopra: 4.6:1 — AA) */
+  --amazon:       #ff9900;  /* arancio ufficiale Amazon: solo dove si va su Amazon
+                               (sul fondo 9.4:1 — AAA; fondo scuro sopra: 9.8:1 — AAA) */
   --ciano:        #22e0ff;  /* «acceso»: focus, voce attiva  12.6:1 · 10.0:1 — AAA */
   --magenta:      #ff2fa0;  /* accento col contagocce ......  5.9:1 ·  4.7:1 — AA */
 

@@ -1341,6 +1341,30 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigi(typeof documento.config.email === 'string' && documento.config.email !== '', 'la email e sparita');
   });
 
+  await prova('referral: spento non c e, acceso porta il riquadro col rel giusto, e senza link resta spento', () => {
+    const documento = archivio.leggi();
+    documento.config.referral.attivo = false;
+    documento.config.referral.url = 'https://www.amazon.it/?tag=prova-21';
+    const spento = costruisci.anteprimaDi(documento);
+    esigi(spento.indexOf('class="referral"') === -1, 'il riquadro e stato stampato lo stesso');
+    esigi(spento.indexOf('tag=prova-21') === -1, 'il link e finito in pagina col riquadro spento');
+
+    // Acceso ma senza link non ha niente da fare: resta spento.
+    documento.config.referral.attivo = true;
+    documento.config.referral.url = '';
+    esigi(costruisci.anteprimaDi(documento).indexOf('class="referral"') === -1, 'acceso senza link non deve comparire');
+
+    documento.config.referral.url = 'https://www.amazon.it/?tag=prova-21';
+    const acceso = costruisci.anteprimaDi(documento);
+    esigiDentro(acceso, 'class="referral"', 'il riquadro in pagina');
+    esigiDentro(acceso, 'tag=prova-21', 'il link');
+    // sponsored e quello che Google chiede per i link di affiliazione, noopener
+    // e la regola di sempre per target="_blank".
+    esigiDentro(acceso, 'rel="noopener sponsored"', 'rel del link di affiliazione');
+    esigiDentro(acceso, documento.testi['saluti.referralNota'], 'la dichiarazione obbligatoria');
+    esigiDentro(acceso, 'id="referral-titolo"', 'il titolo per aria-labelledby');
+  });
+
   await prova('musica: spenta non lascia niente in pagina, accesa porta lettore, foglio e script', () => {
     const documento = archivio.leggi();
     const comEra = documento.config.musica.attivo;

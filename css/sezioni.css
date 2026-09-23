@@ -1975,6 +1975,100 @@
   margin-block-start: var(--passo-3);
 }
 
+/* --- Referral Amazon --------------------------------------------------------
+   Sta sotto «Scrivimi», nella stessa colonna, ma non è la stessa cosa: lì
+   si chiede di scrivere, qui si chiede di comprare. Per questo è l'unico
+   riquadro della pagina che porta un colore che non è del sito — l'arancio
+   di Amazon, da --amazon, che come --twitch si usa SOLO dove si va là.
+   La riga in fondo è la dichiarazione che il programma di affiliazione
+   obbliga a mostrare: non e' una nota di stile, non si toglie. */
+
+.referral {
+  margin-block-start: var(--passo-4);
+  padding: var(--passo-3);
+  border: 1px solid color-mix(in srgb, var(--amazon) 45%, transparent);
+  border-radius: var(--raggio);
+  background-color: var(--pannello-2);
+  background-image: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--amazon) 13%, transparent), transparent 64%);
+  box-shadow: var(--ombra-morbida);
+}
+
+.referral__titolo {
+  display: flex;
+  align-items: center;
+  gap: var(--passo);
+  margin: 0 0 var(--passo-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--spazio-etichetta);
+  color: var(--amazon);
+}
+
+.referral__titolo svg {
+  inline-size: 1.35em;
+  block-size: 1.35em;
+  flex: none;
+}
+
+.referral__testo {
+  margin: 0 0 var(--passo-3);
+  color: var(--testo-medio);
+  font-size: var(--t-piccolo);
+  line-height: 1.6;
+}
+
+.referral__vai {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--passo);
+  min-block-size: 44px;
+  padding-inline: var(--passo-3);
+  border: 1px solid transparent;
+  border-radius: var(--raggio-pill);
+  background-color: var(--amazon);
+  color: var(--fondo);
+  font-family: var(--font-mono);
+  font-size: var(--t-piccolo);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  transition:
+    translate var(--durata-lampo) var(--curva),
+    background-color var(--durata-lampo) var(--curva),
+    box-shadow var(--durata-lampo) var(--curva);
+}
+
+.referral__vai svg {
+  inline-size: 1.15em;
+  block-size: 1.15em;
+  flex: none;
+}
+
+.referral__vai:hover {
+  translate: 0 -1px;
+  background-color: color-mix(in srgb, var(--amazon) 82%, var(--testo));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--amazon) 40%, transparent);
+}
+
+.referral__vai:active {
+  translate: 0 1px;
+}
+
+.referral__nota {
+  margin: var(--passo-2) 0 0;
+  color: var(--testo-tenue);
+  font-size: var(--t-micro);
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .referral__vai { transition: none; }
+}
+
 /* --- Il congedo -------------------------------------------------------------
    Una riga sola con due filetti ai lati, come la sigla che scorre quando la
    diretta finisce. In tono minore: non deve competere con niente. */
