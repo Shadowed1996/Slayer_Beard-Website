@@ -1290,7 +1290,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     // iscrivono, e pollo.js si iscrive a window.Lurk — che deve gia esistere.
     const soloNostri = script.map((s) => s.src).filter((s) => s.indexOf('js/') === 0);
     esigiUguale(soloNostri.join(','),
-      'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js',
+      'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js,js/cima.js',
       'ordine degli script del sito');
   });
 
