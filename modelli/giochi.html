@@ -47,14 +47,11 @@
     </div>
 
     <div class="giochi-ordine">
-      <label class="giochi-comandi__etichetta" for="giochi-ordine">{{giochi.ordina}}</label>
-      <div class="giochi-ordine__scelta">
-        <select id="giochi-ordine" class="giochi-ordine__select" data-giochi-ordine>
-          <option value="recenti" selected>{{giochi.ordinaRecenti}}</option>
-          <option value="ore">{{giochi.ordinaOre}}</option>
-          <option value="nome">{{giochi.ordinaNome}}</option>
-        </select>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>
+      <p class="giochi-comandi__etichetta" id="giochi-ordine-etichetta">{{giochi.ordina}}</p>
+      <div class="giochi-ordine__scelta" role="group" aria-labelledby="giochi-ordine-etichetta">
+        <button type="button" class="giochi-ordine__voce" data-ordine="recenti" aria-pressed="true">{{giochi.ordinaRecenti}}</button>
+        <button type="button" class="giochi-ordine__voce" data-ordine="ore" aria-pressed="false">{{giochi.ordinaOre}}</button>
+        <button type="button" class="giochi-ordine__voce" data-ordine="nome" aria-pressed="false">{{giochi.ordinaNome}}</button>
       </div>
     </div>
   </div>

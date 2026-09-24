@@ -206,46 +206,40 @@
 }
 
 .giochi-ordine__scelta {
-  position: relative;
   display: inline-flex;
-  align-items: center;
-}
-
-.giochi-ordine__select {
-  appearance: none;
-  -webkit-appearance: none;
-  min-block-size: 40px;
-  min-inline-size: 13rem;
-  padding: 0 calc(var(--passo) * 5) 0 var(--passo-2);
+  gap: 2px;
+  padding: 3px;
   border: 1px solid var(--linea-comando);
   border-radius: var(--raggio-pill);
   background: var(--pannello-2);
-  color: var(--testo);
+}
+
+.giochi-ordine__voce {
+  min-block-size: 34px;
+  padding: 0 var(--passo-2);
+  border: 0;
+  border-radius: var(--raggio-pill);
+  background: transparent;
+  color: var(--testo-medio);
   font-family: var(--font-testo);
   font-size: var(--t-piccolo);
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
+  transition: background-color var(--durata) var(--curva), color var(--durata) var(--curva);
 }
 
-.giochi-ordine__select:hover { border-color: var(--ciano); }
+.giochi-ordine__voce:hover { color: var(--testo); }
 
-.giochi-ordine__select:focus-visible {
+.giochi-ordine__voce:focus-visible {
   outline: 2px solid var(--ciano);
   outline-offset: 2px;
 }
 
-.giochi-ordine__select option {
-  background: var(--fondo-2);
-  color: var(--testo);
-}
-
-.giochi-ordine__scelta svg {
-  position: absolute;
-  inset-inline-end: var(--passo-2);
-  inline-size: 1rem;
-  block-size: 1rem;
+.giochi-ordine__voce[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--ciano) 18%, transparent);
   color: var(--ciano);
-  pointer-events: none;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ciano) 55%, transparent);
 }
 
 .giochi-conto {
@@ -455,14 +449,15 @@
 
 @media (max-width: 380px) {
   .gioco-card__corpo { padding-inline: var(--passo); }
-  .giochi-ordine__select { min-inline-size: 0; inline-size: 100%; }
   .giochi-ordine__scelta { display: flex; }
+  .giochi-ordine__voce { flex: 1 1 0; padding-inline: var(--passo); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .gioco-card,
   .gioco-card__immagine,
-  .giochi-pillola { transition: none; }
+  .giochi-pillola,
+  .giochi-ordine__voce { transition: none; }
   .gioco-card:hover,
   .gioco-card:focus-within { transform: none; }
   .gioco-card:hover .gioco-card__immagine { transform: none; }

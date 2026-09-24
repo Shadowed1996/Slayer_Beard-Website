@@ -82,7 +82,7 @@
 
     var voci = Array.prototype.slice.call(elenco.querySelectorAll('[data-gioco]'));
     var pillole = Array.prototype.slice.call(comandi.querySelectorAll('[data-tipo]'));
-    var selettore = comandi.querySelector('[data-giochi-ordine]');
+    var ordini = Array.prototype.slice.call(comandi.querySelectorAll('[data-ordine]'));
     var conto = document.querySelector('[data-giochi-conto]');
     var vuoto = document.querySelector('[data-giochi-vuoto]');
 
@@ -107,7 +107,9 @@
         var acceso = tipo ? stato.tipi.indexOf(tipo) !== -1 : stato.tipi.length === 0;
         pillole[p].setAttribute('aria-pressed', acceso ? 'true' : 'false');
       }
-      if (selettore) { selettore.value = stato.ordine; }
+      for (var o = 0; o < ordini.length; o++) {
+        ordini[o].setAttribute('aria-pressed', ordini[o].getAttribute('data-ordine') === stato.ordine ? 'true' : 'false');
+      }
 
       if (conto) {
         var parola = conto.getAttribute(visibili === 1 ? 'data-uno' : 'data-tanti') || '';
@@ -130,9 +132,10 @@
       });
     }
 
-    if (selettore) {
-      selettore.addEventListener('change', function () {
-        stato.ordine = ORDINI.indexOf(selettore.value) !== -1 ? selettore.value : 'recenti';
+    for (var j = 0; j < ordini.length; j++) {
+      ordini[j].addEventListener('click', function (evento) {
+        var scelto = evento.currentTarget.getAttribute('data-ordine');
+        stato.ordine = ORDINI.indexOf(scelto) !== -1 ? scelto : 'recenti';
         applica();
       });
     }
