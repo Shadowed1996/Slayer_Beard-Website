@@ -206,41 +206,96 @@
 }
 
 .giochi-ordine__scelta {
+  position: relative;
+  display: inline-block;
+}
+
+.giochi-ordine__bottone {
   display: inline-flex;
-  gap: 2px;
-  padding: 3px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--passo-2);
+  min-block-size: 40px;
+  min-inline-size: 13rem;
+  padding: 0 var(--passo-2);
   border: 1px solid var(--linea-comando);
   border-radius: var(--raggio-pill);
   background: var(--pannello-2);
+  color: var(--testo);
+  font-family: var(--font-testo);
+  font-size: var(--t-piccolo);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--durata) var(--curva);
 }
 
+.giochi-ordine__bottone:hover,
+.giochi-ordine__bottone[aria-expanded="true"] { border-color: var(--ciano); }
+
+.giochi-ordine__bottone:focus-visible {
+  outline: 2px solid var(--ciano);
+  outline-offset: 2px;
+}
+
+.giochi-ordine__bottone svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: none;
+  color: var(--ciano);
+  transition: rotate var(--durata) var(--curva);
+}
+
+.giochi-ordine__bottone[aria-expanded="true"] svg { rotate: 180deg; }
+
+.giochi-ordine__elenco {
+  position: absolute;
+  inset-block-start: calc(100% + var(--passo));
+  inset-inline-end: 0;
+  z-index: var(--z-velo);
+  min-inline-size: 100%;
+  margin: 0;
+  padding: var(--passo) 0;
+  list-style: none;
+  border: 1px solid var(--linea-forte);
+  border-radius: var(--raggio);
+  background-color: var(--fondo-2);
+  background-image: var(--grad-pannello);
+  box-shadow: var(--ombra-morbida);
+  outline: none;
+}
+
+.giochi-ordine__elenco[hidden] { display: none; }
+
 .giochi-ordine__voce {
-  min-block-size: 34px;
-  padding: 0 var(--passo-2);
-  border: 0;
-  border-radius: var(--raggio-pill);
-  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: var(--passo);
+  padding: var(--passo) var(--passo-2);
   color: var(--testo-medio);
   font-family: var(--font-testo);
   font-size: var(--t-piccolo);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background-color var(--durata) var(--curva), color var(--durata) var(--curva);
 }
 
-.giochi-ordine__voce:hover { color: var(--testo); }
-
-.giochi-ordine__voce:focus-visible {
-  outline: 2px solid var(--ciano);
-  outline-offset: 2px;
+.giochi-ordine__voce::before {
+  content: "";
+  inline-size: 6px;
+  block-size: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: transparent;
 }
 
-.giochi-ordine__voce[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--ciano) 18%, transparent);
-  color: var(--ciano);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ciano) 55%, transparent);
+.giochi-ordine__voce.is-attiva {
+  background: color-mix(in srgb, var(--ciano) 12%, transparent);
+  color: var(--testo);
 }
+
+.giochi-ordine__voce[aria-selected="true"] { color: var(--ciano); }
+
+.giochi-ordine__voce[aria-selected="true"]::before { background: var(--ciano); }
 
 .giochi-conto {
   margin: var(--passo-3) 0 var(--passo-2);
@@ -449,15 +504,16 @@
 
 @media (max-width: 380px) {
   .gioco-card__corpo { padding-inline: var(--passo); }
-  .giochi-ordine__scelta { display: flex; }
-  .giochi-ordine__voce { flex: 1 1 0; padding-inline: var(--passo); }
+  .giochi-ordine__scelta { display: block; }
+  .giochi-ordine__bottone { min-inline-size: 0; inline-size: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .gioco-card,
   .gioco-card__immagine,
   .giochi-pillola,
-  .giochi-ordine__voce { transition: none; }
+  .giochi-ordine__bottone,
+  .giochi-ordine__bottone svg { transition: none; }
   .gioco-card:hover,
   .gioco-card:focus-within { transform: none; }
   .gioco-card:hover .gioco-card__immagine { transform: none; }

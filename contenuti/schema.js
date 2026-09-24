@@ -326,7 +326,7 @@ const gruppi = [
       { chiave: 'giochi.titolo', etichetta: 'Home — titolo dell\'invito', tipo: 'testo', max: 60, predefinito: 'I giochi della live',
         aiuto: 'In home, in fondo a «Chi sono»: il titolo sopra il bottone che porta alla pagina dei giochi.' },
       { chiave: 'giochi.testo', etichetta: 'Home — riga sotto il titolo', tipo: 'ricco', max: 220, facoltativo: true,
-        predefinito: 'Tutto quello che è passato in diretta, dagli horror ai party game: copertine, ore giocate e le clip migliori.' },
+        predefinito: 'Scopri i giochi che ho portato in live: dagli horror ai party game con la chat, dagli shooter ai puzzle game.' },
       { chiave: 'giochi.invito', etichetta: 'Home — scritta del bottone', tipo: 'testo', max: 30, predefinito: 'Vedi tutti i giochi',
         aiuto: 'Il bottone che porta alla pagina «giochi.html».' },
       { chiave: 'giochi.paginaTitolo', etichetta: 'Pagina — titolo', tipo: 'testo', max: 60, predefinito: 'I giochi',
