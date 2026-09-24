@@ -807,6 +807,7 @@ function costruisciContesto(contenuti, opzioni) {
   };
 
   contesto.sito.sponsorInHome = !!(attiva.sponsor && contesto.sponsor.attivo);
+  contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
 
   const presentazioneSponsor = testoricco.soloTesto(testi['sponsor.paginaTesto'] || '');
   contesto.sito.paginaSponsor = {

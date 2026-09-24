@@ -181,11 +181,14 @@
   <div class="diretta__testa">
     <p class="sezione__occhiello" data-sb-testo="diretta.occhiello">In onda</p>
     <h2 id="diretta-titolo" class="sezione__titolo" data-sb-testo="diretta.titolo">La diretta</h2>
+
     <p class="sezione__testo" data-sb-testo="diretta.testo">Il canale è qui dentro, alla larghezza giusta. Se sto trasmettendo il player parte da solo; la chat si apre con il bottone sotto allo schermo.</p>
 
     <div class="account" data-sb-parte="account">
       <div id="account" class="account__tessera"></div>
+
       <p id="account-nota" class="account__nota" data-sb-testo="account.nota">Il profilo serve al sito, non solo al player: da collegato il sito sa chi sei, ti mostra la diretta aggiornata e la modalità lurk può dire in chat che stai guardando. Il collegamento vive finché resta aperta questa scheda.</p>
+
       <p id="account-stato" class="account__stato" role="status" aria-live="polite"></p>
     </div>
   </div>
@@ -204,10 +207,12 @@
         </div>
 
         <div class="monitor__schermo">
+
           <div id="twitch-embed" class="monitor__video"></div>
         </div>
 
         <div id="monitor-lato" class="monitor__lato" hidden>
+
           <div id="twitch-chat" class="monitor__chat"></div>
         </div>
 
@@ -251,6 +256,19 @@
   <p class="lurk__account" data-sb-testo="lurk.notaAccount">Se il tuo browser blocca i cookie di terze parti, da qui risulti come spettatore anonimo: conti per il canale, ma <b>non prendi punti canale né streak</b>. Da questa pagina non posso saperlo. Se ci tieni alla tua streak, guarda direttamente su Twitch.</p>
   <p class="lurk__mobile" data-sb-testo="lurk.notaMobile">Sul telefono il browser mette in pausa il video appena esci da questa scheda, e da qui non posso rimediare. La modalità lurk vale finché resti su questa pagina.</p>
 </section>
+
+  <div class="inviti"><div id="giochi" class="invito invito--giochi" data-sb-parte="giochi">
+  <div class="invito__testa">
+    <p class="sezione__occhiello" data-sb-testo="giochi.occhiello">Lo storico delle live</p>
+    <h3 class="invito__titolo" data-sb-testo="giochi.titolo">I giochi della live</h3>
+    <p class="invito__riga" data-sb-testo="giochi.testo">Scopri i giochi che ho portato in live: dagli horror ai party game con la chat, dagli shooter ai puzzle game.</p>
+  </div>
+  <a class="btn btn--vuoto invito__vai" href="giochi.html">
+    <span data-sb-testo="giochi.invito">Vedi tutti i giochi</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+  </a>
+</div>
+</div>
 
   <p class="diretta__nota" data-sb-testo="diretta.nota">Se lo schermo resta nero è quasi sempre il browser: cookie di terze parti bloccati, oppure un&#39;estensione che ferma gli iframe. In quel caso il canale si apre lo stesso su Twitch.</p>
 </section>
@@ -415,18 +433,6 @@
       </ul>
 
       <a class="btn btn--pieno" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener" data-sb-testo="chi.cta">Vieni a trovarmi su Twitch</a>
-
-      <div id="giochi" class="chi__giochi" data-sb-parte="giochi">
-        <div class="chi__giochi-testa">
-          <p class="sezione__occhiello" data-sb-testo="giochi.occhiello">Lo storico delle live</p>
-          <h3 class="chi__giochi-titolo" data-sb-testo="giochi.titolo">I giochi della live</h3>
-          <p class="chi__giochi-riga" data-sb-testo="giochi.testo">Scopri i giochi che ho portato in live: dagli horror ai party game con la chat, dagli shooter ai puzzle game.</p>
-        </div>
-        <a class="btn btn--vuoto chi__giochi-vai" href="giochi.html">
-          <span data-sb-testo="giochi.invito">Vedi tutti i giochi</span>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </a>
-      </div>
     </div>
 
     <aside class="chi__margine" data-sb-blocco="chi.margine">

@@ -84,7 +84,7 @@ const PARTI = {
   },
   giochi: {
     nome: 'I giochi',
-    descrizione: 'L\'invito in fondo a «Chi sono» e la pagina «giochi.html» con tutti i giochi portati in live: copertine, tipologie, dirette, ore e clip. I numeri li prende il server da Twitch a ogni pubblicazione; qui scegli le parole, cosa nascondere e le correzioni a mano.'
+    descrizione: 'L\'invito in fondo alla «Diretta», accanto a quello delle clip, e la pagina «giochi.html» con tutti i giochi portati in live: copertine, tipologie, dirette, ore e clip. I numeri li prende il server da Twitch a ogni pubblicazione; qui scegli le parole, cosa nascondere e le correzioni a mano.'
   },
   listino: {
     nome: 'Listino del supporto',
@@ -229,7 +229,7 @@ const SEZIONE_DEL_GRUPPO = Object.freeze({
   lurk: 'diretta',
   pollo: 'diretta',
   clip: 'diretta',
-  giochi: 'chi',
+  giochi: 'diretta',
   sondaggio: 'sondaggio',
   settimana: 'settimana',
   chi: 'chi',

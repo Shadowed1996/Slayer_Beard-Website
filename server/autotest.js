@@ -2394,7 +2394,7 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
 
     esigiUguale((html.match(/id="clip"/g) || []).length, 1, 'quanti bersagli #clip');
 
-    esigiDentro(html, 'class="clip__vai clip__vai--invito" href="clip.html"', 'manca il bottone dell invito');
+    esigiDentro(html, 'class="btn btn--vuoto invito__vai" href="clip.html"', 'manca il bottone dell invito');
     esigiDentro(html, '>' + documento.testi['clip.invitoBottone'] + '<', 'manca la scritta del bottone dell invito');
   });
 

@@ -1424,63 +1424,6 @@
   line-height: 1.55;
 }
 
-.chi__giochi {
-  position: relative;
-  display: grid;
-  gap: var(--passo-3);
-  margin-block-start: var(--passo-6);
-  padding: var(--passo-3);
-  border: 1px solid var(--linea-forte);
-  border-radius: var(--raggio-g);
-  background:
-    radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--ciano) 12%, transparent), transparent 60%),
-    var(--grad-pannello),
-    var(--pannello);
-  overflow: hidden;
-  scroll-margin-block-start: var(--passo-3);
-}
-
-.chi__giochi::before {
-  content: "";
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
-  inline-size: 3px;
-  background: linear-gradient(180deg, var(--ciano), var(--viola));
-}
-
-@media (min-width: 640px) {
-  .chi__giochi {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-  }
-}
-
-.chi__giochi .sezione__occhiello { margin: 0; }
-
-.chi__giochi-titolo {
-  margin: var(--passo) 0 0;
-  font-family: var(--font-titolo);
-  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
-  line-height: 1.15;
-  color: var(--testo);
-}
-
-.chi__corpo .chi__giochi-riga {
-  margin: var(--passo) 0 0;
-  color: var(--testo-medio);
-  font-size: var(--t-piccolo);
-  line-height: 1.55;
-}
-
-.chi__giochi-vai {
-  justify-self: start;
-  border-color: var(--ciano);
-  color: var(--ciano);
-}
-
-.chi__giochi-vai:hover { color: var(--ciano); }
-
 @media (prefers-reduced-motion: reduce) {
   .chi__tag .tag:hover     { translate: none; rotate: none; }
   .chi__ritratto:hover img { rotate: -3deg; }

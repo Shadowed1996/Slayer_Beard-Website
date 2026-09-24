@@ -1,32 +1,11 @@
-<!-- L'invito alle clip, in fondo alla sezione «diretta».
-
-     Qui c'era la vetrina: sei card con le clip più viste, dentro la home.
-     Il proprietario le preferisce fuori dalla prima pagina («preferisco non
-     ci siano clip nella home: un titolo tipo "Migliori highlights", una
-     microdescrizione e un bottone "Vai alle clip"»), quindi resta solo
-     l'invito e le clip stanno tutte nella pagina clip.html, dove il periodo
-     lo sceglie chi guarda.
-
-     Non ha una voce nel binario, e non e una dimenticanza: css/base.css
-     stringe il dock finche SEI etichette ci stanno anche a 320px, e la
-     settima le farebbe traboccare. L'id #clip resta perche un indirizzo gia
-     condiviso continui a portare dove portava.
-
-     Tutto statico, senza JavaScript: il bottone e un'ancora. Si stampa solo
-     se la pagina delle clip esiste davvero (modelli/parziali/diretta.html
-     lo include sotto `clipPagina.attivo`, «le clip sono accese E ce n'e
-     almeno una con una data buona»): un invito verso un 404 sarebbe peggio
-     di nessun invito. -->
-<div id="clip" class="clip clip--invito" data-sb-parte="clip">
-  <div class="clip__testa">
+<div id="clip" class="clip clip--invito invito" data-sb-parte="clip">
+  <div class="invito__testa">
     <p class="sezione__occhiello" data-sb-testo="clip.occhiello">{{clip.occhiello}}</p>
-    <h3 class="clip__titolo" data-sb-testo="clip.invitoTitolo">{{clip.invitoTitolo}}</h3>
-    <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
-    <p class="clip__testo" data-sb-testo="clip.invitoTesto">{{{clip.invitoTesto}}}</p>
+    <h3 class="invito__titolo" data-sb-testo="clip.invitoTitolo">{{clip.invitoTitolo}}</h3>
+    <p class="invito__riga" data-sb-testo="clip.invitoTesto">{{{clip.invitoTesto}}}</p>
   </div>
-
-  <a class="clip__vai clip__vai--invito" href="clip.html">
-    <span class="clip__vai-testo" data-sb-testo="clip.invitoBottone">{{clip.invitoBottone}}</span>
+  <a class="btn btn--vuoto invito__vai" href="clip.html">
+    <span data-sb-testo="clip.invitoBottone">{{clip.invitoBottone}}</span>
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
   </a>
 </div>

@@ -1,44 +1,19 @@
-<!-- La sezione del player (CONTRATTO-2 §2.2). Il monitor è arrivato qui dalla
-     copertina perché era piccolo: adesso è il protagonista di una sezione sua.
-     Gli id #twitch-embed, #twitch-chat, #monitor-lato, #chat-toggle,
-     #monitor-badge, #monitor-titolo e #apri-twitch sono contratto con
-     js/player.js: non si rinominano e non si tolgono. -->
 <section id="diretta" class="diretta" aria-labelledby="diretta-titolo" data-sb-sezione="diretta">
   <div class="diretta__testa">
     <p class="sezione__occhiello" data-sb-testo="diretta.occhiello">{{diretta.occhiello}}</p>
     <h2 id="diretta-titolo" class="sezione__titolo" data-sb-testo="diretta.titolo">{{diretta.titolo}}</h2>
-    <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
+
     <p class="sezione__testo" data-sb-testo="diretta.testo">{{{diretta.testo}}}</p>
 
-    <!-- Il profilo del sito. Sta qui in cima, staccato dai comandi del lurk,
-         perché sono due cose diverse: questa dice CHI sei sul sito, quella
-         sotto al monitor dice cosa fa il sito col video. Mescolarle in
-         un'unica fila di bottoni le rendeva illeggibili tutte e due.
-
-         Non è più una cosa della modalità lurk: è il login del sito e vive
-         anche col messaggio in chat spento. Da qui passano la tessera, la
-         lettura dello stato vero del canale e il titolo dell'ultima diretta.
-
-         #account arriva vuoto per contratto: lo riempie js/account.js, e solo
-         se l'amministratore ha configurato un Client ID. Senza JavaScript non
-         deve restare in pagina nessun bottone raggiungibile col Tab. -->
     {{#se config.account.attivo}}<div class="account" data-sb-parte="account">
       <div id="account" class="account__tessera"></div>
-      <!-- Tripla graffa: campo «ricco», già sanificato in generazione. La
-           nasconde js/account.js appena qualcuno si collega: a quel punto ha
-           già risposto alla domanda a cui serviva. -->
+
       <p id="account-nota" class="account__nota" data-sb-testo="account.nota">{{{account.nota}}}</p>
-      <!-- role="status": gli esiti del collegamento (revoca riuscita, token
-           scaduto, finestra chiusa) vanno annunciati. È una regione sua e non
-           quella del lurk perché stanno in due punti diversi della pagina, e
-           due regioni live nello stesso riquadro si parlerebbero sopra. -->
+
       <p id="account-stato" class="account__stato" role="status" aria-live="polite"></p>
     </div>{{/se}}
   </div>
 
-  <!-- La scena è il contesto di posizionamento del pollo: css/diretta.css la
-       dichiara relative e le riserva la corsia, css/pollo.css ci mette dentro
-       la mascotte. Il pollo è l'ultimo figlio, dopo il monitor. -->
   <div class="diretta__scena">
     <div class="monitor" data-sb-parte="monitor">
       <div class="monitor__telaio">
@@ -53,12 +28,12 @@
         </div>
 
         <div class="monitor__schermo">
-          <!-- Vuoto per contratto: lo riempie js/player.js. -->
+
           <div id="twitch-embed" class="monitor__video"></div>
         </div>
 
         <div id="monitor-lato" class="monitor__lato" hidden>
-          <!-- Vuoto per contratto: lo riempie js/player.js. -->
+
           <div id="twitch-chat" class="monitor__chat"></div>
         </div>
 
@@ -76,33 +51,12 @@
       </div>
     </div>
 
-    <!-- Il pollo spento dal pannello non deve nemmeno essere stampato: js/pollo.js
-         lo nasconde a runtime, ma senza JavaScript resterebbero in pagina due
-         bottoni raggiungibili col Tab e annunciati come comandi — «Apri la chat
-         del canale» e «Nascondi il pollo» — che non rispondono a niente.
-         Gli altri due modi di nasconderlo (la × e la scelta ricordata) sono
-         azioni del visitatore: lì il JavaScript c'è per forza. -->
     {{#se config.pollo.attivo}}{{> parziali/pollo}}{{/se}}
   </div>
 
-  <!-- La modalità lurk (CONTRATTO-3 §2). Sta FUORI da .diretta__scena: la scena
-       è il contesto di posizionamento del pollo e gli riserva la corsia, e un
-       pannello largo là dentro obbligherebbe a rinegoziare diretta.css e
-       pollo.css. Spenta dal pannello non si stampa affatto, per lo stesso
-       motivo del pollo qui sopra: senza JavaScript resterebbero bottoni
-       raggiungibili col Tab che non rispondono a niente. -->
   {{#se config.lurk.attivo}}{{> parziali/lurk}}{{/se}}
 
-  <!-- La vetrina delle clip: l'archivio di quello che succede nel monitor
-       qui sopra, e per questo sta dentro questa sezione invece di
-       chiederne una propria — il binario resta a sei voci, che è il
-       numero per cui css/base.css è tarato a 320px.
+  {{#se sito.inviti}}<div class="inviti">{{#se clipPagina.attivo}}{{> parziali/clip}}{{/se}}{{#se giochi.attivo}}{{> parziali/invito-giochi}}{{/se}}</div>{{/se}}
 
-       `clip.attivo` è già «acceso E almeno una clip»: un titolo con sotto
-       il vuoto è peggio di nessun titolo, e la distinzione la fa la
-       generazione invece di lasciarla al modello. -->
-  {{#se clipPagina.attivo}}{{> parziali/clip}}{{/se}}
-
-  <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
   <p class="diretta__nota" data-sb-testo="diretta.nota">{{{diretta.nota}}}</p>
 </section>

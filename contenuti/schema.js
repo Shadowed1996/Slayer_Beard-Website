@@ -321,10 +321,10 @@ const gruppi = [
     descrizione: 'La pagina «giochi.html» con tutti i giochi portati in live: copertina ufficiale di Twitch, tipologia, quante dirette, ore e clip, prima e ultima volta. I numeri li raccoglie il server da Twitch a ogni pubblicazione; qui si decidono le parole, cosa non mostrare e le correzioni a mano. In home, in «Chi sono», compare un invito che porta alla pagina.',
     campi: [
       { chiave: 'config.giochi.attivo', etichetta: 'Mostra la pagina dei giochi', tipo: 'interruttore', predefinito: true,
-        aiuto: 'Spento, la pagina «giochi.html» viene tolta dal sito e l\'invito in «Chi sono» sparisce. Acceso, la pagina si pubblica a ogni Pubblica, se c\'è almeno un gioco da mostrare.' },
+        aiuto: 'Spento, la pagina «giochi.html» viene tolta dal sito e l\'invito in home sparisce. Acceso, la pagina si pubblica a ogni Pubblica, se c\'è almeno un gioco da mostrare.' },
       { chiave: 'giochi.occhiello', etichetta: 'Occhiello', tipo: 'testo', max: 40, predefinito: 'Lo storico delle live' },
       { chiave: 'giochi.titolo', etichetta: 'Home — titolo dell\'invito', tipo: 'testo', max: 60, predefinito: 'I giochi della live',
-        aiuto: 'In home, in fondo a «Chi sono»: il titolo sopra il bottone che porta alla pagina dei giochi.' },
+        aiuto: 'In home, in fondo alla «Diretta», accanto all\'invito delle clip: il titolo sopra il bottone che porta alla pagina dei giochi.' },
       { chiave: 'giochi.testo', etichetta: 'Home — riga sotto il titolo', tipo: 'ricco', max: 220, facoltativo: true,
         predefinito: 'Scopri i giochi che ho portato in live: dagli horror ai party game con la chat, dagli shooter ai puzzle game.' },
       { chiave: 'giochi.invito', etichetta: 'Home — scritta del bottone', tipo: 'testo', max: 30, predefinito: 'Vedi tutti i giochi',

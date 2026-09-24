@@ -16,7 +16,7 @@
    A `twitch.domini` la generazione aggiunge sempre localhost e 127.0.0.1;
    il player ci mette da sé location.hostname.
 
-   Generato il 2026-09-24T11:15:45.930Z.
+   Generato il 2026-09-24T11:27:42.486Z.
    ===================================================================== */
 window.DATI = {
   "twitch": {
