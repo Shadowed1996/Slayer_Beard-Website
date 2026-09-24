@@ -90,6 +90,99 @@
 
 .giochi-corpo { padding-block-end: var(--passo-12); }
 
+.giochi-cerca { padding-block: 0 var(--passo-3); }
+
+.giochi-cerca[hidden] { display: none; }
+
+.giochi-cerca__campo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-inline-size: 32rem;
+}
+
+.giochi-cerca__icona {
+  position: absolute;
+  inset-inline-start: var(--passo-2);
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+  color: var(--testo-tenue);
+  pointer-events: none;
+}
+
+.giochi-cerca__input {
+  inline-size: 100%;
+  min-block-size: 44px;
+  padding-block: 0;
+  padding-inline: calc(var(--passo-2) + 1.15rem + var(--passo)) 44px;
+  border: 1px solid var(--linea-comando);
+  border-radius: var(--raggio-pill);
+  background: var(--pannello-2);
+  color: var(--testo);
+  font-family: var(--font-testo);
+  font-size: 1rem;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--durata) var(--curva), box-shadow var(--durata) var(--curva);
+}
+
+.giochi-cerca__input::placeholder {
+  color: var(--testo-tenue);
+  opacity: 1;
+}
+
+.giochi-cerca__input::-webkit-search-decoration,
+.giochi-cerca__input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  display: none;
+}
+
+.giochi-cerca__input:hover { border-color: var(--ciano); }
+
+.giochi-cerca__input:focus {
+  border-color: var(--ciano);
+  box-shadow: var(--bagliore-ciano);
+  outline: none;
+}
+
+.giochi-cerca__input:focus-visible {
+  outline: 2px solid var(--ciano);
+  outline-offset: 2px;
+}
+
+.giochi-cerca__pulisci {
+  position: absolute;
+  inset-inline-end: 4px;
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--testo-medio);
+  cursor: pointer;
+  transition: color var(--durata) var(--curva), background-color var(--durata) var(--curva);
+}
+
+.giochi-cerca__pulisci[hidden] { display: none; }
+
+.giochi-cerca__pulisci svg {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+}
+
+.giochi-cerca__pulisci:hover {
+  background: var(--linea);
+  color: var(--ciano);
+}
+
+.giochi-cerca__pulisci:focus-visible {
+  outline: 2px solid var(--ciano);
+  outline-offset: 1px;
+}
+
 .giochi-comandi {
   position: sticky;
   inset-block-start: 0;
@@ -525,6 +618,8 @@
   .gioco-card,
   .gioco-card__immagine,
   .giochi-pillola,
+  .giochi-cerca__input,
+  .giochi-cerca__pulisci,
   .giochi-ordine__bottone,
   .giochi-ordine__bottone svg { transition: none; }
   .gioco-card:hover,

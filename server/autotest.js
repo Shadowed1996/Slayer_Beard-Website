@@ -4277,6 +4277,180 @@ async function provePaginaGiochi(contenutiVeri, costruisci, archivio) {
     esigi(typeof costruisci.allineaGiochiDopoRipristino === 'function', 'manca allineaGiochiDopoRipristino');
   });
 
+  const CHIAVI_CERCA = ['giochi.cercaEtichetta', 'giochi.cercaSegnaposto', 'giochi.cercaPulisci', 'giochi.cercaVuoto'];
+
+  await prova('la pagina dei giochi ha la barra di ricerca, nascosta senza JavaScript, coi testi in escape', () => {
+    scriviFinti(finti);
+    const documento = con();
+    scrivi(documento);
+    costruisci.genera();
+    const html = fs.readFileSync(P.giochiHtml, 'utf8');
+    esigiDentro(html, 'type="search"', 'manca il campo di ricerca');
+    esigiDentro(html, 'for="giochi-cerca">' + documento.testi['giochi.cercaEtichetta'] + '<', 'manca l etichetta del campo');
+    esigiDentro(html, 'placeholder="' + documento.testi['giochi.cercaSegnaposto'] + '"', 'manca il testo dentro il campo');
+    esigiDentro(html, 'aria-label="' + documento.testi['giochi.cercaPulisci'] + '"', 'manca il nome del bottone che cancella');
+    esigiDentro(html, 'data-giochi-cerca-vuoto hidden>' + documento.testi['giochi.cercaVuoto'] + '<', 'manca la riga per la ricerca senza risultati');
+    esigiDentro(html, 'role="search" data-giochi-cerca-riquadro hidden>', 'la ricerca non parte nascosta: senza JavaScript sarebbe inutile');
+    esigiDentro(html, '<div class="giochi-comandi" data-giochi-comandi hidden>', 'i filtri non partono nascosti');
+    esigi(html.indexOf('data-giochi-cerca-riquadro') < html.indexOf('data-giochi-comandi'), 'la ricerca deve stare sopra la barra dei filtri, che resta sola nella parte fissa');
+
+    documento.testi['giochi.cercaSegnaposto'] = 'Nome "o" <b>tipo</b>';
+    scrivi(documento);
+    costruisci.genera();
+    const protetta = fs.readFileSync(P.giochiHtml, 'utf8');
+    esigiDentro(protetta, 'placeholder="Nome &quot;o&quot; &lt;b&gt;tipo&lt;/b&gt;"', 'il testo del campo non e protetto');
+    esigi(protetta.indexOf('<b>tipo') === -1, 'il testo del campo e arrivato in pagina come markup');
+  });
+
+  await prova('un contenuti.json senza i testi della ricerca li riceve dai predefiniti, e lo schema li conosce tutti', () => {
+    const documento = JSON.parse(JSON.stringify(contenutiVeri));
+    for (const chiave of CHIAVI_CERCA) { delete documento.testi[chiave]; }
+    const aggiunte = schema.completa(documento);
+    for (const chiave of CHIAVI_CERCA) {
+      const campo = schema.campo(chiave);
+      esigi(!!campo, chiave + ' non e nello schema');
+      esigi(aggiunte.indexOf(chiave) !== -1, chiave + ' non e stato aggiunto');
+      esigiUguale(documento.testi[chiave], campo.predefinito, chiave + ' non ha il predefinito');
+      esigiUguale(convalida.convalidaCampo(chiave, campo.predefinito).length, 0, chiave + ': il predefinito non passa la convalida');
+    }
+    esigiUguale(schema.verificaCopertura(documento).length, 0, 'la copertura si lamenta');
+    for (const chiave of CHIAVI_CERCA) {
+      esigi(!!contenutiVeri.testi[chiave], chiave + ' manca in contenuti.json');
+    }
+  });
+
+  await prova('lo script dei giochi cerca per nome e tipologia insieme ai filtri, e ricorda la ricerca nell indirizzo', () => {
+    const codice = fs.readFileSync(path.join(RADICE_VERA, 'js', 'giochi.js'), 'utf8');
+    const nodo = (attributi) => ({
+      hidden: false,
+      attributi: attributi,
+      ascolti: {},
+      textContent: '',
+      value: '',
+      fuoco: 0,
+      getAttribute(nome) { return Object.prototype.hasOwnProperty.call(this.attributi, nome) ? this.attributi[nome] : null; },
+      setAttribute(nome, valore) { this.attributi[nome] = valore; },
+      addEventListener(tipo, f) { this.ascolti[tipo] = f; },
+      focus() { this.fuoco += 1; }
+    });
+
+    const monta = (ricerca, senzaCampo) => {
+      const scheda = (nome, generi, ore, ultima) => nodo({ 'data-gioco': '', 'data-nome': nome, 'data-generi': generi, 'data-ore': String(ore), 'data-ultima': ultima });
+      const voci = [
+        scheda('Resident Evil 4', 'Horror|Azione', 10, '2026-09-20'),
+        scheda('Città Perduta', 'Avventura', 5, '2026-09-22'),
+        scheda('Hollow Knight', 'Metroidvania|Platform', 9, '2026-09-21'),
+        scheda('Silent Hill 2', 'Horror', 7, '2026-09-19')
+      ];
+      const pillole = ['', 'Horror', 'Avventura'].map((tipo) => nodo({ 'data-tipo': tipo, 'aria-pressed': tipo === '' ? 'true' : 'false' }));
+      const campo = nodo({});
+      const pulisci = nodo({});
+      pulisci.hidden = true;
+      const conto = nodo({ 'data-uno': 'gioco', 'data-tanti': 'giochi' });
+      const vuoto = nodo({});
+      vuoto.hidden = true;
+      const vuotoCerca = nodo({});
+      vuotoCerca.hidden = true;
+      const riquadro = nodo({});
+      riquadro.hidden = true;
+      const comandi = nodo({});
+      comandi.hidden = true;
+      comandi.querySelectorAll = () => pillole;
+      comandi.querySelector = () => null;
+      const elenco = nodo({});
+      elenco.querySelectorAll = () => voci;
+      elenco.appendChild = () => {};
+      const trovabili = {
+        '[data-giochi-elenco]': elenco,
+        '[data-giochi-comandi]': comandi,
+        '[data-giochi-conto]': conto,
+        '[data-giochi-vuoto]': vuoto,
+        '[data-giochi-cerca-vuoto]': vuotoCerca,
+        '[data-giochi-cerca-riquadro]': riquadro,
+        '[data-giochi-cerca]': senzaCampo ? null : campo,
+        '[data-giochi-pulisci]': senzaCampo ? null : pulisci
+      };
+      const indirizzi = [];
+      require('node:vm').runInNewContext(codice, {
+        document: {
+          readyState: 'complete',
+          querySelector: (selettore) => trovabili[selettore] || null,
+          querySelectorAll: () => [],
+          addEventListener() {}
+        },
+        window: {
+          location: { search: ricerca || '', pathname: '/giochi.html', hash: '' },
+          history: { replaceState: (a, b, url) => { indirizzi.push(url); } }
+        },
+        URLSearchParams: URLSearchParams
+      });
+      const visibili = () => JSON.stringify(voci.map((v, i) => (v.hidden ? null : i)).filter((i) => i !== null));
+      const scrivi = (testo) => { campo.value = testo; campo.ascolti.input(); };
+      const ultimoIndirizzo = () => indirizzi[indirizzi.length - 1];
+      return { voci, pillole, campo, pulisci, conto, vuoto, vuotoCerca, riquadro, comandi, visibili, scrivi, ultimoIndirizzo };
+    };
+
+    const a = monta('');
+    esigiUguale(a.comandi.hidden, false, 'i filtri non si rivelano');
+    esigiUguale(a.riquadro.hidden, false, 'la barra di ricerca non si rivela');
+    esigiUguale(a.visibili(), '[0,1,2,3]', 'senza ricerca si vedono tutti');
+    esigiUguale(a.conto.textContent, '4 giochi', 'il conto');
+    esigiUguale(a.vuoto.hidden && a.vuotoCerca.hidden && a.pulisci.hidden, true, 'un messaggio o il bottone X compaiono a torto');
+    esigiUguale(a.ultimoIndirizzo(), '/giochi.html', 'l indirizzo senza filtri resta pulito');
+
+    a.scrivi('resident');
+    esigiUguale(a.visibili(), '[0]', 'cerca per nome');
+    esigiUguale(a.conto.textContent, '1 gioco', 'il conto al singolare');
+    esigiUguale(a.pulisci.hidden, false, 'il bottone che cancella non compare');
+    esigiUguale(a.ultimoIndirizzo(), '/giochi.html?cerca=resident', 'la ricerca nell indirizzo');
+
+    a.scrivi('HORROR');
+    esigiUguale(a.visibili(), '[0,3]', 'cerca anche per tipologia, senza badare alle maiuscole');
+    a.scrivi('  CITTA  ');
+    esigiUguale(a.visibili(), '[1]', 'la «à» si trova con «a»');
+    a.scrivi('horror silent');
+    esigiUguale(a.visibili(), '[3]', 'con piu parole devono esserci tutte');
+    esigiUguale(a.ultimoIndirizzo(), '/giochi.html?cerca=horror+silent', 'gli spazi in eccesso non finiscono nell indirizzo');
+
+    a.scrivi('zzz');
+    esigiUguale(a.visibili(), '[]', 'nessuna corrispondenza');
+    esigiUguale(a.vuotoCerca.hidden, false, 'manca il messaggio della ricerca senza risultati');
+    esigiUguale(a.vuoto.hidden, true, 'compare il messaggio del filtro invece di quello della ricerca');
+    esigiUguale(a.conto.textContent, '0 giochi', 'il conto a zero');
+
+    a.scrivi('horror');
+    a.pillole[2].ascolti.click({ currentTarget: a.pillole[2] });
+    esigiUguale(a.visibili(), '[]', 'ricerca e tipologia lavorano insieme: nessun horror e anche avventura');
+    esigiUguale(a.ultimoIndirizzo(), '/giochi.html?cerca=horror&tipo=Avventura', 'ricerca e tipologia insieme nell indirizzo');
+    let fermato = 0;
+    a.campo.ascolti.keydown({ key: 'Escape', preventDefault() { fermato += 1; } });
+    esigiUguale(fermato, 1, 'Esc non ferma il comportamento del browser');
+    esigiUguale(a.campo.value, '', 'Esc non cancella il testo');
+    esigiUguale(a.visibili(), '[1]', 'cancellata la ricerca resta il filtro per tipologia');
+    esigiUguale(a.vuotoCerca.hidden, true, 'il messaggio della ricerca resta dopo averla cancellata');
+    a.campo.ascolti.keydown({ key: 'Escape', preventDefault() { fermato += 1; } });
+    esigiUguale(fermato, 1, 'Esc a campo vuoto non deve essere fermato');
+
+    a.scrivi('knight');
+    esigiUguale(a.visibili(), '[]', 'Hollow Knight non e un avventura');
+    a.pulisci.ascolti.click();
+    esigiUguale(a.campo.value, '', 'il bottone non cancella il testo');
+    esigiUguale(a.campo.fuoco, 1, 'il bottone non rimette il cursore nel campo');
+    esigiUguale(a.pulisci.hidden, true, 'il bottone resta a campo vuoto');
+    esigiUguale(a.ultimoIndirizzo(), '/giochi.html?tipo=Avventura', 'la ricerca cancellata resta nell indirizzo');
+
+    const b = monta('?cerca=%20%20HORROR%20%20');
+    esigiUguale(b.campo.value, 'HORROR', 'la ricerca dell indirizzo non riempie il campo, o lo lascia con gli spazi');
+    esigiUguale(b.visibili(), '[0,3]', 'la ricerca dell indirizzo non si applica');
+    esigiUguale(b.pulisci.hidden, false, 'il bottone X manca con la ricerca dall indirizzo');
+
+    const c = monta('?cerca=' + 'a'.repeat(200));
+    esigiUguale(c.campo.value.length, 80, 'la ricerca dell indirizzo non e limitata a 80 caratteri');
+
+    const d = monta('?cerca=resident', true);
+    esigiUguale(d.visibili(), '[0,1,2,3]', 'senza il campo nella pagina, la ricerca dell indirizzo non deve nascondere giochi');
+  });
+
   togliFinti();
   fs.writeFileSync(P.contenutiJson, originale);
   costruisci.genera();

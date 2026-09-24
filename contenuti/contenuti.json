@@ -222,7 +222,11 @@
     "giochi.clip": "clip",
     "giochi.ultimaVolta": "Ultima volta",
     "giochi.clipMigliore": "Clip migliore",
-    "giochi.vuoto": "Nessun gioco di questa tipologia, per ora."
+    "giochi.vuoto": "Nessun gioco di questa tipologia, per ora.",
+    "giochi.cercaEtichetta": "Cerca",
+    "giochi.cercaSegnaposto": "Nome o tipologia del gioco",
+    "giochi.cercaPulisci": "Cancella la ricerca",
+    "giochi.cercaVuoto": "Nessun gioco corrisponde alla ricerca. Prova con un altro nome o togli i filtri."
   },
   "config": {
     "twitch": {

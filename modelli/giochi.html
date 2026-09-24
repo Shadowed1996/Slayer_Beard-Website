@@ -36,6 +36,17 @@
 </header>
 
 <main id="contenuto" class="giochi-corpo">
+  <div class="giochi-cerca" role="search" data-giochi-cerca-riquadro hidden>
+    <label class="giochi-comandi__etichetta" for="giochi-cerca">{{giochi.cercaEtichetta}}</label>
+    <div class="giochi-cerca__campo">
+      <svg class="giochi-cerca__icona" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+      <input class="giochi-cerca__input" id="giochi-cerca" type="search" name="cerca" placeholder="{{giochi.cercaSegnaposto}}" maxlength="80" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" data-giochi-cerca>
+      <button class="giochi-cerca__pulisci" type="button" aria-label="{{giochi.cercaPulisci}}" data-giochi-pulisci hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+      </button>
+    </div>
+  </div>
+
   <div class="giochi-comandi" data-giochi-comandi hidden>
     <div class="giochi-filtri">
       <p class="giochi-comandi__etichetta" id="giochi-filtri-etichetta">{{giochi.filtri}}</p>
@@ -71,6 +82,7 @@
   </ul>
 
   <p class="giochi-vuoto" data-giochi-vuoto hidden>{{giochi.vuoto}}</p>
+  <p class="giochi-vuoto" data-giochi-cerca-vuoto hidden>{{giochi.cercaVuoto}}</p>
 </main>
 
 {{> parziali/piede}}

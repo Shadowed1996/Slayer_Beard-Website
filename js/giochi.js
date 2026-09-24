@@ -2,10 +2,26 @@
   'use strict';
 
   var ORDINI = ['recenti', 'ore', 'nome'];
+  var MAX_CERCA = 80;
 
   function generiDi(voce) {
     var grezzo = voce.getAttribute('data-generi') || '';
     return grezzo ? grezzo.split('|') : [];
+  }
+
+  function normalizza(testo) {
+    var pulito = String(testo || '').toLowerCase();
+    if (typeof pulito.normalize === 'function') {
+      pulito = pulito.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+    return pulito.replace(/\s+/g, ' ').trim();
+  }
+
+  function corrisponde(testo, parole) {
+    for (var i = 0; i < parole.length; i++) {
+      if (testo.indexOf(parole[i]) === -1) { return false; }
+    }
+    return true;
   }
 
   function confronta(ordine) {
@@ -24,9 +40,10 @@
   }
 
   function leggiUrl() {
-    var stato = { tipi: [], ordine: 'recenti' };
+    var stato = { tipi: [], ordine: 'recenti', cerca: '' };
     try {
       var parametri = new URLSearchParams(window.location.search);
+      stato.cerca = String(parametri.get('cerca') || '').replace(/\s+/g, ' ').trim().slice(0, MAX_CERCA);
       var tipi = parametri.getAll('tipo');
       for (var i = 0; i < tipi.length; i++) {
         var pezzi = tipi[i].split(',');
@@ -45,6 +62,8 @@
     if (!window.history || typeof window.history.replaceState !== 'function') { return; }
     try {
       var parametri = new URLSearchParams();
+      var cercato = stato.cerca.replace(/\s+/g, ' ').trim();
+      if (cercato) { parametri.set('cerca', cercato); }
       if (stato.tipi.length) { parametri.set('tipo', stato.tipi.join(',')); }
       if (stato.ordine !== 'recenti') { parametri.set('ordine', stato.ordine); }
       var query = parametri.toString();
@@ -90,16 +109,28 @@
     var attiva = 0;
     var conto = document.querySelector('[data-giochi-conto]');
     var vuoto = document.querySelector('[data-giochi-vuoto]');
+    var vuotoCerca = document.querySelector('[data-giochi-cerca-vuoto]');
+    var riquadroCerca = document.querySelector('[data-giochi-cerca-riquadro]');
+    var campo = document.querySelector('[data-giochi-cerca]');
+    var pulisci = document.querySelector('[data-giochi-pulisci]');
+
+    var testi = voci.map(function (voce) {
+      return normalizza((voce.getAttribute('data-nome') || '') + ' ' + generiDi(voce).join(' '));
+    });
 
     var esistenti = pillole.map(function (p) { return p.getAttribute('data-tipo'); }).filter(Boolean);
     var stato = leggiUrl();
     stato.tipi = stato.tipi.filter(function (t) { return esistenti.indexOf(t) !== -1; });
+    if (!campo) { stato.cerca = ''; }
 
     function applica() {
+      var cercato = normalizza(stato.cerca);
+      var parole = cercato ? cercato.split(' ') : [];
       var visibili = 0;
       for (var i = 0; i < voci.length; i++) {
         var generi = generiDi(voci[i]);
-        var dentro = !stato.tipi.length || stato.tipi.some(function (t) { return generi.indexOf(t) !== -1; });
+        var dentro = (!stato.tipi.length || stato.tipi.some(function (t) { return generi.indexOf(t) !== -1; })) &&
+          corrisponde(testi[i], parole);
         voci[i].hidden = !dentro;
         if (dentro) { visibili++; }
       }
@@ -122,8 +153,34 @@
         var parola = conto.getAttribute(visibili === 1 ? 'data-uno' : 'data-tanti') || '';
         conto.textContent = visibili + ' ' + parola;
       }
-      if (vuoto) { vuoto.hidden = visibili > 0; }
+      if (vuoto) { vuoto.hidden = parole.length > 0 || visibili > 0; }
+      if (vuotoCerca) { vuotoCerca.hidden = parole.length === 0 || visibili > 0; }
+      if (pulisci) { pulisci.hidden = !stato.cerca; }
       scriviUrl(stato);
+    }
+
+    if (campo) {
+      campo.value = stato.cerca;
+      campo.addEventListener('input', function () {
+        stato.cerca = campo.value;
+        applica();
+      });
+      campo.addEventListener('keydown', function (evento) {
+        if ((evento.key === 'Escape' || evento.key === 'Esc') && campo.value) {
+          evento.preventDefault();
+          campo.value = '';
+          stato.cerca = '';
+          applica();
+        }
+      });
+      if (pulisci) {
+        pulisci.addEventListener('click', function () {
+          campo.value = '';
+          stato.cerca = '';
+          applica();
+          campo.focus();
+        });
+      }
     }
 
     for (var i = 0; i < pillole.length; i++) {
@@ -194,6 +251,7 @@
     }
 
     comandi.hidden = false;
+    if (riquadroCerca) { riquadroCerca.hidden = false; }
     applica();
   }
 
