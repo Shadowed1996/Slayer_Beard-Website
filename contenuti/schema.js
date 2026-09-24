@@ -14,8 +14,8 @@ function diEditor(chiave) {
   return EDITOR.some((ramo) => chiave === ramo || chiave.startsWith(ramo + '.'));
 }
 
-const ICONE_SOCIAL = ['twitch', 'youtube', 'instagram', 'tiktok', 'telegram', 'amazon-wishlist', 'amazon'];
-const ICONE_SUPPORTO = ['star', 'crown', 'gem', 'heart', 'coffee', 'mail'];
+const ICONE_SOCIAL = ['twitch', 'youtube', 'instagram', 'tiktok', 'discord', 'telegram', 'amazon-wishlist', 'amazon'];
+const ICONE_SUPPORTO = ['star', 'crown', 'gem', 'heart', 'coffee', 'mail', 'amazon-wishlist'];
 
 const GIF_RAFFICA = [
   { immagine: 'img/pollo-gif/raffica-ufficio.gif', scritta: 'VUOI ROMPERE IL MOUSE?' },
@@ -117,12 +117,10 @@ const gruppi = [
   {
     id: 'diretta',
     titolo: 'La diretta',
-    descrizione: 'La sezione del player: testo di presentazione, comandi della chat e nota per quando l\'embed non parte.',
+    descrizione: 'La sezione del player: comandi della chat e nota per quando l\'embed non parte.',
     campi: [
       { chiave: 'diretta.occhiello', etichetta: 'Occhiello', tipo: 'testo', max: 40 },
       { chiave: 'diretta.titolo', etichetta: 'Titolo della sezione', tipo: 'testo', max: 60 },
-      { chiave: 'diretta.testo', etichetta: 'Testo introduttivo', tipo: 'ricco', max: 240,
-        aiuto: 'Una o due righe sopra al player.' },
       { chiave: 'diretta.nota', etichetta: 'Nota sotto al player', tipo: 'ricco', max: 300,
         aiuto: 'Cosa fare se il player non parte. Vale la pena tenerci un link a Twitch: è l\'unica via d\'uscita quando l\'embed viene bloccato.' },
 
@@ -261,7 +259,7 @@ const gruppi = [
   {
     id: 'clip',
     titolo: 'Le clip',
-    descrizione: 'La vetrina dei momenti migliori, in fondo alla sezione «La diretta», e la pagina «clip.html» con tutte quante, dove è chi visita a scegliere il periodo. Le clip le prende il server da Twitch a ogni pubblicazione: qui si decide quante, di che periodo, e come si presentano.',
+    descrizione: 'La vetrina dei momenti migliori, in fondo alla sezione «La diretta», e la pagina «clip.html» con tutte quante, dove è chi visita a scegliere il periodo e a cercare una clip per titolo o autore. Le clip le prende il server da Twitch a ogni pubblicazione: qui si decide quante, di che periodo, e come si presentano.',
     campi: [
       { chiave: 'config.clip.attivo', etichetta: 'Mostra le clip', tipo: 'interruttore',
         aiuto: 'Spento, la vetrina non compare per nessuno, il resto di questo gruppo non ha effetto e alla pubblicazione non viene chiesto niente a Twitch. Acceso, compare in fondo a «La diretta», con un bottone in testa alla sezione che ci porta — ma solo dopo la prima Pubblica: è lì che il server va a prendere le clip su Twitch.' },
@@ -311,7 +309,19 @@ const gruppi = [
       { chiave: 'clip.filtro30giorni', etichetta: 'Pagina — quarto periodo', tipo: 'testo', max: 20, predefinito: '30 giorni',
         aiuto: 'È il periodo da cui la pagina parte: chi arriva vede queste, e stringendo il periodo ne vede meno.' },
       { chiave: 'clip.vuoto', etichetta: 'Pagina — quando in un periodo non c\'è niente', tipo: 'testo', max: 120, predefinito: 'Nessuna clip in questo periodo.',
-        aiuto: 'Capita davvero, ed è giusto che si veda: in una settimana tranquilla le 24 ore possono essere vuote anche se il mese è pieno. Meglio una riga che lo dice che una pagina bianca.' }
+        aiuto: 'Capita davvero, ed è giusto che si veda: in una settimana tranquilla le 24 ore possono essere vuote anche se il mese è pieno. Meglio una riga che lo dice che una pagina bianca.' },
+      { chiave: 'clip.cercaEtichetta', etichetta: 'Pagina — etichetta della ricerca', tipo: 'testo', max: 30, predefinito: 'Cerca',
+        aiuto: 'La parola sopra alla barra di ricerca. La leggono anche i lettori di schermo.' },
+      { chiave: 'clip.cercaSegnaposto', etichetta: 'Pagina — testo dentro la barra di ricerca', tipo: 'testo', max: 40, predefinito: 'Titolo o autore della clip',
+        aiuto: 'Si vede finché la barra è vuota: dice su cosa si cerca.' },
+      { chiave: 'clip.cercaPulisci', etichetta: 'Pagina — bottone che cancella la ricerca', tipo: 'testo', max: 40, predefinito: 'Cancella la ricerca',
+        aiuto: 'Il bottone con la X dentro la barra non ha parole: questa la leggono i lettori di schermo.' },
+      { chiave: 'clip.cercaUna', etichetta: 'Pagina — «clip trovata» (una sola)', tipo: 'testo', max: 20, predefinito: 'clip trovata',
+        aiuto: 'Compare dopo il numero, mentre si cerca: «1 clip trovata».' },
+      { chiave: 'clip.cercaTante', etichetta: 'Pagina — «clip trovate» (più di una, o nessuna)', tipo: 'testo', max: 20, predefinito: 'clip trovate',
+        aiuto: 'Compare dopo il numero, mentre si cerca: «7 clip trovate».' },
+      { chiave: 'clip.cercaVuoto', etichetta: 'Pagina — quando la ricerca non trova niente', tipo: 'testo', max: 120, predefinito: 'Nessuna clip corrisponde alla ricerca in questo periodo.',
+        aiuto: 'La ricerca vale dentro al periodo scelto: una clip più vecchia si trova allargando il periodo.' }
     ]
   },
 

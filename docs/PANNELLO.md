@@ -1851,6 +1851,15 @@ da tutto, e stringendo si vede di meno. Cambiare periodo **non ricarica la
 pagina** e non fa aspettare nessuno: le clip sono già tutte dentro la pagina, e
 il sito si limita a nascondere quelle fuori periodo.
 
+Accanto ai periodi c'è la **barra di ricerca**: si scrive una parte del titolo
+o il nome di chi ha creato la clip e restano solo quelle che corrispondono.
+Maiuscole e accenti non contano («citta» trova «Città»), e con più parole
+devono esserci tutte. La ricerca lavora **dentro il periodo scelto** e, mentre
+si cerca, mostra **tutte** le clip che corrispondono, anche oltre il numero
+massimo del periodo. Sotto la barra compare il conto («3 clip trovate»), e la
+X dentro il campo cancella la ricerca. Come i bottoni dei periodi, la barra c'è
+solo dove funziona JavaScript.
+
 > **Perché funziona così.** Il sito pubblicato è fatto di file, non c'è un
 > programma che risponda alle domande di chi visita, e le chiavi di Twitch non
 > devono finire dentro una pagina — con quelle si parla a nome del canale. Così
@@ -1867,8 +1876,8 @@ Due conseguenze da sapere, perché si vedono:
   («Nessuna clip in questo periodo») invece di restare bianca.
 
 I testi della pagina — titolo, riga di presentazione, il link per tornare
-indietro, le quattro etichette dei periodi e la riga di quando non c'è niente —
-si scrivono nella stessa parte **Le clip** del pannello, insieme a tutto il
+indietro, le quattro etichette dei periodi, le parole della barra di ricerca e
+le righe di quando non c'è niente — si scrivono nella stessa parte **Le clip** del pannello, insieme a tutto il
 resto. Hanno già un valore di partenza sensato: si toccano solo se si vuole.
 
 Se spegni **Mostra le clip**, o se Twitch non ne restituisce nessuna, la pagina

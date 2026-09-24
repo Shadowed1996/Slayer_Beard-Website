@@ -349,18 +349,18 @@ async function proveConvalida(contenutiVeri) {
   });
 
   await prova('ricco: il massimo conta le lettere che si leggono, non i tag', () => {
-    esigiUguale(convalida.convalidaCampo('diretta.testo', '<b>' + 'x'.repeat(240) + '</b>').length, 0, '240 caratteri visibili');
-    esigi(convalida.convalidaCampo('diretta.testo', 'x'.repeat(241)).length === 1, '241 caratteri');
-    esigi(convalida.convalidaCampo('diretta.testo', '').length === 1, 'campo vuoto');
-    esigi(convalida.convalidaCampo('diretta.testo', '<b></b>').length === 1, 'solo formattazione, niente testo');
+    esigiUguale(convalida.convalidaCampo('saluti.testo', '<b>' + 'x'.repeat(240) + '</b>').length, 0, '240 caratteri visibili');
+    esigi(convalida.convalidaCampo('saluti.testo', 'x'.repeat(241)).length === 1, '241 caratteri');
+    esigi(convalida.convalidaCampo('saluti.testo', '').length === 1, 'campo vuoto');
+    esigi(convalida.convalidaCampo('saluti.testo', '<b></b>').length === 1, 'solo formattazione, niente testo');
   });
 
   await prova('ricco: quello che il sanificatore toglie viene raccontato', () => {
-    const errori = convalida.convalidaCampo('diretta.testo', '<b>ciao</b><script>alert(1)</script>');
+    const errori = convalida.convalidaCampo('saluti.testo', '<b>ciao</b><script>alert(1)</script>');
     esigi(errori.length >= 1, 'lo script non e stato segnalato');
 
-    esigiDentro(errori[0].messaggio, schema.campo('diretta.testo').etichetta, 'il messaggio non nomina il campo');
-    esigi(convalida.convalidaCampo('diretta.testo', '<a href="javascript:alert(1)">qui</a> ciao').length >= 1,
+    esigiDentro(errori[0].messaggio, schema.campo('saluti.testo').etichetta, 'il messaggio non nomina il campo');
+    esigi(convalida.convalidaCampo('saluti.testo', '<a href="javascript:alert(1)">qui</a> ciao').length >= 1,
       'link javascript: non segnalato');
   });
 
@@ -2104,6 +2104,53 @@ async function proveTwitch(costruisci, archivio) {
     }
   });
 
+  await prova('Discord sta fra i social, con la sua icona, nel binario e in «Dove mi trovi»', () => {
+    const documento = archivio.leggi();
+    const discord = documento.config.social.find((v) => v.icona === 'discord');
+    esigi(discord !== undefined, 'la voce Discord non c e nei contenuti');
+    discord.url = 'https://discord.gg/prova';
+    const html = costruisci.anteprimaDi(documento);
+    const icona = '<circle cx="9" cy="12" r="1"/>';
+    const daBinario = html.indexOf('binario__social');
+    const binario = html.slice(daBinario, html.indexOf('</aside>', daBinario));
+    esigiDentro(binario, 'href="https://discord.gg/prova"', 'link nel binario');
+    esigiDentro(binario, 'aria-label="Discord"', 'nome nel binario');
+    esigiDentro(binario, icona, 'icona nel binario');
+    const daSaluti = html.indexOf('id="social"');
+    const saluti = html.slice(daSaluti, html.indexOf('</ul>', daSaluti));
+    esigiDentro(saluti, 'href="https://discord.gg/prova"', 'link nei saluti');
+    esigiDentro(saluti, '<span class="social__nome">Discord</span>', 'nome nei saluti');
+    esigiDentro(saluti, icona, 'icona nei saluti');
+    discord.url = '';
+    esigi(costruisci.anteprimaDi(documento).indexOf('discord.gg') === -1, 'senza link la voce Discord e finita in pagina');
+  });
+
+  await prova('la wishlist sta in «Supporto», non piu in «Dove mi trovi»', () => {
+    const documento = archivio.leggi();
+    esigi(!documento.config.social.some((v) => v.icona === 'amazon-wishlist'), 'la wishlist e ancora fra i profili social');
+    const riga = documento.config.supporto.find((v) => v.icona === 'amazon-wishlist');
+    esigi(riga !== undefined && String(riga.url).trim() !== '', 'la riga della wishlist non c e, o e senza link');
+    const icone = schema.campo('config.supporto').campi.find((c) => c.chiave === 'icona').opzioni;
+    esigi(icone.indexOf('amazon-wishlist') !== -1, 'l icona non e ammessa nel listino');
+    const html = costruisci.anteprimaDi(documento);
+    const supporto = html.slice(html.indexOf('id="supporto"'), html.indexOf('id="saluti"'));
+    esigiDentro(supporto, '<h3 class="listino__titolo">' + riga.titolo + '</h3>', 'la riga non e nel listino');
+    esigiDentro(supporto, 'href="' + riga.url + '"', 'il link non e nel listino');
+    const fondo = html.slice(html.indexOf('id="saluti"'));
+    esigi(fondo.indexOf(riga.url) === -1, 'il link della wishlist e ancora in «Dove mi trovi»');
+  });
+
+  await prova('la sezione «Diretta» non ha piu il paragrafo introduttivo', () => {
+    const documento = archivio.leggi();
+    esigi(!('diretta.testo' in documento.testi), 'il testo e ancora nei contenuti');
+    esigi(!schema.campo('diretta.testo'), 'il campo e ancora nello schema');
+    const html = costruisci.anteprimaDi(documento);
+    const diretta = html.slice(html.indexOf('id="diretta"'), html.indexOf('id="settimana"'));
+    esigi(diretta.indexOf('diretta.testo') === -1, 'il paragrafo e ancora in pagina');
+    esigi(diretta.indexOf('sezione__testo') === -1, 'un paragrafo introduttivo e ancora in pagina');
+    esigiDentro(diretta, 'data-sb-testo="diretta.titolo"', 'il titolo della sezione manca');
+  });
+
   await prova('youtube: dal link al canale, e senza chiave non chiede niente', async () => {
     esigiUguale(JSON.stringify(youtube.canaleDaUrl('https://www.youtube.com/@slayer_beard/videos')), '{"parametro":"forHandle","valore":"@slayer_beard"}', '@handle');
     esigiUguale(youtube.canaleDaUrl('https://youtube.com/channel/UC1234567890abcdef').parametro, 'id', 'channel/UC');
@@ -2446,6 +2493,113 @@ async function proveClip(contenutiVeri, costruisci, archivio) {
     esigiDentro(pagina, 'Titolo con &amp; e &lt;b&gt;', 'il titolo non e stato protetto');
     esigi(pagina.indexOf('<b>Titolo') === -1, 'il titolo e arrivato in pagina come markup');
     esigiDentro(pagina, '0:32', 'manca la durata');
+  });
+
+  await prova('la pagina delle clip ha la barra di ricerca, e ogni card porta titolo e autore da cercare', () => {
+    const documento = archivio.leggi();
+    const due = [
+      clipFinta({ titolo: 'Boss "finale" & <b>Città</b>', autore: 'Tizio' }),
+      clipFinta({ id: 'due', titolo: 'La seconda', autore: '' })
+    ];
+    documento.config.clip = accesa({ voci: due, archivio: due });
+    const pagina = costruisci.rendi(documento).clip;
+    esigi(typeof pagina === 'string', 'la pagina delle clip non e stata resa');
+    esigiDentro(pagina, 'type="search"', 'manca il campo di ricerca');
+    esigiDentro(pagina, 'for="clip-cerca">' + documento.testi['clip.cercaEtichetta'] + '<', 'manca l etichetta del campo');
+    esigiDentro(pagina, 'placeholder="' + documento.testi['clip.cercaSegnaposto'] + '"', 'manca il testo dentro il campo');
+    esigiDentro(pagina, 'aria-label="' + documento.testi['clip.cercaPulisci'] + '"', 'manca il nome del bottone che cancella');
+    esigiDentro(pagina, 'data-clip-cerca-vuoto', 'manca la riga per la ricerca senza risultati');
+    esigiDentro(pagina, 'data-uno="' + documento.testi['clip.cercaUna'] + '"', 'manca «clip trovata»');
+    esigiDentro(pagina, 'data-tanti="' + documento.testi['clip.cercaTante'] + '"', 'manca «clip trovate»');
+    esigiDentro(pagina, 'data-cerca="Boss &quot;finale&quot; &amp; &lt;b&gt;Città&lt;/b&gt; Tizio"', 'titolo e autore da cercare, protetti');
+    esigiUguale((pagina.match(/data-cerca="/g) || []).length, 2, 'una chiave di ricerca per card');
+    esigi(pagina.indexOf('<b>Città') === -1, 'il titolo e arrivato in pagina come markup');
+    esigiDentro(pagina, '<div class="clip-comandi" data-clip-comandi hidden>', 'i comandi non partono nascosti: senza JavaScript sarebbero inutili');
+  });
+
+  await prova('lo script delle clip filtra per testo e periodo insieme, senza badare ad accenti e maiuscole', () => {
+    const codice = fs.readFileSync(path.join(__dirname, '..', 'js', 'clip.js'), 'utf8');
+    const nodo = (attributi) => ({
+      hidden: false,
+      attributi: attributi,
+      ascolti: {},
+      getAttribute(nome) { return Object.prototype.hasOwnProperty.call(this.attributi, nome) ? this.attributi[nome] : null; },
+      setAttribute(nome, valore) { this.attributi[nome] = valore; },
+      addEventListener(tipo, f) { this.ascolti[tipo] = f; },
+      focus() {}
+    });
+    const ORA = 3600 * 1000;
+    const adesso = Date.now();
+    const quando = (ore) => new Date(adesso - ore * ORA).toISOString();
+    const voci = [
+      nodo({ 'data-quando': quando(2), 'data-cerca': 'Città di notte Tizio' }),
+      nodo({ 'data-quando': quando(30), 'data-cerca': 'Boss finale Caio' }),
+      nodo({ 'data-quando': quando(100), 'data-cerca': 'Boss segreto Tizio' }),
+      nodo({ 'data-quando': quando(400), 'data-cerca': 'Ultimo BOSS Sempronio' })
+    ];
+    const bottoni = [24, 72, 168, 720].map((ore) => nodo({ 'data-ore': String(ore), 'aria-pressed': ore === 720 ? 'true' : 'false' }));
+    const campo = nodo({});
+    campo.value = '';
+    const pulisci = nodo({});
+    pulisci.hidden = true;
+    const conto = nodo({ 'data-uno': 'clip trovata', 'data-tanti': 'clip trovate' });
+    conto.hidden = true;
+    const vuoto = nodo({});
+    vuoto.hidden = true;
+    const vuotoCerca = nodo({});
+    vuotoCerca.hidden = true;
+    const comandi = nodo({});
+    comandi.hidden = true;
+    comandi.querySelectorAll = () => bottoni;
+    comandi.querySelector = (selettore) => (selettore === '[data-clip-cerca]' ? campo : pulisci);
+    const elenco = nodo({ 'data-quante': '2' });
+    elenco.querySelectorAll = () => voci;
+    const trovabili = {
+      '[data-clip-comandi]': comandi,
+      '[data-clip-elenco]': elenco,
+      '[data-clip-conto]': conto,
+      '[data-clip-vuoto]': vuoto,
+      '[data-clip-cerca-vuoto]': vuotoCerca
+    };
+    require('node:vm').runInNewContext(codice, {
+      document: { querySelector: (selettore) => trovabili[selettore] || null },
+      window: { addEventListener() {} },
+      Date: Date, parseInt: parseInt, isFinite: isFinite, isNaN: isNaN, String: String
+    });
+    const visibili = () => voci.map((v, i) => (v.hidden ? null : i)).filter((i) => i !== null);
+    const scrivi = (testo) => { campo.value = testo; campo.ascolti.input(); };
+
+    esigiUguale(comandi.hidden, false, 'i comandi non si rivelano');
+    esigiUguale(JSON.stringify(visibili()), '[0,1]', 'senza ricerca vale il tetto di due per periodo');
+    esigiUguale(vuoto.hidden, true, 'la riga del periodo vuoto compare a torto');
+    esigiUguale(conto.hidden, true, 'il conto compare senza ricerca');
+
+    scrivi('boss');
+    esigiUguale(JSON.stringify(visibili()), '[1,2,3]', 'cercando il tetto non taglia: tutte le clip che corrispondono');
+    esigiUguale(conto.textContent, '3 clip trovate', 'il conto');
+    scrivi('  CITTA  ');
+    esigiUguale(JSON.stringify(visibili()), '[0]', 'la «à» si trova con «a», e le maiuscole non contano');
+    esigiUguale(conto.textContent, '1 clip trovata', 'il conto al singolare');
+    scrivi('boss tizio');
+    esigiUguale(JSON.stringify(visibili()), '[2]', 'piu parole: devono esserci tutte');
+
+    scrivi('boss');
+    bottoni[2].ascolti.click({ currentTarget: bottoni[2] });
+    esigiUguale(JSON.stringify(visibili()), '[1,2]', 'il periodo restringe anche la ricerca: 7 giorni lascia fuori la clip di 400 ore fa');
+    bottoni[0].ascolti.click({ currentTarget: bottoni[0] });
+    esigiUguale(JSON.stringify(visibili()), '[]', 'nessuna corrispondenza nelle ultime 24 ore');
+    esigiUguale(vuotoCerca.hidden, false, 'manca il messaggio della ricerca senza risultati');
+    esigiUguale(vuoto.hidden, true, 'compare il messaggio del periodo vuoto invece di quello della ricerca');
+
+    scrivi('');
+    esigiUguale(JSON.stringify(visibili()), '[0]', 'a ricerca vuota si torna al periodo, col suo tetto');
+    esigiUguale(conto.hidden, true, 'il conto resta dopo aver cancellato la ricerca');
+    esigiUguale(vuotoCerca.hidden, true, 'il messaggio della ricerca resta dopo averla cancellata');
+    scrivi('zzz');
+    esigiUguale(pulisci.hidden, false, 'il bottone che cancella non compare');
+    pulisci.ascolti.click();
+    esigiUguale(campo.value, '', 'il bottone non cancella il testo');
+    esigiUguale(pulisci.hidden, true, 'il bottone resta a campo vuoto');
   });
 
   await prova('la vetrina non porta nessuna voce nuova nel binario', () => {

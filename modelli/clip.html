@@ -1,39 +1,9 @@
 <!doctype html>
-<!-- Generato il {{sito.generatoIl}} da modelli/clip.html + contenuti/contenuti.json.
-     Non si modifica a mano: si riscrive a ogni pubblicazione (CONTRATTO §6).
 
-     LA PAGINA DI TUTTE LE CLIP. È la seconda pagina del sito, e l'unica: il
-     resto è una pagina sola con sei sezioni. Esiste perché la vetrina in fondo
-     alla «diretta» mostra un assaggio — poche clip, di un periodo deciso nel
-     pannello — e chi vuole guardarsele tutte ha bisogno di due cose che in
-     fondo a una sezione non ci stanno: lo spazio, e il diritto di scegliere
-     da sé il periodo.
-
-     COME FUNZIONA IL FILTRO, e perché funziona così. Il sito è statico: online
-     non c'è nessun programma che risponda alle domande di chi visita, e le
-     chiavi di Twitch non devono arrivare nel browser di nessuno — con quelle si
-     parla a nome del canale. Quindi «e quelle delle ultime 24 ore?» non è una
-     domanda che si possa fare da qui. Alla pubblicazione il server chiede a
-     Twitch le migliori di CIASCUNO dei quattro periodi (server/lib/twitch.js,
-     clipArchivio), le mette tutte dentro questa pagina con la loro data
-     addosso, e js/clip.js nasconde e rimostra quello che è già qui. Nessuna
-     richiesta in rete quando si preme un bottone: il filtro è istantaneo
-     perché non c'è niente da aspettare.
-
-     SENZA JAVASCRIPT la pagina è intera lo stesso: si vedono tutte le clip,
-     che è il periodo più largo, e i bottoni non ci sono affatto — nascono con
-     l'attributo `hidden` e glielo toglie js/clip.js. Quattro bottoni che non
-     fanno niente sarebbero peggio di nessun bottone. -->
 <html lang="it">
 <head>
 {{> parziali/testa-clip}}
 
-<!-- Lo stesso ordine obbligatorio della home (CONTRATTO §3, CONTRATTO-2 §11):
-     tokens.css i valori di partenza, tema.css — generato dal pannello — li
-     riscrive, gli altri li consumano. Qui i fogli sono quattro e non dieci:
-     questa pagina non ha il player, il pollo, la tessera né il lurk, e
-     scaricare quei fogli per non usarli sarebbe peso regalato. base.css serve
-     per il fondo, i caratteri e le primitive (.salta, .sezione__occhiello). -->
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/tema.css">
 <link rel="stylesheet" href="css/base.css">
@@ -49,10 +19,6 @@
 <a class="salta" href="#contenuto">Salta al contenuto</a>
 
 <header class="clip-pagina__testa">
-  <!-- Il modo di tornare indietro. Questa pagina non ha il binario del sito —
-       sei voci che puntano alle sezioni di un'altra pagina, sul telefono
-       diventano una barra fissa in basso — e un link solo, in cima, dice
-       quello che serve sapere: da dove si è arrivati. -->
   <a class="clip-pagina__torna" href="index.html">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
     <span>{{clip.paginaTorna}}</span>
@@ -60,61 +26,47 @@
 
   <p class="sezione__occhiello">{{clip.occhiello}}</p>
   <h1 class="clip-pagina__titolo">{{clip.paginaTitolo}}</h1>
-  <!-- Tripla graffa: campo «ricco», già sanificato in generazione (CONTRATTO-2 §7). -->
   <p class="clip__testo">{{{clip.paginaTesto}}}</p>
 </header>
 
 <main id="contenuto" class="clip-pagina__corpo">
-  <!-- I quattro periodi. `hidden` di partenza: vedi il cappello della pagina.
-       Sono <button>, non link, ed è la differenza che conta: un link promette
-       un indirizzo, questi cambiano quello che si vede e basta. Il gruppo ha
-       la sua etichetta letta ad alta voce, e ogni bottone dice con
-       aria-pressed se è quello acceso — così anche chi non vede il colore sa
-       quale periodo sta guardando.
+  <div class="clip-comandi" data-clip-comandi hidden>
+    <div class="clip-cerca" role="search">
+      <label class="clip-comandi__etichetta" for="clip-cerca">{{clip.cercaEtichetta}}</label>
+      <div class="clip-cerca__campo">
+        <svg class="clip-cerca__icona" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+        <input class="clip-cerca__input" id="clip-cerca" type="search" name="cerca" placeholder="{{clip.cercaSegnaposto}}" maxlength="80" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" data-clip-cerca>
+        <button class="clip-cerca__pulisci" type="button" aria-label="{{clip.cercaPulisci}}" data-clip-pulisci hidden>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </div>
 
-       data-ore è il contratto con js/clip.js: 24, 72, 168, 720. Le ore e non i
-       giorni perché il primo periodo è di ore, e un'unità sola evita di dover
-       decidere, nel browser, se «1» vuol dire un giorno o un'ora. -->
-  <div class="clip-periodi" data-clip-periodi hidden>
-    <p class="clip-periodi__etichetta" id="clip-periodi-etichetta">{{clip.filtroEtichetta}}</p>
-    <div class="clip-periodi__bottoni" role="group" aria-labelledby="clip-periodi-etichetta">
-      <button type="button" class="clip-periodi__bottone" data-ore="24" aria-pressed="false">{{clip.filtro24ore}}</button>
-      <button type="button" class="clip-periodi__bottone" data-ore="72" aria-pressed="false">{{clip.filtro3giorni}}</button>
-      <button type="button" class="clip-periodi__bottone" data-ore="168" aria-pressed="false">{{clip.filtro7giorni}}</button>
-      <!-- L'ultimo è quello acceso quando si arriva: è il periodo più largo,
-           cioè tutto quello che la pagina ha dentro. Si parte dal pieno e si
-           stringe, non dal vuoto. -->
-      <button type="button" class="clip-periodi__bottone" data-ore="720" aria-pressed="true">{{clip.filtro30giorni}}</button>
+    <div class="clip-periodi">
+      <p class="clip-comandi__etichetta" id="clip-periodi-etichetta">{{clip.filtroEtichetta}}</p>
+      <div class="clip-periodi__bottoni" role="group" aria-labelledby="clip-periodi-etichetta">
+        <button type="button" class="clip-periodi__bottone" data-ore="24" aria-pressed="false">{{clip.filtro24ore}}</button>
+        <button type="button" class="clip-periodi__bottone" data-ore="72" aria-pressed="false">{{clip.filtro3giorni}}</button>
+        <button type="button" class="clip-periodi__bottone" data-ore="168" aria-pressed="false">{{clip.filtro7giorni}}</button>
+        <button type="button" class="clip-periodi__bottone" data-ore="720" aria-pressed="true">{{clip.filtro30giorni}}</button>
+      </div>
     </div>
   </div>
 
-  <!-- Il tetto per periodo, quello del pannello: js/clip.js non ne mostra mai
-       più di così alla volta. Sta in un attributo e non nel JavaScript perché
-       è una scelta di chi amministra, e il file js/clip.js è codice, uguale
-       per tutti i siti costruiti con questo programma. -->
+  <p class="clip-conto" data-clip-conto data-uno="{{clip.cercaUna}}" data-tanti="{{clip.cercaTante}}" role="status" aria-live="polite" hidden></p>
+
   <ul class="clip__griglia" data-clip-elenco data-quante="{{clipPagina.quante}}">
     {{#ogni clipPagina.voci}}
-    <!-- data-quando è l'istante in cui la clip è stata ritagliata, in ISO con
-         la Z. È l'unico dato su cui lavora il filtro, ed è assoluto: chi
-         guarda da un altro fuso orario vede lo stesso risultato. -->
-    <li class="clip__voce" data-quando="{{iso}}">{{> parziali/clip-card}}</li>
+    <li class="clip__voce" data-quando="{{iso}}" data-cerca="{{titolo}} {{autore}}">{{> parziali/clip-card}}</li>
     {{/ogni}}
   </ul>
 
-  <!-- Capita davvero, e non è un guasto: in una settimana tranquilla le 24 ore
-       possono essere vuote anche se il mese è pieno. Una riga che lo dice vale
-       più di una pagina che di colpo resta bianca. Lo scopre js/clip.js, che
-       toglie `hidden` quando dopo il filtro non è rimasta in piedi nessuna
-       card. `aria-live` lo fa annunciare a chi usa un lettore di schermo: il
-       bottone l'ha premuto lui, e deve sapere che cos'è successo. -->
   <p class="clip-vuoto" data-clip-vuoto role="status" aria-live="polite" hidden>{{clip.vuoto}}</p>
+  <p class="clip-vuoto" data-clip-cerca-vuoto role="status" aria-live="polite" hidden>{{clip.cercaVuoto}}</p>
 </main>
 
 {{> parziali/piede}}
 
-<!-- Un file solo, differito, senza dipendenze: non c'è window.DATI da
-     aspettare, non c'è l'SDK di Twitch, non c'è niente da montare. Il filtro
-     è l'unica cosa che questa pagina sa fare. -->
 <script src="js/clip.js" defer></script>
 <script src="js/guardia.js" defer></script>
 </body>

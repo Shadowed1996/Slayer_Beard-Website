@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-24T11:27:42.507Z",
+  "aggiornatoIl": "2026-09-24T18:17:28.877Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -39,7 +39,6 @@
     "deck.scorri": "Scendi",
     "diretta.occhiello": "In onda",
     "diretta.titolo": "La diretta",
-    "diretta.testo": "Il canale è qui dentro, alla larghezza giusta. Se sto trasmettendo il player parte da solo; la chat si apre con il bottone sotto allo schermo.",
     "diretta.nota": "Se lo schermo resta nero è quasi sempre il browser: cookie di terze parti bloccati, oppure un'estensione che ferma gli iframe. In quel caso il canale si apre lo stesso su Twitch.",
     "account.entra": "Collegati con Twitch",
     "account.esci": "Scollega e revoca",
@@ -143,6 +142,12 @@
     "clip.filtro7giorni": "7 giorni",
     "clip.filtro30giorni": "30 giorni",
     "clip.vuoto": "Nessuna clip in questo periodo.",
+    "clip.cercaEtichetta": "Cerca",
+    "clip.cercaSegnaposto": "Titolo o autore della clip",
+    "clip.cercaPulisci": "Cancella la ricerca",
+    "clip.cercaUna": "clip trovata",
+    "clip.cercaTante": "clip trovate",
+    "clip.cercaVuoto": "Nessuna clip corrisponde alla ricerca in questo periodo.",
     "musica.titolo": "In sottofondo",
     "musica.play": "Fai partire la musica",
     "musica.pausa": "Metti in pausa",
@@ -581,6 +586,16 @@
         "goal": 0
       },
       {
+        "chiave": "discord",
+        "nome": "Discord",
+        "handle": "Il server della community",
+        "url": "https://discord.gg/6DaQvPNy6",
+        "icona": "discord",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
         "chiave": "youtube",
         "nome": "YouTube",
         "handle": "slayer_beard",
@@ -606,16 +621,6 @@
         "handle": "@slayer_beard",
         "url": "",
         "icona": "telegram",
-        "contatore": "nessuno",
-        "contatoreEtichetta": "Iscritti",
-        "goal": 0
-      },
-      {
-        "chiave": "amazonWishlist",
-        "nome": "Lista dei desideri",
-        "handle": "Amazon",
-        "url": "",
-        "icona": "amazon-wishlist",
         "contatore": "nessuno",
         "contatoreEtichetta": "Iscritti",
         "goal": 0
@@ -676,6 +681,15 @@
         "tag": "Facoltativa",
         "cta": "Fai una donazione",
         "url": ""
+      },
+      {
+        "chiave": "wishlist",
+        "icona": "amazon-wishlist",
+        "titolo": "Wishlist Amazon",
+        "testo": "La mia lista dei desideri su Amazon: se ti va di fare un regalo, puoi scegliere da lì. È solo un pensiero, non serve.",
+        "tag": "Facoltativa",
+        "cta": "Apri la lista",
+        "url": "https://www.amazon.it/hz/wishlist/ls/314FIIX4ZAKI2?ref_=wl_share"
       }
     ],
     "sezioni": [
