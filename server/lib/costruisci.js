@@ -532,6 +532,8 @@ function musicaDi(config, testi) {
     attivo: voce.attivo === true && tracce.length > 0,
     aperto: voce.aperto !== false,
     quante: tracce.length,
+
+    icona: String(voce.icona || '').trim(),
     titolo: testi['musica.titolo'] || '',
     play: testi['musica.play'] || '',
     pausa: testi['musica.pausa'] || '',
@@ -605,6 +607,7 @@ function costruisciContesto(contenuti, opzioni) {
     settimana: settimanaDi(config, testi, adesso),
     clip: clipDi(config, testi),
     clipPagina: clipPaginaDi(config, testi),
+    sponsor: sponsorDi(config, testi, adesso),
     sito: {
       urlCanale: urlCanale,
       urlChat: 'https://www.twitch.tv/popout/' + canale + '/chat',
@@ -627,7 +630,8 @@ function costruisciContesto(contenuti, opzioni) {
 
       sezioni: attive.map((voce) => ({ id: voce.id, attiva: true })),
       attiva: attiva,
-      voci: attive.filter((voce) => voce.id !== 'sondaggio').map((voce) => ({
+
+      voci: attive.filter((voce) => voce.id !== 'sondaggio' && voce.id !== 'sponsor').map((voce) => ({
         id: voce.id,
         chiave: 'nav.' + voce.id,
         testo: typeof testi['nav.' + voce.id] === 'string' ? testi['nav.' + voce.id] : ''
@@ -644,6 +648,16 @@ function costruisciContesto(contenuti, opzioni) {
     canonico: config.sitoUrl ? config.sitoUrl + 'clip.html' : 'clip.html',
     titolo: (testi['clip.paginaTitolo'] || '') + ' · ' + (testi['marchio.nome'] || ''),
     descrizione: presentazioneClip || String(testi['meta.descrizione'] || '')
+  };
+
+  contesto.sito.sponsorInHome = !!(attiva.sponsor && contesto.sponsor.attivo);
+
+  const presentazioneSponsor = testoricco.soloTesto(testi['sponsor.paginaTesto'] || '');
+  contesto.sito.paginaSponsor = {
+    url: 'sponsor.html',
+    canonico: config.sitoUrl ? config.sitoUrl + 'sponsor.html' : 'sponsor.html',
+    titolo: (testi['sponsor.paginaTitolo'] || '') + ' · ' + (testi['marchio.nome'] || ''),
+    descrizione: presentazioneSponsor || String(testi['meta.descrizione'] || '')
   };
 
   if (mancanti.length) {
@@ -761,6 +775,91 @@ function accountDi(config, testi) {
   };
 }
 
+const SPONSOR_NUOVO_GIORNI = 30;
+
+function coloreMarchio(valore) {
+  const pulito = String(valore || '').trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(pulito) ? pulito : '';
+}
+
+function dominioDi(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch (e) {
+    return '';
+  }
+}
+
+function sponsorDi(config, testi, adesso) {
+  const ramo = (config.sponsor && typeof config.sponsor === 'object') ? config.sponsor : {};
+  const grezzi = Array.isArray(ramo.voci) ? ramo.voci : [];
+  const ora = Number.isFinite(adesso) ? adesso : Date.now();
+  const visita = String(testi['sponsor.visita'] || '').trim();
+
+  const voci = [];
+  for (const voce of grezzi) {
+    if (!voce || typeof voce !== 'object') { continue; }
+    const url = String(voce.url || '').trim();
+    const nome = String(voce.nome || '').trim();
+    if (!url || !nome) { continue; }
+
+    const da = istanteItaliano(voce.da);
+    const a = istanteItaliano(voce.a);
+    const colore = coloreMarchio(voce.colore);
+    if (da && ora < da.ms) { continue; }
+    if (a && ora >= a.ms) { continue; }
+
+    voci.push({
+      nome: nome,
+      url: url,
+      logo: String(voce.logo || '').trim(),
+      testo: String(voce.testo || ''),
+      categoria: String(voce.categoria || '').trim(),
+      evidenza: voce.evidenza === true,
+
+      dominio: dominioDi(url),
+
+      colore: colore,
+      stile: colore ? '--marca: ' + colore + ';' : '',
+
+      dalAnno: da ? da.data.slice(0, 4) : '',
+      nuovo: !!(da && ora - da.ms >= 0 && ora - da.ms <= SPONSOR_NUOVO_GIORNI * 86400000),
+      da: da ? da.iso : '',
+      a: a ? a.iso : '',
+
+      visita: visita ? visita + ' ' + nome : nome
+    });
+  }
+
+  voci.sort((x, y) => (y.evidenza ? 1 : 0) - (x.evidenza ? 1 : 0));
+
+  const gruppi = [];
+  const indice = new Map();
+  for (const voce of voci) {
+    const chiave = voce.categoria.toLowerCase();
+    if (!indice.has(chiave)) {
+      indice.set(chiave, gruppi.length);
+      gruppi.push({ titolo: voce.categoria, senza: !voce.categoria, voci: [] });
+    }
+    gruppi[indice.get(chiave)].voci.push(voce);
+  }
+  gruppi.sort((x, y) => (x.senza ? 1 : 0) - (y.senza ? 1 : 0));
+
+  const soloUno = gruppi.length === 1;
+  for (const gruppo of gruppi) {
+    if (gruppo.senza) { gruppo.titolo = String(testi['sponsor.altri'] || ''); }
+
+    gruppo.titolato = !(soloUno && gruppo.senza);
+  }
+
+  return {
+    attivo: ramo.attivo === true && voci.length > 0,
+    voci: voci,
+    gruppi: gruppi,
+    quanti: voci.length
+  };
+}
+
 function lurkDi(config, testi, account) {
   const lurk = (config.lurk && typeof config.lurk === 'object') ? config.lurk : {};
 
@@ -810,6 +909,7 @@ function lurkDi(config, testi, account) {
       statoBloccato: testi['lurk.statoBloccato'] || '',
       statoAttesa: testi['lurk.statoAttesa'] || '',
       chiuso: testi['lurk.chiuso'] || '',
+      manutenzione: testi['lurk.manutenzione'] || '',
       statoResa: testi['lurk.statoResa'] || '',
       statoNiente: testi['lurk.statoNiente'] || '',
       conto: testi['lurk.conto'] || '',
@@ -1006,7 +1106,7 @@ function togliCommenti(html) {
   return fuori + righeVuote(normale);
 }
 
-const FUSO_MANUTENZIONE = 'Europe/Rome';
+const FUSO_ITALIA = 'Europe/Rome';
 const SEGNO_MANUTENZIONE = '<meta name="sb-pagina" content="manutenzione">';
 
 function manutenzioneAttiva(config) {
@@ -1014,13 +1114,13 @@ function manutenzioneAttiva(config) {
     config.manutenzione.attiva === true);
 }
 
-function fineManutenzione(valore) {
+function istanteItaliano(valore) {
   const pezzi = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/.exec(String(valore || '').trim());
   if (!pezzi) { return null; }
-  const ms = SBOrari.istante(pezzi[1], pezzi[2], FUSO_MANUTENZIONE);
+  const ms = SBOrari.istante(pezzi[1], pezzi[2], FUSO_ITALIA);
   if (!Number.isFinite(ms)) { return null; }
-  const data = SBOrari.dataNelFuso(ms, FUSO_MANUTENZIONE);
-  const ora = SBOrari.oraNelFuso(ms, FUSO_MANUTENZIONE);
+  const data = SBOrari.dataNelFuso(ms, FUSO_ITALIA);
+  const ora = SBOrari.oraNelFuso(ms, FUSO_ITALIA);
   const scarto = Math.round((Date.parse(data + 'T' + ora + ':00Z') - ms) / 60000);
   const assoluto = Math.abs(scarto);
   const due = (n) => String(n).padStart(2, '0');
@@ -1033,11 +1133,15 @@ function fineManutenzione(valore) {
 }
 
 function etichettaManutenzione(prima, fine, adesso) {
-  const oggi = SBOrari.dataNelFuso(adesso, FUSO_MANUTENZIONE);
+  const oggi = SBOrari.dataNelFuso(adesso, FUSO_ITALIA);
   if (fine.data === oggi) { return prima + ' alle ' + fine.ora + ' · mancano'; }
   const pezzi = fine.data.split('-');
   const giorno = pezzi[2] + '/' + pezzi[1] + (pezzi[0] === oggi.slice(0, 4) ? '' : '/' + pezzi[0]);
   return prima + ' il ' + giorno + ' alle ' + fine.ora + ' · mancano';
+}
+
+function fineManutenzione(valore) {
+  return istanteItaliano(valore);
 }
 
 function contestoManutenzione(contenuti, adesso, cache) {
@@ -1056,7 +1160,7 @@ function contestoManutenzione(contenuti, adesso, cache) {
     throw erroreHttp(500, 'Mancano le icone della pagina di manutenzione: ' + mancanti.join(', ') + '.');
   }
 
-  const fine = fineManutenzione(ramo.fine);
+  const fine = istanteItaliano(ramo.fine);
   if (!eFile(P.scriptManutenzione)) {
     throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.scriptManutenzione) +
       ': e lo script della pagina di manutenzione.');
@@ -1088,7 +1192,7 @@ function contestoManutenzione(contenuti, adesso, cache) {
     og: String(immagini.og || ''),
     favicon: String(immagini.favicon || ''),
     fontUrl: tema.urlGoogleFonts(config.tema, []),
-    anno: SBOrari.dataNelFuso(adesso, FUSO_MANUTENZIONE).slice(0, 4),
+    anno: SBOrari.dataNelFuso(adesso, FUSO_ITALIA).slice(0, 4),
     conto: !!fine,
     fine: fine ? fine.iso : '',
     etichetta: fine ? etichettaManutenzione(testoDi('manutenzione.contoPrima').trim(), fine, adesso) : '',
@@ -1149,13 +1253,23 @@ function rendi(contenuti, opzioni) {
     clip = togliCommenti(modello.rendiFile(P.modelloClip, contesto,
       { file: 'modelli/clip.html', cartella: P.modelli, cache: cache }));
   }
+
+  let sponsor = null;
+  if (contesto.sponsor.attivo) {
+    if (!eFile(P.modelloSponsor)) {
+      throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.modelloSponsor) +
+        ': e il modello della pagina degli sponsor.');
+    }
+    sponsor = togliCommenti(modello.rendiFile(P.modelloSponsor, contesto,
+      { file: 'modelli/sponsor.html', cartella: P.modelli, cache: cache }));
+  }
   const dati = modello.rendiFile(P.modelloDati, Object.assign({ dati: jsonSicuro(oggettoDati(contenuti, scelte)) }, contesto),
     { file: 'server/modelli/dati.js.tpl', cartella: P.modelli, cache: cache });
 
   const foglio = tema.css(contenuti.config.tema);
   const manutenzione = manutenzioneAttiva(contenuti.config) ? rendiManutenzione(contenuti, scelte) : null;
 
-  return { html: html, clip: clip, dati: dati, tema: foglio, contesto: contesto, manutenzione: manutenzione };
+  return { html: html, clip: clip, sponsor: sponsor, dati: dati, tema: foglio, contesto: contesto, manutenzione: manutenzione };
 }
 
 function anteprima() {
@@ -1300,6 +1414,20 @@ function scriviPaginaClip(html) {
   }
 }
 
+function scriviPaginaSponsor(html) {
+  if (html) {
+    scriviGenerato(P.sponsorHtml, html);
+    return { file: 'sponsor.html', stato: 'scritta', byte: Buffer.byteLength(html, 'utf8') };
+  }
+  if (!eFile(P.sponsorHtml)) { return { file: 'sponsor.html', stato: 'niente', byte: 0 }; }
+  try {
+    fs.unlinkSync(P.sponsorHtml);
+    return { file: 'sponsor.html', stato: 'tolta', byte: 0 };
+  } catch (e) {
+    return { file: 'sponsor.html', stato: 'non tolta', byte: 0, errore: (e && e.message) ? e.message : String(e) };
+  }
+}
+
 function scriviStatoSito(manutenzione, quando) {
   const testo = JSON.stringify({ manutenzione: !!manutenzione, pubblicatoIl: quando || new Date().toISOString() }) + '\n';
   try {
@@ -1332,6 +1460,23 @@ function allineaClipDopoRipristino() {
   }
 }
 
+function allineaSponsorDopoRipristino() {
+  const leggi = (percorso) => {
+    try { return fs.readFileSync(percorso, 'utf8'); } catch (e) { return ''; }
+  };
+  const home = leggi(P.indexHtml);
+  const prima = leggi(P.sponsorHtml);
+  try {
+    if (home.indexOf(SEGNO_MANUTENZIONE) !== -1) {
+      return home === prima ? null : scriviPaginaSponsor(home);
+    }
+    if (prima.indexOf(SEGNO_MANUTENZIONE) === -1) { return null; }
+    return scriviPaginaSponsor(rendi(archivio.leggi()).sponsor);
+  } catch (e) {
+    return { file: 'sponsor.html', stato: 'non allineata', byte: 0, errore: (e && e.message) ? e.message : String(e) };
+  }
+}
+
 function genera(opzioni) {
   const scelte = opzioni || {};
   const inizio = Date.now();
@@ -1360,12 +1505,15 @@ function genera(opzioni) {
   scriviGenerato(P.temaCss, reso.tema);
 
   const paginaClip = scriviPaginaClip(reso.manutenzione || reso.clip);
+  const paginaSponsor = scriviPaginaSponsor(reso.manutenzione || reso.sponsor);
 
   const quando = archivio.salva(contenuti);
   const statoSito = scriviStatoSito(!!reso.manutenzione, quando);
 
-  const mappa = scriviSitemap(controlli.indirizzoSito(contenuti.config), quando,
-    reso.clip ? ['', 'clip.html'] : ['']);
+  const pagine = [''];
+  if (reso.clip) { pagine.push('clip.html'); }
+  if (reso.sponsor) { pagine.push('sponsor.html'); }
+  const mappa = scriviSitemap(controlli.indirizzoSito(contenuti.config), quando, pagine);
 
   return {
     ok: true,
@@ -1374,10 +1522,11 @@ function genera(opzioni) {
     aggiornatoIl: quando,
     sitemap: mappa,
     paginaClip: paginaClip,
+    paginaSponsor: paginaSponsor,
     statoSito: statoSito,
     manutenzione: {
       attiva: !!reso.manutenzione,
-      pagine: reso.manutenzione ? ['index.html', 'clip.html'] : []
+      pagine: reso.manutenzione ? ['index.html', 'clip.html', 'sponsor.html'] : []
     },
     scritti: [
       { file: 'index.html', byte: Buffer.byteLength(pagina, 'utf8') },
@@ -1386,6 +1535,7 @@ function genera(opzioni) {
     ],
     social: reso.contesto.social.length,
     supporto: reso.contesto.supporto.length,
+    sponsor: reso.contesto.sponsor.quanti,
 
     controlli: controlli.controlli(contenuti)
   };
@@ -1393,9 +1543,10 @@ function genera(opzioni) {
 
 module.exports = {
   genera, anteprima, anteprimaDi, anteprimaEditor, anteprimaManutenzione, inManutenzione,
-  allineaClipDopoRipristino, allineaStatoDopoRipristino, fineManutenzione, rendi, costruisciContesto,
+  allineaClipDopoRipristino, allineaSponsorDopoRipristino, allineaStatoDopoRipristino,
+  fineManutenzione, istanteItaliano, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
-  oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, jsonSicuro, chiaviRicche,
+  oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, sponsorDi, jsonSicuro, chiaviRicche,
   orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta,
 
   togliCommenti

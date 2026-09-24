@@ -1,43 +1,9 @@
-/* =====================================================================
-   stili.js — il generatore condiviso dell'editor (CONTRATTO-4 §4, §8).
-
-   Tre rami di contenuti.json non hanno un campo nello schema e li scrive
-   l'editor con controlli suoi: config.sezioni, config.stili e
-   config.disposizione. Da qui escono la loro pulizia e il loro CSS.
-
-   UN file per due posti che devono dire la stessa cosa:
-     - il server (require) lo usa per ripulire i rami prima di salvare e
-       per scrivere <style id="sb-stili"> e <style id="sb-disposizione">
-       nella pagina pubblicata;
-     - il pannello (<script> classico, window.SBStili) lo usa per i
-       gemelli «dal vivo» nell'anteprima, con lo stato non ancora salvato.
-   Se fossero due copie, prima o poi l'anteprima mostrerebbe una cosa e il
-   sito un'altra: con un file solo non può succedere.
-
-   Funzioni pure: niente DOM, niente fs, niente rete. I font e le famiglie
-   del catalogo stanno altrove (server/lib/font.js e tema.js sul server,
-   GET /api/font nel pannello) e arrivano da chi chiama, nelle `opzioni`.
-
-   Difesa in profondità: ogni valore si ricontrolla qui anche se il server
-   l'ha già ripulito. Nel CSS esce solo testo costruito da questo file:
-   selettori da espressioni strette, numeri formattati, parole di elenchi
-   chiusi, percorsi con caratteri sicuri. Dai dati non arrivano mai `<`,
-   `}`, `;`, `\`, virgolette o parentesi.
-   ===================================================================== */
 (function (radice, fabbrica) {
   if (typeof module === 'object' && module.exports) module.exports = fabbrica();
   else radice.SBStili = fabbrica();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  /* ------------------------------------------------------------------ */
-  /* VOCABOLARIO                                                         */
-  /* ------------------------------------------------------------------ */
-
-  /* Congelare le tabelle non è pignoleria: le leggono sette moduli del
-     pannello e il server, e un `.reverse()` o un `.sort()` fatto sul posto
-     da uno di loro cambierebbe l'ordine d'uscita del CSS per tutti gli
-     altri, senza un errore da nessuna parte. */
   function congela(valore) {
     if (valore && typeof valore === 'object' && !Object.isFrozen(valore)) {
       Object.freeze(valore);
@@ -48,27 +14,19 @@
 
   const DISPOSITIVI = congela(['computer', 'tablet', 'telefono']);
 
-  /* Le stesse bande ovunque (§3). 1100 è il confine binario ↔ dock di
-     css/base.css, 760 il primo confine di css/regia.css: un editor che
-     cambiasse aspetto a 768 mostrerebbe un tablet che il sito non ha. */
   const CASCATA = congela({
     tablet: '(max-width: 1099.98px)',
     telefono: '(max-width: 759.98px)'
   });
 
-  /* Fasce ESCLUSIVE, per posizioni e «nascosto». Le posizioni non possono
-     seguire la cascata: un blocco fissato su computer resterebbe fissato
-     anche su telefono, dove il riquadro è largo un terzo. */
   const FASCE = congela({
     telefono: '(max-width: 759.98px)',
     tablet: '(min-width: 760px) and (max-width: 1099.98px)',
     computer: '(min-width: 1100px)'
   });
 
-  // Larghezza dell'iframe dell'anteprima; per computer è il minimo.
   const LARGHEZZE = congela({ telefono: 375, tablet: 900, computer: 1100 });
 
-  // Le chiavi di config.tema.colori e il token che server/lib/tema.js riscrive.
   const COLORI_TEMA = congela({
     viola: '--viola',
     violaCupo: '--viola-cupo',
@@ -84,46 +42,29 @@
     testoTenue: '--testo-tenue'
   });
 
-  const SEZIONI = congela(['binario', 'regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti', 'piede']);
-  const SEZIONI_ORDINABILI = congela(['regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti']);
+  const SEZIONI = congela(['binario', 'regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti', 'sponsor', 'piede']);
+  const SEZIONI_ORDINABILI = congela(['regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti', 'sponsor']);
 
-  /* `regia` è la copertina e contiene l'unico <h1>: una pagina che comincia
-     da un'altra sezione, o senza <h1>, è un'altra pagina. */
   const SEZIONE_BLOCCATA = 'regia';
 
-  /* Mai `diretta` (il player non si sposta né si copre, CONTRATTO-3 §3.4)
-     e mai `binario` (è position: fixed, un blocco assoluto lì dentro si
-     misurerebbe sulla finestra). */
-  const RIQUADRI = congela(['regia', 'settimana', 'chi', 'supporto', 'saluti', 'piede']);
+  const RIQUADRI = congela(['regia', 'settimana', 'chi', 'supporto', 'saluti', 'sponsor', 'piede']);
 
-  /* Niente occlusione del player (CONTRATTO-3 §3.4): display:none e
-     opacity:0 sono i due modi di spegnere un player lasciandolo «acceso» per
-     Twitch, una larghezza massima lo porta sotto i 400×300 px. Per questi
-     bersagli le tre proprietà non esistono. Margine e riempimento restano,
-     dentro limiti più stretti (LATI_PROTETTI): un margine negativo tira il
-     monitor sotto la sezione di prima o ci fa scivolare sopra quella dopo, un
-     riempimento grande stringe lo spazio del player dentro il suo riquadro. */
   const PROTETTI = congela(['sezione:diretta', 'parte:monitor']);
   const VIETATE_AI_PROTETTI = congela(['nascosto', 'opacita', 'larghezzaMax']);
   const LATI_PROTETTI = congela({ margine: { min: 0 }, riempimento: { max: 40 } });
 
   const MAX_BERSAGLI = 1000;
 
-  // Un tetto per i blocchi di un riquadro: ne servono 2-5, cinquanta è già abuso.
   const MAX_BLOCCHI = 50;
-  // `y` e `a` sono in percentuale della LARGHEZZA: su telefono una sezione è
-  // alta parecchie volte la sua larghezza, per questo il tetto non è 100.
+
   const MAX_VERTICALE = 2000;
 
-  /* Bersagli. Ogni chiave finisce dentro un selettore fra virgolette
-     doppie: le espressioni ammettono solo lettere, cifre, punto e trattino,
-     quindi niente può uscire dalle virgolette. */
   const TIPI_BERSAGLIO = {
     testo: /^[a-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/,
     immagine: /^config\.immagini\.[a-z][A-Za-z0-9]*$/,
     parte: /^[a-z][a-z0-9-]{0,40}$/,
     blocco: /^[a-z][a-z0-9-]{0,40}\.[a-z][a-z0-9-]{0,40}$/,
-    sezione: null            // elenco chiuso: SEZIONI
+    sezione: null
   };
   const ATTRIBUTI = {
     testo: 'data-sb-testo',
@@ -132,32 +73,13 @@
     blocco: 'data-sb-blocco',
     sezione: 'data-sb-sezione'
   };
-  // Le chiavi dello schema sono corte; il tetto evita solo selettori mostruosi.
+
   const MAX_LUNGHEZZA_BERSAGLIO = 200;
 
   const TUTTI = ['testo', 'immagine', 'parte', 'blocco', 'sezione'];
   const SENZA_IMMAGINE = ['testo', 'parte', 'blocco', 'sezione'];
   const CONTENITORI = ['parte', 'blocco', 'sezione'];
 
-  /* Le proprietà, NELL'ORDINE in cui escono nel CSS. Sono anche il
-     contratto dei controlli della scheda Stile: min, max, passo e valori si
-     leggono da qui, così un cursore non può offrire un numero che il
-     generatore poi stringe.
-
-     tipo:
-       colore       '#rrggbb' oppure 'var:<chiave di COLORI_TEMA>'
-       immagine     percorso img/… o contenuti/media/…, oppure 'nessuna'
-       scelta       una delle parole di `valori` (valore → css)
-       font         'ruolo:<slot>' | 'famiglia:<nome>' | 'caricato:<id>'
-       misura       { valore, unita } con i limiti per unità in `unita`
-       numero       numero stretto a [min, max], arrotondato a `decimali`
-       interruttore booleano, `valori` dice cosa esce nel CSS
-       lati         { sopra, destra, sotto, sinistra }, ciascuno facoltativo
-       visibilita   booleano per dispositivo, fuori dalla cascata (nascosto)
-
-     `tipi` è un'indicazione per la scheda Stile (a quali bersagli ha senso
-     offrirla); il generatore non la applica, perché un colore del testo su
-     un'immagine non fa danni, al massimo non fa niente. */
   const PROPRIETA = congela([
     { nome: 'colore', css: 'color', tipo: 'colore', etichetta: 'Colore del testo', gruppo: 'colori', tipi: SENZA_IMMAGINE },
     { nome: 'sfondoColore', css: 'background-color', tipo: 'colore', etichetta: 'Colore di sfondo', gruppo: 'colori', tipi: TUTTI },
@@ -218,14 +140,7 @@
       min: 0, max: 200, passo: 1, decimali: 2, unita: 'px' },
     { nome: 'opacita', css: 'opacity', tipo: 'numero', etichetta: 'Opacità', gruppo: 'effetti', tipi: TUTTI,
       min: 0, max: 100, passo: 1, decimali: 0, unita: '%' },
-    /* I token --bagliore-* di tokens.css valgono «0 0 24px rgba(…)»: tre
-       lunghezze e un colore, che è una forma valida anche per text-shadow
-       (e tema.js li riscrive sempre così). Sul testo si usa text-shadow,
-       che segue le lettere e non crea un nuovo blocco contenitore; su
-       un'immagine text-shadow non disegna niente, quindi lì si usa
-       filter: drop-shadow(), che segue la sagoma del PNG. Sui contenitori
-       filter NON si usa: un antenato con filter diventa il riferimento dei
-       figli posizionati e fissi, e sposterebbe blocchi e pollo. */
+
     { nome: 'bagliore', css: 'text-shadow', tipo: 'scelta', etichetta: 'Bagliore', gruppo: 'effetti', tipi: TUTTI,
       valori: [
         { valore: 'nessuno', css: 'none', etichetta: 'Nessuno' },
@@ -251,9 +166,9 @@
   const RE_PERCORSO_IMMAGINE = /^(img|contenuti\/media)\/[A-Za-z0-9._\/-]+\.(png|jpe?g|webp|svg|gif|avif)$/i;
   const RE_ID_FONT = /^[0-9a-f]{16}$/;
   const RE_FILE_FONT = /^[A-Za-z0-9_-]{1,64}\.(woff2|woff|ttf|otf)$/;
-  // Il nome finisce fra apici in font-family: solo lettere, cifre e spazi.
+
   const RE_NOME_FAMIGLIA = /^[A-Za-z0-9][A-Za-z0-9 ]{0,59}$/;
-  // Lo stack di ripiego del catalogo: nomi, apici singoli, virgole, trattini.
+
   const RE_RIPIEGO = /^[A-Za-z0-9 ,'-]{1,200}$/;
   const RE_BASE = /^[A-Za-z0-9._\/-]{0,100}$/;
   const FORMATI_FONT = { woff2: 'woff2', woff: 'woff', truetype: 'truetype', opentype: 'opentype', ttf: 'truetype', otf: 'opentype' };
@@ -266,13 +181,6 @@
     return (v && typeof v === 'object' && !Array.isArray(v)) ? v : null;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* NUMERI                                                              */
-  /* ------------------------------------------------------------------ */
-
-  /* Un numero vero, o una stringa che è solo un numero: i campi dei form
-     danno stringhe, e rifiutare «72» perché non è 72 non aiuta nessuno.
-     «72px», «1e3», «0x10» invece no. */
   function numero(valore) {
     let n = NaN;
     if (typeof valore === 'number') n = valore;
@@ -283,7 +191,7 @@
   function arrotonda(n, decimali) {
     const k = Math.pow(10, decimali || 0);
     const r = Math.round(n * k) / k;
-    return r === 0 ? 0 : r;           // niente -0, che nel CSS uscirebbe «-0»
+    return r === 0 ? 0 : r;
   }
 
   function stringi(valore, min, max, decimali, passo) {
@@ -294,7 +202,6 @@
     return arrotonda(n, decimali);
   }
 
-  /** Numero per il CSS: mai notazione esponenziale, niente zeri finali. */
   function formatta(n, decimali) {
     const d = decimali === undefined ? 2 : decimali;
     const r = arrotonda(Number(n), d);
@@ -303,11 +210,6 @@
     return testo.indexOf('.') === -1 ? testo : testo.replace(/\.?0+$/, '');
   }
 
-  /* ------------------------------------------------------------------ */
-  /* BERSAGLI                                                            */
-  /* ------------------------------------------------------------------ */
-
-  /** 'testo:deck.titolo' -> { tipo: 'testo', chiave: 'deck.titolo' }, oppure null. */
   function leggiBersaglio(id) {
     if (typeof id !== 'string' || id.length > MAX_LUNGHEZZA_BERSAGLIO) return null;
     const taglio = id.indexOf(':');
@@ -317,12 +219,11 @@
     if (!propria(TIPI_BERSAGLIO, tipo)) return null;
     if (tipo === 'sezione') return SEZIONI.indexOf(chiave) !== -1 ? { tipo: tipo, chiave: chiave } : null;
     if (!TIPI_BERSAGLIO[tipo].test(chiave)) return null;
-    // Un blocco sta nel suo riquadro: `chi.corpo` fuori da RIQUADRI non esiste.
+
     if (tipo === 'blocco' && RIQUADRI.indexOf(chiave.slice(0, chiave.indexOf('.'))) === -1) return null;
     return { tipo: tipo, chiave: chiave };
   }
 
-  /** '[data-sb-testo="deck.titolo"]', oppure null se l'id non è un bersaglio. */
   function selettoreDi(id) {
     const b = leggiBersaglio(id);
     return b ? '[' + ATTRIBUTI[b.tipo] + '="' + b.chiave + '"]' : null;
@@ -331,10 +232,6 @@
   function protetto(id) {
     return PROTETTI.indexOf(id) !== -1;
   }
-
-  /* ------------------------------------------------------------------ */
-  /* VALORI                                                              */
-  /* ------------------------------------------------------------------ */
 
   function chiama(funzione, argomento) {
     if (typeof funzione !== 'function') return undefined;
@@ -349,9 +246,6 @@
     return null;
   }
 
-  /* Si rifiuta invece di aggiustare: un percorso con uno spazio o una
-     barra rovesciata vuol dire che qualcuno l'ha scritto a mano, e
-     indovinare cosa intendeva è peggio che non mostrare l'immagine. */
   function pulisciImmagine(valore) {
     if (typeof valore !== 'string') return null;
     if (valore === 'nessuna') return valore;
@@ -366,10 +260,6 @@
     return null;
   }
 
-  /* Senza la funzione di ricerca il valore resta se la forma è giusta:
-     un server che per un attimo non vede la libreria dei font non deve
-     cancellare le scelte di chi amministra. Con la funzione, un font che
-     non esiste più si scarta. */
   function pulisciFont(valore, opzioni) {
     if (typeof valore !== 'string') return null;
     const taglio = valore.indexOf(':');
@@ -399,17 +289,13 @@
     return n === null ? null : { valore: n, unita: o.unita };
   }
 
-  /* `limiti` sono quelli dei protetti ({ min } o { max }): un lato fuori si
-     SCARTA invece di essere stretto al bordo. Stringerlo scriverebbe un
-     «margine 0» o un «riempimento 40» che chi amministra non ha chiesto, e
-     toglierebbe il valore del sito. */
   function pulisciLati(definizione, valore, limiti) {
     const o = oggetto(valore);
     if (!o) return null;
     const fuori = {};
     let qualcuno = false;
     LATI.forEach(function (coppia) {
-      if (!propria(o, coppia[0])) return;          // lato assente: non si tocca
+      if (!propria(o, coppia[0])) return;
       if (limiti) {
         const grezzo = numero(o[coppia[0]]);
         if (grezzo !== null && ((limiti.min !== undefined && grezzo < limiti.min) || (limiti.max !== undefined && grezzo > limiti.max))) return;
@@ -422,14 +308,6 @@
     return qualcuno ? fuori : null;
   }
 
-  /**
-   * Una proprietà ripulita, oppure null se va scartata.
-   * @param {string|null} bersaglio  'sezione:diretta' ecc.; null = nessun
-   *   bersaglio preciso (vale la regola della proprietà e basta)
-   * @param {string} proprieta  un `nome` di PROPRIETA
-   * @param {*} valore
-   * @param {object} [opzioni]  { famiglia(nome), font(id) }
-   */
   function pulisciValore(bersaglio, proprieta, valore, opzioni) {
     if (typeof proprieta !== 'string' || !propria(PER_NOME, proprieta)) return null;
     let id = null;
@@ -457,11 +335,6 @@
     }
   }
 
-  /**
-   * config.stili ripulito. Non lancia mai: un bersaglio sbagliato si
-   * scarta e gli altri restano. Dispositivi e proprietà escono nell'ordine
-   * di DISPOSITIVI e PROPRIETA, i vuoti spariscono.
-   */
   function pulisciStili(stili, opzioni) {
     const fuori = {};
     const origine = oggetto(stili);
@@ -484,9 +357,7 @@
           if (!propria(valori, d.nome)) return;
           const v = pulisciValore(id, d.nome, valori[d.nome], opzioni);
           if (v === null) return;
-          /* «nascosto: false» su computer è quello che succede comunque:
-             salvarlo sarebbe rumore. Su tablet e telefono invece vuol dire
-             «qui mostralo», anche se un dispositivo più grande lo nasconde. */
+
           if (d.tipo === 'visibilita' && v === false && dispositivo === 'computer') return;
           puliti[d.nome] = v;
           piena = true;
@@ -498,12 +369,6 @@
     return fuori;
   }
 
-  /**
-   * Il valore di una proprietà a un dispositivo, con la stessa cascata del
-   * CSS: telefono ← tablet ← computer.
-   * @param {object} voce  config.stili['<bersaglio>']
-   * @returns {{ valore: *, da: string } | null}  null se nessun dispositivo lo imposta
-   */
   function risolvi(voce, dispositivo, proprieta) {
     const v = oggetto(voce);
     const partenza = DISPOSITIVI.indexOf(dispositivo);
@@ -516,10 +381,6 @@
     }
     return null;
   }
-
-  /* ------------------------------------------------------------------ */
-  /* FONT                                                                */
-  /* ------------------------------------------------------------------ */
 
   function voceFamiglia(nome, opzioni) {
     const voce = oggetto(chiama(opzioni && opzioni.famiglia, nome));
@@ -538,21 +399,11 @@
     return RE_BASE.test(base) ? base : '';
   }
 
-  /* `formato` è la parola di format() del CSS. Se manca o è strana si
-     ricava dall'estensione: con format('ttf') il browser scarterebbe la
-     sorgente senza dirlo. */
   function formatoDi(voce) {
     if (typeof voce.formato === 'string' && propria(FORMATI_FONT, voce.formato)) return FORMATI_FONT[voce.formato];
     return FORMATI_FONT[voce.file.slice(voce.file.lastIndexOf('.') + 1)];
   }
 
-  /**
-   * L'@font-face di un font caricato (§4.4). Esportata perché tema.js
-   * scriva la stessa regola in css/tema.css, con base '../'.
-   * @param {{ id, file, formato }} voce
-   * @param {object} [opzioni]  { base: '' }
-   * @returns {string} '' se la voce non è valida
-   */
   function fontFace(voce, opzioni) {
     const v = oggetto(voce);
     if (!v || typeof v.id !== 'string' || !RE_ID_FONT.test(v.id) || typeof v.file !== 'string' || !RE_FILE_FONT.test(v.file)) return '';
@@ -562,10 +413,6 @@
       '  font-display: swap;\n' +
       '}';
   }
-
-  /* ------------------------------------------------------------------ */
-  /* CSS DEGLI STILI                                                     */
-  /* ------------------------------------------------------------------ */
 
   function coloreCss(v) {
     return v.indexOf('var:') === 0 ? 'var(' + COLORI_TEMA[v.slice(4)] + ')' : v;
@@ -578,10 +425,6 @@
     return null;
   }
 
-  /**
-   * Le dichiarazioni (senza rientro) di un gruppo di proprietà già pulite.
-   * `raccolta` tiene i font caricati usati, per gli @font-face in testa.
-   */
   function dichiarazioni(bersaglio, valori, opzioni, raccolta) {
     const fuori = [];
     function metti(proprieta, valore) { fuori.push(proprieta + ': ' + valore + ' !important;'); }
@@ -615,12 +458,12 @@
             metti(d.css, 'var(--font-' + resto + ')');
           } else if (specie === 'famiglia') {
             const voce = voceFamiglia(resto, opzioni);
-            if (!voce) break;                  // senza catalogo si salta
+            if (!voce) break;
             const ripiego = typeof voce.ripiego === 'string' && RE_RIPIEGO.test(voce.ripiego) ? voce.ripiego : 'var(--font-testo)';
             metti(d.css, '\'' + voce.nome + '\', ' + ripiego);
           } else if (specie === 'caricato') {
             const voce = voceFont(resto, opzioni);
-            if (!voce) break;                  // senza libreria si salta
+            if (!voce) break;
             metti(d.css, '\'sb-' + resto + '\', var(--font-testo)');
             if (!propria(raccolta.visti, resto)) {
               raccolta.visti[resto] = true;
@@ -638,9 +481,7 @@
             metti(d.css, formatta(v / 100, 2));
           } else {
             metti(d.css, formatta(v, d.decimali) + d.unita);
-            /* Un bordo senza stile non si vede: senza `solid` il cursore
-               dello spessore non farebbe niente sugli elementi che un bordo
-               non ce l'hanno già. */
+
             if (d.nome === 'bordoSpessore' && v > 0) metti('border-style', 'solid');
           }
           break;
@@ -650,17 +491,12 @@
           });
           break;
         default:
-          break;                               // visibilita: vedi blocchiNascosto
+          break;
       }
     });
     return fuori;
   }
 
-  /* «Nascosto» non segue la cascata: display:none non si annulla da una
-     media query più stretta senza sapere che display aveva l'elemento
-     (block? flex? grid?). Esce allora solo nelle fasce esclusive in cui il
-     valore EFFETTIVO è vero, e un false su tablet o telefono fa ricomparire
-     l'elemento lì semplicemente non scrivendo niente. */
   function blocchiNascosto(puliti, bersagli) {
     const fuori = [];
     ['computer', 'tablet', 'telefono'].forEach(function (fascia) {
@@ -675,22 +511,6 @@
     return fuori;
   }
 
-  /**
-   * Il CSS di <style id="sb-stili"> e del suo gemello dal vivo.
-   *
-   * Formato: in testa gli @font-face dei font caricati usati; poi le regole
-   * di computer senza media query; poi @media (max-width: 1099.98px) per
-   * tablet e @media (max-width: 759.98px) per telefono; in fondo i blocchi
-   * di «nascosto» a fasce esclusive (computer, tablet, telefono). Dentro
-   * ogni blocco i bersagli nell'ordine delle chiavi di config.stili; ogni
-   * dichiarazione con !important, una per riga; rientro di 2 spazi, 4
-   * dentro le media query; blocchi separati da un a capo, nessun a capo in
-   * fondo.
-   *
-   * @param {object} stili  config.stili
-   * @param {object} [opzioni]  { famiglia(nome), font(id), base }
-   * @returns {string} '' se non c'è niente da scrivere
-   */
   function stiliCss(stili, opzioni) {
     const puliti = pulisciStili(stili, opzioni);
     const bersagli = Object.keys(puliti);
@@ -721,13 +541,8 @@
     return raccolta.regole.concat(blocchi).join('\n');
   }
 
-  /* ------------------------------------------------------------------ */
-  /* DISPOSIZIONE                                                        */
-  /* ------------------------------------------------------------------ */
-
   const RE_BLOCCO = /^[a-z][a-z0-9-]{0,40}\.[a-z][a-z0-9-]{0,40}$/;
 
-  /** { x, y, l, a } ripulito, oppure null se un campo non è un numero. */
   function pulisciRettangolo(valore) {
     const o = oggetto(valore);
     if (!o) return null;
@@ -739,13 +554,6 @@
     return { x: x, y: y, l: l, a: a };
   }
 
-  /**
-   * config.disposizione ripulito: riquadri di RIQUADRI (nel loro ordine),
-   * blocchi con l'id giusto e il prefisso del riquadro, il primo di ogni id
-   * ripetuto, `pos` con esattamente i tre dispositivi. Un rettangolo
-   * sbagliato diventa null, cioè «nel flusso»: il blocco non si butta, il
-   * sito torna com'era per quel dispositivo.
-   */
   function pulisciDisposizione(disposizione) {
     const blocchi = oggetto(oggetto(disposizione) && disposizione.blocchi);
     const fuori = {};
@@ -772,21 +580,6 @@
     return { blocchi: fuori };
   }
 
-  /**
-   * Il CSS di <style id="sb-disposizione">, esattamente la regola
-   * geometrica del §4.3. Il motore dell'editor chiama questa stessa
-   * funzione: il testo del sito e quello dell'anteprima sono uguali al byte
-   * perché sono lo stesso codice.
-   *
-   * Ordine: fasce telefono → tablet → computer, poi i riquadri nell'ordine
-   * di RIQUADRI, poi i blocchi nell'ordine dell'elenco.
-   *
-   * @param {object} disposizione  config.disposizione
-   * @param {object} [opzioni]  { presente(riquadro, id) -> boolean }: i blocchi
-   *   per cui dice false si saltano (la pagina non li ha: una regola per un
-   *   blocco assente allungherebbe il riquadro per niente)
-   * @returns {string} '' se nessun blocco ha una posizione
-   */
   function disposizioneCss(disposizione, opzioni) {
     const presente = opzioni && typeof opzioni.presente === 'function' ? opzioni.presente : null;
     const blocchi = pulisciDisposizione(disposizione).blocchi;
@@ -809,8 +602,6 @@
         });
         if (!messi.length) return;
 
-        // aspect-ratio dà al riquadro l'altezza che i blocchi assoluti non
-        // gli danno più; i blocchi rimasti nel flusso possono allungarlo.
         let m = 1;
         messi.forEach(function (p) { m = Math.max(m, p.r.y + p.r.a); });
         const riq = '[data-sb-riquadro="' + riquadro + '"]';
@@ -842,17 +633,6 @@
     return fuori.join('\n');
   }
 
-  /* ------------------------------------------------------------------ */
-  /* SEZIONI                                                             */
-  /* ------------------------------------------------------------------ */
-
-  /**
-   * config.sezioni normalizzato (§4.1): sempre le sei sezioni ordinabili,
-   * una volta sola, `regia` prima e attiva. Un id sconosciuto si scarta, un
-   * doppione vale la prima volta, un id mancante torna in coda attivo:
-   * una sezione si spegne con attiva:false, non togliendola dall'elenco,
-   * così un file vecchio e un file monco danno la pagina intera.
-   */
   function pulisciSezioni(sezioni) {
     const origine = Array.isArray(sezioni) ? sezioni : [];
     const visti = {};
@@ -862,7 +642,7 @@
       const id = voce && typeof voce.id === 'string' ? voce.id.trim() : '';
       if (SEZIONI_ORDINABILI.indexOf(id) === -1 || propria(visti, id)) continue;
       visti[id] = true;
-      // Un valore che non è un booleano non spegne niente: nel dubbio si mostra.
+
       fuori.push({ id: id, attiva: typeof voce.attiva === 'boolean' ? voce.attiva : true });
     }
     SEZIONI_ORDINABILI.forEach(function (id, i) {

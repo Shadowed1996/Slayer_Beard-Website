@@ -1,34 +1,3 @@
-/* =====================================================================
-   parti.js — parti guidate dai dati, sezioni e Navigatore
-   (CONTRATTO-4 §11.3).
-
-   Nella scheda Contenuto del pannello disegna:
-     - l'ispettore di una PARTE (`data-sb-parte`): i campi dello schema che
-       il registro del §5.4 le assegna, disegnati con ponte.creaCampo; la
-       schedule (CONTRATTO-5 §8) si apre sulla vista della parte (nastro o
-       eventi), e nella parte «stato» compare solo come riepilogo;
-     - l'ispettore di una SEZIONE (`data-sb-sezione`): «Mostra questa
-       sezione», gli interruttori delle parti che la diretta può non
-       stampare, «Cosa contiene» e «Testi che non si vedono in pagina»,
-       letti dall'anteprima vera;
-   e fornisce il Navigatore delle sezioni, `disegnaNavigatore(contenitore)`.
-
-   I nomi umani stanno in nomi.js e solo lì. Qui non c'è la definizione di
-   nessun campo: etichette, tipi e aiuti arrivano dallo schema attraverso
-   il ponte.
-
-   Due trappole già viste a Mobscene93, e il motivo di metà del codice:
-     1. il pannello ridisegna gli ispettori a ogni ricarica dell'anteprima.
-        Un elenco rifatto da capo mentre ci si scrive dentro perde il fuoco
-        a metà parola. Il nodo di una parte (e di una sezione) si tiene da
-        parte e si rimette al suo posto finché i dati sono gli stessi
-        oggetti; si butta dopo sb:sostituito, o quando uno dei suoi campi
-        cambia da un'altra parte del pannello mentre non era a video;
-     2. il riquadro in cui si disegna è condiviso con il resto della
-        scheda: non si svuota mai, si aggiunge o si sostituisce solo il
-        proprio nodo.
-   ===================================================================== */
-
 import { ponte } from './ponte.js';
 import { motore } from './motore.js';
 import {
@@ -37,25 +6,15 @@ import {
 } from './nomi.js';
 import { el, svuota, idUnico } from '../moduli/dom.js';
 
-/* Chi cerca dove sta un campo (la ricerca del guscio) può prendere il
-   registro anche da qui: la fonte resta nomi.js. */
 export { REGISTRO_PARTI, PARTI_REGISTRATE, chiaviParte, partiDellaChiave } from './nomi.js';
 
-/* ------------------------------------------------------------- costanti */
+const SEZIONI_DI_PARTENZA = ['regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti', 'sponsor'];
 
-/* Il §4.1 alla lettera. Si usa solo se pannello/condivisi/stili.js non
-   c'è: con SBStili caricato comandano le sue costanti e la sua pulizia,
-   così pannello e generazione non possono pensarla in due modi. */
-const SEZIONI_DI_PARTENZA = ['regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti'];
-
-/* La copertina contiene l'unico <h1>: sempre prima, sempre accesa. */
 const BLOCCATA = 'regia';
 
-/* Binario e piede non stanno in config.sezioni: ci sono sempre. */
 const FISSA_IN_CIMA = 'binario';
 const FISSA_IN_FONDO = 'piede';
 
-/* Le parti della diretta che la generazione può non stampare affatto. */
 const INTERRUTTORI_DIRETTA = ['config.account.attivo', 'config.lurk.attivo', 'config.pollo.attivo', 'config.clip.attivo'];
 
 const FRASI_BLOCCATE = {
@@ -64,10 +23,6 @@ const FRASI_BLOCCATE = {
   piede: 'Sempre presente: chiude la pagina con copyright e avvertenze, quindi non si spegne e non si sposta.'
 };
 
-/* ------------------------------------------------------------- foglio */
-
-/* Il foglio arriva con il modulo: se il guscio lo collega già in
-   index.html non si aggiunge un doppione. */
 function collegaFoglio() {
   if (typeof document === 'undefined' || !document.head) return;
   const presente = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
@@ -79,14 +34,10 @@ function collegaFoglio() {
   document.head.append(legame);
 }
 
-/* ------------------------------------------------------------- utilità */
-
 function avvisaGuasto(dove, errore) {
   console.warn('[parti] ' + dove + ':', errore);
 }
 
-/* Il motore è di un altro agente e può lanciare: un guasto lì dentro non
-   deve portarsi via il Navigatore o la scheda. */
 function chiamaMotore(nome, ...argomenti) {
   const funzione = motore && motore[nome];
   if (typeof funzione !== 'function') return undefined;
@@ -110,15 +61,12 @@ function eNodo(valore) {
   return Boolean(valore) && typeof valore === 'object' && typeof valore.appendChild === 'function';
 }
 
-/* La firma del motore è fn(riquadro, meta). Se un giorno arrivassero al
-   contrario la scheda funziona lo stesso invece di restare vuota. */
 function argomenti(primo, secondo) {
   if (eNodo(primo)) return [primo, secondo];
   if (eNodo(secondo)) return [secondo, primo];
   return [null, null];
 }
 
-/** Il nostro nodo di un certo tipo dentro un contenitore condiviso. */
 function proprio(contenitore, tipo) {
   for (const figlio of Array.from(contenitore.children)) {
     if (figlio.dataset && figlio.dataset.parti === tipo) return figlio;
@@ -138,7 +86,6 @@ function metti(contenitore, tipo, nodo) {
   else contenitore.append(nodo);
 }
 
-/** Vero se una modifica a `chiave` riguarda uno dei campi elencati. */
 function tocca(chiavi, chiave) {
   const cambiata = String(chiave || '');
   if (!cambiata) return true;
@@ -160,9 +107,6 @@ function estratto(testo, massimo) {
   return pulito.length > massimo ? pulito.slice(0, massimo - 1).trim() + '…' : pulito;
 }
 
-/* Icone disegnate qui e non prese dallo sprite di index.html: lo sprite è
-   del guscio e non ha occhio sbarrato, lucchetto e maniglia. Tratto da
-   1,8 come le icone del pannello. */
 const NS_SVG = 'http://www.w3.org/2000/svg';
 const TRACCE = {
   occhio: ['M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z', 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z'],
@@ -200,8 +144,6 @@ function testa(occhiello, titolo, frase, idTitolo) {
   ]);
 }
 
-/* Un campo dello schema disegnato dal pannello, o null. Il controllo si
-   registra da solo nell'indice degli errori del guscio. */
 function campoDelloSchema(chiave) {
   const definizione = ponte.campo(chiave);
   if (!definizione) return null;
@@ -214,11 +156,6 @@ function campoDelloSchema(chiave) {
   }
 }
 
-/* ------------------------------------------- fuoco fra un disegno e l'altro */
-
-/* Si ricorda dove si stava scrivendo dentro un nodo tenuto da parte, per
-   rimettere il fuoco (e il cursore) quando il nodo esce e rientra nel
-   pannello. Un'uscita voluta — clic altrove — fa dimenticare. */
 function seguiFuoco(voce) {
   const ricorda = (evento) => {
     const bersaglio = evento.target;
@@ -229,7 +166,7 @@ function seguiFuoco(voce) {
         ? [bersaglio.selectionStart, bersaglio.selectionEnd]
         : null;
     } catch {
-      voce.cursore = null;   // input di tipo numero o ora: il cursore non si legge
+      voce.cursore = null;
     }
   };
   voce.radice.addEventListener('focusin', ricorda);
@@ -239,7 +176,7 @@ function seguiFuoco(voce) {
   voce.radice.addEventListener('focusout', (evento) => {
     const uscito = evento.target;
     setTimeout(() => {
-      // Nodo staccato: è il ridisegno, non una scelta di chi scrive.
+
       if (uscito.isConnected && voce.fuoco === uscito && document.activeElement !== uscito) voce.fuoco = null;
     }, 0);
   });
@@ -249,7 +186,7 @@ function rimettiFuoco(voce) {
   const bersaglio = voce.fuoco;
   if (!bersaglio || !bersaglio.isConnected || !voce.radice.contains(bersaglio)) return;
   const attivo = document.activeElement;
-  // Se nel frattempo il fuoco l'ha preso qualcos'altro, si lascia dov'è.
+
   if (attivo && attivo !== document.body && attivo !== document.documentElement && attivo.isConnected && attivo !== bersaglio) return;
   try {
     bersaglio.focus({ preventScroll: true });
@@ -257,11 +194,9 @@ function rimettiFuoco(voce) {
       bersaglio.setSelectionRange(voce.cursore[0], voce.cursore[1]);
     }
   } catch {
-    /* campi che non accettano un cursore: basta il fuoco */
+
   }
 }
-
-/* ------------------------------------------------ sezioni: i dati */
 
 function stiliCondivisi() {
   return typeof window !== 'undefined' && window.SBStili ? window.SBStili : null;
@@ -275,9 +210,6 @@ function sezioniOrdinabili() {
   return SEZIONI_DI_PARTENZA.slice();
 }
 
-/* La stessa regola di pulisciSezioni (§4.1), per quando stili.js manca:
-   id sconosciuti via, doppioni al primo, mancanti accesi dopo chi li precede, la
-   copertina prima e accesa comunque sia scritto l'elenco. */
 function pulisciLocale(grezze) {
   const ammesse = sezioniOrdinabili();
   const viste = new Set();
@@ -299,7 +231,6 @@ function pulisciLocale(grezze) {
   return ammesse.includes(BLOCCATA) ? [{ id: BLOCCATA, attiva: true }, ...senzaCopertina] : senzaCopertina;
 }
 
-/** L'elenco delle sezioni ordinabili com'è adesso, sempre in forma pulita e mai lo stesso oggetto della bozza. */
 function leggiSezioni() {
   const grezze = ponte.leggi('config.sezioni');
   const condivisi = stiliCondivisi();
@@ -316,9 +247,6 @@ function leggiSezioni() {
   return pulisciLocale(grezze);
 }
 
-/* Ordine e visibilità cambiano la pagina intera (binario, link, ordine di
-   main): la modifica è strutturale e il guscio ricarica l'anteprima. Si
-   scrive sempre un elenco nuovo, mai quello della bozza ritoccato. */
 function scriviSezioni(sezioni) {
   ponte.scrivi('config.sezioni', sezioni.map((v) => ({ id: v.id, attiva: v.attiva !== false })), { strutturale: true });
 }
@@ -338,8 +266,6 @@ function impostaSezione(id, accesa) {
   return true;
 }
 
-/* Il tratto dell'elenco in cui una sezione si può muovere: la bloccata non
-   si sposta e non si scavalca. */
 function intervalloLibero(sezioni, indice) {
   if (!sezioni[indice] || sezioni[indice].id === BLOCCATA) return [indice, indice];
   let primo = indice;
@@ -360,17 +286,9 @@ function spostaSezione(da, a) {
   return true;
 }
 
-/* --------------------------------------------- la schedule nelle parti */
-
-/* Dalla schedule (CONTRATTO-5 §8.3) la stessa chiave, config.orari, si
-   modifica da due parti: il nastro apre la vista della settimana, gli
-   eventi quella degli eventi speciali. Nella parte «stato» della copertina
-   c'è solo un riepilogo con il bottone che porta al nastro. */
 const VISTA_DELLA_PARTE = { nastro: 'settimana', eventi: 'eventi' };
 const CHIAVE_ORARI = 'config.orari';
 
-/* Il riepilogo sta in moduli/settimana.js, che si carica a parte: se non
-   arriva, la parte «stato» resta com'era, con il solo bottone. */
 let moduloSettimana = null;
 function caricaSettimana() {
   if (!moduloSettimana) {
@@ -416,9 +334,7 @@ function apriSchedule() {
   ponte.avviso('Il nastro della settimana adesso non è nell\'anteprima (la sezione è nascosta o la pagina si sta aggiornando). Riaccendi «La settimana» dal Navigatore, oppure cerca «Schedule» con Ctrl+K.', { tipo: 'info', durata: 7000 });
 }
 
-/* ----------------------------------------------- ispettore di una parte */
-
-const cacheParti = new Map();   // nome -> { radice, dati, schema, chiavi, orari, fuoco, cursore }
+const cacheParti = new Map();
 
 function costruisciParte(nome) {
   const schema = schemaCorrente();
@@ -467,15 +383,11 @@ function mettiParte(contenitore, nome) {
 
   if (!riusabile) {
     voce = costruisciParte(nome);
-    // Prima del caricamento dei contenuti non si tiene niente da parte: i
-    // campi disegnati a vuoto andrebbero rifatti comunque.
+
     if (ponte.pronto && voce.completa) cacheParti.set(nome, voce);
     else cacheParti.delete(nome);
   }
 
-  // Il nodo entra adesso nel pannello (la parte è appena stata scelta), non
-  // è il ridisegno dopo una ricarica dell'anteprima: la schedule si apre
-  // sulla vista della parte. Dopo una ricarica resta dov'era chi lavora.
   const entra = !voce.radice.isConnected;
   metti(contenitore, 'parte', voce.radice);
   if (entra && voce.orari && typeof voce.orari.apriVista === 'function' && VISTA_DELLA_PARTE[nome]) {
@@ -500,19 +412,12 @@ function ispettoreParte(primo, secondo) {
   return mettiParte(riquadro, nome);
 }
 
-/**
- * I campi di una parte in un contenitore qualunque, anche quando la parte
- * non è nell'anteprima (il pollo spento, la ricerca di un campo che sta lì).
- * Non svuota il contenitore. -> il nodo disegnato
- */
 export function disegnaParte(contenitore, nome) {
   if (!eNodo(contenitore)) return null;
   return mettiParte(contenitore, String(nome || ''));
 }
 
-/* ---------------------------------------------- ispettore di una sezione */
-
-const cacheSezioni = new Map();   // id -> { radice, dati, schema, vis, contiene, nascosti, … }
+const cacheSezioni = new Map();
 
 function controlloVisibilita(id) {
   const nodo = el('div', { classe: 'parti__vis' });
@@ -536,8 +441,6 @@ function controlloVisibilita(id) {
   const etichetta = el('span', { classe: 'parti__vis-etichetta', id: idEtichetta, testo: 'Mostra questa sezione' });
   const stato = el('p', { classe: 'parti__vis-stato', role: 'status', 'aria-live': 'polite' });
 
-  // L'etichetta è uno <span>: il clic sopra deve fare quello che uno si
-  // aspetta da una <label>.
   etichetta.addEventListener('click', () => leva.click());
 
   const aggiorna = () => {
@@ -547,8 +450,7 @@ function controlloVisibilita(id) {
     const testo = accesa
       ? 'Si vede sul sito. L\'ordine delle sezioni si cambia dal Navigatore: menu ☰ → Struttura della pagina.'
       : 'Nascosta: sparisce dalla pagina, dal menu laterale e dai link che la puntano. Il sito pubblicato cambia quando pubblichi.';
-    // Una regione live riletta a ogni disegno annuncerebbe la stessa frase
-    // a ogni ricarica dell'anteprima.
+
     if (stato.textContent !== testo) stato.textContent = testo;
   };
 
@@ -557,8 +459,7 @@ function controlloVisibilita(id) {
     if (!impostaSezione(id, accesa)) { aggiorna(); return; }
     aggiorna();
     if (!accesa) {
-      // Spenta, la sezione esce dall'anteprima e con lei questa scheda:
-      // si dice subito dove si riaccende, prima che sparisca.
+
       ponte.avviso('«' + nomeSezione(id) + '» è nascosta. Per riaccenderla usa l\'occhio nel Navigatore (menu ☰ → Struttura della pagina).', { tipo: 'info', durata: 7000 });
     }
   });
@@ -588,13 +489,11 @@ function interruttoriDiretta() {
   };
 }
 
-/** Parti, blocchi, testi e immagini di una sezione, letti dall'anteprima. */
 function raccogli(elSezione) {
   const trovati = { parti: [], blocchi: [], testi: [] };
   if (!elSezione || typeof elSezione.querySelectorAll !== 'function') return trovati;
   const visti = new Set();
-  // Una sezione dentro l'altra oggi non c'è; se arrivasse, ognuna elenca
-  // solo quello che è suo.
+
   const suo = (nodo) => {
     const sezione = nodo.closest('[data-sb-sezione]');
     return !sezione || sezione === elSezione;
@@ -671,8 +570,7 @@ function gruppoVoci(titolo, voci, pieghevole) {
   const elenco = el('ul', { classe: 'parti__voci' }, voci.map(bottoneVoce));
   const conta = el('span', { classe: 'parti__conta', testo: String(voci.length) });
   if (pieghevole) {
-    // Una sezione come «Chi sono» ha una trentina di testi: aperti tutti
-    // sarebbero un muro fra l'interruttore e il resto.
+
     const piega = el('details', { classe: 'parti__gruppo parti__gruppo--piega' }, [
       el('summary', { classe: 'parti__gruppo-titolo' }, [titolo, conta]),
       elenco
@@ -690,8 +588,7 @@ function aggiornaContiene(voce, elSezione) {
   const trovati = raccogli(elSezione);
   const firma = JSON.stringify(trovati);
   if (firma === voce.firmaContiene) return;
-  // I bottoni si rifanno solo se è cambiato qualcosa: altrimenti chi ci è
-  // arrivato con Tab perderebbe il posto a ogni ricarica dell'anteprima.
+
   const piegate = new Map(Array.from(voce.contiene.querySelectorAll('details')).map((d) => [d.querySelector('summary').firstChild.textContent, d.open]));
   voce.firmaContiene = firma;
   svuota(voce.contiene);
@@ -716,8 +613,6 @@ function aggiornaContiene(voce, elSezione) {
   );
 }
 
-/* I campi del gruppo della sezione che nell'anteprima non hanno un
-   marcatore e non stanno in una parte: si possono cambiare solo da qui. */
 function chiaviNascoste(id, documento) {
   const gruppo = ponte.gruppo(gruppoDellaSezione(id));
   if (!gruppo || !documento || typeof documento.querySelectorAll !== 'function') return [];
@@ -815,9 +710,7 @@ function ispettoreSezione(primo, secondo) {
   }
 
   voce.vis.aggiorna();
-  // Durante una ricarica il motore passa ancora l'elemento della pagina
-  // vecchia, già staccato: contenuto e marcatori si rileggono quando c'è
-  // quella nuova, e intanto resta a video l'ultima lettura buona.
+
   const elSezione = meta.el;
   if (elSezione && (elSezione.isConnected || !voce.letta)) {
     aggiornaContiene(voce, elSezione);
@@ -830,18 +723,12 @@ function ispettoreSezione(primo, secondo) {
   return voce.radice;
 }
 
-/* ------------------------------------------------------------ Navigatore */
-
 const navigatori = [];
 
-/* Dopo uno spostamento o una riaccensione dal Navigatore l'anteprima si
-   ricarica restando dov'era: la sezione toccata può finire fuori vista, e
-   la si porta sotto gli occhi appena la pagina nuova è pronta. */
 let daMostrare = '';
 
 function annuncia(nav, messaggio) {
-  // Svuotare e riscrivere dopo un attimo: la stessa frase due volte di
-  // fila, altrimenti, un lettore di schermo non la ripete.
+
   nav.annuncio.textContent = '';
   setTimeout(() => { nav.annuncio.textContent = messaggio; }, 40);
 }
@@ -879,9 +766,7 @@ function vaiAllaSezione(id) {
 function bottonePrincipale(id, numero, accesa) {
   const nome = nomeSezione(id);
   const idCosa = idUnico('navigatore-cosa');
-  // Il nome accessibile è il solo nome della sezione: la descrizione, letta
-  // tutta dentro il nome del bottone, farebbe sei frasi lunghe di fila a
-  // chi scorre l'elenco con un lettore di schermo. Resta come descrizione.
+
   return el('button', {
     type: 'button', classe: 'navigatore__principale',
     dati: { riga: id, azione: 'vai' },
@@ -932,8 +817,7 @@ function riga(nav, sezioni, voce, indice) {
       annuncia(nav, '«' + nome + '» non può andare oltre: ' + (verso < indice ? 'sopra c\'è la copertina, che resta prima.' : 'è già l\'ultima.'));
       return;
     }
-    // Il fuoco si prenota prima di scrivere: la scrittura emette
-    // sb:modifica e il Navigatore si ridisegna subito, dentro questa chiamata.
+
     nav.fuocoDopo = { riga: id, azione };
     if (!spostaSezione(indice, verso)) { nav.fuocoDopo = null; return; }
     daMostrare = id;
@@ -1014,7 +898,7 @@ function riga(nav, sezioni, voce, indice) {
 }
 
 function dipingi(nav, forza) {
-  if (nav.trascina) return;   // mai sotto il dito: si ridisegna a fine trascinamento
+  if (nav.trascina) return;
   if (!ponte.pronto || !datiCorrenti()) {
     nav.firma = null;
     svuota(nav.elenco);
@@ -1046,8 +930,7 @@ function dipingi(nav, forza) {
   if (rimetti) {
     const cerca = (azione) => nav.elenco.querySelector('[data-riga="' + rimetti.riga + '"][data-azione="' + azione + '"]');
     let bersaglio = cerca(rimetti.azione);
-    // Una freccia arrivata al bordo si spegne: il fuoco passa alla maniglia
-    // della stessa riga invece di cadere sul fondo della pagina.
+
     if (!bersaglio || bersaglio.disabled) bersaglio = cerca('maniglia') || cerca('vai');
     if (bersaglio) bersaglio.focus({ preventScroll: true });
   }
@@ -1057,13 +940,10 @@ function aggiornaNavigatori(forza) {
   for (const nav of navigatori) dipingi(nav, forza);
 }
 
-/* Trascinamento con mouse, penna o dito. La maniglia cattura il puntatore,
-   quindi il trascinamento continua anche uscendo dalla riga. */
 function avviaTrascinamento(nav, evento, indice, maniglia) {
   if (evento.button !== undefined && evento.button !== 0) return;
   const sezioni = leggiSezioni();
-  // Una riga per voce di config.sezioni, copertina compresa: l'indice della
-  // riga è lo stesso dell'elenco, e il tratto libero esclude la copertina.
+
   const righe = Array.from(nav.elenco.querySelectorAll(':scope > li[data-indice]'));
   const rigaPresa = righe[indice];
   if (!rigaPresa) return;
@@ -1079,7 +959,6 @@ function avviaTrascinamento(nav, evento, indice, maniglia) {
     return rettangolo.top + rettangolo.height / 2;
   };
 
-  /* Chi supera la metà di una riga libera ne prende il posto. */
   const destinazione = (y) => {
     let verso = stato.da;
     for (let j = stato.da + 1; j <= ultimo; j += 1) if (y > centro(righe[j])) verso = j;
@@ -1087,8 +966,6 @@ function avviaTrascinamento(nav, evento, indice, maniglia) {
     return verso;
   };
 
-  /* La linea d'arrivo è un bordo sulla riga di destinazione, non un
-     elemento in più: le righe non saltano sotto il puntatore. */
   const segnaArrivo = () => {
     for (const r of righe) delete r.dataset.arrivo;
     if (stato.a !== stato.da) righe[stato.a].dataset.arrivo = stato.a > stato.da ? 'dopo' : 'prima';
@@ -1097,7 +974,7 @@ function avviaTrascinamento(nav, evento, indice, maniglia) {
   const muovi = (ev) => {
     if (ev.pointerId !== stato.puntatore) return;
     if (!stato.attivo) {
-      if (Math.abs(ev.clientY - stato.inizioY) < 5) return;   // un clic tremolante non è un trascinamento
+      if (Math.abs(ev.clientY - stato.inizioY) < 5) return;
       stato.attivo = true;
       nav.trascina = stato;
       rigaPresa.dataset.trascina = '1';
@@ -1116,7 +993,7 @@ function avviaTrascinamento(nav, evento, indice, maniglia) {
     maniglia.removeEventListener('pointerup', su);
     maniglia.removeEventListener('pointercancel', annulla);
     maniglia.removeEventListener('keydown', esc, true);
-    try { maniglia.releasePointerCapture(stato.puntatore); } catch { /* già rilasciato */ }
+    try { maniglia.releasePointerCapture(stato.puntatore); } catch {}
     for (const r of righe) delete r.dataset.arrivo;
     delete rigaPresa.dataset.trascina;
     delete nav.radice.dataset.trascina;
@@ -1145,24 +1022,16 @@ function avviaTrascinamento(nav, evento, indice, maniglia) {
     fine(false);
   };
 
-  try { maniglia.setPointerCapture(evento.pointerId); } catch { /* senza cattura funziona finché il puntatore resta sulla maniglia */ }
+  try { maniglia.setPointerCapture(evento.pointerId); } catch {}
   maniglia.addEventListener('pointermove', muovi);
   maniglia.addEventListener('pointerup', su);
   maniglia.addEventListener('pointercancel', annulla);
   maniglia.addEventListener('keydown', esc, true);
 }
 
-/**
- * Il Navigatore delle sezioni dentro `contenitore`, che non si svuota:
- * binario in cima e piede in fondo fissi, le sei sezioni con maniglia,
- * occhio, su e giù. Chiamarlo di nuovo sullo stesso contenitore ridisegna
- * quello che c'è invece di aggiungerne un secondo. -> il nodo del Navigatore
- */
 export function disegnaNavigatore(contenitore) {
   if (!eNodo(contenitore)) return null;
 
-  // Chi ridisegna una vista chiama di nuovo questa funzione: i Navigatori
-  // rimasti fuori dalla pagina non servono più.
   for (let i = navigatori.length - 1; i >= 0; i -= 1) {
     const vecchio = navigatori[i];
     if (!vecchio.radice.isConnected && vecchio.radice.parentNode !== contenitore) navigatori.splice(i, 1);
@@ -1191,24 +1060,19 @@ export function disegnaNavigatore(contenitore) {
   return radice;
 }
 
-/* --------------------------------------------------------------- eventi */
-
-/* Una parte spenta dal suo stesso ispettore esce dall'anteprima alla
-   ricarica, e la scheda sparirebbe con lei: si porta chi l'ha spenta
-   sulla diretta, dove c'è l'interruttore per riaccenderla. */
 const PARTE_DELL_INTERRUTTORE = {
   'config.account.attivo': 'account',
   'config.lurk.attivo': 'lurk',
   'config.pollo.attivo': 'pollo',
   'config.clip.attivo': 'clip'
 };
-let ritorno = null;   // { da: 'parte:pollo', a: 'sezione:diretta' }
+let ritorno = null;
 
 function riportaSeServe() {
   if (!ritorno) return;
   const meta = chiamaMotore('selezione');
   if (meta && meta.id !== ritorno.da && meta.el && meta.el.isConnected) { ritorno = null; return; }
-  if (meta && meta.id === ritorno.da && meta.el && meta.el.isConnected) return;   // la parte c'è ancora: la pagina nuova non è arrivata
+  if (meta && meta.id === ritorno.da && meta.el && meta.el.isConnected) return;
   const destinazione = ritorno.a;
   ritorno = null;
   chiamaMotore('seleziona', destinazione);
@@ -1218,8 +1082,6 @@ document.addEventListener('sb:modifica', (evento) => {
   const dettaglio = evento.detail || {};
   const chiave = typeof dettaglio.chiave === 'string' ? dettaglio.chiave : '';
 
-  // Un campo cambiato altrove mentre il nodo di una parte o di una sezione
-  // non era a video: quel nodo mostra ancora il valore vecchio, si butta.
   for (const [nome, voce] of cacheParti) {
     if (!voce.radice.isConnected && tocca(voce.chiavi, chiave)) cacheParti.delete(nome);
   }
@@ -1238,7 +1100,7 @@ document.addEventListener('sb:modifica', (evento) => {
 });
 
 document.addEventListener('sb:sostituito', () => {
-  // Dati nuovi: tutto quello che era tenuto da parte li mostra vecchi.
+
   cacheParti.clear();
   cacheSezioni.clear();
   ritorno = null;
@@ -1251,10 +1113,6 @@ document.addEventListener('sb:pronto', () => {
   aggiornaNavigatori(true);
 });
 
-/* Dopo una ricarica il guscio non ridisegna la scheda se il fuoco è nel
-   pannello (chi sta usando un interruttore non deve perderlo): «Cosa
-   contiene» e i testi senza marcatore si rileggono qui dalla pagina nuova,
-   sullo stesso nodo, così una parte appena spenta sparisce dall'elenco. */
 function rileggiSezioniAVideo() {
   const documento = chiamaMotore('documento');
   if (!documento || typeof documento.querySelectorAll !== 'function') return;
@@ -1271,8 +1129,7 @@ function rileggiSezioniAVideo() {
 }
 
 document.addEventListener('sb:anteprima-pronta', () => {
-  // Un giro di eventi dopo: il motore ritrova la selezione nella pagina
-  // nuova durante lo stesso evento, e qui serve sapere com'è finita.
+
   setTimeout(() => {
     riportaSeServe();
     rileggiSezioniAVideo();
@@ -1284,8 +1141,6 @@ document.addEventListener('sb:anteprima-pronta', () => {
     navigatori.forEach(segnaCorrente);
   }, 0);
 });
-
-/* ---------------------------------------------------------- registrazione */
 
 function registra() {
   if (!motore || typeof motore.registraIspettore !== 'function') {

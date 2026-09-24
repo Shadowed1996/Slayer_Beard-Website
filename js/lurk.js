@@ -1,133 +1,40 @@
-/* =====================================================================
-   lurk.js — AGENTE L · la modalità lurk
-
-   Due blocchi distinti che non si mescolano (CONTRATTO-3 §0):
-
-     A — SESSIONE VIVA. Sorveglia il video e lo fa ripartire quando il
-         browser lo ferma. Nessun login, nessun token. È l'unica parte
-         che agisce sul meccanismo giusto: Twitch conta uno spettatore
-         finché il video gira, anche mutato e anche in secondo piano
-         (docs/PRESENZA-TWITCH.md §1.1). Quando i lurker spariscono non
-         è per un timeout AFK — che non esiste — ma perché la sessione
-         video è morta (§1.4).
-
-     B — MESSAGGIO DI LURK. A lurk acceso e con l'utente collegato,
-         un messaggio in chat a nome suo all'accensione e poi uno ogni
-         tot minuti (dal pannello), con le frasi a rotazione. È la Strada B2 del
-         §6.3, prima esclusa e poi voluta dal committente: la deroga e
-         i suoi rischi sono scritti nel CONTRATTO-3 §4.1. Questo blocco
-         nasce spento e resta spento finché non ci sono un profilo del
-         sito acceso e almeno una frase.
-
-   IL LOGIN NON STA PIÙ QUI. Il collegamento con Twitch è diventato il
-   profilo del sito — js/account.js, window.Account — e vale su tutto il
-   sito anche col messaggio in chat spento. Qui dentro non c'è più nessun
-   token, nessuna finestrella e nessuna revoca: si chiede ad Account chi
-   è collegato e si usa il suo token per l'unica richiesta che serve.
-   Prima era il contrario, e col messaggio spento non esisteva nemmeno il
-   modo di collegarsi.
-
-   CINQUE COSE VALGONO PER TUTTO IL FILE
-
-   1. Si disinnesca da solo: senza #lurk, senza window.DATI.lurk o con
-      `attivo` falso non costruisce niente e non tocca niente.
-   2. MAI attivazione automatica. La scelta si ricorda in localStorage,
-      ma alla riapertura il pannello dice «l'avevi lasciata accesa» e
-      aspetta un clic: il sito non fa ripartire da solo un meccanismo
-      che riavvia il player sul computer di qualcun altro.
-   3. SOLO A CANALE ACCESO, e senza eccezioni. A diretta spenta non
-      esiste nessuna sessione da tenere viva: l'interruttore non si può
-      nemmeno premere, e se la diretta finisce mentre il lurk è acceso
-      il lurk si spegne da sé. Insistere vorrebbe dire riavviare a vuoto
-      il player di qualcun altro — vedi `fuoriOndaCerto()`, che è il
-      punto in cui si distingue «la diretta è finita» da «il nostro
-      video si è fermato», che sono esattamente i due casi opposti.
-   4. I sei freni e il tetto del riavvio vivono dentro js/player.js, non
-      qui (CONTRATTO-3 §3.3). Qui si interpreta soltanto la risposta di
-      Player.riparti(): 'ripartito', 'niente', 'impossibile'.
-   5. Il limite di durata del §3.5 NON è opzionale: è ciò che separa
-      questa funzione da un miner di punti canale. Dopo `oreMax` ore si
-      chiede «ci sei ancora?» e senza risposta si spegne tutto.
-
-   INDICE
-     1. Dati e costanti
-     2. Micro-aiuti
-     3. Il pannello: salute, spia, contatore
-     4. Gli iscritti a window.Lurk
-     5. A — la sentinella: quattro gradini, nessuno decisivo da solo
-     6. A — il riavvio a livelli
-     7. A — accensione, spegnimento, memoria della scelta
-     8. A — lo schermo acceso (wake lock)
-     9. A — il limite di durata: «ci sei ancora?»
-    10. Il canale acceso: l'unica condizione in cui tutto questo ha senso
-    11. B — l'invio del messaggio, col token del profilo del sito
-    12. B — la frase e il suo preavviso
-    13. I comandi
-    14. API pubblica — window.Lurk
-    15. Avvio
-   ===================================================================== */
 (function () {
   'use strict';
 
-  /* ------------------------------------------------------------------
-     1. Dati e costanti
-     ------------------------------------------------------------------
-     Tutto arriva da window.DATI.lurk, che lo genera server/lib/costruisci.js
-     con la funzione lurkDi(). Le invarianti sono già imposte in generazione
-     (CONTRATTO-3 §6.4), ma js/dati.js è un file che si può modificare a mano
-     dopo la generazione: un freno che vive solo dove non gira non è un freno,
-     quindi qui si rifanno tutti i controlli.
-     ------------------------------------------------------------------ */
   const DATI = window.DATI || {};
   const LURK = DATI.lurk || null;
   const TWITCH = DATI.twitch || {};
   const MESSAGGIO = (LURK && LURK.messaggio) || {};
   const PROFILO = DATI.account || {};
 
-  // È il broadcaster_id della richiesta di invio: senza, il blocco B non ha
-  // un canale a cui parlare e resta spento.
   const BROADCASTER = String(TWITCH.idUtente || '').trim();
 
-  // Diretta condivisa (campo «Diretta condivisa in corso» nel pannello):
-  // player e canale restano sempre i propri, quindi BROADCASTER non cambia —
-  // serve solo a mettere l'etichetta davanti al messaggio, per chi legge una
-  // chat unita a quella di un altro canale.
   const DIRETTA_CONDIVISA = TWITCH.direttaCondivisa === true;
   const ETICHETTA_CONDIVISA = '[LURKO DA SLAYER_BEARD] ';
 
-  // Memoria della scelta, e l'unica cosa che questo file scrive: è una
-  // preferenza, quindi localStorage. Del token non si occupa più nessuno qui
-  // dentro — sta in sessionStorage, dentro js/account.js, e muore con la
-  // scheda (CONTRATTO-3 §4.3).
   const CHIAVE_ACCESO = 'sb-lurk-acceso';
 
-  const SENTINELLA = 20000;      // un giro ogni 20 s, e solo a pagina visibile
-  const BATTITO = 1000;          // il contatore, il limite di durata, l'orologio
-  const BUFFERING_MAX = 3;       // tre cicli di fila (~60 s) prima di chiamarlo stallo
-  const FERMI_MAX = 2;           // due cicli col tempo che non cresce
-  const SESSIONE_BUONA = 60000;  // sopra questa soglia il riavvio è riuscito davvero
-  const ATTESE = [5000, 15000, 45000, 120000];   // 5 s, 15 s, 45 s, 2 min, poi resa
+  const CHIAVE_SOSPESO = 'sb-lurk-sospeso';
 
-  const ATTESA_PRESENZA = 300000;   // cinque minuti per rispondere a «ci sei?»
-  const DURATA_AVVISO = 7000;       // quanto resta un messaggio al posto dello stato
+  const SENTINELLA = 20000;
+  const BATTITO = 1000;
+  const BUFFERING_MAX = 3;
+  const FERMI_MAX = 2;
+  const SESSIONE_BUONA = 60000;
+  const ATTESE = [5000, 15000, 45000, 120000];
 
-  const FRENO_INVIO = 60000;     // un invio al minuto, e comunque uno per volta
+  const ATTESA_PRESENZA = 300000;
+  const DURATA_AVVISO = 7000;
 
-  // Ogni quanto parte il messaggio da solo, a lurk acceso (CONTRATTO-3 §4.1).
-  // Lo sceglie il pannello (config.lurk.minutiFraMessaggi, 2..120, di serie
-  // 10) e qui si ristringe comunque, come oreMax: dati.js si può ritoccare a
-  // mano. Si misura sull'orologio dentro battito(), non con un setInterval
-  // suo: in secondo piano i timer vengono rallentati, e un intervallo che
-  // scatta in ritardo non deve poi recuperare mandando due messaggi di fila.
+  const FRENO_INVIO = 60000;
+
   const MINUTI_INVIO = (function () {
     const m = Number(MESSAGGIO.minuti);
     return isFinite(m) ? Math.min(120, Math.max(2, Math.round(m))) : 10;
   }());
   const CADENZA_INVIO = MINUTI_INVIO * 60000;
-  const RIPROVA_INVIO = 60000;   // un invio automatico andato male si riprova dopo un minuto
+  const RIPROVA_INVIO = 60000;
 
-  // Nessun testo di stato è indispensabile: se il pannello è stato pubblicato
-  // con un campo vuoto è meglio una frase di ripiego che una riga muta.
   const TESTI = {};
   const RIPIEGHI = {
     accendi: 'Attiva la modalità lurk',
@@ -144,6 +51,7 @@
     statoBloccato: 'Il browser ha bloccato la riproduzione: tocca il player.',
     statoAttesa: 'Il canale è fuori onda: non c’è niente da tenere vivo.',
     chiuso: 'Il canale è andato fuori onda: ho spento la modalità lurk.',
+    manutenzione: 'Il sito va in manutenzione: ho spento la modalità lurk.',
     statoResa: 'Non ci riesco più. Ricarica la pagina.',
     statoNiente: 'Da qui non posso: non ho i comandi del player.',
     conto: 'Viva da {durata}',
@@ -154,7 +62,6 @@
     inviato: 'Fatto: il messaggio è in chat.'
   };
 
-  // I sette stati del §3.5 più `niente`, che è il caso «non ho i comandi».
   const TESTO_DI = {
     spento: 'statoSpento',
     vivo: 'statoVivo',
@@ -166,9 +73,6 @@
     niente: 'statoNiente'
   };
 
-  // I motivi per cui Twitch scarta un messaggio pur rispondendo 200. Sono cose
-  // che il visitatore può risolvere, quindi si traducono: un codice grezzo in
-  // pagina non aiuta nessuno (CONTRATTO-3 §4.4).
   const MOTIVI = {
     msg_duplicate: 'Twitch blocca due messaggi identici di fila: prova con un’altra frase.',
     msg_followers_only: 'La chat accetta solo chi segue il canale da un po’: segui il canale e riprova.',
@@ -189,7 +93,6 @@
   const comandi = {};
   const iscritti = [];
 
-  // Lo stato che window.Lurk pubblica. È l'unica fonte: niente si legge dal DOM.
   const vivo = {
     acceso: false,
     salute: 'spento',
@@ -201,45 +104,41 @@
     inviati: 0
   };
 
-  let inOnda = false;         // lo dice Player.suStato, non si deduce dal DOM
-  let vivoDa = 0;             // da quando il video regge: serve ad azzerare i tentativi
+  let inOnda = false;
+  let inManutenzione = false;
+  let sospeso = false;
+  let vivoDa = 0;
 
   let timerSentinella = null;
   let timerBattito = null;
   let timerRiavvio = null;
   let timerAvviso = null;
 
-  let buffering = 0;          // cicli consecutivi in Buffering
-  let fermi = 0;              // cicli consecutivi col tempo che non cresce
-  let ultimoTempo = null;     // ultimo getCurrentTime() utile, oppure null
-  let tentativo = 0;          // indice dentro ATTESE
+  let buffering = 0;
+  let fermi = 0;
+  let ultimoTempo = null;
+  let tentativo = 0;
   let inRiavvio = false;
 
-  let vuoleSchermo = false;   // l'utente ha CHIESTO lo schermo acceso
-  let presaSchermo = null;    // WakeLockSentinel, quando c'è
+  let vuoleSchermo = false;
+  let presaSchermo = null;
 
-  let chiestoPresenza = 0;    // quando è comparso «ci sei ancora?»
-  let ultimaPresenza = 0;     // ultima conferma di presenza (o accensione)
+  let chiestoPresenza = 0;
+  let ultimaPresenza = 0;
 
   let ultimaFrase = '';
-  let fraseProssima = '';   // la frase che partira alla prossima accensione
+  let fraseProssima = '';
   let ultimoInvio = 0;
-  let ultimoAutomatico = 0;   // l'ultimo messaggio partito col lurk acceso; 0 = nessuno
-  let invioAutomatico = false; // l'invio in corso l'ha fatto partire la cadenza
-  let erroreInvio = '';       // perché l'ultimo messaggio non è partito; '' = è partito
-  let mazzo = [];             // le frasi ancora da dire in questo giro di rotazione
+  let ultimoAutomatico = 0;
+  let invioAutomatico = false;
+  let erroreInvio = '';
+  let mazzo = [];
   let inVolo = false;
 
-  /* ------------------------------------------------------------------
-     2. Micro-aiuti — tutto protetto: dove il browser può lanciare, si tace
-     ------------------------------------------------------------------ */
   function frase(valore, ripiego) {
     return (typeof valore === 'string' && valore.trim()) ? valore.trim() : ripiego;
   }
 
-  // I parametri non si chiamano `testo` apposta: più sotto `testo()` è la
-  // funzione che pesca le etichette, e un parametro omonimo la coprirebbe
-  // proprio dentro le due funzioni che costruiscono i nodi.
   function crea(tag, classe, contenuto) {
     const n = document.createElement(tag);
     if (classe) { n.className = classe; }
@@ -254,18 +153,26 @@
     return b;
   }
 
-  // In navigazione privata l'accesso allo storage può lanciare da solo, prima
-  // ancora di leggere: è il motivo per cui pollo.js avvolge anche il get.
   function daLocale(chiave) {
     try { return localStorage.getItem(chiave); } catch (err) { return null; }
   }
 
   function inLocale(chiave, valore) {
-    try { localStorage.setItem(chiave, valore); } catch (err) { /* si perde la memoria, non la funzione */ }
+    try { localStorage.setItem(chiave, valore); } catch (err) {}
   }
 
-  // «1h 12m» sopra l'ora, «12m» sotto, «45s» nel primo minuto: le tre scale
-  // che servono, senza mai stampare uno zero che non dice niente.
+  function daSessione(chiave) {
+    try { return sessionStorage.getItem(chiave); } catch (err) { return null; }
+  }
+
+  function inSessione(chiave, valore) {
+    try { sessionStorage.setItem(chiave, valore); } catch (err) {}
+  }
+
+  function scordaSessione(chiave) {
+    try { sessionStorage.removeItem(chiave); } catch (err) {}
+  }
+
   function durata(ms) {
     const totale = Math.max(0, Math.floor(ms / 1000));
     const ore = Math.floor(totale / 3600);
@@ -279,8 +186,6 @@
     return TESTI[nome] || '';
   }
 
-  // Il player può non esserci affatto (script bloccato, ordine cambiato): ogni
-  // accesso passa di qui e nessuno di questi metodi è dato per scontato.
   function player(metodo) {
     const P = window.Player;
     return (P && typeof P[metodo] === 'function') ? P : null;
@@ -292,38 +197,20 @@
     try { return P.diagnostica(); } catch (err) { return null; }
   }
 
-  // Il blocco A esiste solo con l'SDK: con l'iframe manuale (quasi sempre un
-  // adblock che filtra embed.twitch.tv) non ci sono né eventi né play(), e un
-  // interruttore che promette di tenere viva la sessione sarebbe una bugia.
-  // Si decide QUI, una volta, invece di scoprirlo al primo clic: player.js
-  // fissa `modalita` dentro montaPlayer(), che gira prima di questo file.
   function comandiPronti() {
     const d = diagnostica();
     return !!(d && d.modalita === 'sdk' && player('riparti'));
   }
 
-  // Il profilo del sito (js/account.js). Può non esserci affatto — script
-  // bloccato, profilo spento nel pannello — e allora il blocco A funziona
-  // uguale: non ha mai avuto bisogno di un account.
   function account() {
     const A = window.Account;
     return (A && A.attivo === true) ? A : null;
   }
 
-  /* ------------------------------------------------------------------
-     3. Il pannello: salute, spia, contatore
-     ------------------------------------------------------------------
-     La salute va in data-salute su #lurk, dove css/lurk.css la legge per
-     colorare la pastiglia. Il testo va in #lurk-stato con textContent: i
-     testi di stato sono di tipo `testo` e non `ricco` proprio per questo
-     (CONTRATTO-3 §6.2), quindi eventuale HTML resterebbe stampato letterale.
-     ------------------------------------------------------------------ */
   function preparaStato() {
     if (!nodi.stato) { return; }
     nodi.stato.textContent = '';
 
-    // La pastiglia è decorativa: il testo accanto dice già tutto, e farla
-    // leggere a un lettore di schermo aggiungerebbe rumore e basta.
     const spia = crea('span', 'lurk__spia');
     spia.setAttribute('aria-hidden', 'true');
     nodi.stato.appendChild(spia);
@@ -334,14 +221,9 @@
 
   function scriviStato() {
     if (!nodi.statoTesto) { return; }
-    // La domanda di presenza ha la precedenza su tutto: è l'unica riga a cui
-    // l'utente deve rispondere, e #lurk-stato è già la regione annunciata.
+
     if (chiestoPresenza) { nodi.statoTesto.textContent = testo('ciSei'); return; }
 
-    // A riquadro spento la riga dice «Spenta.», che è vero ma non spiega
-    // perché l'interruttore non si possa premere. Se il canale è fuori onda
-    // il motivo è quello, e va detto: senza, resta un bottone grigio senza
-    // ragione — la cosa che manda la gente a ricaricare la pagina a caso.
     if (vivo.salute === 'spento' && comandiPronti() && !canaleAcceso()) {
       nodi.statoTesto.textContent = testo('statoAttesa');
       return;
@@ -350,10 +232,6 @@
     nodi.statoTesto.textContent = testo(TESTO_DI[vivo.salute] || 'statoSpento');
   }
 
-  // Un messaggio che prende il posto dello stato per qualche secondo. Serve al
-  // blocco B (esito dell'invio, errori del token) e non può avere una regione
-  // sua: #lurk-stato è già role="status", e due regioni live nello stesso
-  // pannello si darebbero il cambio parlandosi sopra.
   function avviso(messaggio) {
     if (!nodi.statoTesto || !messaggio) { return; }
     nodi.statoTesto.textContent = messaggio;
@@ -369,8 +247,7 @@
     vivo.salute = nome;
     if (nome === 'vivo') { vivoDa = Date.now(); }
     if (nodi.lurk) { nodi.lurk.setAttribute('data-salute', nome); }
-    // Un avviso in corso non si scavalca: sparisce da solo fra pochi secondi e
-    // scriviStato() rimette la riga giusta.
+
     if (!timerAvviso) { scriviStato(); }
     avvisa();
   }
@@ -384,9 +261,6 @@
       .replace(/\{durata\}/g, durata(Date.now() - vivo.daQuando))
       .replace(/\{riavvii\}/g, String(vivo.riavvii));
 
-    // Il messaggio ripetuto si vede: chi è in lurk sa quando parte il
-    // prossimo, e se l'ultimo non è partito ne legge il motivo anche
-    // tornando alla scheda dopo dieci minuti.
     if (ultimoAutomatico && vivo.collegato) {
       const manca = CADENZA_INVIO - (Date.now() - ultimoAutomatico);
       riga += ' · prossimo messaggio in chat fra ' + durata(Math.max(0, manca));
@@ -395,13 +269,6 @@
     nodi.conto.textContent = riga;
   }
 
-  /* ------------------------------------------------------------------
-     4. Gli iscritti a window.Lurk
-     ------------------------------------------------------------------
-     Li consuma js/pollo.js. Come in player.js §14, un iscritto che lancia
-     finisce in console e non si porta via il lurk: è una decorazione che si
-     iscrive a un meccanismo di servizio, non il contrario.
-     ------------------------------------------------------------------ */
   function istantanea() {
     return {
       acceso: vivo.acceso,
@@ -425,19 +292,6 @@
 
   function avvisa() { iscritti.forEach(informa); }
 
-  /* ------------------------------------------------------------------
-     5. A — la sentinella: quattro gradini, nessuno decisivo da solo
-     ------------------------------------------------------------------
-     Gira ogni 20 s e SOLO a pagina visibile. Legge Player.diagnostica(), che
-     costa zero richieste di rete: è la cache che l'SDK aggiorna con i
-     postMessage dell'iframe. Interrogare Helix ogni venti secondi sarebbe un
-     ottimo modo di farsi limitare.
-
-     Il gradino del tempo si AUTOESCLUDE se `tempo` è null: getCurrentTime()
-     su una diretta non è documentato e può restituire null, NaN o zero fisso.
-     Dedurre «fermo» dall'assenza di un dato è l'errore che il §3.2 vieta
-     esplicitamente, ed è anche quello che farebbe partire riavvii a vuoto.
-     ------------------------------------------------------------------ */
   function azzeraAllarmi() {
     buffering = 0;
     fermi = 0;
@@ -450,33 +304,20 @@
 
     const d = diagnostica();
 
-    // Senza SDK non ci sono né eventi né play(): non c'è niente da sorvegliare
-    // e niente da riavviare. Si dichiara e si smette, invece di girare a vuoto.
     if (!d || d.modalita !== 'sdk') {
       segnaSalute('niente');
       fermaSentinella();
       return;
     }
 
-    // L'autoplay negato non si sblocca da codice: serve un gesto umano. Il
-    // riavvio qui peggiorerebbe le cose, quindi si dice cosa fare e si aspetta.
     if (d.bloccato) {
       azzeraAllarmi();
       segnaSalute('bloccato');
       return;
     }
 
-    // Il freno più importante, e vale prima di ogni altra cosa: un canale che
-    // ha smesso non ha nessuna sessione da tenere viva. E siccome la modalità
-    // lurk vale SOLO a canale acceso, qui non ci si limita ad aspettare: si
-    // spegne. Ma solo quando la diretta è finita per davvero — «il video si è
-    // fermato» è il caso opposto, ed è quello per cui questo file esiste.
     if (fuoriOndaCerto()) { chiudiPerFineDiretta(); return; }
 
-    // Fuori onda per DEDUZIONE: il player non ha visto arrivare niente, o la
-    // sua riconciliazione ha trovato il video fermo. Non basta a dichiarare
-    // finita la diretta e non basta a riavviare: si aspetta, che è la sola
-    // risposta onesta quando non si sa.
     if (!inOnda) {
       azzeraAllarmi();
       segnaSalute('attesa');
@@ -484,45 +325,30 @@
     }
 
     if (d.riproduce) {
-      // Gradino 2: un buffering isolato è normalissimo e non si tocca. Tre di
-      // fila, cioè un minuto abbondante, sono uno stallo.
+
       buffering = (d.playback === 'Buffering') ? buffering + 1 : 0;
 
-      // Gradino 3: il tempo che non cresce mentre il player si dichiara vivo.
       if (typeof d.tempo === 'number') {
         if (ultimoTempo !== null && d.tempo <= ultimoTempo) { fermi++; } else { fermi = 0; }
         ultimoTempo = d.tempo;
       } else {
-        // Il dato non c'è: questo gradino non conclude NIENTE e si azzera, così
-        // non resta un conteggio vecchio ad aspettare di far scattare un
-        // riavvio la prima volta che il getter torna a rispondere.
+
         fermi = 0;
         ultimoTempo = null;
       }
 
       if (buffering >= BUFFERING_MAX || fermi >= FERMI_MAX) { concludiFermo(); return; }
 
-      // Con un riavvio già in coda non si torna a dire «vivo» su due piedi:
-      // `riproduce` è vero anche nello stallo silenzioso, cioè nel caso che ha
-      // appena concluso «fermo», e riscriverlo qui farebbe lampeggiare lo stato
-      // avanti e indietro a ogni giro. Se il video è tornato davvero da solo,
-      // il tentativo parte, player.js risponde 'niente' per il suo sesto freno
-      // (video che va, pagina visibile) e il giro dopo si torna a «vivo».
       if (timerRiavvio || inRiavvio) { return; }
 
       segnaSalute('vivo');
-      // Il riavvio è riuscito davvero solo se la sessione regge: azzerare il
-      // conteggio appena riparte produrrebbe un ciclo infinito di riavvii
-      // «riusciti» che ricadono dopo tre secondi.
+
       if (vivoDa && (Date.now() - vivoDa) > SESSIONE_BUONA) { tentativo = 0; }
       return;
     }
 
-    // Gradino 1, il più autorevole: Idle/Ended DOPO essere stato in onda.
     if (d.fermo) { concludiFermo(); return; }
 
-    // Nessun gradino conclude: si lascia com'è e si riprova fra venti secondi.
-    // «Non lo so» è una risposta legittima, «fermo» no.
   }
 
   function concludiFermo() {
@@ -540,17 +366,6 @@
     if (timerSentinella) { clearInterval(timerSentinella); timerSentinella = null; }
   }
 
-  /* ------------------------------------------------------------------
-     6. A — il riavvio a livelli
-     ------------------------------------------------------------------
-     Qui NON si riproducono i sei freni né il tetto: stanno dentro player.js,
-     che è l'unico a sapere quante istanze di Twitch.Player ha creato in questa
-     pagina (CONTRATTO-3 §3.3). Da qui si chiama e si interpreta la risposta.
-
-     Attese crescenti fra i tentativi: 5 s, 15 s, 45 s, 2 min, poi resa. I
-     livelli salgono con loro — play(), setChannel(), ricostruzione — e la
-     ricostruzione la rifiuta player.js stesso dopo due volte per pagina.
-     ------------------------------------------------------------------ */
   function livelloDi(indice) {
     if (indice <= 0) { return 1; }
     if (indice === 1) { return 2; }
@@ -603,8 +418,7 @@
       tentativo++;
       aggiornaConto();
       avvisa();
-      // Non si dichiara «vivo» qui: lo dirà la sentinella quando vedrà il video
-      // girare davvero. Un riavvio lanciato non è un riavvio riuscito.
+
       return;
     }
 
@@ -614,31 +428,19 @@
       return;
     }
 
-    // 'niente': c'è un motivo per non fare nulla ADESSO — canale spento, rete
-    // giù, oppure il video sta già andando davanti a chi guarda. Non si insiste
-    // e non si consuma un tentativo: al prossimo giro la sentinella rivaluta.
   }
 
-  /* ------------------------------------------------------------------
-     7. A — accensione, spegnimento, memoria della scelta
-     ------------------------------------------------------------------ */
   function accendi() {
     if (vivo.acceso) { return; }
 
-    // Senza i comandi del player non si parte proprio: non è un degrado
-    // parziale, è l'assenza di qualunque cosa da fare.
+    if (inManutenzione) { avviso(testo('manutenzione')); return; }
+
     const d = diagnostica();
     if (!d || d.modalita !== 'sdk' || !player('riparti')) {
       segnaSalute('niente');
       return;
     }
 
-    // A canale spento non si accende, e non è un ripiego: è la regola. Non
-    // c'è nessuna sessione video da tenere viva, quindi non c'è niente da
-    // fare — e un riquadro «attivo» che non fa niente sarebbe una bugia
-    // detta bene. L'interruttore è già disabilitato in questo caso: questo
-    // è il freno che vale anche per window.Lurk.accendi(), che qualcuno può
-    // chiamare dalla console o da un altro script.
     if (!canaleAcceso()) {
       segnaSalute('spento');
       avviso(testo('statoAttesa'));
@@ -656,18 +458,13 @@
 
     inLocale(CHIAVE_ACCESO, '1');
     dipingiComandi();
-    // Da qui esce l'invito a collegarsi: il lurk è acceso, e adesso — e solo
-    // adesso — ha senso chiedere se lo si vuole anche dire in chat.
+
     dipingiAccesso();
     if (nodi.lurk) { nodi.lurk.classList.add('is-acceso'); }
 
     avviaSentinella();
     if (!timerBattito) { timerBattito = setInterval(battito, BATTITO); }
 
-    // Stato iniziale letto dalla diagnosi che abbiamo già in mano, senza
-    // dedurre niente che non ci sia. Il primo ciclo lo conferma o lo corregge
-    // subito dopo; questo serve a non lasciare mai `acceso` con salute
-    // «spento», che sarebbe una contraddizione per chi legge window.Lurk.
     if (d.bloccato) { segnaSalute('bloccato'); }
     else if (!inOnda) { segnaSalute('attesa'); }
     else if (d.riproduce) { segnaSalute('vivo'); }
@@ -677,26 +474,9 @@
     aggiornaConto();
     avvisa();
 
-    // Il primo messaggio in chat parte QUI, come conseguenza dichiarata
-    // dell'accensione; i successivi li manda battito() ogni MINUTI_INVIO minuti,
-    // finché il lurk resta acceso (CONTRATTO-3 §4.1).
-    //
-    // Parte solo se l'utente si è collegato: senza account non c'è nessuno a
-    // nome di cui parlare, e il lurk funziona lo stesso — il blocco A non ha
-    // mai avuto bisogno del login.
     if (bAttivo() && vivo.collegato) { mandaOra(); }
   }
 
-  /**
-   * La diretta è finita mentre il lurk era acceso.
-   *
-   * Si spegne tutto e lo si dice. Non è una scortesia verso chi aveva acceso
-   * il riquadro: è l'unica cosa sensata da fare, perché da qui in avanti ogni
-   * riavvio sarebbe un player rimesso in moto su un canale che non trasmette.
-   * La scelta ricordata in localStorage non si tocca — la persona non ha
-   * cambiato idea, è finita la diretta — così alla prossima serata il
-   * riquadro dirà «l'avevi lasciata accesa» e aspetterà un clic.
-   */
   function chiudiPerFineDiretta() {
     if (!vivo.acceso) { return; }
     const ricordo = daLocale(CHIAVE_ACCESO);
@@ -706,7 +486,37 @@
     avviso(testo('chiuso'));
   }
 
+  function chiudiPerManutenzione() {
+    if (inManutenzione) { return; }
+    inManutenzione = true;
+    if (!vivo.acceso) { return; }
+    const ricordo = daLocale(CHIAVE_ACCESO);
+    spegni();
+    if (ricordo === '1') { inLocale(CHIAVE_ACCESO, '1'); }
+    inSessione(CHIAVE_SOSPESO, '1');
+    sospeso = true;
+    segnaSalute('attesa');
+    avviso(testo('manutenzione'));
+  }
+
+  function tentaRipresa() {
+    if (!sospeso || inManutenzione) { return; }
+    if (vivo.acceso) { dimenticaRipresa(); return; }
+
+    if (!comandiPronti()) { return; }
+    if (!canaleAcceso()) { return; }
+
+    dimenticaRipresa();
+    accendi();
+  }
+
+  function dimenticaRipresa() {
+    sospeso = false;
+    scordaSessione(CHIAVE_SOSPESO);
+  }
+
   function spegni() {
+    dimenticaRipresa();
     fermaSentinella();
     clearTimeout(timerRiavvio);
     timerRiavvio = null;
@@ -724,8 +534,7 @@
     if (nodi.lurk) { nodi.lurk.classList.remove('is-acceso'); }
     togliBottonePresenza();
     dipingiComandi();
-    // Spento il lurk, l'invito a collegarsi sparisce con lui: non c'è più
-    // niente da dichiarare in chat.
+
     dipingiAccesso();
     aggiornaConto();
     segnaSalute('spento');
@@ -736,15 +545,6 @@
     if (vivo.acceso) { spegni(); } else { accendi(); }
   }
 
-  /* ------------------------------------------------------------------
-     8. A — lo schermo acceso (wake lock)
-     ------------------------------------------------------------------
-     Interruttore separato e spento di serie, mai implicito nell'accensione del
-     lurk: tiene acceso lo schermo di qualcun altro e gli consuma la batteria,
-     quindi va chiesto a parte. Si acquisisce SOLO da un clic — a scheda
-     nascosta la richiesta viene rifiutata comunque — e si perde da sola a ogni
-     cambio di visibilità: al ritorno si riprende, ma solo se era stato chiesto.
-     ------------------------------------------------------------------ */
   function schermoDisponibile() {
     return !!(navigator.wakeLock && typeof navigator.wakeLock.request === 'function');
   }
@@ -763,11 +563,10 @@
     Promise.resolve(promessa).then(function (presa) {
       presaSchermo = presa;
       vuoleSchermo = true;
-      // Il rilascio arriva da solo quando la scheda va dietro: si prende nota
-      // senza dimenticare che l'utente lo voleva, così al ritorno si riprende.
+
       try {
         presa.addEventListener('release', function () { presaSchermo = null; });
-      } catch (err) { /* implementazione senza eventi: si scopre al ritorno */ }
+      } catch (err) {}
       dipingiComandi();
     }, function () {
       presaSchermo = null;
@@ -782,8 +581,8 @@
     presaSchermo = null;
     if (!presa) { dipingiComandi(); return; }
     try {
-      Promise.resolve(presa.release()).then(null, function () { /* già rilasciata */ });
-    } catch (err) { /* già rilasciata */ }
+      Promise.resolve(presa.release()).then(null, function () {});
+    } catch (err) {}
     dipingiComandi();
   }
 
@@ -791,19 +590,6 @@
     if (vuoleSchermo) { lasciaSchermo(); } else { chiediSchermo(false); }
   }
 
-  /* ------------------------------------------------------------------
-     9. A — il limite di durata: «ci sei ancora?»
-     ------------------------------------------------------------------
-     Non è opzionale (CONTRATTO-3 §3.5). Rimettere in piedi la sessione di chi
-     è lì è legittimo; tenerla accesa all'infinito per chi se n'è andato è la
-     cosa che le Community Guidelines chiamano «cheat the Twitch rewards
-     system». È anche un servizio: nessuno vuole scoprire di aver lasciato la
-     diretta accesa tutta la notte.
-
-     Il conto si tiene sull'OROLOGIO e non su un setTimeout lungo: con la
-     scheda in secondo piano i timer vengono rallentati e poi congelati, e un
-     setTimeout di tre ore scatterebbe quando gli pare.
-     ------------------------------------------------------------------ */
   function oreMax() {
     let ore = Number(LURK && LURK.oreMax);
     if (!isFinite(ore)) { ore = 3; }
@@ -817,23 +603,13 @@
     const ora = Date.now();
 
     if (chiestoPresenza) {
-      // Nessuna risposta entro cinque minuti: si spegne tutto. È il punto del
-      // contratto che tiene la funzione dalla parte giusta del confine. E
-      // mentre la domanda aspetta, in chat non parte niente: chi forse se n'è
-      // andato non continua a dire «lurko» a nome suo.
+
       if (ora - chiestoPresenza >= ATTESA_PRESENZA) { spegni(); }
       return;
     }
 
     if (ora - ultimaPresenza >= oreMax() * 3600000) { chiediPresenza(); return; }
 
-    // Il messaggio periodico. Conta dall'ultimo partito, non da una griglia
-    // fissa: dopo un congelamento della scheda ne parte UNO, e il conto
-    // riparte da lì. Senza un primo messaggio (utente non ancora collegato)
-    // non si comincia: lo farà ascoltaAccount() al collegamento.
-    // Basta che la diretta non sia finita per certo: canaleAcceso() guarda
-    // anche il video, e il video fermato dal browser in secondo piano
-    // bloccava in silenzio proprio il messaggio che serve a chi è via.
     if (ultimoAutomatico && ora - ultimoAutomatico >= CADENZA_INVIO
         && bAttivo() && vivo.collegato && !fuoriOndaCerto()) {
       mandaOra(true);
@@ -864,56 +640,17 @@
     comandi.presenza = null;
   }
 
-  /* ------------------------------------------------------------------
-     10. Il canale acceso: l'unica condizione in cui tutto questo ha senso
-     ------------------------------------------------------------------
-     Twitch conta uno spettatore finché il suo video gira. Se non c'è nessuna
-     diretta non c'è nessun video da tenere in piedi: la modalità lurk non è
-     «meno utile» a canale spento, è priva di oggetto. Da qui vengono le tre
-     conseguenze che il resto del file applica senza discutere —
-     l'interruttore non si può premere, l'accensione si rifiuta, e la diretta
-     che finisce spegne il riquadro.
-
-     LA DISTINZIONE CHE CONTA, e sbagliarla ribalta la funzione:
-
-       «la diretta è finita»           → si spegne tutto
-       «il nostro video si è fermato»  → si riavvia, ed è il mestiere del file
-
-     Dal solo `inOnda` del player i due casi non si distinguono: player.js
-     conclude «fuori onda» anche quando la sua riconciliazione periodica trova
-     il video fermo, che è esattamente il caso in cui il lurk deve
-     intervenire. Per questo `fuoriOndaCerto()` guarda soltanto due sorgenti
-     che non possono confondersi:
-
-       - window.Canale, cioè la risposta di helix/streams, per chi si è
-         collegato col profilo del sito. È l'unica risposta autorevole;
-       - `finito`, cioè un OFFLINE/ENDED RICEVUTO dall'SDK: è un evento
-         arrivato, non una conclusione tratta da un timeout.
-
-     Tutto il resto vale «non lo so», e a «non lo so» si aspetta.
-     ------------------------------------------------------------------ */
-
-  /**
-   * Il canale è acceso adesso? Serve a decidere se l'interruttore si può
-   * premere, quindi risponde di sì solo quando qualcosa lo dice davvero —
-   * mai per il solo fatto di non saperlo.
-   */
   function canaleAcceso() {
-    // La risposta di Twitch, quando c'è, vince su tutto il resto.
+
     const daTwitch = statoDaTwitch();
     if (daTwitch !== null) { return daTwitch; }
 
     if (inOnda) { return true; }
 
-    // Lo stato del player può non essere ancora risolto — i primi secondi di
-    // una pagina appena aperta — e in quella finestra `inOnda` è falso senza
-    // che nessuno abbia detto niente. Un video che sta girando è però già una
-    // risposta: se il player riproduce, il canale trasmette.
     const d = diagnostica();
     return !!(d && d.riproduce && !d.finito);
   }
 
-  /** true / false secondo helix/streams, null se non c'è nessuna risposta. */
   function statoDaTwitch() {
     const C = window.Canale;
     if (!C || typeof C.stato !== 'function') { return null; }
@@ -923,11 +660,6 @@
     return letto.inOnda;
   }
 
-  /**
-   * La diretta è finita per davvero. Vedi il cappello qui sopra: qui NON
-   * entra la deduzione del player, altrimenti il lurk si spegnerebbe da solo
-   * proprio nel momento in cui deve rimettere in moto il video.
-   */
   function fuoriOndaCerto() {
     const daTwitch = statoDaTwitch();
     if (daTwitch !== null) { return daTwitch === false; }
@@ -935,16 +667,9 @@
     return !!(d && d.finito);
   }
 
-  /* ------------------------------------------------------------------
-     10-bis. Il messaggio in chat: quando c'è e quando non c'è
-     ------------------------------------------------------------------
-     Il blocco B è spento finché non ci sono TUTTE le condizioni. È lo stato
-     di partenza del progetto, non un'eccezione: senza un profilo del sito
-     non c'è nessuno a nome di cui parlare, e senza frasi non c'è niente da
-     dire. Il login vero e proprio sta in js/account.js — token, finestrella,
-     revoca: qui si guarda soltanto se esiste.
-     ------------------------------------------------------------------ */
   function bAttivo() {
+
+    if (inManutenzione) { return false; }
     if (!MESSAGGIO || MESSAGGIO.attivo !== true) { return false; }
     if (!BROADCASTER) { return false; }
     if (!FRASI.length) { return false; }
@@ -952,21 +677,11 @@
     return !!account();
   }
 
-  // Siamo sul computer di chi amministra, non su un sito pubblicato. È
-  // l'unica condizione in cui la pagina si permette di spiegare come mai il
-  // messaggio in chat non c'è: a un visitatore non interessa, e raccontargli
-  // com'è configurato il sito non serve a niente.
   function inSviluppo() {
     const host = location.hostname;
     return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
   }
 
-  /**
-   * Perché il blocco B non è in pagina. Sta qui e non nel pannello perché il
-   * posto in cui uno si accorge che manca è il sito, guardandolo: restare a
-   * premere «Attiva» aspettando un login che non può comparire, senza una
-   * riga che lo spieghi, è un modo perfetto di perdere un pomeriggio.
-   */
   function motivoSpento() {
     if (!MESSAGGIO || MESSAGGIO.attivo !== true) {
       const m = String((MESSAGGIO && MESSAGGIO.motivo) || '');
@@ -1009,23 +724,6 @@
     nodi.lurk.appendChild(riga);
   }
 
-  /* ------------------------------------------------------------------
-     11. B — l'invio del messaggio, col token del profilo del sito
-     ------------------------------------------------------------------
-     Header SOLO Authorization, Client-Id e Content-Type: qualunque header in
-     più fa fallire il preflight CORS, ed è la causa reale di quasi tutti i
-     «CORS error» che si leggono sui forum (docs/PRESENZA-TWITCH.md §3.3).
-
-     E un 200 non significa messaggio arrivato: si legge data[0].is_sent e, se
-     è falso, si traduce drop_reason. Da sito statico non si può sapere in
-     anticipo se il messaggio passerà: si prova e si dice com'è andata.
-     ------------------------------------------------------------------ */
-  /**
-   * Un messaggio che non è partito. L'avviso dura sette secondi, ed è troppo
-   * poco per chi torna alla scheda dopo dieci minuti: il motivo resta anche
-   * nella riga del contatore e in console, finché un invio non riesce. Col
-   * lurk acceso si riprova fra un minuto, non fra un giro intero.
-   */
   function nonPartito(motivo) {
     avviso(motivo);
     erroreInvio = motivo;
@@ -1046,11 +744,6 @@
       return;
     }
 
-    // A canale spento non si scrive: «lurko dal sito» sotto una diretta finita
-    // non lo legge nessuno, e il lurk stesso non si può nemmeno accendere.
-    // Per l'invio automatico basta che la diretta non sia FINITA: il video
-    // fermato dal browser in secondo piano fa dire al player «fuori onda»,
-    // ed è proprio il momento in cui chi è in lurk non sta guardando.
     if (automatico ? fuoriOndaCerto() : !canaleAcceso()) {
       nonPartito(testo('statoAttesa'));
       return;
@@ -1063,12 +756,9 @@
     }
 
     inVolo = true;
-    ultimoInvio = Date.now();   // il freno conta dal tentativo, non dall'esito
+    ultimoInvio = Date.now();
     dipingiAccesso();
 
-    // Rivalidazione prima di OGNI invio: è l'unico momento in cui sapere che il
-    // token è morto costa meno che scoprirlo con un 401 a metà strada. La fa
-    // js/account.js, che è l'unico a sapere quando l'ha fatta l'ultima volta.
     Promise.resolve(A.valida(true)).then(function (ok) {
       const token = A.token();
       const chi = A.id();
@@ -1103,9 +793,7 @@
     if (!r) { return null; }
 
     if (r.status === 401) {
-      // Il token è morto: a buttarlo ci pensa js/account.js alla prossima
-      // validazione, che è l'unico posto in cui si tocca. Da qui si dice
-      // soltanto com'è andata.
+
       const A = account();
       if (A) { A.valida(true); }
       nonPartito('Il collegamento con Twitch è scaduto: ricollegati e riprova.');
@@ -1154,32 +842,12 @@
     });
   }
 
-  /* ------------------------------------------------------------------
-     12. B — la frase e il suo preavviso
-     ------------------------------------------------------------------
-     La frase si vede SEMPRE prima di partire: chi è collegato legge nella
-     barra dell'account che cosa verrà detto a suo nome, con quelle parole
-     esatte, PRIMA di accendere il lurk. Non c'è una finestra di conferma
-     perché l'invio non è più un comando a sé: è la conseguenza dichiarata
-     dell'accensione, e un secondo clic per confermare il primo sarebbe
-     proprio l'attrito che rendeva inutile il vecchio bottone.
-
-     Ed è il punto in cui il testo conta più del codice — «lurko» dichiara
-     l'assenza, «ci sono» la maschera, e con lo stesso identico codice la
-     seconda formulazione sposterebbe la funzione dalla parte sbagliata del
-     regolamento. Per questo le frasi stanno in contenuti.json.
-     ------------------------------------------------------------------ */
   const FRASI = (function () {
     const voci = Array.isArray(MESSAGGIO.frasi) ? MESSAGGIO.frasi : [];
     return voci.filter(function (v) { return typeof v === 'string' && v.trim(); })
       .map(function (v) { return v.trim(); });
   }());
 
-  // Rotazione a mazzo: si mescolano tutte le frasi e si dicono una alla volta,
-  // e solo quando sono finite si rimescola. Così con tante frasi la chat non
-  // rilegge la stessa prima di averle sentite tutte, e il filtro anti-duplicato
-  // di Twitch non scatta. Al cambio di mazzo si evita che la prima del nuovo
-  // sia l'ultima del vecchio.
   function pesca() {
     if (!FRASI.length) { return ''; }
     if (FRASI.length === 1) { return FRASI[0]; }
@@ -1190,7 +858,7 @@
         const j = Math.floor(Math.random() * (i + 1));
         const t = mazzo[i]; mazzo[i] = mazzo[j]; mazzo[j] = t;
       }
-      // Si pesca dalla coda: se in coda c'è l'ultima detta, va in testa.
+
       if (mazzo[mazzo.length - 1] === ultimaFrase) {
         const t = mazzo[0]; mazzo[0] = mazzo[mazzo.length - 1]; mazzo[mazzo.length - 1] = t;
       }
@@ -1199,48 +867,22 @@
     return ultimaFrase;
   }
 
-  // La frase che partirà alla prossima accensione. Si sceglie in anticipo
-  // proprio perché va mostrata prima: annunciarne una e mandarne un'altra
-  // sarebbe peggio che non annunciarla affatto.
   function preparaFrase() {
     fraseProssima = pesca();
     dipingiAccesso();
   }
 
-  // L'unico posto da cui parte un messaggio, chiamato dai quattro momenti in
-  // cui può partire: l'accensione del lurk, il ritorno dalla finestrella del
-  // login a lurk già acceso, la cadenza di battito() a lurk acceso, e il
-  // bottone di ripiego di chi non ha i comandi del player. Manda SEMPRE la
-  // frase annunciata, poi ne prepara un'altra:
-  // due accensioni ravvicinate con la stessa frase le scarterebbe Twitch,
-  // che rifiuta due messaggi identici di fila dallo stesso utente.
   function mandaOra(automatico) {
     const scelta = fraseProssima || pesca();
     fraseProssima = '';
-    // Col lurk acceso da qui parte anche il conto della cadenza. Si segna
-    // al tentativo e non all'esito: un invio rifiutato (slow mode, AutoMod)
-    // si riprova dopo un minuto (nonPartito), non a raffica ogni secondo.
+
     if (vivo.acceso) { ultimoAutomatico = Date.now(); }
     invia(scelta, automatico === true);
     preparaFrase();
   }
 
-  /* ------------------------------------------------------------------
-     13. I comandi
-     ------------------------------------------------------------------
-     #lurk-comandi arriva vuoto dal modello ed è questo blocco a riempirlo:
-     senza JavaScript in pagina non devono restare bottoni raggiungibili col
-     Tab che non rispondono a niente (CONTRATTO-3 §2).
-
-     Tutti i bottoni hanno testo vero, non solo un'icona, e il toggle porta un
-     aria-pressed che viene aggiornato davvero.
-     ------------------------------------------------------------------ */
   function costruisciComandi() {
-    // --- Blocco A ---
-    // Senza i comandi veri del player l'interruttore non si costruisce
-    // affatto: prima c'era e, premuto, si limitava a rispondere «da qui non
-    // posso». Un bottone che non fa mai niente è peggio di un bottone che non
-    // c'è, e la riga di stato lo spiega già da sola.
+
     if (comandiPronti()) {
       comandi.toggle = bottone(testo('accendi'), 'btn btn--vuoto', commuta);
       comandi.toggle.id = 'lurk-toggle';
@@ -1248,17 +890,11 @@
       nodi.comandi.appendChild(comandi.toggle);
     }
 
-    // Il bottone dell'audio esiste perché Chrome ed Edge proteggono dalla
-    // sospensione le schede «audible», non quelle che stanno solo
-    // riproducendo. Lo preme l'utente: qui non esiste nessun volume finto a
-    // 0,01 per far risultare la scheda audible, che è il gonfiaggio
-    // artificiale per cui Twitch disabilita l'autoplay negli embed.
     if (player('smuta')) {
       comandi.audio = bottone(testo('audio'), 'btn btn--vuoto', function () {
         const P = player('smuta');
         if (!P) { return; }
-        // Va chiamata dentro il gestore del clic: fuori da un gesto utente il
-        // browser la ignora in silenzio.
+
         if (!P.smuta()) { avviso('Da qui non riesco a togliere il muto: usa i comandi del player.'); }
       });
       nodi.comandi.appendChild(comandi.audio);
@@ -1270,31 +906,12 @@
       nodi.comandi.appendChild(comandi.schermo);
     }
 
-    // --- Blocco B ---
-    // Il login sta QUI, nella fila dei comandi, e non nella barra in cima:
-    // si chiede nel momento in cui ha un senso chiederlo, cioè quando
-    // qualcuno ha appena acceso il lurk. Prima era un bottone staccato,
-    // sopra al monitor, in una barra che nessuno collegava al riquadro
-    // qui sotto — e infatti non lo premeva nessuno.
-    //
-    // Quello che resta nella barra in cima è solo l'identità: chi sei e
-    // come scollegarti. Dire CHI sei e dire al sito COSA fare col video
-    // restano due cose diverse, ma «collegati» non era l'una né l'altra:
-    // era il primo passo della seconda.
     if (!bAttivo()) { return; }
 
-    // La frase esatta, prima di tutto il resto: chi legge deve sapere che
-    // cosa verrà detto a nome suo PRIMA di premere qualunque cosa — prima
-    // ancora di collegarsi, non solo prima di accendere il lurk. Ha
-    // flex-basis:100% e si prende una riga sua sopra al bottone.
     comandi.frase = crea('span', 'lurk__preavviso', '');
     comandi.frase.hidden = true;
     nodi.comandi.appendChild(comandi.frase);
 
-    // Pieno e non vuoto: quando compare è la cosa che si sta chiedendo di
-    // fare, e deve leggersi come tale. L'etichetta è quella della tessera in
-    // cima — stessa parola, stesso collegamento, stessa sessione: due porte,
-    // una stanza.
     comandi.entra = bottone(etichettaEntra(), 'btn btn--pieno', function () {
       const A = account();
       if (A) { A.entra(); }
@@ -1302,26 +919,14 @@
     comandi.entra.hidden = true;
     nodi.comandi.appendChild(comandi.entra);
 
-    // L'eccezione, e una sola: quando l'interruttore non esiste — SDK filtrato
-    // da un adblock, player in iframe manuale — non c'è nessuna accensione a
-    // cui agganciare il messaggio, e chi si è collegato resterebbe con un
-    // collegamento e nessun modo di usarlo. Il video però sta girando lo
-    // stesso e quella persona sta lurkando davvero, quindi il messaggio è
-    // legittimo: torna il rapporto 1:1 del §4.1, un clic e un messaggio, con
-    // la frase dichiarata qui accanto prima del clic.
     if (!comandi.toggle) {
       comandi.manda = bottone(testo('manda'), 'btn btn--vuoto', mandaOra);
       comandi.manda.hidden = true;
       nodi.comandi.appendChild(comandi.manda);
     }
 
-    // La tessera dell'account NON si costruisce più qui: sta in cima alla
-    // sezione ed è js/account.js a riempirla, perché il profilo è del sito e
-    // non di questo riquadro. Qui resta soltanto la porta contestuale — il
-    // bottone che compare accendendo il lurk — che chiama lo stesso login.
   }
 
-  /** L'etichetta del login, presa dal profilo del sito: è il suo bottone. */
   function etichettaEntra() {
     return frase(PROFILO.testi && PROFILO.testi.entra, 'Collegati con Twitch');
   }
@@ -1331,11 +936,6 @@
       comandi.toggle.setAttribute('aria-pressed', vivo.acceso ? 'true' : 'false');
       comandi.toggle.textContent = vivo.acceso ? testo('spegni') : testo('accendi');
 
-      // A canale spento l'interruttore non si preme: non c'è nessuna sessione
-      // video da tenere viva, e un bottone che risponde «non posso» è peggio
-      // di un bottone spento. Il perché lo scrive scriviStato() nella riga
-      // qui sotto — un bottone grigio senza spiegazione manda la gente a
-      // ricaricare la pagina a caso.
       const bloccato = !vivo.acceso && !canaleAcceso();
       comandi.toggle.disabled = bloccato;
       if (bloccato) { comandi.toggle.setAttribute('title', testo('statoAttesa')); }
@@ -1349,18 +949,9 @@
   function dipingiAccesso() {
     if (!comandi.entra) { return; }
 
-    // --- Il login dentro il pannello del lurk ---------------------------
-    // Il secondo ingresso, quello contestuale: compare accendendo il lurk,
-    // accanto alla frase che verrà detta. È lo stesso collegamento e la
-    // stessa sessione del bottone qui sopra — due porte, una stanza.
     const serveLogin = !vivo.collegato && (vivo.acceso || !comandi.toggle);
     comandi.entra.hidden = !serveLogin;
 
-    // La frase, in due momenti diversi e con due parole diverse:
-    //   non collegato, lurk acceso → l'invito, sopra al bottone del login;
-    //   collegato, lurk spento     → il preavviso di cosa dirà l'accensione.
-    // In tutti e due i casi la frase esatta si legge PRIMA di premere, che è
-    // l'unico obbligo non negoziabile di questo blocco (CONTRATTO-3 §4.1).
     if (comandi.frase) {
       let riga = '';
       if (serveLogin) { riga = testo('invito'); }
@@ -1371,26 +962,14 @@
         .replace(/\{minuti\}/g, String(MINUTI_INVIO));
     }
 
-    // Il bottone di ripiego, quando c'è: si disabilita solo mentre una
-    // richiesta è per aria. A tetto esaurito resta premibile apposta, perché
-    // il motivo lo dice invia() nella riga di stato, e un bottone spento
-    // senza spiegazione è la cosa che manda la gente a ricaricare a caso.
     if (comandi.manda) {
       comandi.manda.hidden = !vivo.collegato;
       comandi.manda.disabled = inVolo;
     }
   }
 
-  /* ------------------------------------------------------------------
-     14. API pubblica — window.Lurk
-     ------------------------------------------------------------------
-     La consuma js/pollo.js, che si carica DOPO questo file apposta
-     (CONTRATTO-3 §5.3). Come player.js, suStato chiama subito con lo stato
-     corrente: chi arriva tardi non deve restare cieco in attesa di un
-     cambiamento che potrebbe non arrivare mai.
-     ------------------------------------------------------------------ */
   window.Lurk = {
-    // fn({ acceso, salute, riavvii, daQuando, collegato, nome, inviati })
+
     suStato: function (fn) {
       if (typeof fn !== 'function') { return; }
       iscritti.push(fn);
@@ -1400,49 +979,32 @@
     spegni: spegni
   };
 
-  /* ------------------------------------------------------------------
-     15. Avvio
-     ------------------------------------------------------------------
-     Il parziale è incluso solo se config.lurk.attivo è vero, quindi di norma
-     senza #lurk non c'è niente da fare. Ma il file deve reggere anche il caso
-     in cui il markup ci sia e la configurazione dica di no: in quel caso il
-     pannello si toglie invece di restare lì con dei comandi che non
-     servirebbero a niente.
-     ------------------------------------------------------------------ */
   function ascoltaPlayer() {
     const P = window.Player;
     if (!P) { return; }
 
     if (typeof P.suStato === 'function') {
       P.suStato(function (stato) {
-        // ATTENZIONE alla firma: arriva un OGGETTO, non un booleano. Leggere il
-        // primo parametro come booleano darebbe sempre «in onda», perché un
-        // oggetto è sempre truthy (la trappola del CONTRATTO-2 §6.2).
+
         const acceso = !!(stato && stato.inOnda);
         if (acceso === inOnda) { return; }
         inOnda = acceso;
 
-        // Il canale è tornato (o se n'è andato): la sentinella deve saperlo
-        // adesso, non fra venti secondi.
         if (vivo.acceso) { ciclo(); }
 
-        // E l'interruttore con lei: si accende quando la diretta comincia e
-        // si spegne quando finisce, senza aspettare che qualcuno lo prema
-        // per scoprire che non si può.
         dipingiComandi();
         if (!vivo.acceso && !timerAvviso) { scriviStato(); }
+        tentaRipresa();
       });
     }
 
-    // La risposta di Twitch, per chi si è collegato: è l'unica che distingue
-    // «la diretta è finita» da «il nostro video si è fermato», ed è quindi
-    // l'unica che può spegnere il riquadro. Vedi il §10.
     if (window.Canale && typeof window.Canale.suStato === 'function') {
       window.Canale.suStato(function (c) {
         if (!c || typeof c.inOnda !== 'boolean') { return; }
         if (c.inOnda === false && vivo.acceso) { chiudiPerFineDiretta(); return; }
         dipingiComandi();
         if (!vivo.acceso && !timerAvviso) { scriviStato(); }
+        tentaRipresa();
       });
     }
 
@@ -1458,21 +1020,11 @@
           return;
         }
 
-        // Gradino 1 del §3.2: gli eventi dell'SDK sono istantanei e
-        // autorevoli. PAUSE arriva quando il browser (o l'utente) ferma il
-        // video, e aspettare la sentinella costerebbe fino a venti secondi.
         if (d.fermo && !d.finito && inOnda) { concludiFermo(); }
       });
     }
   }
 
-  /**
-   * Il profilo del sito. Qui non si fa nessun login: si guarda chi c'è.
-   *
-   * `vivo.collegato`, `vivo.nome` e `vivo.avatar` restano nell'istantanea di
-   * window.Lurk perché js/pollo.js ci legge dentro, ma sono una COPIA di
-   * quello che dice window.Account: la fonte è una sola, e non è questa.
-   */
   function ascoltaAccount() {
     const A = account();
     if (!A) { return; }
@@ -1486,11 +1038,15 @@
       dipingiAccesso();
       avvisa();
 
-      // Si è appena collegato mentre il lurk era già acceso: l'accensione
-      // aveva già dichiarato che cosa avrebbe detto in chat, e la frase era
-      // in pagina prima che si premesse «Collegati». Il messaggio parte
-      // adesso, che è il primo momento in cui si può.
       if (!primaCollegato && vivo.collegato && vivo.acceso) { mandaOra(); }
+    });
+  }
+
+  function ascoltaManutenzione() {
+    document.addEventListener('sb:manutenzione', function (evento) {
+      const dettaglio = evento && evento.detail;
+      if (dettaglio && dettaglio.attiva === false) { return; }
+      chiudiPerManutenzione();
     });
   }
 
@@ -1498,10 +1054,6 @@
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState !== 'visible') { return; }
 
-      // In secondo piano i timer vanno a uno al minuto e poi si congelano del
-      // tutto: al ritorno si fa subito un ciclo di recupero, così dopo due ore
-      // di congelamento si scopre entro un secondo che il video è morto invece
-      // che entro venti.
       if (vivo.acceso) {
         avviaSentinella();
         ciclo();
@@ -1509,17 +1061,12 @@
         battito();
       }
 
-      // Il wake lock si perde da solo a ogni cambio di visibilità: si
-      // riacquisisce SOLO se era stato chiesto, mai di iniziativa.
       if (vuoleSchermo && !presaSchermo) { chiediSchermo(true); }
 
-      // Del token si occupa js/account.js, che si iscrive alla visibilità per
-      // conto suo: qui non c'è più niente da rivalidare.
+      tentaRipresa();
+
     });
 
-    // pagehide e non unload: copre anche il ritorno indietro dalla cache di
-    // navigazione. Lo schermo altrui non resta acceso per una pagina che non
-    // si sta più guardando.
     window.addEventListener('pagehide', function () { lasciaSchermo(); });
   }
 
@@ -1535,12 +1082,13 @@
     nodi.comandi = document.getElementById('lurk-comandi');
     nodi.stato = document.getElementById('lurk-stato');
     nodi.conto = document.getElementById('lurk-conto');
-    if (!nodi.comandi) { return; }   // senza la barra non c'è niente da costruire
+    if (!nodi.comandi) { return; }
 
-    // I testi si preparano una volta sola, con i ripieghi già applicati.
     Object.keys(RIPIEGHI).forEach(function (chiave) {
       TESTI[chiave] = frase(LURK.testi ? LURK.testi[chiave] : '', RIPIEGHI[chiave]);
     });
+
+    sospeso = daSessione(CHIAVE_SOSPESO) === '1';
 
     preparaStato();
     nodi.lurk.setAttribute('data-salute', 'spento');
@@ -1548,7 +1096,7 @@
     dipingiComandi();
     dipingiAccesso();
 
-    [ascoltaPlayer, ascoltaVisibilita].forEach(function (blocco) {
+    [ascoltaPlayer, ascoltaVisibilita, ascoltaManutenzione].forEach(function (blocco) {
       try {
         blocco();
       } catch (err) {
@@ -1556,15 +1104,10 @@
       }
     });
 
-    // Senza i comandi del player si dichiara e ci si ferma: non c'è nessuna
-    // sessione su cui intervenire, e un bottone che promette di tenerla viva
-    // sarebbe una bugia.
     if (!comandiPronti()) {
       segnaSalute('niente');
     } else if (daLocale(CHIAVE_ACCESO) === '1') {
-      // Era accesa alla visita precedente: lo si dice e si aspetta un clic. Il
-      // sito non fa ripartire da solo un meccanismo che riavvia il player sul
-      // computer di qualcun altro.
+
       if (nodi.statoTesto) { nodi.statoTesto.textContent = testo('ripresa'); }
     } else {
       scriviStato();
@@ -1572,18 +1115,18 @@
 
     if (bAttivo()) {
       try {
-        // La frase si pesca subito: l'invito la nomina, e un invito che
-        // promette «dirò: «»» non promette niente.
+
         preparaFrase();
         ascoltaAccount();
       } catch (err) {
         console.warn('[lurk] il collegamento con Twitch non è partito:', err);
       }
     } else {
-      // Spento: in locale si dice perché, invece di lasciare il riquadro
-      // muto e chi lo guarda a chiedersi dove sia finito il login.
-      try { scriviDiagnosi(); } catch (err) { /* è un aiuto, non un obbligo */ }
+
+      try { scriviDiagnosi(); } catch (err) {}
     }
+
+    tentaRipresa();
   }
 
   if (document.readyState === 'loading') {

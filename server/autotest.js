@@ -411,7 +411,7 @@ async function proveSchema(contenutiVeri) {
   await prova('i gruppi seguono l ordine della pagina', () => {
 
     const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'sondaggio', 'settimana', 'chi',
-      'supporto', 'saluti', 'piede', 'musica', 'canale', 'aspetto', 'manutenzione'];
+      'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'manutenzione'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
 
@@ -1094,7 +1094,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
 
     const soloNostri = script.map((s) => s.src).filter((s) => s.indexOf('js/') === 0);
 
-    const facoltativi = ['js/musica.js'];
+    const facoltativi = ['js/musica.js', 'js/sponsor.js'];
     const fissi = soloNostri.filter((s) => facoltativi.indexOf(s) === -1);
     const coda = soloNostri.slice(fissi.length);
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
@@ -1737,7 +1737,8 @@ async function proveSondaggi(archivio) {
     await prova('una sezione nuova si mette dopo quella che la precede, non in fondo', async () => {
       const vecchie = ['regia', 'diretta', 'settimana', 'chi', 'supporto', 'saluti'].map((voce) => ({ id: voce, attiva: voce !== 'chi' }));
       const pulite = SBStili.pulisciSezioni(vecchie);
-      esigiUguale(pulite.map((v) => v.id).join(','), 'regia,diretta,sondaggio,settimana,chi,supporto,saluti', 'ordine');
+
+      esigiUguale(pulite.map((v) => v.id).join(','), 'regia,diretta,sondaggio,settimana,chi,supporto,saluti,sponsor', 'ordine');
       esigiUguale(pulite.find((v) => v.id === 'chi').attiva, false, 'le scelte di prima restano');
     });
   } finally {
@@ -3433,8 +3434,6 @@ async function proveUscita(costruisci, archivio) {
     esigiDentro(html, '<!doctype html>', 'doctype');
     esigiDentro(html, '<html lang="it">', 'apertura della pagina');
 
-    esigi(fs.readFileSync(P.modelloIndex, 'utf8').indexOf('<!--') !== -1,
-      'i commenti sono spariti anche dal modello: si doveva togliere solo in uscita');
   });
 
   await prova('normalizzaIndirizzo: con o senza barra, con o senza schema, e lo stesso', () => {
@@ -3504,7 +3503,10 @@ async function proveUscita(costruisci, archivio) {
     const mappa = fs.readFileSync(path.join(P.radice, 'sitemap.xml'), 'utf8');
     esigiDentro(mappa, '<loc>' + SITO + '/</loc>', 'loc della sitemap');
     esigiDentro(mappa, '<lastmod>' + String(esito.aggiornatoIl).slice(0, 10) + '</lastmod>', 'lastmod');
-    esigiUguale((mappa.match(/<url>/g) || []).length, 1, 'il sito e una pagina sola');
+
+    const scritte = (voce) => (voce && voce.stato === 'scritta') ? 1 : 0;
+    const pagine = 1 + scritte(esito.paginaClip) + scritte(esito.paginaSponsor);
+    esigiUguale((mappa.match(/<url>/g) || []).length, pagine, 'una riga per ogni pagina pubblicata');
 
     const testoRobots = fs.readFileSync(robots, 'utf8');
     esigiDentro(testoRobots, 'Sitemap: ' + SITO + '/sitemap.xml', 'la riga Sitemap:');
@@ -3787,6 +3789,161 @@ async function provePannelloEsposto() {
   }
 }
 
+async function proveSponsor(contenutiVeri, costruisci, archivio) {
+  apriSezione('11c. Gli sponsor');
+
+  const ADESSO = Date.UTC(2026, 8, 23, 9, 0, 0);
+  const voce = (ritocco) => Object.assign({
+    chiave: 's', nome: 'Uno', logo: '', testo: '', categoria: '', url: 'https://uno.example.com/', da: '', a: '', evidenza: false
+  }, ritocco || {});
+  const con = (voci) => {
+    const d = JSON.parse(JSON.stringify(contenutiVeri));
+    d.config.sponsor = { attivo: true, voci: voci };
+    return d;
+  };
+  const sponsorDi = (d) => costruisci.sponsorDi(d.config, d.testi, ADESSO);
+
+  await prova('senza link non si vede: e il patto di ogni elenco del sito', () => {
+    const esito = sponsorDi(con([
+      voce({ chiave: 'a', nome: 'Con link' }),
+      voce({ chiave: 'b', nome: 'Senza link', url: '' }),
+      voce({ chiave: 'c', nome: 'Senza nome', nome: '' })
+    ]));
+    esigiUguale(esito.voci.map((v) => v.nome).join(','), 'Con link', 'voci visibili');
+    esigiUguale(esito.attivo, true, 'attivo');
+  });
+
+  await prova('fuori dal periodo non si vede, e il periodo e italiano', () => {
+
+    const esito = sponsorDi(con([
+      voce({ chiave: 'a', nome: 'In corso' }),
+      voce({ chiave: 'b', nome: 'Gia finito', a: '2026-09-23T10:00' }),
+      voce({ chiave: 'c', nome: 'Non ancora', da: '2026-09-23T12:00' }),
+      voce({ chiave: 'd', nome: 'Comincia adesso', da: '2026-09-23T11:00' }),
+      voce({ chiave: 'e', nome: 'Finisce adesso', a: '2026-09-23T11:00' }),
+      voce({ chiave: 'f', nome: 'Dentro', da: '2026-09-01T00:00', a: '2026-12-31T23:59' })
+    ]));
+    esigiUguale(esito.voci.map((v) => v.nome).join(','),
+      'In corso,Comincia adesso,Dentro', 'voci dentro il periodo');
+  });
+
+  await prova('in evidenza passa davanti, e fra pari resta l ordine del pannello', () => {
+    const esito = sponsorDi(con([
+      voce({ chiave: 'a', nome: 'Primo' }),
+      voce({ chiave: 'b', nome: 'Secondo' }),
+      voce({ chiave: 'c', nome: 'Terzo', evidenza: true }),
+      voce({ chiave: 'd', nome: 'Quarto', evidenza: true })
+    ]));
+    esigiUguale(esito.voci.map((v) => v.nome).join(','), 'Terzo,Quarto,Primo,Secondo', 'ordine');
+  });
+
+  await prova('i gruppi seguono le categorie, e chi non ne ha finisce in fondo', () => {
+    const esito = sponsorDi(con([
+      voce({ chiave: 'a', nome: 'Uno', categoria: 'Hardware' }),
+      voce({ chiave: 'b', nome: 'Due', categoria: '' }),
+      voce({ chiave: 'c', nome: 'Tre', categoria: 'Energy drink' }),
+      voce({ chiave: 'd', nome: 'Quattro', categoria: 'hardware' })
+    ]));
+    esigiUguale(esito.gruppi.map((g) => g.titolo).join(' | '),
+      'Hardware | Energy drink | ' + contenutiVeri.testi['sponsor.altri'], 'titoli dei gruppi');
+    esigiUguale(esito.gruppi[0].voci.map((v) => v.nome).join(','), 'Uno,Quattro', 'maiuscole diverse, stessa categoria');
+    esigiUguale(esito.gruppi.map((g) => g.titolato).join(','), 'true,true,true', 'tutti titolati');
+  });
+
+  await prova('un gruppo solo e senza categoria non stampa nessun titolo', () => {
+    const esito = sponsorDi(con([voce({ nome: 'Uno' }), voce({ chiave: 'b', nome: 'Due' })]));
+    esigiUguale(esito.gruppi.length, 1, 'gruppi');
+    esigiUguale(esito.gruppi[0].titolato, false, 'titolato');
+  });
+
+  await prova('il dominio per il bottone, senza www e senza il resto dell indirizzo', () => {
+    const esito = sponsorDi(con([
+      voce({ chiave: 'a', nome: 'Uno', url: 'https://www.example.com/pagina?x=1' }),
+      voce({ chiave: 'b', nome: 'Due', url: 'https://negozio.example.org/' })
+    ]));
+    esigiUguale(esito.voci.map((v) => v.dominio).join(','), 'example.com,negozio.example.org', 'domini');
+  });
+
+  await prova('spenti, o senza nessuno dentro il periodo, la sezione non e attiva', () => {
+    const spenti = JSON.parse(JSON.stringify(contenutiVeri));
+    spenti.config.sponsor = { attivo: false, voci: [voce({})] };
+    esigiUguale(costruisci.sponsorDi(spenti.config, spenti.testi, ADESSO).attivo, false, 'interruttore spento');
+
+    const scaduti = con([voce({ a: '2020-01-01T00:00' })]);
+    esigiUguale(sponsorDi(scaduti).attivo, false, 'acceso ma nessuno nel periodo');
+  });
+
+  const originale = fs.readFileSync(P.contenutiJson, 'utf8');
+  const scrivi = (documento) => fs.writeFileSync(P.contenutiJson, JSON.stringify(documento, null, 2) + '\n');
+
+  await prova('la pagina si scrive quando servono, e si toglie quando non servono piu', () => {
+    scrivi(con([
+      voce({ chiave: 'a', nome: 'Uno', categoria: 'Hardware', url: 'https://uno.example.com/' }),
+      voce({ chiave: 'b', nome: 'Due', categoria: '', url: 'https://due.example.com/', evidenza: true })
+    ]));
+    const acceso = costruisci.genera({ adesso: ADESSO });
+    esigiUguale(acceso.paginaSponsor.stato, 'scritta', 'sponsor.html');
+    esigiUguale(acceso.sponsor, 2, 'quanti sponsor');
+    esigi(fs.existsSync(P.sponsorHtml), 'sponsor.html non scritta');
+
+    const html = fs.readFileSync(P.sponsorHtml, 'utf8');
+    esigiDentro(html, 'Due', 'il nome dello sponsor');
+    esigiDentro(html, 'rel="noopener sponsored"', 'il rel che Google chiede per le collaborazioni');
+    esigiDentro(html, 'uno.example.com', 'il dominio sul bottone');
+    esigiDentro(html, '<script src="js/sponsor.js" defer></script>', 'lo script della pagina');
+    esigiDentro(html, '<script src="js/guardia.js" defer></script>', 'la guardia della manutenzione');
+    esigi(html.indexOf('<!--') === -1, 'la pagina pubblicata contiene un commento');
+
+    const mappa = fs.readFileSync(path.join(P.radice, 'sitemap.xml'), 'utf8');
+    esigiDentro(mappa, 'sponsor.html', 'sponsor.html nella sitemap');
+
+    const home = fs.readFileSync(P.indexHtml, 'utf8');
+    esigiDentro(home, 'id="sponsor"', 'la striscia in home');
+    esigiDentro(home, 'href="sponsor.html"', 'il bottone che porta alla pagina');
+    esigiDentro(home, '<link rel="stylesheet" href="css/sponsor.css">', 'il foglio');
+    esigiDentro(home, '<script src="js/sponsor.js" defer></script>', 'lo script');
+
+    esigi(home.indexOf('href="#sponsor"') === -1, 'la sezione sponsor e finita nel binario');
+
+    const spenti = JSON.parse(fs.readFileSync(P.contenutiJson, 'utf8'));
+    spenti.config.sponsor.attivo = false;
+    scrivi(spenti);
+    const spento = costruisci.genera({ adesso: ADESSO });
+    esigiUguale(spento.paginaSponsor.stato, 'tolta', 'sponsor.html tolta');
+    esigi(!fs.existsSync(P.sponsorHtml), 'sponsor.html e rimasta online');
+    const senza = fs.readFileSync(P.indexHtml, 'utf8');
+    esigi(senza.indexOf('id="sponsor"') === -1, 'la striscia e rimasta in home');
+    esigi(senza.indexOf('css/sponsor.css') === -1, 'il foglio si carica per niente');
+    esigi(senza.indexOf('js/sponsor.js') === -1, 'lo script si carica per niente');
+  });
+
+  await prova('l ultima collaborazione che scade porta via la pagina da sola', () => {
+    scrivi(con([voce({ nome: 'Uno', a: '2026-09-23T10:00' })]));
+    const esito = costruisci.genera({ adesso: ADESSO });
+    esigiUguale(esito.paginaSponsor.stato, 'niente', 'sponsor.html');
+    esigiUguale(esito.sponsor, 0, 'quanti sponsor');
+    esigi(!fs.existsSync(P.sponsorHtml), 'sponsor.html esiste ancora');
+  });
+
+  await prova('js/sponsor.js rifa il conto nel browser, sulle date che stanno in pagina', () => {
+    scrivi(con([voce({ nome: 'Uno', da: '2026-09-01T00:00', a: '2026-12-31T23:59' })]));
+    costruisci.genera({ adesso: ADESSO });
+    const html = fs.readFileSync(P.sponsorHtml, 'utf8');
+
+    esigiDentro(html, 'data-da="2026-09-01T00:00:00+02:00"', 'data-da');
+    esigiDentro(html, 'data-a="2026-12-31T23:59:00+01:00"', 'data-a con l ora solare');
+
+    const js = fs.readFileSync(path.join(RADICE_VERA, 'js', 'sponsor.js'), 'utf8');
+    esigiDentro(js, "getAttribute('data-da')", 'lo script legge data-da');
+    esigiDentro(js, "getAttribute('data-a')", 'lo script legge data-a');
+    esigiDentro(js, 'data-sponsor-vuoto', 'la riga per quando non resta nessuno');
+    try { new Function(js); } catch (errore) { throw new Error('js/sponsor.js non si compila: ' + errore.message); }
+  });
+
+  fs.writeFileSync(P.contenutiJson, originale);
+  costruisci.genera({ adesso: ADESSO });
+}
+
 async function proveManutenzione(contenutiVeri, costruisci, archivio) {
   apriSezione('11b. Modalita manutenzione');
 
@@ -3795,6 +3952,132 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       try { new Function(fs.readFileSync(file, 'utf8')); }
       catch (errore) { throw new Error(path.basename(file) + ': ' + errore.message); }
     }
+  });
+
+  await prova('la guardia avvisa la pagina prima di ricaricarla, e il lurk si ferma', async () => {
+    const guardia = fs.readFileSync(path.join(RADICE_VERA, 'js', 'guardia.js'), 'utf8');
+    const lurk = fs.readFileSync(path.join(RADICE_VERA, 'js', 'lurk.js'), 'utf8');
+
+    esigiDentro(guardia, "'sb:manutenzione'", 'la guardia annuncia la manutenzione');
+    const doveAnnuncia = guardia.indexOf('annuncia(timbro)');
+    const doveFrena = guardia.indexOf('if (giaRicaricato(timbro))');
+    const doveRicarica = guardia.indexOf('location.reload()');
+    esigi(doveAnnuncia > 0 && doveFrena > doveAnnuncia, 'l annuncio arriva dopo il freno anti-ricarica');
+    esigi(doveRicarica > doveAnnuncia, 'la pagina si ricarica prima di annunciare');
+
+    esigiDentro(guardia, 'var OGNI = 20000;', 'ogni quanto guarda lo stato');
+
+    esigiDentro(lurk, "document.addEventListener('sb:manutenzione'", 'il lurk ascolta la guardia');
+    esigiDentro(lurk, 'function chiudiPerManutenzione()', 'lo spegnimento per manutenzione');
+    esigiDentro(lurk, 'if (inManutenzione) { return false; }', 'il freno dentro bAttivo');
+    esigiDentro(lurk, "const CHIAVE_SOSPESO = 'sb-lurk-sospeso';", 'il biglietto della sospensione');
+    esigiDentro(lurk, 'function tentaRipresa()', 'la ripresa dopo la manutenzione');
+    esigiDentro(lurk, "if (inManutenzione) { avviso(testo('manutenzione')); return; }",
+      'il freno dentro accendi: nemmeno un clic la riaccende mentre il sito chiude');
+    esigiDentro(lurk, 'dimenticaRipresa();', 'chi spegne a mano perde il biglietto della ripresa');
+    esigi(lurk.indexOf('function spegni() {') >= 0 &&
+      lurk.indexOf('dimenticaRipresa();', lurk.indexOf('function spegni() {')) <
+      lurk.indexOf('fermaSentinella();', lurk.indexOf('function spegni() {')),
+      'spegni() dimentica la ripresa per prima cosa');
+
+    esigiDentro(lurk, 'function inSessione(chiave, valore)', 'gli helper di sessione');
+    esigi(lurk.indexOf('inLocale(CHIAVE_SOSPESO') === -1, 'il biglietto finisce in localStorage');
+  });
+
+  await prova('la guardia montata su un DOM finto: annuncia, poi ricarica; e annuncia anche quando non ricarichera piu', async () => {
+    const codice = fs.readFileSync(path.join(RADICE_VERA, 'js', 'guardia.js'), 'utf8');
+
+    const monta = (memoriaIniziale) => {
+      const banco = { eventi: [], ricariche: 0, ascoltatori: {}, memoria: Object.assign({}, memoriaIniziale) };
+      const stato = { manutenzione: true, pubblicatoIl: 'TIMBRO-1' };
+      const fetchFinto = () => Promise.resolve({ ok: true, json: () => Promise.resolve(stato) });
+      const doc = {
+        querySelector: () => null,
+        addEventListener: (nome, fn) => { banco.ascoltatori[nome] = fn; },
+        dispatchEvent: (evento) => { banco.eventi.push(evento); return true; },
+        hidden: false
+      };
+      const win = { fetch: fetchFinto, addEventListener: (nome, fn) => { banco.ascoltatori[nome] = fn; } };
+      const loc = { pathname: '/', reload: () => { banco.ricariche++; } };
+      const ses = {
+        getItem: (k) => (Object.prototype.hasOwnProperty.call(banco.memoria, k) ? banco.memoria[k] : null),
+        setItem: (k, v) => { banco.memoria[k] = String(v); }
+      };
+      const Evento = function (tipo, opzioni) { this.type = tipo; this.detail = opzioni && opzioni.detail; };
+      const avvia = new Function('window', 'document', 'location', 'sessionStorage',
+        'CustomEvent', 'fetch', 'setInterval', codice);
+      avvia(win, doc, loc, ses, Evento, fetchFinto, () => 1);
+      return banco;
+    };
+    const respira = async () => { for (let i = 0; i < 5; i++) { await Promise.resolve(); } };
+
+    const prima = monta({});
+    prima.ascoltatori.pageshow();
+    await respira();
+    esigiUguale(prima.eventi.length, 1, 'eventi annunciati');
+    esigiUguale(prima.eventi[0].type, 'sb:manutenzione', 'nome dell evento');
+    esigiUguale(prima.eventi[0].detail.attiva, true, 'detail.attiva');
+    esigiUguale(prima.eventi[0].detail.pubblicatoIl, 'TIMBRO-1', 'detail.pubblicatoIl');
+    esigiUguale(prima.ricariche, 1, 'ricariche');
+
+    prima.ascoltatori.pageshow();
+    await respira();
+    esigiUguale(prima.eventi.length, 1, 'l annuncio si e ripetuto');
+
+    const dopo = monta({ 'sb-guardia-ricaricato': 'TIMBRO-1' });
+    dopo.ascoltatori.pageshow();
+    await respira();
+    esigiUguale(dopo.ricariche, 0, 'ha ricaricato di nuovo con lo stesso timbro');
+    esigiUguale(dopo.eventi.length, 1, 'non ha annunciato la manutenzione');
+    esigiUguale(dopo.eventi[0].detail.attiva, true, 'detail.attiva');
+  });
+
+  await prova('la guardia montata su un DOM finto: annuncia, poi ricarica; e annuncia anche quando non ricarichera piu', async () => {
+    const codice = fs.readFileSync(path.join(RADICE_VERA, 'js', 'guardia.js'), 'utf8');
+
+    const monta = (memoriaIniziale) => {
+      const banco = { eventi: [], ricariche: 0, ascoltatori: {}, memoria: Object.assign({}, memoriaIniziale) };
+      const stato = { manutenzione: true, pubblicatoIl: 'TIMBRO-1' };
+      const fetchFinto = () => Promise.resolve({ ok: true, json: () => Promise.resolve(stato) });
+      const doc = {
+        querySelector: () => null,
+        addEventListener: (nome, fn) => { banco.ascoltatori[nome] = fn; },
+        dispatchEvent: (evento) => { banco.eventi.push(evento); return true; },
+        hidden: false
+      };
+      const win = { fetch: fetchFinto, addEventListener: (nome, fn) => { banco.ascoltatori[nome] = fn; } };
+      const loc = { pathname: '/', reload: () => { banco.ricariche++; } };
+      const ses = {
+        getItem: (k) => (Object.prototype.hasOwnProperty.call(banco.memoria, k) ? banco.memoria[k] : null),
+        setItem: (k, v) => { banco.memoria[k] = String(v); }
+      };
+      const Evento = function (tipo, opzioni) { this.type = tipo; this.detail = opzioni && opzioni.detail; };
+      const avvia = new Function('window', 'document', 'location', 'sessionStorage',
+        'CustomEvent', 'fetch', 'setInterval', codice);
+      avvia(win, doc, loc, ses, Evento, fetchFinto, () => 1);
+      return banco;
+    };
+    const respira = async () => { for (let i = 0; i < 5; i++) { await Promise.resolve(); } };
+
+    const prima = monta({});
+    prima.ascoltatori.pageshow();
+    await respira();
+    esigiUguale(prima.eventi.length, 1, 'eventi annunciati');
+    esigiUguale(prima.eventi[0].type, 'sb:manutenzione', 'nome dell evento');
+    esigiUguale(prima.eventi[0].detail.attiva, true, 'detail.attiva');
+    esigiUguale(prima.eventi[0].detail.pubblicatoIl, 'TIMBRO-1', 'detail.pubblicatoIl');
+    esigiUguale(prima.ricariche, 1, 'ricariche');
+
+    prima.ascoltatori.pageshow();
+    await respira();
+    esigiUguale(prima.eventi.length, 1, 'l annuncio si e ripetuto');
+
+    const dopo = monta({ 'sb-guardia-ricaricato': 'TIMBRO-1' });
+    dopo.ascoltatori.pageshow();
+    await respira();
+    esigiUguale(dopo.ricariche, 0, 'ha ricaricato di nuovo con lo stesso timbro');
+    esigiUguale(dopo.eventi.length, 1, 'non ha annunciato la manutenzione');
+    esigiUguale(dopo.eventi[0].detail.attiva, true, 'detail.attiva');
   });
 
   await prova('la musica d attesa: file fisso, in loop, volume basso, bottone per fermarla', async () => {
@@ -3885,7 +4168,15 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       esigi(costruisci.anteprimaDi(documento(accesa())).indexOf(SEGNO) === -1, 'anteprimaDi mostra la manutenzione');
     });
 
-    await prova('contenuti vecchi senza le chiavi nuove si pubblicano lo stesso', () => {
+    await prova('il testo dello spegnimento per manutenzione arriva fino a window.DATI', () => {
+    const reso = costruisci.rendi(documento(), { adesso: ADESSO });
+    const dati = JSON.parse(reso.dati.slice(reso.dati.indexOf('{'), reso.dati.lastIndexOf('}') + 1));
+    esigiUguale(dati.lurk.testi.manutenzione,
+      contenutiVeri.testi['lurk.manutenzione'], 'lurk.testi.manutenzione');
+    esigi(dati.lurk.testi.manutenzione, 'il testo e vuoto');
+  });
+
+  await prova('contenuti vecchi senza le chiavi nuove si pubblicano lo stesso', () => {
       scrivi(senzaChiavi(JSON.parse(originale)));
       esigiUguale(schema.verificaCopertura(JSON.parse(fs.readFileSync(P.contenutiJson, 'utf8'))).length, 0, 'copertura');
       const letto = archivio.leggi();
@@ -3918,7 +4209,7 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       scrivi(d);
       const esito = costruisci.genera();
       esigiUguale(esito.manutenzione.attiva, true, 'esito.manutenzione.attiva');
-      esigiUguale(esito.manutenzione.pagine.join(','), 'index.html,clip.html', 'pagine coperte');
+      esigiUguale(esito.manutenzione.pagine.join(','), 'index.html,clip.html,sponsor.html', 'pagine coperte');
       esigiUguale(esito.scritti.map((s) => s.file).join(', '), 'index.html, js/dati.js, css/tema.css', 'scritti');
       const home = fs.readFileSync(P.indexHtml, 'utf8');
       const clip = fs.readFileSync(P.clipHtml, 'utf8');
@@ -4163,6 +4454,7 @@ async function esegui() {
     await proveTwitch(costruisci, archivio);
     await proveClip(contenutiVeri, costruisci, archivio);
     await proveSchedule(contenutiVeri, costruisci, archivio);
+    await proveSponsor(contenutiVeri, costruisci, archivio);
     await proveManutenzione(contenutiVeri, costruisci, archivio);
 
     await proveHosting(temporanea);

@@ -72,7 +72,7 @@
     <audio id="musica-audio" preload="none"></audio>
   </div>
 
-  <button id="musica-apri" class="musica__apri" type="button" aria-label="{{sito.musica.apri}}" title="{{sito.musica.apri}}" aria-controls="musica-riquadro" aria-expanded="false">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18V6.2a.8.8 0 0 1 .6-.8l8-1.8a.6.6 0 0 1 .7.6V15"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="15.8" cy="15" r="2.5"/></svg>
+  <button id="musica-apri" class="musica__apri{{#se sito.musica.icona}} musica__apri--immagine{{/se}}" type="button" aria-label="{{sito.musica.apri}}" title="{{sito.musica.apri}}" aria-controls="musica-riquadro" aria-expanded="false">
+    {{#se sito.musica.icona}}<img class="musica__apri-immagine" src="{{sito.musica.icona}}" alt="" loading="lazy" decoding="async">{{/se}}{{^se sito.musica.icona}}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18V6.2a.8.8 0 0 1 .6-.8l8-1.8a.6.6 0 0 1 .7.6V15"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="15.8" cy="15" r="2.5"/></svg>{{/se}}
   </button>
 </aside>

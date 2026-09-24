@@ -66,8 +66,6 @@
   display: none;
 }
 
-/* ------------------------------------------------------------------ */
-
 .musica__testa {
   display: flex;
   align-items: center;
@@ -126,8 +124,6 @@
   color: var(--testo);
   background-color: color-mix(in srgb, var(--viola) 16%, transparent);
 }
-
-/* ------------------------------------------------------------------ */
 
 .musica__tinta {
   position: absolute;
@@ -243,8 +239,6 @@
   to { rotate: 360deg; }
 }
 
-/* ------------------------------------------------------------------ */
-
 .musica__etichette {
   display: flex;
   flex-direction: column;
@@ -303,8 +297,6 @@
   font-size: var(--t-micro);
   color: var(--testo-medio);
 }
-
-/* ------------------------------------------------------------------ */
 
 .musica__avanzamento {
   display: flex;
@@ -433,8 +425,6 @@
   scale: 1.25;
 }
 
-/* ------------------------------------------------------------------ */
-
 .musica__comandi {
   display: flex;
   align-items: center;
@@ -543,8 +533,6 @@
   block-size: 17px;
 }
 
-/* ------------------------------------------------------------------ */
-
 .musica__elenco {
   list-style: none;
   max-block-size: 190px;
@@ -611,8 +599,6 @@
   color: var(--testo);
 }
 
-/* ------------------------------------------------------------------ */
-
 .musica__stato {
   margin: 0;
   font-size: var(--t-micro);
@@ -645,6 +631,20 @@
   block-size: 24px;
 }
 
+.musica__apri--immagine {
+  overflow: hidden;
+  background-image: none;
+  background-color: var(--pannello-2);
+}
+
+.musica__apri-immagine {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+
+  border-radius: inherit;
+}
+
 .musica__apri:hover {
   translate: 0 -2px;
 }
@@ -668,8 +668,6 @@
   100% { opacity: 0; scale: 1.25; }
 }
 
-/* ------------------------------------------------------------------ */
-
 @media (max-width: 1099.98px) {
   .musica {
     inset-block-end: calc(var(--dock-h) + var(--passo-2) * 2 + env(safe-area-inset-bottom, 0px));
@@ -685,9 +683,6 @@
     --musica-disco: 56px;
   }
 
-  /* Con il mescolamento i comandi sono cinque e a 320px non ci stanno piu.
-     Sparisce il cursore del volume, non il tasto muto: su un telefono il
-     volume si regola coi tasti del telefono, il muto no. */
   .musica__livello {
     display: none;
   }
@@ -696,8 +691,6 @@
     max-block-size: 150px;
   }
 }
-
-/* ------------------------------------------------------------------ */
 
 body:has(.musica:not([hidden])) :where(.cima) {
   inset-block-end: calc(var(--passo-2) + var(--musica-fab) + var(--passo) + env(safe-area-inset-bottom, 0px));

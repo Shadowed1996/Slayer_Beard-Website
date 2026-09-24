@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-24T09:32:52.572Z",
+  "aggiornatoIl": "2026-09-24T09:44:39.755Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -179,7 +179,22 @@
     "manutenzione.messaggio": "Il sito è in manutenzione e <strong>torna presto</strong>, più bello di prima. Nel frattempo la diretta non si ferma: ci vediamo su Twitch.",
     "manutenzione.contoPrima": "Si riparte",
     "manutenzione.contoFinito": "Ci siamo: riaccendiamo la regia…",
-    "manutenzione.bottone": "Guarda su Twitch"
+    "manutenzione.bottone": "Guarda su Twitch",
+    "lurk.manutenzione": "Il sito va in manutenzione: ho spento la modalità lurk.",
+    "sponsor.occhiello": "Chi sostiene il canale",
+    "sponsor.titolo": "Sponsor e partner",
+    "sponsor.testo": "Chi mi dà una mano a portare avanti le dirette. Ogni logo porta al loro sito.",
+    "sponsor.vaiBtn": "Tutti gli sponsor",
+    "sponsor.visita": "Vai al sito di",
+    "sponsor.evidenzaTag": "In evidenza",
+    "sponsor.nuovoTag": "Nuovo partner",
+    "sponsor.dalEtichetta": "Partner dal",
+    "sponsor.vaiScheda": "Vai al sito",
+    "sponsor.paginaTitolo": "Gli sponsor",
+    "sponsor.paginaTesto": "Le realtà che sostengono il canale, divise per categoria. Ogni scheda porta al loro sito.",
+    "sponsor.paginaTorna": "Torna al sito",
+    "sponsor.altri": "Altri",
+    "sponsor.paginaVuota": "Nessuno sponsor attivo in questo momento."
   },
   "config": {
     "twitch": {
@@ -668,6 +683,10 @@
       {
         "id": "saluti",
         "attiva": true
+      },
+      {
+        "id": "sponsor",
+        "attiva": true
       }
     ],
     "stili": {},
@@ -678,7 +697,8 @@
       "attivo": false,
       "aperto": false,
       "cartella": "mp3",
-      "casuale": false
+      "casuale": false,
+      "icona": ""
     },
     "tracce": [],
     "referral": {
@@ -695,6 +715,10 @@
         "Intanto: twitch.tv/slayer_beard",
         "Il pollo sorveglia il cantiere"
       ]
+    },
+    "sponsor": {
+      "attivo": false,
+      "voci": []
     }
   }
 }

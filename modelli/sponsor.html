@@ -1,0 +1,78 @@
+<!doctype html>
+
+<html lang="it">
+<head>
+{{> parziali/testa-sponsor}}
+
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/tema.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/sponsor.css">
+{{#se sito.cssDisposizione}}<style id="sb-disposizione">
+{{{sito.cssDisposizione}}}
+</style>
+{{/se}}{{#se sito.cssStili}}<style id="sb-stili">
+{{{sito.cssStili}}}
+</style>
+{{/se}}</head>
+<body class="pagina-sponsor">
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+
+<header class="sponsor-testa">
+
+  <a class="sponsor-testa__torna" href="index.html">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    <span>{{sponsor.paginaTorna}}</span>
+  </a>
+
+  <div class="sponsor-testa__corpo">
+    <p class="sezione__occhiello">{{sponsor.occhiello}}</p>
+    <h1 class="sponsor-testa__titolo">{{sponsor.paginaTitolo}}</h1>
+
+    <p class="sponsor-testa__testo">{{{sponsor.paginaTesto}}}</p>
+  </div>
+</header>
+
+<main id="contenuto" class="sponsor-corpo">
+  {{#ogni sponsor.gruppi}}
+  <section class="sponsor-gruppo" data-sponsor-gruppo>
+    {{#se titolato}}<h2 class="sponsor-gruppo__titolo"><span>{{titolo}}</span></h2>{{/se}}
+
+    <ul class="sponsor-griglia">
+      {{#ogni voci}}
+      <li class="sponsor-card{{#se evidenza}} sponsor-card--grande{{/se}}" data-sponsor-scheda data-da="{{da}}" data-a="{{a}}"{{#se stile}} style="{{stile}}"{{/se}}>
+
+        {{#se logo}}<div class="sponsor-card__marchio">
+          <img class="sponsor-card__logo" src="{{logo}}" alt="{{nome}}" loading="lazy" decoding="async">
+        </div>{{/se}}
+
+        <div class="sponsor-card__corpo">
+          <div class="sponsor-card__intestazione">
+            <h3 class="sponsor-card__nome">{{nome}}</h3>
+            {{#se nuovo}}<span class="sponsor-tag sponsor-tag--nuovo">{{sponsor.nuovoTag}}</span>{{/se}}
+            {{#se evidenza}}<span class="sponsor-tag">{{sponsor.evidenzaTag}}</span>{{/se}}
+          </div>
+
+          <p class="sponsor-card__meta">{{#se dalAnno}}<span>{{sponsor.dalEtichetta}} {{dalAnno}}</span>{{/se}}<span class="sponsor-card__dominio">{{dominio}}</span></p>
+          {{#se testo}}<p class="sponsor-card__testo">{{{testo}}}</p>{{/se}}
+
+          <a class="sponsor-card__vai" href="{{url}}" target="_blank" rel="noopener sponsored" aria-label="{{visita}}">
+            <span>{{sponsor.vaiScheda}}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4.5h5.5V10"/><path d="M19.5 4.5 12 12"/><path d="M18 14.5v4a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6h4"/></svg>
+          </a>
+        </div>
+      </li>
+      {{/ogni}}
+    </ul>
+  </section>
+  {{/ogni}}
+
+  <p class="sponsor-vuoto" data-sponsor-vuoto role="status" aria-live="polite" hidden>{{sponsor.paginaVuota}}</p>
+</main>
+
+{{> parziali/piede}}
+
+<script src="js/sponsor.js" defer></script>
+<script src="js/guardia.js" defer></script>
+</body>
+</html>

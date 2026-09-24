@@ -1,18 +1,4 @@
 'use strict';
-/* =====================================================================
-   genera.js — genera il sito e basta, senza avviare niente.
-
-   Uso:  node server/genera.js
-
-   E il comando della pubblicazione: legge contenuti/contenuti.json, lo
-   controlla contro contenuti/schema.js, rende modelli/index.html e
-   server/modelli/dati.js.tpl, calcola css/tema.css da config.tema, e
-   scrive i tre file dopo aver messo da parte una copia di quello che
-   c'era prima.
-
-   Esce con codice 1 se qualcosa non torna, cosi si puo incatenare a un
-   comando di caricamento senza rischiare di pubblicare un sito rotto.
-   ===================================================================== */
 
 const path = require('node:path');
 
@@ -22,9 +8,6 @@ const chiavi = require('./lib/chiavi');
 const twitch = require('./lib/twitch');
 const youtube = require('./lib/youtube');
 
-/* Cosa e successo alla riga «Sitemap:» di robots.txt, detto in italiano.
-   Il file non e della generazione: lo prepara chi mette in piedi l'hosting,
-   e qui si aggiunge soltanto quella riga. Se manca non e un guaio. */
 const ROBOTS = {
   'aggiornato': 'riga Sitemap: aggiunta in fondo a robots.txt',
   'gia a posto': 'robots.txt aveva gia la riga Sitemap: giusta',
@@ -45,16 +28,6 @@ async function esegui() {
   console.log('  radice: ' + P.radice);
   console.log('');
 
-  // Prima di generare, non dopo: aggiornaUltimaDiretta() scrive dentro
-  // contenuti.json, e costruisci.genera() lo rilegge da capo. Invertire i
-  // due passi vorrebbe dire pubblicare il titolo vecchio e trovarselo
-  // giusto solo alla pubblicazione successiva.
-  //
-  // costruisci.genera() resta sincrona apposta: l unica cosa che ha
-  // bisogno della rete e questa riga, e tenerla fuori significa che una
-  // generazione senza collegamento a Twitch e identica a prima.
-  // Prima di tutto il Client ID: sta in server/dati/chiavi.js insieme al
-  // secret, e da li deve arrivare fino dentro la pagina.
   const daChiavi = chiavi.sincronizzaClientId();
   if (chiavi.racconta(daChiavi)) { console.log('  ' + chiavi.racconta(daChiavi)); }
 
@@ -66,12 +39,10 @@ async function esegui() {
   if (leClip.stato !== 'spento') { console.log('  ' + twitch.raccontaClip(leClip)); }
   const iNumeri = await twitch.aggiornaNumeri();
   if (iNumeri.stato !== 'spento') { console.log('  ' + twitch.raccontaNumeri(iNumeri)); }
-  // Che cosa c e in onda proprio adesso: lo mostra l evento speciale acceso
-  // al posto del gioco scritto a mano (server/lib/costruisci.js, eventiDi).
-  // Va chiesto qui e non dentro genera(): la generazione resta sincrona.
+
   const laCategoria = await twitch.aggiornaCategoria();
   if (laCategoria.stato !== 'spento') { console.log('  ' + twitch.raccontaCategoria(laCategoria)); }
-  // Gli iscritti dei canali YouTube dei social (server/lib/youtube.js).
+
   const gliIscritti = await youtube.aggiornaIscritti();
   if (youtube.racconta(gliIscritti)) { console.log('  ' + youtube.racconta(gliIscritti)); }
   if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento' || iNumeri.stato !== 'spento' || chiavi.racconta(daChiavi) ||
@@ -83,10 +54,6 @@ async function esegui() {
     console.log('  scritto   ' + scritto.file.padEnd(14) + byteLeggibili(scritto.byte));
   }
 
-  // La pagina di tutte le clip: c'e solo se il sito ha delle clip, quindi va
-  // detto in tutti e tre i casi — scritta, tolta, o non c'era niente da fare.
-  // Chi pubblica deve sapere se quel file adesso e online, perche il bottone
-  // in testa alla «diretta» ci porta.
   const pagina = esito.paginaClip;
   if (pagina && pagina.stato === 'scritta') {
     console.log('  scritto   ' + pagina.file.padEnd(14) + byteLeggibili(pagina.byte));
@@ -96,9 +63,16 @@ async function esegui() {
     console.log('  clip.html non si e potuta togliere (' + pagina.errore + '): va cancellata a mano');
   }
 
-  // La sitemap si scrive solo quando l'indirizzo del sito e noto — dal
-  // pannello o da SB_SITO (CONTRATTO-6 §4.3) — e va detto in tutti e due i
-  // casi: chi pubblica deve sapere se il file c'e, e se non c'e, perche.
+  const sponsor = esito.paginaSponsor;
+  if (sponsor && sponsor.stato === 'scritta') {
+    console.log('  scritto   ' + sponsor.file.padEnd(14) + byteLeggibili(sponsor.byte) +
+      '   ' + esito.sponsor + (esito.sponsor === 1 ? ' sponsor' : ' sponsor'));
+  } else if (sponsor && sponsor.stato === 'tolta') {
+    console.log('  tolta     sponsor.html: gli sponsor sono spenti, oppure nessuno e nel suo periodo');
+  } else if (sponsor && sponsor.stato === 'non tolta') {
+    console.log('  sponsor.html non si e potuta togliere (' + sponsor.errore + '): va cancellata a mano');
+  }
+
   const mappa = esito.sitemap;
   if (mappa && mappa.byte) {
     console.log('  scritto   ' + mappa.file.padEnd(14) + byteLeggibili(mappa.byte) + '   ' + mappa.indirizzo);
@@ -126,10 +100,6 @@ async function esegui() {
   console.log('  Fatto in ' + esito.durataMs + ' ms. index.html, js/dati.js e css/tema.css');
   console.log('  sono pronti da pubblicare.');
 
-  // Gli avvertimenti d'insieme (server/lib/controlli.js) NON sono errori: il
-  // sito e stato generato lo stesso. Si stampano qui in fondo perche il
-  // momento in cui servono e esattamente questo, quando si sta per caricare
-  // online quello che si e appena generato.
   if (Array.isArray(esito.controlli) && esito.controlli.length) {
     console.log('');
     console.log('  Da guardare prima di mandarlo online:');
@@ -146,7 +116,6 @@ function racconta(err) {
   console.error('  GENERAZIONE FALLITA');
   console.error('  ' + (err && err.message ? err.message : String(err)));
 
-  // Gli errori di convalida arrivano tutti insieme: si stampano tutti.
   if (err && Array.isArray(err.errori)) {
     console.error('');
     for (const e of err.errori) { console.error('    - ' + e.chiave + ': ' + e.messaggio); }
@@ -159,8 +128,7 @@ function racconta(err) {
     console.error('');
     console.error('  Sistema contenuti/schema.js: deve descrivere tutte le chiavi, e solo quelle che esistono.');
   }
-  // Gli errori del motore di template sanno gia file e riga: si vede subito
-  // quale segnaposto e sbagliato.
+
   if (err && err.name === 'ErroreModello') {
     console.error('');
     console.error('  Il problema e nel modello, alla riga indicata qui sopra.');

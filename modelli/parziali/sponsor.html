@@ -1,0 +1,38 @@
+{{#se sponsor.attivo}}<section id="sponsor" class="sponsor" aria-labelledby="sponsor-titolo" data-sb-sezione="sponsor" data-sb-riquadro="sponsor">
+  <div class="sezione__testa" data-sb-blocco="sponsor.testa">
+    <p class="sezione__occhiello" data-sb-testo="sponsor.occhiello">{{sponsor.occhiello}}</p>
+    <h2 id="sponsor-titolo" class="sezione__titolo" data-sb-testo="sponsor.titolo">{{sponsor.titolo}}</h2>
+    <p class="sezione__testo" data-sb-testo="sponsor.testo">{{{sponsor.testo}}}</p>
+  </div>
+
+  <div class="sponsor__nastro" data-sponsor-nastro data-sb-blocco="sponsor.striscia">
+    <ul class="sponsor__fila" data-sponsor-fila data-sb-parte="sponsor">
+      {{#ogni sponsor.voci}}
+
+      <li class="sponsor__voce{{#se evidenza}} is-evidenza{{/se}}" data-da="{{da}}" data-a="{{a}}"{{#se stile}} style="{{stile}}"{{/se}}>
+        <a class="sponsor__link" href="{{url}}" target="_blank" rel="noopener sponsored" aria-label="{{visita}}">
+          {{#se logo}}<img class="sponsor__logo" src="{{logo}}" alt="{{nome}}" loading="lazy" decoding="async">{{/se}}{{^se logo}}<span class="sponsor__scritta">{{nome}}</span>{{/se}}
+          {{#se nuovo}}<span class="sponsor__nuovo">{{sponsor.nuovoTag}}</span>{{/se}}
+        </a>
+      </li>
+      {{/ogni}}
+    </ul>
+
+    <ul class="sponsor__fila" data-sponsor-fila-copia aria-hidden="true">
+      {{#ogni sponsor.voci}}
+      <li class="sponsor__voce{{#se evidenza}} is-evidenza{{/se}}" data-da="{{da}}" data-a="{{a}}"{{#se stile}} style="{{stile}}"{{/se}}>
+        <a class="sponsor__link" href="{{url}}" target="_blank" rel="noopener sponsored" tabindex="-1">
+          {{#se logo}}<img class="sponsor__logo" src="{{logo}}" alt="" loading="lazy" decoding="async">{{/se}}{{^se logo}}<span class="sponsor__scritta">{{nome}}</span>{{/se}}
+        </a>
+      </li>
+      {{/ogni}}
+    </ul>
+  </div>
+
+  <p class="sponsor__vai-riga" data-sb-blocco="sponsor.vai">
+    <a class="sponsor__vai" href="{{sito.paginaSponsor.url}}" data-sb-testo="sponsor.vaiBtn">
+      <span>{{sponsor.vaiBtn}}</span>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </a>
+  </p>
+</section>{{/se}}
