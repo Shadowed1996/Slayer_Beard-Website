@@ -462,7 +462,20 @@
   color: var(--testo-tenue);
 }
 
-.gioco-card__quando time { color: var(--testo-medio); }
+.gioco-card__quando-etichetta {
+  display: block;
+  margin-block-end: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.gioco-card__quando time {
+  display: block;
+  color: var(--testo-medio);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .gioco-card__clip {
   display: inline-flex;

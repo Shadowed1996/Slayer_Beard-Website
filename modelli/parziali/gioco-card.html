@@ -12,7 +12,7 @@
 
     {{#se numeri}}<p class="gioco-card__numeri">{{#ogni numeri}}<span class="gioco-card__numero"><strong>{{valore}}</strong> {{parola}}</span>{{/ogni}}</p>{{/se}}
 
-    {{#se ultimaTesto}}<p class="gioco-card__quando">{{giochi.ultimaVolta}} <time datetime="{{ultima}}">{{ultimaTesto}}</time></p>{{/se}}
+    {{#se ultimaTesto}}<p class="gioco-card__quando"><span class="gioco-card__quando-etichetta">{{giochi.ultimaVolta}}</span> <time datetime="{{ultima}}">{{ultimaTesto}}</time></p>{{/se}}
 
     {{#se clipMigliore}}<a class="gioco-card__clip" href="{{clipMigliore.url}}" target="_blank" rel="noopener" aria-label="{{giochi.clipMigliore}}: {{nome}}{{#se clipMigliore.titolo}} — {{clipMigliore.titolo}}{{/se}}">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.6-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z"/></svg>
