@@ -910,7 +910,8 @@ const SUPERATE = [
   'spotify.passa',
   'spotify.nascondi',
   'spotify.mostra',
-  'config.spotify'
+  'config.spotify',
+  'diretta.testo'
 ];
 
 function cancella(contenuti, chiave) {

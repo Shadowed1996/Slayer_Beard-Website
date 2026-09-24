@@ -1139,6 +1139,17 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigi(typeof documento.config.email === 'string' && documento.config.email !== '', 'la email e sparita');
   });
 
+  await prova('chiavi superate: il testo della Diretta, ancora nel contenuti.json online, non blocca la pubblicazione', () => {
+    const documento = archivio.leggi();
+    documento.testi['diretta.testo'] = 'Il canale e qui dentro, alla larghezza giusta.';
+    esigiUguale(schema.verificaCopertura(documento).filter((p) => p.tipo === 'scoperta').length, 1, 'la chiave doveva risultare scoperta prima della pulizia');
+    schema.completa(documento);
+    esigi(documento.testi['diretta.testo'] === undefined, 'diretta.testo e rimasto');
+    esigiUguale(schema.verificaCopertura(documento).length, 0, 'la copertura si lamenta dopo la pulizia');
+    esigiUguale(convalida.convalida(documento).length, 0, 'la convalida deve passare');
+    esigiDentro(costruisci.anteprimaDi(documento), 'data-sb-testo="diretta.titolo"', 'la pagina non si costruisce piu');
+  });
+
   await prova('referral: spento non c e, acceso porta il riquadro col rel giusto, e senza link resta spento', () => {
     const documento = archivio.leggi();
     documento.config.referral.attivo = false;
