@@ -1,0 +1,22 @@
+<article class="gioco-card">
+  <div class="gioco-card__copertina">
+    {{#se copertina}}<img class="gioco-card__immagine" src="{{copertina}}" alt="{{nome}}" loading="lazy" decoding="async" width="285" height="380">{{/se}}{{^se copertina}}<span class="gioco-card__segnaposto" aria-hidden="true">{{iniziale}}</span>{{/se}}
+  </div>
+
+  <div class="gioco-card__corpo">
+    <h2 class="gioco-card__nome">{{nome}}</h2>
+
+    {{#se generi}}<ul class="gioco-card__generi">
+      {{#ogni generi}}<li class="gioco-card__genere">{{.}}</li>{{/ogni}}
+    </ul>{{/se}}
+
+    {{#se numeri}}<p class="gioco-card__numeri">{{#ogni numeri}}<span class="gioco-card__numero"><strong>{{valore}}</strong> {{parola}}</span>{{/ogni}}</p>{{/se}}
+
+    {{#se ultimaTesto}}<p class="gioco-card__quando">{{giochi.ultimaVolta}} <time datetime="{{ultima}}">{{ultimaTesto}}</time></p>{{/se}}
+
+    {{#se clipMigliore}}<a class="gioco-card__clip" href="{{clipMigliore.url}}" target="_blank" rel="noopener" aria-label="{{giochi.clipMigliore}}: {{nome}}{{#se clipMigliore.titolo}} — {{clipMigliore.titolo}}{{/se}}">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.6-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14Z"/></svg>
+      <span>{{giochi.clipMigliore}}</span>
+    </a>{{/se}}
+  </div>
+</article>

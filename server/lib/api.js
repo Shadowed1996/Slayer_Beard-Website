@@ -16,6 +16,7 @@ const tema = require('./tema.js');
 const chiavi = require('./chiavi');
 const twitch = require('./twitch');
 const youtube = require('./youtube');
+const giochi = require('./giochi');
 const sondaggi = require('./sondaggi');
 const schema = require('../../contenuti/schema.js');
 const SBStili = require('../../pannello/condivisi/stili.js');
@@ -207,6 +208,7 @@ async function rottaPubblica(req, res) {
 
   const leEmote = await twitch.aggiornaEmote();
   const gliIscritti = await youtube.aggiornaIscritti();
+  const iGiochi = await giochi.aggiornaGiochi();
   const esito = costruisci.genera();
 
   json(res, 200, {
@@ -219,6 +221,7 @@ async function rottaPubblica(req, res) {
     categoria: { stato: laCategoria.stato, messaggio: twitch.raccontaCategoria(laCategoria) },
     emote: { stato: leEmote.stato, messaggio: twitch.raccontaEmote(leEmote) },
     youtube: { stato: gliIscritti.stato, messaggio: youtube.racconta(gliIscritti) },
+    giochi: { stato: iGiochi.stato, messaggio: giochi.raccontaGiochi(iGiochi) },
     chiavi: { stato: daChiavi.stato, messaggio: chiavi.racconta(daChiavi) }
   });
 }
@@ -381,7 +384,7 @@ function rottaRipristina(req, res, id) {
   const clip = costruisci.allineaClipDopoRipristino();
   const sponsor = costruisci.allineaSponsorDopoRipristino();
   const statoSito = costruisci.allineaStatoDopoRipristino();
-  json(res, 200, { ok: true, ripristinati: esito.ripristinati, backup: esito.backup, clip: clip, sponsor: sponsor, statoSito: statoSito });
+  json(res, 200, { ok: true, ripristinati: esito.ripristinati, backup: esito.backup, clip: clip, sponsor: sponsor, giochi: costruisci.allineaGiochiDopoRipristino(), statoSito: statoSito });
 }
 
 async function rottaSondaggioPubblico(req, res) {

@@ -410,7 +410,7 @@ async function proveSchema(contenutiVeri) {
 
   await prova('i gruppi seguono l ordine della pagina', () => {
 
-    const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'sondaggio', 'settimana', 'chi',
+    const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'giochi', 'sondaggio', 'settimana', 'chi',
       'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'manutenzione'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
@@ -3505,7 +3505,7 @@ async function proveUscita(costruisci, archivio) {
     esigiDentro(mappa, '<lastmod>' + String(esito.aggiornatoIl).slice(0, 10) + '</lastmod>', 'lastmod');
 
     const scritte = (voce) => (voce && voce.stato === 'scritta') ? 1 : 0;
-    const pagine = 1 + scritte(esito.paginaClip) + scritte(esito.paginaSponsor);
+    const pagine = 1 + scritte(esito.paginaClip) + scritte(esito.paginaSponsor) + scritte(esito.paginaGiochi);
     esigiUguale((mappa.match(/<url>/g) || []).length, pagine, 'una riga per ogni pagina pubblicata');
 
     const testoRobots = fs.readFileSync(robots, 'utf8');
@@ -3944,6 +3944,179 @@ async function proveSponsor(contenutiVeri, costruisci, archivio) {
   costruisci.genera({ adesso: ADESSO });
 }
 
+async function provePaginaGiochi(contenutiVeri, costruisci, archivio) {
+  apriSezione('11d. La pagina dei giochi');
+
+  const finti = {
+    letteIl: '2026-09-24T10:00:00.000Z',
+    giochi: [
+      {
+        id: '1', nome: 'Gioco <b>Uno</b> & "due"',
+        copertina: 'https://static-cdn.jtvnw.net/ttv-boxart/1_IGDB-285x380.jpg',
+        generi: ['Horror', 'Azione'], dirette: 1234, ore: 19.94, clip: 3,
+        primaVolta: '2026-09-14', ultimaVolta: '2026-09-21',
+        clipMigliore: { titolo: '<img src=x onerror=alert(1)>', url: 'https://www.twitch.tv/slayer_beard/clip/Abc', anteprima: '', visualizzazioni: 120 }
+      },
+      {
+        id: '509658', nome: 'Just Chatting', copertina: '', generi: ['Chiacchiere'], dirette: 40, ore: 90, clip: 9,
+        primaVolta: '2021-01-01', ultimaVolta: '2026-09-22', clipMigliore: null
+      },
+      {
+        id: '2', nome: 'Secondo', copertina: 'https://cattivo.example.com/x.jpg', generi: ['Horror'], dirette: 1, ore: 1, clip: 0,
+        primaVolta: '2026-01-02', ultimaVolta: '2026-01-02',
+        clipMigliore: { titolo: 'x', url: 'javascript:alert(1)', anteprima: '', visualizzazioni: 1 }
+      },
+      {
+        id: '3', nome: 'Terzo', copertina: '', generi: ['Azione'], dirette: 0, ore: 0, clip: 1,
+        primaVolta: '2026-05-01', ultimaVolta: '2026-05-01', clipMigliore: null
+      }
+    ]
+  };
+  const correzioni = [{ gioco: 'terzo', generi: 'Platform, Indie , , Puzzle, Extra', copertina: 'contenuti/media/terzo.png' }];
+
+  const scriviFinti = (valore) => {
+    fs.mkdirSync(path.dirname(P.giochiTwitch), { recursive: true });
+    fs.writeFileSync(P.giochiTwitch, typeof valore === 'string' ? valore : JSON.stringify(valore));
+  };
+  const togliFinti = () => { try { fs.unlinkSync(P.giochiTwitch); } catch (e) {} };
+  const con = (ramo) => {
+    const d = JSON.parse(JSON.stringify(contenutiVeri));
+    schema.completa(d);
+    d.config.giochi = Object.assign({ attivo: true, nascosti: ['just chatting'], correzioni: correzioni }, ramo || {});
+    return d;
+  };
+  const giochiDi = (d) => costruisci.giochiDi(d.config, d.testi);
+
+  await prova('lo schema ha il gruppo giochi dopo le clip, tutto con il suo predefinito', () => {
+    const ids = schema.gruppi.map((g) => g.id);
+    esigiUguale(ids[ids.indexOf('clip') + 1], 'giochi', 'gruppo dopo le clip');
+    const gruppo = schema.gruppi.find((g) => g.id === 'giochi');
+    for (const campo of gruppo.campi) {
+      esigi(Object.prototype.hasOwnProperty.call(campo, 'predefinito'), campo.chiave + ' senza predefinito');
+    }
+    esigiUguale(schema.campo('config.giochi.attivo').predefinito, true, 'interruttore acceso di partenza');
+    esigiDentro(schema.campo('config.giochi.nascosti').predefinito.join(','), 'Just Chatting', 'nascosti di partenza');
+  });
+
+  await prova('giochiDi toglie i nascosti, applica le correzioni e scarta copertine e link di host estranei', () => {
+    scriviFinti(finti);
+    const esito = giochiDi(con());
+    esigiUguale(esito.dalSeme, false, 'letto dal file dei dati');
+    esigiUguale(esito.voci.map((v) => v.nome).join(','), 'Gioco <b>Uno</b> & "due",Terzo,Secondo', 'giochi e ordine per ultima volta');
+    const terzo = esito.voci[1];
+    esigiUguale(terzo.generi.join(','), 'Platform,Indie,Puzzle', 'generi corretti, al massimo tre');
+    esigiUguale(terzo.copertina, 'contenuti/media/terzo.png', 'copertina corretta');
+    esigiUguale(esito.voci[2].copertina, '', 'copertina su un host estraneo');
+    esigiUguale(esito.voci[2].clipMigliore, null, 'clip con un link non di Twitch');
+    esigiUguale(esito.voci[0].clipMigliore.url, 'https://www.twitch.tv/slayer_beard/clip/Abc', 'clip migliore');
+
+    const perId = giochiDi(con({ nascosti: ['2'] }));
+    esigiUguale(perId.voci.map((v) => v.nome).join(','), 'Just Chatting,Gioco <b>Uno</b> & "due",Terzo', 'nascosto per id');
+  });
+
+  await prova('giochiDi formatta numeri, ore e date in italiano, con singolare e plurale', () => {
+    scriviFinti(finti);
+    const esito = giochiDi(con());
+    const numeri = (v) => v.numeri.map((n) => n.valore + ' ' + n.parola).join(' · ');
+    esigiUguale(numeri(esito.voci[0]), '1.234 dirette · 19,9 ore · 3 clip', 'numeri del primo');
+    esigiUguale(numeri(esito.voci[2]), '1 diretta · 1 ora', 'singolari');
+    esigiUguale(numeri(esito.voci[1]), '1 clip', 'gli zeri non si scrivono');
+    esigiUguale(esito.voci[0].ultimaTesto, '21 settembre 2026', 'data in parole');
+    esigiUguale(esito.voci[0].datiGeneri, 'Horror|Azione', 'generi per js/giochi.js');
+    esigiUguale(esito.riepilogo.map((n) => n.valore + ' ' + n.parola).join(' · '), '3 giochi · 20,9 ore · 4 clip', 'riepilogo');
+  });
+
+  await prova('giochiDi conta le tipologie presenti, dalla piu frequente', () => {
+    scriviFinti(finti);
+    const esito = giochiDi(con());
+    esigiUguale(esito.tipologie.map((t) => t.nome + ':' + t.quanti).join(','),
+      'Horror:2,Azione:1,Indie:1,Platform:1,Puzzle:1', 'tipologie');
+  });
+
+  await prova('senza il file dei dati, o con il file rotto, ripiega sul seme', () => {
+    togliFinti();
+    const senza = giochiDi(con({ nascosti: schema.campo('config.giochi.nascosti').predefinito }));
+    esigiUguale(senza.dalSeme, true, 'dal seme');
+    esigi(senza.quanti > 40, 'pochi giochi dal seme: ' + senza.quanti);
+    esigi(senza.voci.every((v) => ['just chatting', 'irl', 'special events'].indexOf(v.nome.toLowerCase()) === -1), 'un nascosto e passato');
+    esigi(senza.voci.filter((v) => v.copertina).every((v) => /^https:\/\/static-cdn\.jtvnw\.net\/ttv-boxart\/[A-Za-z0-9_.-]+-285x380\.jpg$/.test(v.copertina)),
+      'copertina del seme non completata');
+    scriviFinti('{rotto');
+    esigiUguale(giochiDi(con()).dalSeme, true, 'file rotto');
+    togliFinti();
+  });
+
+  await prova('spenta, o senza giochi da mostrare, la pagina non e attiva', () => {
+    scriviFinti(finti);
+    esigiUguale(giochiDi(con({ attivo: false })).attivo, false, 'interruttore spento');
+    esigiUguale(giochiDi(con({ nascosti: ['1', '2', '3', 'just chatting'] })).attivo, false, 'tutti nascosti');
+    esigiUguale(giochiDi(con()).attivo, true, 'acceso');
+  });
+
+  const originale = fs.readFileSync(P.contenutiJson, 'utf8');
+  const scrivi = (documento) => fs.writeFileSync(P.contenutiJson, JSON.stringify(documento, null, 2) + '\n');
+
+  await prova('la pagina si scrive con le card in escape, entra in sitemap e la home la invita', () => {
+    scriviFinti(finti);
+    scrivi(con());
+    const esito = costruisci.genera();
+    esigiUguale(esito.paginaGiochi.stato, 'scritta', 'giochi.html');
+    esigi(fs.existsSync(P.giochiHtml), 'giochi.html non scritta');
+
+    const html = fs.readFileSync(P.giochiHtml, 'utf8');
+    esigiDentro(html, 'Gioco &lt;b&gt;Uno&lt;/b&gt; &amp; &quot;due&quot;', 'il nome in escape');
+    esigi(html.indexOf('<b>Uno</b>') === -1, 'il nome e passato senza escape');
+    esigi(html.indexOf('<img src=x') === -1, 'il titolo della clip e passato senza escape');
+    esigiDentro(html, 'data-tipo="Horror"', 'la pillola della tipologia');
+    esigiDentro(html, 'data-generi="Horror|Azione" data-ore="19.9" data-ultima="2026-09-21"', 'i dati della card');
+    esigiDentro(html, 'src="https://static-cdn.jtvnw.net/ttv-boxart/1_IGDB-285x380.jpg" alt="Gioco &lt;b&gt;Uno', 'copertina con alt');
+    esigiDentro(html, 'loading="lazy"', 'copertine lazy');
+    esigiDentro(html, 'href="https://www.twitch.tv/slayer_beard/clip/Abc"', 'il link alla clip migliore');
+    esigiDentro(html, 'role="status"', 'il conteggio annunciato');
+    esigiDentro(html, '<script src="js/giochi.js" defer></script>', 'lo script della pagina');
+    esigiDentro(html, '<script src="js/guardia.js" defer></script>', 'la guardia della manutenzione');
+    esigiDentro(html, '<link rel="stylesheet" href="css/giochi.css">', 'il foglio della pagina');
+    esigi(html.indexOf('Just Chatting') === -1, 'un nascosto e in pagina');
+    esigi(html.indexOf('<!--') === -1, 'la pagina pubblicata contiene un commento');
+    esigi(!/<script>(?!\s*$)/.test(html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '')), 'script inline in pagina');
+
+    const mappa = fs.readFileSync(path.join(P.radice, 'sitemap.xml'), 'utf8');
+    esigiDentro(mappa, 'giochi.html', 'giochi.html nella sitemap');
+
+    const home = fs.readFileSync(P.indexHtml, 'utf8');
+    esigiDentro(home, 'href="giochi.html"', 'l invito in home');
+    const nav = home.slice(home.indexOf('binario__nav'), home.indexOf('binario__stato'));
+    esigiUguale((nav.match(/binario__voce/g) || []).length, 6, 'voci nel binario');
+  });
+
+  await prova('spenta, la pagina si toglie e l invito sparisce dalla home', () => {
+    scriviFinti(finti);
+    scrivi(con({ attivo: false }));
+    const esito = costruisci.genera();
+    esigiUguale(esito.paginaGiochi.stato, 'tolta', 'giochi.html tolta');
+    esigi(!fs.existsSync(P.giochiHtml), 'giochi.html e rimasta online');
+    esigi(fs.readFileSync(P.indexHtml, 'utf8').indexOf('href="giochi.html"') === -1, 'l invito e rimasto in home');
+    esigi(fs.readFileSync(path.join(P.radice, 'sitemap.xml'), 'utf8').indexOf('giochi.html') === -1, 'giochi.html e rimasta in sitemap');
+    esigiUguale(costruisci.genera().paginaGiochi.stato, 'niente', 'giochi.html la seconda volta');
+  });
+
+  await prova('js/giochi.js si compila e lavora sugli attributi delle card', () => {
+    const js = fs.readFileSync(path.join(RADICE_VERA, 'js', 'giochi.js'), 'utf8');
+    for (const pezzo of ['data-generi', 'data-ore', 'data-ultima', 'data-nome', 'data-tipo', 'aria-pressed', 'replaceState', 'data-giochi-vuoto']) {
+      esigiDentro(js, pezzo, 'js/giochi.js');
+    }
+    try { new Function(js); } catch (errore) { throw new Error('js/giochi.js non si compila: ' + errore.message); }
+    const css = fs.readFileSync(path.join(RADICE_VERA, 'css', 'giochi.css'), 'utf8');
+    esigi(!/#[0-9a-fA-F]{3,8}\b/.test(css), 'css/giochi.css usa colori esadecimali');
+    esigiDentro(css, 'prefers-reduced-motion', 'movimento ridotto');
+    esigi(typeof costruisci.allineaGiochiDopoRipristino === 'function', 'manca allineaGiochiDopoRipristino');
+  });
+
+  togliFinti();
+  fs.writeFileSync(P.contenutiJson, originale);
+  costruisci.genera();
+}
+
 async function proveManutenzione(contenutiVeri, costruisci, archivio) {
   apriSezione('11b. Modalita manutenzione');
 
@@ -4209,7 +4382,7 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       scrivi(d);
       const esito = costruisci.genera();
       esigiUguale(esito.manutenzione.attiva, true, 'esito.manutenzione.attiva');
-      esigiUguale(esito.manutenzione.pagine.join(','), 'index.html,clip.html,sponsor.html', 'pagine coperte');
+      esigiUguale(esito.manutenzione.pagine.join(','), 'index.html,clip.html,sponsor.html,giochi.html', 'pagine coperte');
       esigiUguale(esito.scritti.map((s) => s.file).join(', '), 'index.html, js/dati.js, css/tema.css', 'scritti');
       const home = fs.readFileSync(P.indexHtml, 'utf8');
       const clip = fs.readFileSync(P.clipHtml, 'utf8');
@@ -4424,6 +4597,174 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
   }
 }
 
+async function proveGiochiDati() {
+  apriSezione('11d. I giochi: i dati da Twitch (CONTRATTO-7, agente A)');
+  const giochi = require('./lib/giochi');
+
+  await prova('lo slot e l ora di Roma arrotondata ai 10 minuti', () => {
+    esigiUguale(giochi.slotDi(new Date('2026-09-24T19:17:30Z')), '2026-09-24T21:10', 'estate');
+    esigiUguale(giochi.slotDi(new Date('2026-12-01T20:09:59Z')), '2026-12-01T21:00', 'inverno');
+    esigiUguale(giochi.slotDi(new Date('2026-09-24T22:05:00Z')), '2026-09-25T00:00', 'dopo mezzanotte');
+    esigiUguale(giochi.slotDi('non e una data'), '', 'data storta');
+    esigiUguale(giochi.msAlProssimoSlot(Date.UTC(2026, 8, 24, 19, 17, 0)), 3 * 60 * 1000, 'attesa fino al prossimo slot');
+  });
+
+  await prova('la giornata di diretta passa alla sera prima fino alle 6', () => {
+    esigiUguale(giochi.giornataDi('2026-09-25T01:30'), '2026-09-24', 'notte');
+    esigiUguale(giochi.giornataDi('2026-09-25T06:00'), '2026-09-25', 'mattina');
+    esigiUguale(giochi.giornataDi('2026-10-01T02:00'), '2026-09-30', 'cambio di mese');
+    esigiUguale(giochi.giornataDi('2026-09-25'), '', 'slot storto');
+  });
+
+  await prova('i generi IGDB si traducono, temi forti prima, al massimo 3', () => {
+    esigiUguale(JSON.stringify(giochi.traduciGeneri({
+      genres: [{ name: 'Shooter' }, { name: 'Adventure' }, { name: 'Point-and-click' }],
+      themes: [{ name: 'Action' }, { name: 'Horror' }, { name: 'Fantasy' }]
+    })), JSON.stringify(['Horror', 'Sparatutto', 'Avventura']), 'ordine e tetto');
+    esigiUguale(JSON.stringify(giochi.traduciGeneri({ genres: [{ name: 'Role-playing (RPG)' }], themes: [{ name: 'Open world' }, { name: 'Survival' }] })),
+      JSON.stringify(['Open world', 'Sopravvivenza', 'GDR']), 'temi prima dei generi');
+    esigiUguale(JSON.stringify(giochi.traduciGeneri({ genres: [{ name: 'Quiz/Trivia' }], themes: [{ name: 'Party' }] })),
+      JSON.stringify(['Quiz', 'Party game']), 'party game');
+    esigiUguale(JSON.stringify(giochi.traduciGeneri({ genres: [{ name: 'Sconosciuto' }] })), '[]', 'genere ignoto');
+    esigiUguale(JSON.stringify(giochi.traduciGeneri(null)), '[]', 'niente');
+    const mappa = giochi.generiDaRisposta([{ id: 7, genres: [{ name: 'Racing' }] }, { id: 'x' }]);
+    esigiUguale(JSON.stringify(mappa), JSON.stringify({ 7: ['Corse'] }), 'risposta IGDB');
+    esigiUguale(giochi.corpoIgdb(['1', '2']), 'fields id,genres.name,themes.name; where id = (1,2); limit 500;', 'corpo della richiesta');
+  });
+
+  await prova('le copertine sono solo URL completi di static-cdn.jtvnw.net', () => {
+    esigiUguale(giochi.copertinaDaTwitch('https://static-cdn.jtvnw.net/ttv-boxart/1_IGDB-{width}x{height}.jpg'),
+      'https://static-cdn.jtvnw.net/ttv-boxart/1_IGDB-285x380.jpg', 'da box_art_url');
+    esigiUguale(giochi.copertinaDaTwitch('https://evil.example/ttv-boxart/1-{width}x{height}.jpg'), '', 'host estraneo');
+    esigiUguale(giochi.copertinaDaTwitch('http://static-cdn.jtvnw.net/ttv-boxart/1-{width}x{height}.jpg'), '', 'senza https');
+    esigiUguale(giochi.copertinaDaPezzo('9891_IGDB_it-it'), 'https://static-cdn.jtvnw.net/ttv-boxart/9891_IGDB_it-it-285x380.jpg', 'dal seme');
+    esigiUguale(giochi.copertinaDaPezzo('../x"y'), '', 'pezzo storto');
+    const mappa = giochi.giochiDaRisposta({ data: [{ id: '5', name: 'Cinque', box_art_url: 'https://static-cdn.jtvnw.net/ttv-boxart/5-{width}x{height}.jpg', igdb_id: '55' }, { id: 'no' }] });
+    esigiUguale(JSON.stringify(mappa), JSON.stringify({ 5: { nome: 'Cinque', copertina: 'https://static-cdn.jtvnw.net/ttv-boxart/5-285x380.jpg', igdbId: '55' } }), 'risposta di helix/games');
+  });
+
+  await prova('il seme vero ha 55 giochi con copertina ricostruibile', () => {
+    const seme = JSON.parse(fs.readFileSync(path.join(RADICE_VERA, 'server', 'modelli', 'giochi-seme.json'), 'utf8'));
+    esigiUguale(seme.giochi.length, 55, 'giochi nel seme');
+    for (const g of seme.giochi) {
+      esigi(/^[0-9]+$/.test(g.id), 'id storto: ' + g.id);
+      esigi(giochi.copertinaDaPezzo(g.copertina) !== '', 'copertina non ricostruibile per ' + g.nome);
+    }
+  });
+
+  const clipFinte = [
+    { game_id: '100', created_at: '2026-09-25T19:30:00Z', view_count: 5, url: 'https://www.twitch.tv/x/clip/a', title: 'A', thumbnail_url: 'https://clips-media-assets2.twitch.tv/a.jpg' },
+    { game_id: '100', created_at: '2024-01-01T12:00:00Z', view_count: 50, url: 'https://www.twitch.tv/x/clip/b', title: 'B', thumbnail_url: 'https://static-cdn.jtvnw.net/b.jpg' },
+    { game_id: '', created_at: '2026-09-25T19:30:00Z', view_count: 999, url: 'https://www.twitch.tv/x/clip/z', title: 'Z' },
+    { game_id: '400', created_at: '2026-09-27T20:00:00Z', view_count: 1, url: 'https://www.twitch.tv/x/clip/c', title: 'C', thumbnail_url: 'https://evil.example/c.jpg' }
+  ];
+
+  await prova('le clip si raggruppano per gioco con la migliore', () => {
+    const gruppi = giochi.raggruppaClip(clipFinte);
+    esigiUguale(Object.keys(gruppi).sort().join(','), '100,400', 'giochi con clip');
+    esigiUguale(gruppi['100'].clip, 2, 'clip del 100');
+    esigiUguale(gruppi['100'].prima, '2024-01-01', 'clip piu vecchia');
+    esigiUguale(gruppi['100'].ultima, '2026-09-25', 'clip piu recente');
+    esigiUguale(gruppi['100'].migliore.titolo, 'B', 'la piu vista');
+    esigiUguale(gruppi['100'].migliore.anteprima, 'https://static-cdn.jtvnw.net/b.jpg', 'anteprima buona');
+    esigiUguale(gruppi['400'].migliore.anteprima, '', 'anteprima da host estraneo');
+  });
+
+  const registroFinto = [
+    { gameId: '100', nome: 'Gioco', slot: '2026-09-25T21:00' },
+    { gameId: '100', nome: 'Gioco', slot: '2026-09-25T21:10' },
+    { gameId: '100', nome: 'Gioco', slot: '2026-09-25T21:10' },
+    { gameId: '100', nome: 'Gioco', slot: '2026-09-26T00:30' },
+    { gameId: '300', nome: 'Nuovo', slot: '2026-09-26T22:00' },
+    { gameId: '200', nome: 'Vecchio', slot: '2026-09-20T21:00' },
+    { gameId: 'x', nome: 'Rotto', slot: '2026-09-26T22:10' },
+    { gameId: '300', nome: 'Rotto', slot: 'ieri' }
+  ];
+
+  await prova('il registro deduplica gli slot e conta ore e giornate', () => {
+    const pulito = giochi.pulisciRegistro(registroFinto);
+    esigiUguale(pulito.length, 5, 'voci buone e uniche');
+    const gruppi = giochi.raggruppaRegistro(registroFinto);
+    esigiUguale(gruppi['100'].slot, 3, 'slot del 100');
+    esigiUguale(JSON.stringify(gruppi['100'].giornate), JSON.stringify(['2026-09-25']), 'la notte conta per la sera prima');
+    esigiUguale(gruppi['300'].nome, 'Nuovo', 'nome dal registro');
+  });
+
+  const seme = [
+    { id: '100', nome: 'Gioco Seme', copertina: '100_IGDB', dirette: 2, ore: 3.5, clip: 1, primaVolta: '2025-01-10', ultimaVolta: '2026-09-20', generi: ['Horror'] },
+    { id: '200', nome: 'Vecchio', copertina: '200_IGDB', dirette: 1, ore: 1, clip: 0, primaVolta: '2024-05-01', ultimaVolta: '2024-05-01', generi: ['Puzzle'] }
+  ];
+  const daTwitch = giochi.giochiDaRisposta({ data: [
+    { id: '100', name: 'Gioco Vero', box_art_url: 'https://static-cdn.jtvnw.net/ttv-boxart/100_IGDB-{width}x{height}.jpg', igdb_id: '9' },
+    { id: '400', name: 'Clip Solo', box_art_url: 'https://evil.example/x-{width}x{height}.jpg', igdb_id: '8' }
+  ] });
+  const precedenti = [{ id: '400', nome: 'Clip Solo', generi: ['Corse'], copertina: 'https://static-cdn.jtvnw.net/ttv-boxart/400-285x380.jpg' }];
+
+  await prova('seme, registro, clip e IGDB si fondono', () => {
+    const elenco = giochi.fondiGiochi({
+      seme: seme, semeFino: '2026-09-24', precedenti: precedenti, clip: giochi.raggruppaClip(clipFinte),
+      registro: registroFinto, giochiTwitch: daTwitch, generiIgdb: { 9: ['Sparatutto'], 8: [] }
+    });
+    esigiUguale(elenco.map((g) => g.id).join(','), '400,300,100,200', 'ordine per ultima volta');
+    const [clipSolo, nuovo, gioco, vecchio] = elenco;
+    esigiUguale(gioco.nome, 'Gioco Vero', 'nome da Twitch');
+    esigiUguale(gioco.copertina, 'https://static-cdn.jtvnw.net/ttv-boxart/100_IGDB-285x380.jpg', 'copertina da Twitch');
+    esigiUguale(JSON.stringify(gioco.generi), JSON.stringify(['Sparatutto']), 'generi da IGDB');
+    esigiUguale(gioco.dirette, 3, 'dirette: seme piu giornate nuove');
+    esigiUguale(gioco.ore, 4, 'ore: seme piu slot');
+    esigiUguale(gioco.clip, 2, 'clip: il massimo');
+    esigiUguale(gioco.primaVolta, '2024-01-01', 'prima volta');
+    esigiUguale(gioco.ultimaVolta, '2026-09-25', 'ultima volta');
+    esigiUguale(gioco.clipMigliore.titolo, 'B', 'clip migliore');
+    esigiUguale(nuovo.nome, 'Nuovo', 'nome dal registro');
+    esigiUguale(nuovo.dirette, 1, 'dirette del gioco nuovo');
+    esigiUguale(nuovo.ore, 0.2, 'ore arrotondate');
+    esigiUguale(nuovo.clipMigliore, null, 'senza clip');
+    esigiUguale(nuovo.copertina, '', 'senza copertina');
+    esigiUguale(JSON.stringify(clipSolo.generi), JSON.stringify(['Corse']), 'IGDB vuoto: generi di prima');
+    esigiUguale(clipSolo.copertina, 'https://static-cdn.jtvnw.net/ttv-boxart/400-285x380.jpg', 'copertina di prima');
+    esigiUguale(clipSolo.dirette, 0, 'solo clip');
+    esigiUguale(vecchio.dirette, 1, 'lo slot prima del seme non conta');
+    esigiUguale(vecchio.copertina, 'https://static-cdn.jtvnw.net/ttv-boxart/200_IGDB-285x380.jpg', 'copertina dal seme');
+    esigiUguale(JSON.stringify(vecchio.generi), JSON.stringify(['Puzzle']), 'generi dal seme');
+    for (const g of elenco) {
+      esigiUguale(JSON.stringify(Object.keys(g)),
+        JSON.stringify(['id', 'nome', 'copertina', 'generi', 'dirette', 'ore', 'clip', 'primaVolta', 'ultimaVolta', 'clipMigliore']), 'forma di ' + g.id);
+    }
+
+    const senzaIgdb = giochi.fondiGiochi({ seme: seme, semeFino: '2026-09-24', clip: {}, registro: [], giochiTwitch: daTwitch, generiIgdb: null });
+    esigiUguale(JSON.stringify(senzaIgdb.find((g) => g.id === '100').generi), JSON.stringify(['Horror']), 'IGDB giu: generi del seme');
+  });
+
+  await prova('il registro su disco: uno slot si annota una volta sola', () => {
+    try { fs.unlinkSync(P.giochiRegistro); } catch (e) {}
+    try {
+      esigiUguale(giochi.annotaSlot({ gameId: '100', nome: 'Gioco', slot: '2026-09-25T21:00' }).annotato, true, 'prima volta');
+      esigiUguale(giochi.annotaSlot({ gameId: '100', nome: 'Gioco', slot: '2026-09-25T21:00' }).annotato, false, 'seconda copia dell app');
+      esigiUguale(giochi.annotaSlot({ gameId: '300', nome: 'Altro', slot: '2026-09-25T21:10' }).annotato, true, 'slot dopo');
+      esigiUguale(giochi.annotaSlot({ gameId: '', slot: '2026-09-25T21:20' }).annotato, false, 'voce storta');
+      esigiUguale(giochi.registroSalvato().length, 2, 'voci su disco');
+      fs.writeFileSync(P.giochiRegistro, '{ rotto');
+      esigiUguale(giochi.annotaSlot({ gameId: '100', slot: '2026-09-25T21:30' }).annotato, false, 'registro rotto');
+      esigiUguale(fs.readFileSync(P.giochiRegistro, 'utf8'), '{ rotto', 'il registro rotto non si sovrascrive');
+    } finally {
+      try { fs.unlinkSync(P.giochiRegistro); } catch (e) {}
+    }
+  });
+
+  await prova('senza Twitch non si chiede niente e non parte nessun controllo', async () => {
+    esigi(!twitch.configurato(), 'nella copia di lavoro non dovrebbero esserci credenziali');
+    const primaDi = fs.existsSync(P.giochiTwitch) ? fs.readFileSync(P.giochiTwitch, 'utf8') : null;
+    const esito = await giochi.aggiornaGiochi();
+    esigiUguale(esito.stato, 'spento', 'stato');
+    esigiUguale(fs.existsSync(P.giochiTwitch) ? fs.readFileSync(P.giochiTwitch, 'utf8') : null, primaDi, 'il file dei giochi non doveva cambiare');
+    esigiUguale(giochi.avviaControllo(), null, 'controllo periodico');
+    esigiDentro(giochi.raccontaGiochi({ stato: 'fallito', motivo: 'rete' }), 'Tengo l elenco di prima', 'riga del fallimento');
+    esigiDentro(giochi.raccontaGiochi({ stato: 'aggiornato', giochi: 3, clip: 7, generi: 'igdb' }), '3 giochi', 'riga del successo');
+    esigiUguale(giochi.raccontaGiochi({ stato: 'boh' }), '', 'stato sconosciuto');
+  });
+}
+
 async function esegui() {
   console.log('');
   console.log('  COLLAUDO DEL BACKEND — slayer_beard');
@@ -4455,7 +4796,9 @@ async function esegui() {
     await proveClip(contenutiVeri, costruisci, archivio);
     await proveSchedule(contenutiVeri, costruisci, archivio);
     await proveSponsor(contenutiVeri, costruisci, archivio);
+    await provePaginaGiochi(contenutiVeri, costruisci, archivio);
     await proveManutenzione(contenutiVeri, costruisci, archivio);
+    await proveGiochiDati();
 
     await proveHosting(temporanea);
     await proveUscita(costruisci, archivio);

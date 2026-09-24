@@ -7,6 +7,7 @@ const costruisci = require('./lib/costruisci');
 const chiavi = require('./lib/chiavi');
 const twitch = require('./lib/twitch');
 const youtube = require('./lib/youtube');
+const giochi = require('./lib/giochi');
 
 const ROBOTS = {
   'aggiornato': 'riga Sitemap: aggiunta in fondo a robots.txt',
@@ -45,8 +46,10 @@ async function esegui() {
 
   const gliIscritti = await youtube.aggiornaIscritti();
   if (youtube.racconta(gliIscritti)) { console.log('  ' + youtube.racconta(gliIscritti)); }
+  const iGiochi = await giochi.aggiornaGiochi();
+  if (iGiochi.stato !== 'spento') { console.log('  ' + giochi.raccontaGiochi(iGiochi)); }
   if (daTwitch.stato !== 'spento' || leClip.stato !== 'spento' || iNumeri.stato !== 'spento' || chiavi.racconta(daChiavi) ||
-      youtube.racconta(gliIscritti)) { console.log(''); }
+      youtube.racconta(gliIscritti) || iGiochi.stato !== 'spento') { console.log(''); }
 
   const esito = costruisci.genera();
 
@@ -71,6 +74,15 @@ async function esegui() {
     console.log('  tolta     sponsor.html: gli sponsor sono spenti, oppure nessuno e nel suo periodo');
   } else if (sponsor && sponsor.stato === 'non tolta') {
     console.log('  sponsor.html non si e potuta togliere (' + sponsor.errore + '): va cancellata a mano');
+  }
+
+  const paginaGiochi = esito.paginaGiochi;
+  if (paginaGiochi && paginaGiochi.stato === 'scritta') {
+    console.log('  scritto   ' + paginaGiochi.file.padEnd(14) + byteLeggibili(paginaGiochi.byte));
+  } else if (paginaGiochi && paginaGiochi.stato === 'tolta') {
+    console.log('  tolta     giochi.html: la pagina dei giochi e spenta o vuota');
+  } else if (paginaGiochi && paginaGiochi.stato === 'non tolta') {
+    console.log('  giochi.html non si e potuta togliere (' + paginaGiochi.errore + '): va cancellata a mano');
   }
 
   const mappa = esito.sitemap;

@@ -1,0 +1,78 @@
+<!doctype html>
+
+<html lang="it">
+<head>
+{{> parziali/testa-giochi}}
+
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/tema.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/giochi.css">
+{{#se sito.cssDisposizione}}<style id="sb-disposizione">
+{{{sito.cssDisposizione}}}
+</style>
+{{/se}}{{#se sito.cssStili}}<style id="sb-stili">
+{{{sito.cssStili}}}
+</style>
+{{/se}}</head>
+<body class="pagina-giochi">
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+
+<header class="giochi-testa">
+  <a class="giochi-testa__torna" href="index.html">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    <span>{{giochi.paginaTorna}}</span>
+  </a>
+
+  <div class="giochi-testa__corpo">
+    <p class="sezione__occhiello">{{giochi.occhiello}}</p>
+    <h1 class="giochi-testa__titolo">{{giochi.paginaTitolo}}</h1>
+    <p class="giochi-testa__testo">{{{giochi.paginaTesto}}}</p>
+
+    <ul class="giochi-riepilogo">
+      {{#ogni giochi.riepilogo}}<li class="giochi-riepilogo__voce"><strong>{{valore}}</strong> <span>{{parola}}</span></li>{{/ogni}}
+    </ul>
+  </div>
+</header>
+
+<main id="contenuto" class="giochi-corpo">
+  <div class="giochi-comandi" data-giochi-comandi hidden>
+    <div class="giochi-filtri">
+      <p class="giochi-comandi__etichetta" id="giochi-filtri-etichetta">{{giochi.filtri}}</p>
+      <div class="giochi-filtri__pillole" role="group" aria-labelledby="giochi-filtri-etichetta">
+        <button type="button" class="giochi-pillola" data-tipo="" aria-pressed="true">{{giochi.tutti}} <span class="giochi-pillola__conto">{{giochi.quanti}}</span></button>
+        {{#ogni giochi.tipologie}}<button type="button" class="giochi-pillola" data-tipo="{{nome}}" aria-pressed="false">{{nome}} <span class="giochi-pillola__conto">{{quanti}}</span></button>
+        {{/ogni}}
+      </div>
+    </div>
+
+    <div class="giochi-ordine">
+      <label class="giochi-comandi__etichetta" for="giochi-ordine">{{giochi.ordina}}</label>
+      <div class="giochi-ordine__scelta">
+        <select id="giochi-ordine" class="giochi-ordine__select" data-giochi-ordine>
+          <option value="recenti" selected>{{giochi.ordinaRecenti}}</option>
+          <option value="ore">{{giochi.ordinaOre}}</option>
+          <option value="nome">{{giochi.ordinaNome}}</option>
+        </select>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <p class="giochi-conto" data-giochi-conto data-uno="{{giochi.gioco}}" data-tanti="{{giochi.giochi}}" role="status" aria-live="polite">{{giochi.quanti}} {{giochi.giochi}}</p>
+
+  <ul class="giochi-griglia" data-giochi-elenco>
+    {{#ogni giochi.voci}}
+    <li class="giochi-griglia__voce" data-gioco data-generi="{{datiGeneri}}" data-ore="{{ore}}" data-ultima="{{ultima}}" data-nome="{{nome}}">{{> parziali/gioco-card}}</li>
+    {{/ogni}}
+  </ul>
+
+  <p class="giochi-vuoto" data-giochi-vuoto hidden>{{giochi.vuoto}}</p>
+</main>
+
+{{> parziali/piede}}
+
+<script src="js/giochi.js" defer></script>
+<script src="js/guardia.js" defer></script>
+</body>
+</html>

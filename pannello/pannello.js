@@ -1,30 +1,4 @@
-/* =====================================================================
-   pannello.js — la base del pannello.
 
-   Tiene insieme le cose che non dipendono da com'è fatto l'editor:
-     1. l'accesso (entra, crea la password al primo avvio, esci, sessione
-        scaduta con ripresa delle modifiche);
-     2. la bozza in memoria e il confronto con l'ultima versione salvata
-        (la spia «non salvato», l'avviso prima di chiudere, Ctrl+S);
-     3. il ponte verso i moduli dell'editor (editor/ponte.js): leggere e
-        scrivere una chiave, disegnare un campo dello schema, scegliere
-        un'immagine, salvare, pubblicare;
-     4. Salva e Pubblica con i loro avvisi, e gli errori di convalida del
-        server appoggiati al campo che li ha causati.
-
-   La struttura dell'editor — barra, pannello laterale, anteprima, menu,
-   ricerca, Annulla/Ripeti — sta in editor/guscio.js, che si carica con
-   import() dinamico: se si rompe, qui si entra lo stesso, si salva e si
-   pubblica, e un avviso dice cosa manca.
-
-   Il pannello continua a non sapere niente dei campi del sito: li
-   costruisce dallo schema che arriva da GET /api/contenuti.
-
-   Salva ≠ Pubblica: salvare scrive la bozza sul server, pubblicare
-   rigenera i tre file che il pubblico vede (index.html, js/dati.js,
-   css/tema.css). Il pannello lo ripete ovunque perché è l'unica cosa che
-   chi amministra deve avere chiara.
-   ===================================================================== */
 
 import { api, ErroreApi, erroriDiConvalida, quandoScadeLaSessione } from './moduli/api.js';
 import { el, formattaData, tempoFa, leggiPreferenza, scriviPreferenza } from './moduli/dom.js';
@@ -34,7 +8,6 @@ import { apriVoci } from './moduli/elenchi.js';
 import { scegliImmagine } from './moduli/media.js';
 import { ponte, collegaPonte } from './editor/ponte.js';
 
-/* --------------------------------------------------------------- dom */
 const $ = (id) => document.getElementById(id);
 
 const dom = {
@@ -63,11 +36,6 @@ const dom = {
   spiaManutenzione: $('spia-manutenzione')
 };
 
-/* ------------------------------------------------------ preferenze */
-
-/* Come si guarda il pannello (non i contenuti: quelli stanno sul server).
-   Qui solo gli interruttori; le preferenze con un valore (larghezza del
-   pannello, scheda aperta) le legge il guscio con le stesse funzioni. */
 function leggiPref(nome, predefinito) {
   const valore = leggiPreferenza(nome, null);
   return valore === null ? predefinito : valore === '1';
@@ -77,29 +45,21 @@ function scriviPref(nome, acceso) {
   scriviPreferenza(nome, acceso ? '1' : '0');
 }
 
-/* ------------------------------------------------------------- stato */
-
-/* Lo stato vivo, lo stesso oggetto per tutta la vita della pagina: il
-   ponte lo espone così com'è (ponte.stato). `dati` invece cambia oggetto
-   a ogni caricamento, Annulla/Ripeti e ripristino (sb:sostituito). */
 const stato = {
   schema: null,
-  dati: null,            // { versione, aggiornatoIl, testi, config } — la bozza in corso
-  salvato: null,         // copia di { testi, config } com'erano all'ultimo salvataggio
-  stato: null,           // il campo `stato` di GET /api/contenuti (pubblicazione, controlli)
-  tema: null,            // { font, preset, predefinito } di GET /api/contenuti
-  editor: null,          // { font, sezioni, riquadri } di GET /api/contenuti (CONTRATTO-4 §7)
-  errori: new Map(),     // chiave -> messaggio, dall'ultima convalida del server
-  modoAccesso: 'entra',  // 'entra' | 'crea'
-  inCorso: false         // c'è una scrittura in volo: si spengono i comandi
+  dati: null,
+  salvato: null,
+  stato: null,
+  tema: null,
+  editor: null,
+  errori: new Map(),
+  modoAccesso: 'entra',
+  inCorso: false
 };
 ponte.stato = stato;
 
-/* Il guscio dell'editor, quando si è caricato. */
 let guscio = null;
 let caricamentoGuscio = null;
-
-/* ------------------------------------------------------- viste madri */
 
 function mostraVista(nome) {
   dom.corpo.dataset.vista = nome;
@@ -114,8 +74,6 @@ function mostraAvvio(testo, conRiprova = false) {
   mostraVista('avvio');
 }
 
-/* ------------------------------------------------------------ bozza */
-
 function sporco() {
   if (!stato.dati || !stato.salvato) return false;
   return !uguali({ testi: stato.dati.testi, config: stato.dati.config }, stato.salvato);
@@ -126,7 +84,6 @@ function segnaStato(tipo, testo) {
   dom.statoLavoro.querySelector('.stato__testo').textContent = testo;
 }
 
-/** Quale dei quattro passi tocca adesso: è la risposta a «e ora?». */
 function passoAdesso() {
   if (sporco()) return 'salva';
   return stato.stato && stato.stato.daPubblicare ? 'pubblica' : 'modifica';
@@ -161,7 +118,7 @@ function aggiornaManutenzione() {
 
 function aggiornaStato() {
   aggiornaManutenzione();
-  if (stato.inCorso) return;   // durante una scrittura comanda il messaggio di lavoro
+  if (stato.inCorso) return;
   const modificato = sporco();
   dom.corpo.dataset.sporco = modificato ? '1' : '0';
   segnaStato(modificato ? 'sporco' : 'pulito', modificato ? 'Modifiche non salvate' : 'Tutto salvato');
@@ -170,9 +127,6 @@ function aggiornaStato() {
   if (guscio) guscio.aggiornaPassi(passoAdesso());
 }
 
-/* Il confronto con il salvato è un JSON.stringify di tutta la bozza: fatto
-   a ogni movimento di un cursore dello stile diventerebbe il collo di
-   bottiglia. Una volta per fotogramma basta a tenere la spia giusta. */
 let statoProgrammato = 0;
 function programmaStato() {
   if (statoProgrammato) return;
@@ -190,11 +144,6 @@ function bloccaComandi(bloccato, testoStato) {
   else aggiornaStato();
 }
 
-/**
- * Data dell'ultima pubblicazione. Il contratto fissa che GET /api/contenuti
- * risponda con un campo `stato`, non come si chiama la data dentro: si
- * prende la prima che somiglia a una data di pubblicazione.
- */
 function dataPubblicazione() {
   const s = stato.stato;
   if (!s || typeof s !== 'object') return null;
@@ -206,11 +155,8 @@ function dataPubblicazione() {
   return null;
 }
 
-/** Il testo della pubblicazione: lo stesso nella barra e nella vista «Pagina». */
 function testoPubblicazione() {
   const data = dataPubblicazione();
-  // Il server dice anche se la bozza salvata è più recente della pagina
-  // pubblicata: è la sola cosa che distingue «salvato» da «online».
   const daFare = Boolean(stato.stato && stato.stato.daPubblicare);
   if (!data) {
     return {
@@ -244,11 +190,6 @@ function aggiornaPubblicazione() {
   }
 }
 
-/* ------------------------------------------------- contesto dei campi */
-
-/* Il server indirizza le voci di un elenco con le parentesi quadre
-   («config.social[0].url»), il pannello con il punto
-   («config.social.0.url»). Si traduce qui, una volta sola. */
 function normalizzaChiave(chiave) {
   return String(chiave || '').replace(/\[(\d+)\]/g, '.$1');
 }
@@ -258,32 +199,21 @@ function gruppi() {
 }
 
 const ctx = {
-  /* I nomi tecnici delle chiavi sono roba da chi sviluppa: di norma stanno
-     nascosti e si accendono dal menu quando servono per capire un errore. */
   opzioni: { mostraChiave: leggiPref('nomi-tecnici', false) },
 
-  /* Chiamata da ogni widget a ogni modifica. L'evento sb:modifica parte già
-     dalla scrittura (accessoPer), qui resta solo la spia. */
   modificato: () => programmaStato(),
 
   registra: (controllo) => registraControllo(controllo),
   conferma,
   scegliImmagine: (valoreCorrente) => scegliImmagine({ valoreCorrente, usoDi }),
 
-  /* Catalogo dei font e preset, come arrivano da GET /api/contenuti. */
   tema: null,
 
-  /* I font caricati, per il campo «font» degli slot quando il registro di
-     moduli/tema.js non è ancora pieno (decisione di TEMA). */
   get fontCaricati() {
     return stato.editor && Array.isArray(stato.editor.font) ? stato.editor.font : undefined;
   }
 };
 
-/**
- * Ogni modifica passa da qui: spia «non salvato» e sb:modifica per chi
- * deve allineare l'anteprima (il guscio, CONTRATTO-4 §9.4).
- */
 function emettiModifica(chiave, strutturale) {
   programmaStato();
   document.dispatchEvent(new CustomEvent('sb:modifica', {
@@ -302,11 +232,6 @@ function accessoPer(chiave) {
   };
 }
 
-/**
- * Dove è usata un'immagine. Scorre lo schema, non i dati: così l'elenco
- * che si legge nel dialogo è fatto di etichette in italiano e non di
- * percorsi tecnici, e resta giusto anche se lo schema cambia.
- */
 function usoDi(percorso) {
   const cercato = String(percorso || '').replace(/^\/+/, '');
   if (!cercato || !stato.schema || !stato.dati) return [];
@@ -334,9 +259,6 @@ function usoDi(percorso) {
           });
         }
       }
-      // La schedule tiene le sue immagini dentro un campo solo (schede, eventi,
-      // fondale): lo schema dice «orari», non «immagine», e senza questo giro
-      // la libreria proporrebbe di cancellare la locandina di un giorno.
       if (campo.tipo === 'orari') {
         const orari = leggiChiave(stato.dati, campo.chiave);
         const pari = (valore) => String(valore || '').replace(/^\/+/, '') === cercato;
@@ -355,8 +277,6 @@ function usoDi(percorso) {
       }
     }
   }
-  // Uno sfondo scelto nello stile di un elemento usa l'immagine anche lui:
-  // il server lo sa e rifiuterebbe la cancellazione, qui almeno lo si dice.
   const stili = stato.dati.config && stato.dati.config.stili;
   if (stili && typeof stili === 'object') {
     for (const [bersaglio, voce] of Object.entries(stili)) {
@@ -371,31 +291,17 @@ function usoDi(percorso) {
   return trovati;
 }
 
-/* ---------------------------------------------------------------------
-   CAMPI A VIDEO ED ERRORI DI CONVALIDA
-
-   I campi li disegnano i moduli dell'editor con ponte.creaCampo, ovunque
-   stiano (una scheda, una parte, una vista del menu). Ognuno si registra
-   qui con la sua chiave: così un errore del server sul salvataggio si
-   appoggia al campo giusto anche se nasce dopo, e la convalida locale
-   passa da tutti i campi che si vedono.
-   --------------------------------------------------------------------- */
-
-const controlli = new Map();   // chiave -> [controllo, …] dal più vecchio al più nuovo
+const controlli = new Map();
 const MAX_PER_CHIAVE = 6;
 
 function registraControllo(controllo) {
   if (!controllo || !controllo.chiave || !controllo.nodo) return;
   const chiave = normalizzaChiave(controllo.chiave);
-  // Si tengono solo gli ultimi: un controllo appena creato non è ancora in
-  // pagina, e scartarlo perché «staccato» vorrebbe dire perderlo subito.
   const elenco = (controlli.get(chiave) || []).filter((c) => c.nodo.isConnected);
   elenco.push(controllo);
   while (elenco.length > MAX_PER_CHIAVE) elenco.shift();
   controlli.set(chiave, elenco);
 
-  // Chi lo ha creato lo appende subito dopo: l'errore si appoggia quando è
-  // già in pagina, e si aprono anche le voci pieghevoli che lo contengono.
   if (stato.errori.size) queueMicrotask(() => appoggiaErroriA(controllo));
 }
 
@@ -403,13 +309,6 @@ function visibile(nodo) {
   return Boolean(nodo && nodo.isConnected && nodo.getClientRects().length);
 }
 
-/**
- * Il controllo che deve mostrare un errore.
- * Il server può mandare una chiave più profonda di quella di un campo
- * (config.orari.ora quando il campo è config.orari): si risale un
- * segmento alla volta finché non si trova qualcosa in pagina, preferendo
- * un controllo visibile a uno che sta in una scheda chiusa.
- */
 function controlloPer(chiave) {
   let corrente = normalizzaChiave(chiave);
   while (corrente) {
@@ -442,7 +341,6 @@ function appoggiaErroriA(controllo) {
   }
 }
 
-/** Appoggia sugli elementi a video gli errori memorizzati. */
 function applicaErrori() {
   for (const [chiave, messaggio] of stato.errori) {
     const controllo = controlloPer(chiave);
@@ -464,9 +362,6 @@ function azzeraErrori() {
   if (guscio) guscio.mostraErrori([]);
 }
 
-/* Quando si tocca un campo, il suo errore del server non vale più: era
-   riferito a quello che era stato spedito, non a quello che c'è adesso.
-   Un solo ascoltatore delegato su tutto il pannello invece di uno per campo. */
 for (const evento of ['input', 'change']) {
   dom.pannello.addEventListener(evento, (e) => {
     if (!stato.errori.size) return;
@@ -477,10 +372,6 @@ for (const evento of ['input', 'change']) {
     }
   });
 }
-
-/* ---------------------------------------------------------------------
-   IL PONTE (CONTRATTO-4 §9.2)
-   --------------------------------------------------------------------- */
 
 function trovaCampo(chiave) {
   const cercata = normalizzaChiave(chiave);
@@ -511,7 +402,6 @@ function creaCampoPonte(campoOChiave) {
   try {
     return creaCampo(campo, accessoPer(normalizzaChiave(campo.chiave)), ctx);
   } catch (errore) {
-    // Un campo che non si disegna non deve portarsi via la scheda intera.
     console.error('[pannello] campo non disegnato:', campo.chiave, errore);
     return null;
   }
@@ -543,22 +433,12 @@ collegaPonte({
   pubblica: () => pubblica()
 });
 
-/* ------------------------------------------------- nomi tecnici     */
-
 function applicaNomiTecnici(mostra) {
   ctx.opzioni.mostraChiave = Boolean(mostra);
   scriviPref('nomi-tecnici', ctx.opzioni.mostraChiave);
-  // I campi già disegnati hanno l'etichetta fissata: si ridisegnano.
   if (guscio) guscio.ridisegna();
 }
 
-/* ------------------------------------------------------ salva / pubblica */
-
-/**
- * Convalida locale dei campi che si vedono. Il server ricontrolla tutto:
- * questa serve solo a intercettare gli errori evidenti sul campo che si
- * sta guardando, senza fare un giro di rete per sentirselo dire.
- */
 function convalidaLocale() {
   let primoErrato = null;
   for (const controllo of tuttiIControlli()) {
@@ -670,8 +550,6 @@ async function pubblica() {
   try {
     const risposta = await api.pubblica();
     const durata = risposta && Number(risposta.durataMs);
-    // `scritti` è l'elenco dei file rigenerati: se il server lo manda si
-    // dice quanti sono, perché «pubblicato» da solo non dice cos'è successo.
     const scritti = risposta && Array.isArray(risposta.scritti) ? risposta.scritti.length : 0;
     const inManutenzione = Boolean(risposta && risposta.manutenzione && risposta.manutenzione.attiva === true);
     if (inManutenzione) {
@@ -688,10 +566,6 @@ async function pubblica() {
       );
     }
 
-    /* I controlli d'insieme (server/lib/controlli.js): la pubblicazione è
-       andata a buon fine, ma queste sono le cose che online non
-       funzionerebbero — il dominio del player, l'indirizzo di ritorno del
-       login. Avviso a parte, e senza scadenza: vanno lette, non intraviste. */
     const daGuardare = (risposta && Array.isArray(risposta.controlli)) ? risposta.controlli : [];
     if (daGuardare.length) {
       avviso(daGuardare.map((c) => '· ' + c.messaggio).join('\n'), {
@@ -703,12 +577,6 @@ async function pubblica() {
       });
     }
 
-    /* «Ultima diretta» la chiede il server a Twitch, prima di generare
-       (server/lib/twitch.js). Se il collegamento non è configurato il
-       server non manda niente e qui non si dice niente: è il caso normale
-       di chi quel campo lo scrive a mano. Quando invece il collegamento
-       c'è ma non ha funzionato, va detto — altrimenti si pubblica un
-       titolo vecchio convinti che si aggiorni da sé. */
     const daTwitch = risposta && risposta.twitch;
     if (daTwitch && daTwitch.messaggio && daTwitch.stato !== 'spento' && daTwitch.stato !== 'invariato') {
       const andataMale = daTwitch.stato === 'fallito' || daTwitch.stato === 'vuoto' || daTwitch.stato === 'senzaCanale';
@@ -719,7 +587,6 @@ async function pubblica() {
       });
     }
 
-    /* Il numero dei follower, con la stessa regola di «Ultima diretta». */
     const iFollower = risposta && risposta.follower;
     if (iFollower && iFollower.messaggio && iFollower.stato !== 'spento' && iFollower.stato !== 'invariato') {
       const andataMale = iFollower.stato === 'fallito' || iFollower.stato === 'vuoto' || iFollower.stato === 'senzaCanale';
@@ -730,9 +597,6 @@ async function pubblica() {
       });
     }
 
-    /* Le clip, con la stessa regola: si tace quando non c'è niente da
-       dire — sezione spenta o vetrina identica a prima — e si insiste
-       solo quando il server ha provato e non ce l'ha fatta. */
     const leClip = risposta && risposta.clip;
     if (leClip && leClip.messaggio && leClip.stato !== 'spento' && leClip.stato !== 'invariato') {
       const andataMale = leClip.stato === 'fallito' || leClip.stato === 'vuoto' || leClip.stato === 'senzaCanale';
@@ -743,16 +607,16 @@ async function pubblica() {
       });
     }
 
-    /* Le emote per le frasi del pollo: si parla solo se qualcosa è andato
-       storto, quando va bene non c'è niente da sapere. */
     const leEmote = risposta && risposta.emote;
     if (leEmote && leEmote.messaggio && ['fallito', 'senzaCanale'].includes(leEmote.stato)) {
       avviso(leEmote.messaggio, { tipo: 'info', durata: 0, titolo: 'Emote non aggiornate' });
     }
 
-    /* Follower e abbonati, stessa regola. «nonCollegato» non si dice a ogni
-       pubblicazione: è lo stato di chi non ha ancora autorizzato il server,
-       e il terminale lo spiega già. */
+    const iGiochi = risposta && risposta.giochi;
+    if (iGiochi && iGiochi.messaggio && ['fallito', 'senzaCanale'].includes(iGiochi.stato)) {
+      avviso(iGiochi.messaggio, { tipo: 'info', durata: 0, titolo: 'Giochi non aggiornati' });
+    }
+
     const iNumeri = risposta && risposta.numeri;
     if (iNumeri && iNumeri.messaggio && ['aggiornato', 'fallito', 'senzaCanale'].includes(iNumeri.stato)) {
       const andataMale = iNumeri.stato !== 'aggiornato';
@@ -763,8 +627,6 @@ async function pubblica() {
       });
     }
 
-    /* Gli iscritti YouTube dei social. «spento» qui si dice: vuol dire che
-       una voce chiede il numero e manca la chiave per averlo. */
     const gliIscritti = risposta && risposta.youtube;
     if (gliIscritti && gliIscritti.messaggio && ['aggiornato', 'fallito', 'spento'].includes(gliIscritti.stato)) {
       const andataMale = gliIscritti.stato !== 'aggiornato';
@@ -775,12 +637,10 @@ async function pubblica() {
       });
     }
 
-    // Il server non è tenuto a rimandare la data: intanto si segna adesso,
-    // e il prossimo caricamento dei contenuti la corregge se serve.
     stato.stato = {
       ...(stato.stato || {}),
       pubblicatoIl: new Date().toISOString(),
-      daPubblicare: false,   // appena fatto: la spia «da pubblicare» si spegne
+      daPubblicare: false,
       manutenzione: inManutenzione
     };
     aggiornaPubblicazione();
@@ -807,8 +667,6 @@ async function pubblica() {
 dom.btnSalva.addEventListener('click', () => salva());
 dom.btnPubblica.addEventListener('click', () => pubblica());
 
-/* Ctrl+S (Cmd+S su Mac) salva da qualunque punto, anche dall'anteprima:
-   lì lo rilancia il motore sul documento del pannello. */
 document.addEventListener('keydown', (evento) => {
   const comando = evento.ctrlKey || evento.metaKey;
   if (!comando || evento.altKey || String(evento.key || '').toLowerCase() !== 's') return;
@@ -819,21 +677,12 @@ document.addEventListener('keydown', (evento) => {
   else avviso('Non c\'è niente da salvare: è già tutto a posto.', { tipo: 'info', durata: 2500 });
 });
 
-/* L'avviso del browser prima di chiudere con roba non salvata. Il testo lo
-   decide il browser, non si può cambiare: conta solo che compaia. */
 window.addEventListener('beforeunload', (evento) => {
   if (!sporco()) return;
   evento.preventDefault();
   evento.returnValue = '';
 });
 
-/* ----------------------------------------------------------- il guscio */
-
-/**
- * Carica editor/guscio.js una volta sola. Se non si carica, il pannello
- * resta usabile per quello che non dipende dall'editor (entrare, salvare,
- * pubblicare, uscire) e lo dice dove si guarderebbe il pannello.
- */
 function caricaGuscio() {
   if (guscio) return Promise.resolve(guscio);
   if (caricamentoGuscio) return caricamentoGuscio;
@@ -874,14 +723,6 @@ function caricaGuscio() {
   return caricamentoGuscio;
 }
 
-/* ------------------------------------------------------- contenuti  */
-
-/**
- * @param {object} opzioni
- *   - silenzioso: niente avviso «Carico i contenuti…»
- *   - motivo: 'accesso' (primo caricamento o nuovo accesso), 'ripristino'
- *     (dopo una copia di sicurezza), 'ricarica'
- */
 async function caricaContenuti({ silenzioso = false, motivo = 'ricarica' } = {}) {
   const inCorso = silenzioso ? null : avvisoAttesa('Carico i contenuti…');
   try {
@@ -895,9 +736,6 @@ async function caricaContenuti({ silenzioso = false, motivo = 'ricarica' } = {})
     };
     stato.salvato = clona({ testi: stato.dati.testi, config: stato.dati.config });
     stato.stato = risposta.stato || null;
-    // Catalogo font e preset (CONTRATTO-2 §9), e il blocco dell'editor
-    // (CONTRATTO-4 §7). Se il server è più vecchio non arrivano: i moduli
-    // che li usano se ne accorgono da soli.
     stato.tema = (risposta.tema && typeof risposta.tema === 'object') ? risposta.tema : null;
     stato.editor = (risposta.editor && typeof risposta.editor === 'object') ? risposta.editor : null;
     ctx.tema = stato.tema;
@@ -915,7 +753,7 @@ async function caricaContenuti({ silenzioso = false, motivo = 'ricarica' } = {})
 
   } catch (errore) {
     if (inCorso) inCorso.chiudi();
-    if (errore instanceof ErroreApi && errore.scaduta) return false;   // ci pensa il gancio della sessione
+    if (errore instanceof ErroreApi && errore.scaduta) return false;
     if (!stato.schema) {
       mostraAvvio(errore instanceof ErroreApi ? errore.message : 'Non riesco a caricare i contenuti.', true);
     } else {
@@ -925,8 +763,6 @@ async function caricaContenuti({ silenzioso = false, motivo = 'ricarica' } = {})
     return false;
   }
 }
-
-/* --------------------------------------------------------- accesso  */
 
 function impostaModoAccesso(modo) {
   stato.modoAccesso = modo;
@@ -996,8 +832,6 @@ dom.formAccesso.addEventListener('submit', async (evento) => {
     dom.ripresa.hidden = true;
     mostraVista('app');
 
-    // Se la sessione era scaduta con modifiche in memoria, si rientra e si
-    // ritrova tutto: ricaricare adesso vorrebbe dire buttarle via.
     if (stato.dati) {
       aggiornaStato();
       avviso('Rientrato. Le modifiche che avevi in corso sono ancora qui.', { tipo: 'ok' });
@@ -1035,8 +869,6 @@ async function esci() {
     await api.esci();
     inCorso.chiudi();
   } catch (errore) {
-    // Se il server non risponde la sessione locale va chiusa lo stesso:
-    // restare dentro un pannello che non parla col server non serve.
     inCorso.fallito(errore instanceof ErroreApi ? errore.message : 'Il server non ha risposto.', 'Uscita');
   }
   if (guscio) guscio.sospendi({ uscita: true });
@@ -1053,14 +885,10 @@ async function esci() {
   vaiAllAccesso();
 }
 
-/* La sessione può cadere in mezzo a qualsiasi cosa: si torna all'accesso
-   senza toccare la bozza in memoria, così non si perde niente. */
 quandoScadeLaSessione(() => {
   if (dom.corpo.dataset.vista !== 'app') return;
   vaiAllAccesso({ ripresa: true });
 });
-
-/* ------------------------------------------------------------ avvio */
 
 dom.avvioRiprova.addEventListener('click', () => avvia());
 

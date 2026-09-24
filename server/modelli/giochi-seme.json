@@ -1,0 +1,767 @@
+{
+  "raccoltoIl": "2026-09-24",
+  "fonte": "capitoli delle VOD e clip pubbliche del canale slayer_beard",
+  "giochi": [
+    {
+      "id": "9891",
+      "nome": "Silent Hill 2",
+      "copertina": "9891_IGDB_it-it",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2025-03-21",
+      "ultimaVolta": "2025-03-21",
+      "generi": [
+        "Horror",
+        "Avventura"
+      ]
+    },
+    {
+      "id": "12845",
+      "nome": "Uncharted: Drake's Fortune",
+      "copertina": "12845_IGDB_it-it",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 2,
+      "primaVolta": "2025-07-28",
+      "ultimaVolta": "2025-08-04",
+      "generi": [
+        "Avventura",
+        "Sparatutto"
+      ]
+    },
+    {
+      "id": "14625",
+      "nome": "Crash Bash",
+      "copertina": "14625_IGDB",
+      "dirette": 1,
+      "ore": 1.9,
+      "clip": 0,
+      "primaVolta": "2026-09-21",
+      "ultimaVolta": "2026-09-21",
+      "generi": [
+        "Party game"
+      ]
+    },
+    {
+      "id": "29433",
+      "nome": "Dark Souls",
+      "copertina": "29433_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2021-03-24",
+      "ultimaVolta": "2021-03-24",
+      "generi": [
+        "Soulslike",
+        "GDR"
+      ]
+    },
+    {
+      "id": "32982",
+      "nome": "Grand Theft Auto V",
+      "copertina": "32982_IGDB",
+      "dirette": 1,
+      "ore": 2.7,
+      "clip": 2,
+      "primaVolta": "2022-03-18",
+      "ultimaVolta": "2026-09-18",
+      "generi": [
+        "Azione",
+        "Open world"
+      ]
+    },
+    {
+      "id": "33214",
+      "nome": "Fortnite",
+      "copertina": "33214",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2023-03-19",
+      "ultimaVolta": "2023-03-19",
+      "generi": [
+        "Battle royale",
+        "Sparatutto"
+      ]
+    },
+    {
+      "id": "75467",
+      "nome": "Euro Truck Simulator 2",
+      "copertina": "75467",
+      "dirette": 1,
+      "ore": 2.2,
+      "clip": 3,
+      "primaVolta": "2021-03-04",
+      "ultimaVolta": "2026-09-19",
+      "generi": [
+        "Simulazione"
+      ]
+    },
+    {
+      "id": "263490",
+      "nome": "Rust",
+      "copertina": "263490_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2021-01-10",
+      "ultimaVolta": "2021-01-10",
+      "generi": [
+        "Sopravvivenza"
+      ]
+    },
+    {
+      "id": "369418",
+      "nome": "GeoGuessr",
+      "copertina": "369418_IGDB",
+      "dirette": 3,
+      "ore": 2.3,
+      "clip": 0,
+      "primaVolta": "2026-09-24",
+      "ultimaVolta": "2026-09-24",
+      "generi": [
+        "Quiz",
+        "Esplorazione"
+      ]
+    },
+    {
+      "id": "459064",
+      "nome": "Cuphead",
+      "copertina": "459064_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2021-12-12",
+      "ultimaVolta": "2021-12-12",
+      "generi": [
+        "Platform",
+        "Azione"
+      ]
+    },
+    {
+      "id": "460636",
+      "nome": "Bloodborne",
+      "copertina": "460636_IGDB_it-it",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2023-06-07",
+      "ultimaVolta": "2023-06-07",
+      "generi": [
+        "Soulslike",
+        "Horror"
+      ]
+    },
+    {
+      "id": "489170",
+      "nome": "DARK SOULS II: Scholar of the First Sin",
+      "copertina": "489170_IGDB",
+      "dirette": 1,
+      "ore": 1.9,
+      "clip": 0,
+      "primaVolta": "2026-09-20",
+      "ultimaVolta": "2026-09-20",
+      "generi": [
+        "Soulslike",
+        "GDR"
+      ]
+    },
+    {
+      "id": "490147",
+      "nome": "Hollow Knight",
+      "copertina": "490147_IGDB",
+      "dirette": 4,
+      "ore": 9.4,
+      "clip": 0,
+      "primaVolta": "2026-09-22",
+      "ultimaVolta": "2026-09-22",
+      "generi": [
+        "Metroidvania",
+        "Platform"
+      ]
+    },
+    {
+      "id": "490375",
+      "nome": "Unravel",
+      "copertina": "490375_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2022-09-07",
+      "ultimaVolta": "2022-09-07",
+      "generi": [
+        "Platform",
+        "Puzzle"
+      ]
+    },
+    {
+      "id": "490537",
+      "nome": "Layers of Fear",
+      "copertina": "490537_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 5,
+      "primaVolta": "2020-11-02",
+      "ultimaVolta": "2023-10-13",
+      "generi": [
+        "Horror",
+        "Psicologico"
+      ]
+    },
+    {
+      "id": "491487",
+      "nome": "Dead by Daylight",
+      "copertina": "491487",
+      "dirette": 1,
+      "ore": 2.3,
+      "clip": 0,
+      "primaVolta": "2026-09-21",
+      "ultimaVolta": "2026-09-21",
+      "generi": [
+        "Horror",
+        "Multigiocatore"
+      ]
+    },
+    {
+      "id": "492934",
+      "nome": "RESIDENT EVIL 7 biohazard",
+      "copertina": "492934_IGDB_it-it",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2021-10-20",
+      "ultimaVolta": "2021-10-20",
+      "generi": [
+        "Horror",
+        "Sopravvivenza"
+      ]
+    },
+    {
+      "id": "493174",
+      "nome": "Jackbox Party Packs",
+      "copertina": "493174",
+      "dirette": 1,
+      "ore": 1,
+      "clip": 0,
+      "primaVolta": "2026-09-22",
+      "ultimaVolta": "2026-09-22",
+      "generi": [
+        "Party game",
+        "Quiz"
+      ]
+    },
+    {
+      "id": "506442",
+      "nome": "DOOM Eternal",
+      "copertina": "506442_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 2,
+      "primaVolta": "2021-07-30",
+      "ultimaVolta": "2021-08-20",
+      "generi": [
+        "Sparatutto",
+        "Azione"
+      ]
+    },
+    {
+      "id": "509658",
+      "nome": "Just Chatting",
+      "copertina": "509658",
+      "dirette": 54,
+      "ore": 64.1,
+      "clip": 38,
+      "primaVolta": "2020-12-16",
+      "ultimaVolta": "2026-09-24",
+      "generi": [
+        "Chiacchiere"
+      ]
+    },
+    {
+      "id": "509663",
+      "nome": "Special Events",
+      "copertina": "509663",
+      "dirette": 2,
+      "ore": 1.1,
+      "clip": 0,
+      "primaVolta": "2026-09-23",
+      "ultimaVolta": "2026-09-23",
+      "generi": [
+        "Eventi"
+      ]
+    },
+    {
+      "id": "509672",
+      "nome": "IRL",
+      "copertina": "509672",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 5,
+      "primaVolta": "2022-09-15",
+      "ultimaVolta": "2023-05-15",
+      "generi": [
+        "IRL"
+      ]
+    },
+    {
+      "id": "510218",
+      "nome": "Among Us",
+      "copertina": "510218_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2020-10-01",
+      "ultimaVolta": "2020-10-01",
+      "generi": [
+        "Party game",
+        "Multigiocatore"
+      ]
+    },
+    {
+      "id": "510590",
+      "nome": "Hades",
+      "copertina": "510590_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2021-10-01",
+      "ultimaVolta": "2021-10-01",
+      "generi": [
+        "Roguelike",
+        "Azione"
+      ]
+    },
+    {
+      "id": "511224",
+      "nome": "Apex Legends",
+      "copertina": "511224",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2020-08-27",
+      "ultimaVolta": "2020-08-27",
+      "generi": [
+        "Battle royale",
+        "Sparatutto"
+      ]
+    },
+    {
+      "id": "512953",
+      "nome": "ELDEN RING",
+      "copertina": "512953_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2022-12-11",
+      "ultimaVolta": "2022-12-11",
+      "generi": [
+        "Soulslike",
+        "Open world"
+      ]
+    },
+    {
+      "id": "512980",
+      "nome": "Fall Guys",
+      "copertina": "512980",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2024-04-15",
+      "ultimaVolta": "2024-04-15",
+      "generi": [
+        "Party game",
+        "Multigiocatore"
+      ]
+    },
+    {
+      "id": "515025",
+      "nome": "Overwatch",
+      "copertina": "515025",
+      "dirette": 1,
+      "ore": 1.7,
+      "clip": 0,
+      "primaVolta": "2026-09-20",
+      "ultimaVolta": "2026-09-20",
+      "generi": [
+        "Sparatutto",
+        "Multigiocatore"
+      ]
+    },
+    {
+      "id": "515479",
+      "nome": "Sons of the Forest",
+      "copertina": "515479_IGDB",
+      "dirette": 1,
+      "ore": 2.5,
+      "clip": 2,
+      "primaVolta": "2023-02-27",
+      "ultimaVolta": "2026-09-18",
+      "generi": [
+        "Sopravvivenza",
+        "Horror"
+      ]
+    },
+    {
+      "id": "516575",
+      "nome": "VALORANT",
+      "copertina": "516575",
+      "dirette": 2,
+      "ore": 2.4,
+      "clip": 2,
+      "primaVolta": "2020-09-03",
+      "ultimaVolta": "2026-09-22",
+      "generi": [
+        "Sparatutto",
+        "Multigiocatore"
+      ]
+    },
+    {
+      "id": "518184",
+      "nome": "Phasmophobia",
+      "copertina": "518184_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2021-05-17",
+      "ultimaVolta": "2021-05-17",
+      "generi": [
+        "Horror",
+        "Multigiocatore"
+      ]
+    },
+    {
+      "id": "519103",
+      "nome": "PowerWash Simulator",
+      "copertina": "519103_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2022-09-08",
+      "ultimaVolta": "2022-09-08",
+      "generi": [
+        "Simulazione",
+        "Rilassante"
+      ]
+    },
+    {
+      "id": "220074709",
+      "nome": "From the Darkness",
+      "copertina": "220074709_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2022-01-26",
+      "ultimaVolta": "2022-01-26",
+      "generi": [
+        "Horror",
+        "Indie"
+      ]
+    },
+    {
+      "id": "229772247",
+      "nome": "007 First Light",
+      "copertina": "229772247_IGDB",
+      "dirette": 6,
+      "ore": 13,
+      "clip": 0,
+      "primaVolta": "2026-09-13",
+      "ultimaVolta": "2026-09-13",
+      "generi": [
+        "Azione",
+        "Stealth"
+      ]
+    },
+    {
+      "id": "278888515",
+      "nome": "Gartic Phone",
+      "copertina": "278888515_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2021-11-19",
+      "ultimaVolta": "2021-11-19",
+      "generi": [
+        "Party game"
+      ]
+    },
+    {
+      "id": "339403363",
+      "nome": "Cards Against Insanity",
+      "copertina": "339403363",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2022-03-06",
+      "ultimaVolta": "2022-03-06",
+      "generi": [
+        "Party game"
+      ]
+    },
+    {
+      "id": "340275636",
+      "nome": "Don't Panic! It Is Just Turbulence",
+      "copertina": "340275636_IGDB",
+      "dirette": 1,
+      "ore": 0.9,
+      "clip": 0,
+      "primaVolta": "2026-09-23",
+      "ultimaVolta": "2026-09-23",
+      "generi": [
+        "Indie",
+        "Simulazione"
+      ]
+    },
+    {
+      "id": "443409039",
+      "nome": "Is Simon There?",
+      "copertina": "443409039_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2023-10-31",
+      "ultimaVolta": "2023-10-31",
+      "generi": [
+        "Horror",
+        "Indie"
+      ]
+    },
+    {
+      "id": "477532253",
+      "nome": "Lunch Lady",
+      "copertina": "477532253_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2021-10-15",
+      "ultimaVolta": "2021-10-15",
+      "generi": [
+        "Horror",
+        "Multigiocatore"
+      ]
+    },
+    {
+      "id": "489767727",
+      "nome": "FATAL FRAME II: Crimson Butterfly REMAKE",
+      "copertina": "489767727_IGDB",
+      "dirette": 7,
+      "ore": 14.7,
+      "clip": 0,
+      "primaVolta": "2026-09-11",
+      "ultimaVolta": "2026-09-11",
+      "generi": [
+        "Horror",
+        "Avventura"
+      ]
+    },
+    {
+      "id": "580396729",
+      "nome": "Oddworld: New 'n' Tasty",
+      "copertina": "580396729_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2021-11-21",
+      "ultimaVolta": "2021-11-21",
+      "generi": [
+        "Platform",
+        "Puzzle"
+      ]
+    },
+    {
+      "id": "590993568",
+      "nome": "Dumb Ways to Build",
+      "copertina": "590993568_IGDB",
+      "dirette": 1,
+      "ore": 1.2,
+      "clip": 0,
+      "primaVolta": "2026-09-19",
+      "ultimaVolta": "2026-09-19",
+      "generi": [
+        "Party game",
+        "Indie"
+      ]
+    },
+    {
+      "id": "759838730",
+      "nome": "Abyssus",
+      "copertina": "759838730_IGDB",
+      "dirette": 1,
+      "ore": 2.5,
+      "clip": 0,
+      "primaVolta": "2026-09-20",
+      "ultimaVolta": "2026-09-20",
+      "generi": [
+        "Roguelike",
+        "Sparatutto"
+      ]
+    },
+    {
+      "id": "884569009",
+      "nome": "The Choicer Voicer",
+      "copertina": "884569009_IGDB",
+      "dirette": 1,
+      "ore": 0.7,
+      "clip": 0,
+      "primaVolta": "2026-09-19",
+      "ultimaVolta": "2026-09-19",
+      "generi": [
+        "Party game",
+        "Indie"
+      ]
+    },
+    {
+      "id": "921298138",
+      "nome": "BOMBANANA!",
+      "copertina": "921298138_IGDB",
+      "dirette": 1,
+      "ore": 1.6,
+      "clip": 0,
+      "primaVolta": "2026-09-19",
+      "ultimaVolta": "2026-09-19",
+      "generi": [
+        "Party game",
+        "Indie"
+      ]
+    },
+    {
+      "id": "1050659518",
+      "nome": "Super Meat Boy 3D",
+      "copertina": "1050659518_IGDB",
+      "dirette": 1,
+      "ore": 1.6,
+      "clip": 0,
+      "primaVolta": "2026-09-23",
+      "ultimaVolta": "2026-09-23",
+      "generi": [
+        "Platform",
+        "Indie"
+      ]
+    },
+    {
+      "id": "1106985046",
+      "nome": "RoadCraft",
+      "copertina": "1106985046_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2025-06-06",
+      "ultimaVolta": "2025-06-06",
+      "generi": [
+        "Simulazione"
+      ]
+    },
+    {
+      "id": "1608785203",
+      "nome": "Trivia Murder Party 3",
+      "copertina": "1608785203_IGDB",
+      "dirette": 1,
+      "ore": 1.1,
+      "clip": 0,
+      "primaVolta": "2026-09-22",
+      "ultimaVolta": "2026-09-22",
+      "generi": [
+        "Party game",
+        "Quiz"
+      ]
+    },
+    {
+      "id": "1612297294",
+      "nome": "Psalm 2",
+      "copertina": "1612297294_IGDB",
+      "dirette": 1,
+      "ore": 2,
+      "clip": 0,
+      "primaVolta": "2026-09-20",
+      "ultimaVolta": "2026-09-20",
+      "generi": [
+        "Horror",
+        "Indie"
+      ]
+    },
+    {
+      "id": "1840896223",
+      "nome": "REANIMAL",
+      "copertina": "1840896223_IGDB",
+      "dirette": 3,
+      "ore": 2.1,
+      "clip": 0,
+      "primaVolta": "2026-09-09",
+      "ultimaVolta": "2026-09-09",
+      "generi": [
+        "Horror",
+        "Avventura"
+      ]
+    },
+    {
+      "id": "1881949588",
+      "nome": "ReStory: Chill Electronics Repairs",
+      "copertina": "1881949588_IGDB",
+      "dirette": 1,
+      "ore": 1.1,
+      "clip": 0,
+      "primaVolta": "2026-09-23",
+      "ultimaVolta": "2026-09-23",
+      "generi": [
+        "Simulazione",
+        "Rilassante"
+      ]
+    },
+    {
+      "id": "1936054038",
+      "nome": "Little Nightmares III",
+      "copertina": "1936054038_IGDB",
+      "dirette": 2,
+      "ore": 4.5,
+      "clip": 0,
+      "primaVolta": "2026-09-02",
+      "ultimaVolta": "2026-09-02",
+      "generi": [
+        "Horror",
+        "Platform"
+      ]
+    },
+    {
+      "id": "2044170173",
+      "nome": "Nintendo Switch Sports",
+      "copertina": "2044170173_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2023-03-05",
+      "ultimaVolta": "2023-03-05",
+      "generi": [
+        "Sport",
+        "Party game"
+      ]
+    },
+    {
+      "id": "2085980140",
+      "nome": "Lethal Company",
+      "copertina": "2085980140_IGDB",
+      "dirette": 0,
+      "ore": 0,
+      "clip": 1,
+      "primaVolta": "2023-12-22",
+      "ultimaVolta": "2023-12-22",
+      "generi": [
+        "Horror",
+        "Multigiocatore"
+      ]
+    },
+    {
+      "id": "2092725748",
+      "nome": "Horizon Zero Dawn Remastered",
+      "copertina": "2092725748_IGDB",
+      "dirette": 8,
+      "ore": 19.9,
+      "clip": 0,
+      "primaVolta": "2026-09-14",
+      "ultimaVolta": "2026-09-14",
+      "generi": [
+        "Azione",
+        "Open world"
+      ]
+    }
+  ]
+}

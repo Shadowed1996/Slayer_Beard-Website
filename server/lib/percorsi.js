@@ -14,6 +14,8 @@ function calcola(radice) {
     clipHtml: path.join(radice, 'clip.html'),
 
     sponsorHtml: path.join(radice, 'sponsor.html'),
+
+    giochiHtml: path.join(radice, 'giochi.html'),
     cartellaJs: path.join(radice, 'js'),
     datiJs: path.join(radice, 'js', 'dati.js'),
     temaCss: path.join(radice, 'css', 'tema.css'),
@@ -31,6 +33,7 @@ function calcola(radice) {
     modelloIndex: path.join(radice, 'modelli', 'index.html'),
     modelloClip: path.join(radice, 'modelli', 'clip.html'),
     modelloSponsor: path.join(radice, 'modelli', 'sponsor.html'),
+    modelloGiochi: path.join(radice, 'modelli', 'giochi.html'),
     modelloManutenzione: path.join(radice, 'modelli', 'manutenzione.html'),
     scriptManutenzione: path.join(radice, 'modelli', 'manutenzione-conto.js'),
     parziali: path.join(radice, 'modelli', 'parziali'),
@@ -52,6 +55,8 @@ function calcola(radice) {
     direttaTwitch: path.join(radice, 'server', 'dati', 'twitch-diretta.json'),
 
     emoteTwitch: path.join(radice, 'server', 'dati', 'twitch-emote.json'),
+    giochiTwitch: path.join(radice, 'server', 'dati', 'giochi-twitch.json'),
+    giochiRegistro: path.join(radice, 'server', 'dati', 'giochi-registro.json'),
     sondaggi: path.join(radice, 'server', 'dati', 'sondaggi.json'),
     backup: path.join(radice, 'server', 'backup'),
     modelloDati: path.join(radice, 'server', 'modelli', 'dati.js.tpl')
@@ -88,6 +93,8 @@ function applicaAmbiente(percorsi) {
     percorsi.accessoTwitch = path.join(dati, 'twitch-accesso.json');
     percorsi.direttaTwitch = path.join(dati, 'twitch-diretta.json');
     percorsi.emoteTwitch = path.join(dati, 'twitch-emote.json');
+    percorsi.giochiTwitch = path.join(dati, 'giochi-twitch.json');
+    percorsi.giochiRegistro = path.join(dati, 'giochi-registro.json');
     percorsi.sondaggi = path.join(dati, 'sondaggi.json');
   }
 

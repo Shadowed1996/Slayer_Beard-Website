@@ -82,6 +82,10 @@ const PARTI = {
     nome: 'Gli sponsor',
     descrizione: 'Chi sostiene il canale: logo, nome, categoria, link e periodo di validità. Uno sponsor senza link non si vede, e passata la data di fine sparisce da solo.'
   },
+  giochi: {
+    nome: 'I giochi',
+    descrizione: 'L\'invito in fondo a «Chi sono» e la pagina «giochi.html» con tutti i giochi portati in live: copertine, tipologie, dirette, ore e clip. I numeri li prende il server da Twitch a ogni pubblicazione; qui scegli le parole, cosa nascondere e le correzioni a mano.'
+  },
   listino: {
     nome: 'Listino del supporto',
     descrizione: 'Le righe per dare una mano: titolo, spiegazione, etichetta, bottone e link. Una riga senza link sparisce dal sito invece di comparire rotta.'
@@ -184,7 +188,8 @@ export const REGISTRO_PARTI = Object.freeze({
     chiavi: Object.freeze(['config.orari', 'settimana.titoloEventi', 'settimana.etichettaEvento'])
   }),
   listino: Object.freeze({ chiavi: Object.freeze(['config.supporto']) }),
-  sponsor: Object.freeze({ chiavi: Object.freeze(['config.sponsor.voci']) })
+  sponsor: Object.freeze({ chiavi: Object.freeze(['config.sponsor.voci']) }),
+  giochi: Object.freeze({ gruppo: 'giochi' })
 });
 
 export const PARTI_REGISTRATE = Object.freeze(Object.keys(REGISTRO_PARTI));
@@ -224,6 +229,7 @@ const SEZIONE_DEL_GRUPPO = Object.freeze({
   lurk: 'diretta',
   pollo: 'diretta',
   clip: 'diretta',
+  giochi: 'chi',
   sondaggio: 'sondaggio',
   settimana: 'settimana',
   chi: 'chi',

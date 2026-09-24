@@ -294,6 +294,161 @@ function clipPaginaDi(config, testi) {
   return { attivo: clip.attivo === true && voci.length > 0, voci: voci, quante: quante };
 }
 
+const SEME_GIOCHI = path.join(__dirname, '..', 'modelli', 'giochi-seme.json');
+const COPERTINE_TWITCH = 'https://static-cdn.jtvnw.net/';
+const GENERI_MASSIMI = 3;
+
+function leggiJson(percorso) {
+  try {
+    return JSON.parse(fs.readFileSync(percorso, 'utf8'));
+  } catch (e) {
+    return null;
+  }
+}
+
+function giochiGrezzi() {
+  const letto = P.giochiTwitch ? leggiJson(P.giochiTwitch) : null;
+  if (letto && Array.isArray(letto.giochi)) { return { giochi: letto.giochi, seme: false }; }
+  const seme = leggiJson(SEME_GIOCHI);
+  return { giochi: (seme && Array.isArray(seme.giochi)) ? seme.giochi : [], seme: true };
+}
+
+function copertinaDi(valore, seme) {
+  const testo = String(valore || '').trim();
+  if (!testo) { return ''; }
+  if (testo.startsWith(COPERTINE_TWITCH)) { return testo; }
+  if (seme && /^[A-Za-z0-9_.-]+$/.test(testo)) {
+    return COPERTINE_TWITCH + 'ttv-boxart/' + testo + '-285x380.jpg';
+  }
+  return '';
+}
+
+function oreTesto(valore) {
+  const decimi = Math.max(0, Math.round((Number(valore) || 0) * 10));
+  const intere = Math.floor(decimi / 10);
+  const resto = decimi % 10;
+  return numeroTesto(intere) + (resto ? ',' + resto : '');
+}
+
+function dataGiorno(valore) {
+  const testo = String(valore || '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(testo) && !Number.isNaN(Date.parse(testo + 'T00:00:00Z')) ? testo : '';
+}
+
+function chiaveGioco(valore) {
+  return String(valore || '').trim().toLowerCase();
+}
+
+function generiPuliti(elenco) {
+  const fuori = [];
+  const visti = new Set();
+  for (const voce of Array.isArray(elenco) ? elenco : []) {
+    const nome = String(voce || '').replace(/[|\s]+/g, ' ').trim().slice(0, 40);
+    if (!nome || visti.has(nome.toLowerCase())) { continue; }
+    visti.add(nome.toLowerCase());
+    fuori.push(nome);
+    if (fuori.length >= GENERI_MASSIMI) { break; }
+  }
+  return fuori;
+}
+
+function clipMiglioreDi(valore) {
+  if (!valore || typeof valore !== 'object') { return null; }
+  const url = String(valore.url || '').trim();
+  if (!/^https:\/\/(www\.|clips\.)?twitch\.tv\//.test(url)) { return null; }
+  return { titolo: String(valore.titolo || '').trim(), url: url };
+}
+
+function conParola(numero, testi, una, tante) {
+  return { valore: numeroTesto(numero), parola: String(testi[numero === 1 ? una : tante] || '') };
+}
+
+function giochiDi(config, testi) {
+  const ramo = (config.giochi && typeof config.giochi === 'object') ? config.giochi : {};
+  const nascosti = new Set((Array.isArray(ramo.nascosti) ? ramo.nascosti : []).map(chiaveGioco).filter(Boolean));
+  const correzioni = new Map();
+  for (const voce of Array.isArray(ramo.correzioni) ? ramo.correzioni : []) {
+    const chi = chiaveGioco(voce && voce.gioco);
+    if (chi) { correzioni.set(chi, voce); }
+  }
+
+  const grezzi = giochiGrezzi();
+  const voci = [];
+  const conteggi = new Map();
+  let oreTotali = 0;
+  let clipTotali = 0;
+
+  for (const grezzo of grezzi.giochi) {
+    if (!grezzo || typeof grezzo !== 'object') { continue; }
+    const nome = String(grezzo.nome || '').trim();
+    const id = String(grezzo.id || '').trim();
+    if (!nome) { continue; }
+    if (nascosti.has(chiaveGioco(nome)) || (id && nascosti.has(chiaveGioco(id)))) { continue; }
+
+    const correzione = correzioni.get(chiaveGioco(nome)) || (id ? correzioni.get(chiaveGioco(id)) : null) || null;
+    let generi = generiPuliti(grezzo.generi);
+    let copertina = copertinaDi(grezzo.copertina, grezzi.seme);
+    if (correzione) {
+      const scritti = generiPuliti(String(correzione.generi || '').split(','));
+      if (scritti.length) { generi = scritti; }
+      const propria = String(correzione.copertina || '').trim();
+      if (propria) { copertina = propria; }
+    }
+
+    const dirette = Math.max(0, Math.round(Number(grezzo.dirette) || 0));
+    const ore = Math.max(0, Math.round((Number(grezzo.ore) || 0) * 10) / 10);
+    const clip = Math.max(0, Math.round(Number(grezzo.clip) || 0));
+    const prima = dataGiorno(grezzo.primaVolta);
+    const ultima = dataGiorno(grezzo.ultimaVolta) || prima;
+
+    const numeri = [];
+    if (dirette > 0) { numeri.push(conParola(dirette, testi, 'giochi.diretta', 'giochi.dirette')); }
+    if (ore > 0) { numeri.push({ valore: oreTesto(ore), parola: String(testi[ore === 1 ? 'giochi.ora' : 'giochi.ore'] || '') }); }
+    if (clip > 0) { numeri.push({ valore: numeroTesto(clip), parola: String(testi['giochi.clip'] || '') }); }
+
+    for (const genere of generi) { conteggi.set(genere, (conteggi.get(genere) || 0) + 1); }
+    oreTotali += ore;
+    clipTotali += clip;
+
+    voci.push({
+      id: id,
+      nome: nome,
+      iniziale: nome.charAt(0).toUpperCase(),
+      copertina: copertina,
+      generi: generi,
+      datiGeneri: generi.join('|'),
+      numeri: numeri,
+      dirette: dirette,
+      ore: ore,
+      clip: clip,
+      prima: prima,
+      primaTesto: dataTesto(prima),
+      ultima: ultima,
+      ultimaTesto: dataTesto(ultima),
+      clipMigliore: clipMiglioreDi(grezzo.clipMigliore)
+    });
+  }
+
+  voci.sort((a, b) => (b.ultima > a.ultima ? 1 : b.ultima < a.ultima ? -1 : 0) ||
+    b.ore - a.ore || a.nome.localeCompare(b.nome, 'it'));
+
+  const tipologie = Array.from(conteggi, (voce) => ({ nome: voce[0], quanti: voce[1] }))
+    .sort((a, b) => b.quanti - a.quanti || a.nome.localeCompare(b.nome, 'it'));
+
+  return {
+    attivo: ramo.attivo !== false && voci.length > 0,
+    voci: voci,
+    quanti: voci.length,
+    tipologie: tipologie,
+    riepilogo: [
+      conParola(voci.length, testi, 'giochi.gioco', 'giochi.giochi'),
+      { valore: oreTesto(oreTotali), parola: String(testi['giochi.ore'] || '') },
+      { valore: numeroTesto(clipTotali), parola: String(testi['giochi.clip'] || '') }
+    ],
+    dalSeme: grezzi.seme
+  };
+}
+
 function chiaviRicche() {
   const semplici = [];
   const elenchi = [];
@@ -608,6 +763,7 @@ function costruisciContesto(contenuti, opzioni) {
     clip: clipDi(config, testi),
     clipPagina: clipPaginaDi(config, testi),
     sponsor: sponsorDi(config, testi, adesso),
+    giochi: giochiDi(config, testi),
     sito: {
       urlCanale: urlCanale,
       urlChat: 'https://www.twitch.tv/popout/' + canale + '/chat',
@@ -658,6 +814,14 @@ function costruisciContesto(contenuti, opzioni) {
     canonico: config.sitoUrl ? config.sitoUrl + 'sponsor.html' : 'sponsor.html',
     titolo: (testi['sponsor.paginaTitolo'] || '') + ' · ' + (testi['marchio.nome'] || ''),
     descrizione: presentazioneSponsor || String(testi['meta.descrizione'] || '')
+  };
+
+  const presentazioneGiochi = testoricco.soloTesto(testi['giochi.paginaTesto'] || '');
+  contesto.sito.paginaGiochi = {
+    url: 'giochi.html',
+    canonico: config.sitoUrl ? config.sitoUrl + 'giochi.html' : 'giochi.html',
+    titolo: (testi['giochi.paginaTitolo'] || '') + ' · ' + (testi['marchio.nome'] || ''),
+    descrizione: presentazioneGiochi || String(testi['meta.descrizione'] || '')
   };
 
   if (mancanti.length) {
@@ -1263,13 +1427,23 @@ function rendi(contenuti, opzioni) {
     sponsor = togliCommenti(modello.rendiFile(P.modelloSponsor, contesto,
       { file: 'modelli/sponsor.html', cartella: P.modelli, cache: cache }));
   }
+
+  let giochi = null;
+  if (contesto.giochi.attivo) {
+    if (!eFile(P.modelloGiochi)) {
+      throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.modelloGiochi) +
+        ': e il modello della pagina dei giochi.');
+    }
+    giochi = togliCommenti(modello.rendiFile(P.modelloGiochi, contesto,
+      { file: 'modelli/giochi.html', cartella: P.modelli, cache: cache }));
+  }
   const dati = modello.rendiFile(P.modelloDati, Object.assign({ dati: jsonSicuro(oggettoDati(contenuti, scelte)) }, contesto),
     { file: 'server/modelli/dati.js.tpl', cartella: P.modelli, cache: cache });
 
   const foglio = tema.css(contenuti.config.tema);
   const manutenzione = manutenzioneAttiva(contenuti.config) ? rendiManutenzione(contenuti, scelte) : null;
 
-  return { html: html, clip: clip, sponsor: sponsor, dati: dati, tema: foglio, contesto: contesto, manutenzione: manutenzione };
+  return { html: html, clip: clip, sponsor: sponsor, giochi: giochi, dati: dati, tema: foglio, contesto: contesto, manutenzione: manutenzione };
 }
 
 function anteprima() {
@@ -1428,6 +1602,20 @@ function scriviPaginaSponsor(html) {
   }
 }
 
+function scriviPaginaGiochi(html) {
+  if (html) {
+    scriviGenerato(P.giochiHtml, html);
+    return { file: 'giochi.html', stato: 'scritta', byte: Buffer.byteLength(html, 'utf8') };
+  }
+  if (!eFile(P.giochiHtml)) { return { file: 'giochi.html', stato: 'niente', byte: 0 }; }
+  try {
+    fs.unlinkSync(P.giochiHtml);
+    return { file: 'giochi.html', stato: 'tolta', byte: 0 };
+  } catch (e) {
+    return { file: 'giochi.html', stato: 'non tolta', byte: 0, errore: (e && e.message) ? e.message : String(e) };
+  }
+}
+
 function scriviStatoSito(manutenzione, quando) {
   const testo = JSON.stringify({ manutenzione: !!manutenzione, pubblicatoIl: quando || new Date().toISOString() }) + '\n';
   try {
@@ -1477,6 +1665,23 @@ function allineaSponsorDopoRipristino() {
   }
 }
 
+function allineaGiochiDopoRipristino() {
+  const leggi = (percorso) => {
+    try { return fs.readFileSync(percorso, 'utf8'); } catch (e) { return ''; }
+  };
+  const home = leggi(P.indexHtml);
+  const prima = leggi(P.giochiHtml);
+  try {
+    if (home.indexOf(SEGNO_MANUTENZIONE) !== -1) {
+      return home === prima ? null : scriviPaginaGiochi(home);
+    }
+    if (prima.indexOf(SEGNO_MANUTENZIONE) === -1) { return null; }
+    return scriviPaginaGiochi(rendi(archivio.leggi()).giochi);
+  } catch (e) {
+    return { file: 'giochi.html', stato: 'non allineata', byte: 0, errore: (e && e.message) ? e.message : String(e) };
+  }
+}
+
 function genera(opzioni) {
   const scelte = opzioni || {};
   const inizio = Date.now();
@@ -1506,6 +1711,7 @@ function genera(opzioni) {
 
   const paginaClip = scriviPaginaClip(reso.manutenzione || reso.clip);
   const paginaSponsor = scriviPaginaSponsor(reso.manutenzione || reso.sponsor);
+  const paginaGiochi = scriviPaginaGiochi(reso.manutenzione || reso.giochi);
 
   const quando = archivio.salva(contenuti);
   const statoSito = scriviStatoSito(!!reso.manutenzione, quando);
@@ -1513,6 +1719,7 @@ function genera(opzioni) {
   const pagine = [''];
   if (reso.clip) { pagine.push('clip.html'); }
   if (reso.sponsor) { pagine.push('sponsor.html'); }
+  if (reso.giochi) { pagine.push('giochi.html'); }
   const mappa = scriviSitemap(controlli.indirizzoSito(contenuti.config), quando, pagine);
 
   return {
@@ -1523,10 +1730,11 @@ function genera(opzioni) {
     sitemap: mappa,
     paginaClip: paginaClip,
     paginaSponsor: paginaSponsor,
+    paginaGiochi: paginaGiochi,
     statoSito: statoSito,
     manutenzione: {
       attiva: !!reso.manutenzione,
-      pagine: reso.manutenzione ? ['index.html', 'clip.html', 'sponsor.html'] : []
+      pagine: reso.manutenzione ? ['index.html', 'clip.html', 'sponsor.html', 'giochi.html'] : []
     },
     scritti: [
       { file: 'index.html', byte: Buffer.byteLength(pagina, 'utf8') },
@@ -1536,6 +1744,7 @@ function genera(opzioni) {
     social: reso.contesto.social.length,
     supporto: reso.contesto.supporto.length,
     sponsor: reso.contesto.sponsor.quanti,
+    giochiInPagina: reso.contesto.giochi.quanti,
 
     controlli: controlli.controlli(contenuti)
   };
@@ -1543,10 +1752,10 @@ function genera(opzioni) {
 
 module.exports = {
   genera, anteprima, anteprimaDi, anteprimaEditor, anteprimaManutenzione, inManutenzione,
-  allineaClipDopoRipristino, allineaSponsorDopoRipristino, allineaStatoDopoRipristino,
+  allineaClipDopoRipristino, allineaSponsorDopoRipristino, allineaGiochiDopoRipristino, allineaStatoDopoRipristino,
   fineManutenzione, istanteItaliano, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
-  oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, sponsorDi, jsonSicuro, chiaviRicche,
+  oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, sponsorDi, giochiDi, jsonSicuro, chiaviRicche,
   orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta,
 
   togliCommenti

@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-24T09:44:39.755Z",
+  "aggiornatoIl": "2026-09-24T11:15:45.949Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -194,7 +194,30 @@
     "sponsor.paginaTesto": "Le realtà che sostengono il canale, divise per categoria. Ogni scheda porta al loro sito.",
     "sponsor.paginaTorna": "Torna al sito",
     "sponsor.altri": "Altri",
-    "sponsor.paginaVuota": "Nessuno sponsor attivo in questo momento."
+    "sponsor.paginaVuota": "Nessuno sponsor attivo in questo momento.",
+    "giochi.occhiello": "Lo storico delle live",
+    "giochi.titolo": "I giochi della live",
+    "giochi.testo": "Tutto quello che è passato in diretta, dagli horror ai party game: copertine, ore giocate e le clip migliori.",
+    "giochi.invito": "Vedi tutti i giochi",
+    "giochi.paginaTitolo": "I giochi",
+    "giochi.paginaTesto": "Ogni gioco portato in live sul canale. Filtra per tipologia e ordina come preferisci.",
+    "giochi.paginaTorna": "Torna al sito",
+    "giochi.filtri": "Tipologia",
+    "giochi.tutti": "Tutti",
+    "giochi.ordina": "Ordina per",
+    "giochi.ordinaRecenti": "Giocati di recente",
+    "giochi.ordinaOre": "Più ore in live",
+    "giochi.ordinaNome": "Nome (A-Z)",
+    "giochi.gioco": "gioco",
+    "giochi.giochi": "giochi",
+    "giochi.diretta": "diretta",
+    "giochi.dirette": "dirette",
+    "giochi.ora": "ora",
+    "giochi.ore": "ore",
+    "giochi.clip": "clip",
+    "giochi.ultimaVolta": "Ultima volta",
+    "giochi.clipMigliore": "Clip migliore",
+    "giochi.vuoto": "Nessun gioco di questa tipologia, per ora."
   },
   "config": {
     "twitch": {
@@ -719,6 +742,17 @@
     "sponsor": {
       "attivo": false,
       "voci": []
+    },
+    "giochi": {
+      "attivo": true,
+      "nascosti": [
+        "Just Chatting",
+        "Quattro chiacchiere",
+        "IRL",
+        "Special Events",
+        "Eventi speciali"
+      ],
+      "correzioni": []
     }
   }
 }
