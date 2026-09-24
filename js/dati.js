@@ -16,7 +16,7 @@
    A `twitch.domini` la generazione aggiunge sempre localhost e 127.0.0.1;
    il player ci mette da sé location.hostname.
 
-   Generato il 2026-09-23T09:40:14.363Z.
+   Generato il 2026-09-24T09:32:52.559Z.
    ===================================================================== */
 window.DATI = {
   "twitch": {
@@ -149,7 +149,93 @@ window.DATI = {
   },
   "chi": {
     "frasi": [],
-    "emote": {}
+    "emote": {},
+    "gifOgni": 5,
+    "raffica": {
+      "gif": [
+        {
+          "src": "img/pollo-gif/raffica-ufficio.gif",
+          "scritta": "VUOI ROMPERE IL MOUSE?"
+        },
+        {
+          "src": "img/pollo-gif/raffica-gatto-gamer.gif",
+          "scritta": "HAI ROTTO."
+        },
+        {
+          "src": "img/pollo-gif/raffica-portatile.gif",
+          "scritta": "IL MOUSE HA CHIAMATO IL SINDACATO"
+        },
+        {
+          "src": "img/pollo-gif/raffica-gatto-bottone.gif",
+          "scritta": "NON È UN BOTTONE, È UN POLLO"
+        },
+        {
+          "src": "img/pollo-gif/raffica-polli-tocco.gif",
+          "scritta": "SMETTILA DI TOCCARMI"
+        }
+      ],
+      "scritte": [
+        "VUOI ROMPERE IL MOUSE?",
+        "HAI ROTTO.",
+        "PIANO, IL TASTO SINISTRO HA UNA FAMIGLIA",
+        "CALMA, SONO UN POLLO, NON UN PUNCHING BALL"
+      ]
+    },
+    "insistenza": {
+      "gif": [
+        {
+          "src": "img/pollo-gif/insistenza-gatto.gif",
+          "scritta": "NON HAI DI MEGLIO DA FARE?"
+        },
+        {
+          "src": "img/pollo-gif/insistenza-cane.gif",
+          "scritta": "ANCORA TU?"
+        },
+        {
+          "src": "img/pollo-gif/insistenza-polli-sguardo.gif",
+          "scritta": "SEMPRE QUI SEI?"
+        },
+        {
+          "src": "img/pollo-gif/insistenza-polli-tavolo.gif",
+          "scritta": "VAI A SEGUIRE LA LIVE, INVECE"
+        },
+        {
+          "src": "img/pollo-gif/insistenza-alice.gif",
+          "scritta": "CI SIAMO ANNOIATI, EH?"
+        }
+      ],
+      "scritte": [
+        "NON HAI DI MEGLIO DA FARE?",
+        "SEMPRE QUI SEI?",
+        "VAI A SEGUIRE LA LIVE, INVECE",
+        "IL POLLO TI STA GIUDICANDO"
+      ]
+    },
+    "scroll": {
+      "gif": [
+        {
+          "src": "img/pollo-gif/scroll-uccello-stordito.gif",
+          "scritta": "TI GIRA LA TESTA?"
+        },
+        {
+          "src": "img/pollo-gif/scroll-occhi-spirale.gif",
+          "scritta": "DECIDITI: SU O GIÙ?"
+        },
+        {
+          "src": "img/pollo-gif/scroll-vomito.gif",
+          "scritta": "SU E GIÙ, SU E GIÙ… BLEAH"
+        },
+        {
+          "src": "img/pollo-gif/scroll-psichedelico.gif",
+          "scritta": "HAI IL MAL DI MARE?"
+        }
+      ],
+      "scritte": [
+        "TI GIRA LA TESTA?",
+        "HAI IL MAL DI MARE?",
+        "DECIDITI: SU O GIÙ?"
+      ]
+    }
   },
   "account": {
     "attivo": true,

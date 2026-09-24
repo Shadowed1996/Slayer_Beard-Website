@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-23T09:40:14.376Z",
+  "aggiornatoIl": "2026-09-24T09:32:52.572Z",
   "testi": {
     "meta.titolo": "slayer_beard — canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -422,7 +422,87 @@
       }
     },
     "chi": {
-      "frasi": []
+      "frasi": [],
+      "gifOgni": 5,
+      "gifRaffica": [
+        {
+          "immagine": "img/pollo-gif/raffica-ufficio.gif",
+          "scritta": "VUOI ROMPERE IL MOUSE?"
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-gatto-gamer.gif",
+          "scritta": "HAI ROTTO."
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-portatile.gif",
+          "scritta": "IL MOUSE HA CHIAMATO IL SINDACATO"
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-gatto-bottone.gif",
+          "scritta": "NON È UN BOTTONE, È UN POLLO"
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-polli-tocco.gif",
+          "scritta": "SMETTILA DI TOCCARMI"
+        }
+      ],
+      "scritteRaffica": [
+        "VUOI ROMPERE IL MOUSE?",
+        "HAI ROTTO.",
+        "PIANO, IL TASTO SINISTRO HA UNA FAMIGLIA",
+        "CALMA, SONO UN POLLO, NON UN PUNCHING BALL"
+      ],
+      "gifInsistenza": [
+        {
+          "immagine": "img/pollo-gif/insistenza-gatto.gif",
+          "scritta": "NON HAI DI MEGLIO DA FARE?"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-cane.gif",
+          "scritta": "ANCORA TU?"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-polli-sguardo.gif",
+          "scritta": "SEMPRE QUI SEI?"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-polli-tavolo.gif",
+          "scritta": "VAI A SEGUIRE LA LIVE, INVECE"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-alice.gif",
+          "scritta": "CI SIAMO ANNOIATI, EH?"
+        }
+      ],
+      "scritteInsistenza": [
+        "NON HAI DI MEGLIO DA FARE?",
+        "SEMPRE QUI SEI?",
+        "VAI A SEGUIRE LA LIVE, INVECE",
+        "IL POLLO TI STA GIUDICANDO"
+      ],
+      "gifScroll": [
+        {
+          "immagine": "img/pollo-gif/scroll-uccello-stordito.gif",
+          "scritta": "TI GIRA LA TESTA?"
+        },
+        {
+          "immagine": "img/pollo-gif/scroll-occhi-spirale.gif",
+          "scritta": "DECIDITI: SU O GIÙ?"
+        },
+        {
+          "immagine": "img/pollo-gif/scroll-vomito.gif",
+          "scritta": "SU E GIÙ, SU E GIÙ… BLEAH"
+        },
+        {
+          "immagine": "img/pollo-gif/scroll-psichedelico.gif",
+          "scritta": "HAI IL MAL DI MARE?"
+        }
+      ],
+      "scritteScroll": [
+        "TI GIRA LA TESTA?",
+        "HAI IL MAL DI MARE?",
+        "DECIDITI: SU O GIÙ?"
+      ]
     },
     "clip": {
       "attivo": true,

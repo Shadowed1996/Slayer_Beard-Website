@@ -1,34 +1,3 @@
-/* =============================================================================
-   sezioni.css — slayer_beard · le quattro sezioni sotto la copertina
-   Blocchi: .settimana/.nastro/.eventi, .chi, .supporto/.listino, .saluti/.social/.contatti.
-
-   L'IDEA
-   Ogni sezione ha una forma sua, altrimenti il sito torna a essere un volantino
-   di card impilate. Qui dentro non c'è una griglia di card:
-     · la settimana è un NASTRO di locandine: sette giorni in fila, le dirette
-       alte come manifesti, i riposi strisce spente, gli eventi speciali sotto;
-     · «chi sono» è una PAGINA EDITORIALE — colonna di lettura, margine sticky,
-       citazione grande;
-     · il supporto è un LISTINO a righe;
-     · i saluti sono una SCHERMATA DI FINE DIRETTA, social e contatti affiancati.
-
-   Il ritmo comune sono le righe da 1px: dividono, non incorniciano. Dove serve
-   una tinta che non è un token la si ricava con color-mix() — in questo file
-   non c'è nessun colore esadecimale.
-   ============================================================================= */
-
-
-/* =============================================================================
-   1. IMPIANTO COMUNE
-   Le sezioni non hanno un contenitore nel markup: il vincolo di larghezza e i
-   margini laterali se li mettono da sé. La formula è identica qui, in regia.css
-   e in diretta.css — colonna larga --max-larghezza, centrata, con il margine
-   laterale che si SOMMA invece di sottrarsi — ed è documentata su --margine in
-   tokens.css. Il piede ci arriva per un'altra strada, una griglia a colonna
-   unica (base.css §6), perché la sua riga di chiusura deve restare a tutta
-   larghezza: il bordo del suo testo però cade esattamente su questo.
-   ============================================================================= */
-
 .settimana,
 .chi,
 .supporto,
@@ -39,8 +8,6 @@
   padding-block: clamp(var(--passo-8), 8vh, var(--passo-12));
 }
 
-/* Occhiello, titolo e testo che stanno fuori da .sezione__testa (in «chi sono»
-   e nei saluti) non ereditano le sue distanze: gliele si dà qui. */
 .chi__corpo > .sezione__occhiello,
 .saluti__social > .sezione__occhiello { margin: 0; }
 
@@ -49,49 +16,12 @@
 
 .saluti__social > .sezione__testo { margin: 0; max-inline-size: 52ch; }
 
-
-/* =============================================================================
-   2. SETTIMANA — la schedule
-   Rifatta da capo con il CONTRATTO-5 §6. Tre strati, dal fondo:
-     · il FONDALE (.settimana__sfondo), parente di quello della copertina:
-       immagine velata, sfumata su tutti i bordi, con la trama a griglia;
-     · il NASTRO, sempre sette giorni da lunedì: da 1100px le dirette sono
-       LOCANDINE alte da manifesto e i riposi strisce strette e spente; sotto i
-       1100px una colonna di fasce orizzontali e di righe sottili;
-     · gli EVENTI SPECIALI, dopo il nastro: schede con la data grande stampata
-       sull'immagine, come su un manifesto.
-
-   Le immagini caricate si inquadrano con le variabili che il server scrive
-   nell'attributo style (CONTRATTO-5 §2.2): --fuoco per object-position, --velo
-   (0.3–0.9) per quanto si scurisce l'immagine, --intensita per il fondale. Il
-   pannello le cambia dal vivo sullo stesso elemento, quindi si leggono sempre
-   da lì e non si ricopiano su altri selettori.
-
-   LEGGIBILITÀ SOPRA LE IMMAGINI
-   Il velo da solo non basta: al minimo (0.3) su un'immagine bianca il testo
-   chiaro non reggerebbe. Il testo sta quindi sempre su una sfumatura sua, che
-   parte da un minimo sicuro e cresce con il velo; il velo scurisce anche il
-   resto dell'immagine, ma solo in parte, così l'immagine resta riconoscibile.
-   I conti del contrasto sono accanto alle regole che li decidono.
-
-   RIQUADRO E BLOCCHI (CONTRATTO-4 §5.5)
-   La sezione è il riquadro; testa, nastro, eventi e piede sono i blocchi e
-   restano figli diretti, senza antenati posizionati in mezzo. Il fondale sta
-   sotto con z-index negativo dentro la sezione isolata: così i blocchi non
-   hanno bisogno di position né di z-index per stargli sopra, e l'editor può
-   spostarli senza trovarsi un rettangolo di misura diverso.
-   ============================================================================= */
-
 .settimana {
   position: relative;
-  /* isolation e non uno z-index: lo z-index negativo del fondale resta
-     confinato qui dentro e non finisce sotto al fondo della pagina. */
+
   isolation: isolate;
 }
 
-/* Da 900px la testata si apre su due colonne: titolo a sinistra, testo di
-   spiegazione a destra, allineato in basso. Sostituisce il display:flex che
-   .sezione__testa ha in base.css. */
 @media (min-width: 900px) {
   .settimana__testa {
     display: grid;
@@ -112,15 +42,6 @@
   }
 }
 
-
-/* --- Fondale ----------------------------------------------------------------
-   Non copre tutta la sezione: sta dietro alla testata e al nastro, dove si
-   guarda per primo. Su una sezione alta (sette fasce al telefono, otto eventi
-   al computer) un object-fit: cover a tutta altezza ingrandirebbe l'immagine
-   fino a renderla una macchia; con un tetto proporzionato alla larghezza resta
-   un'immagine. La maschera la sfuma su tutti e quattro i lati, perché sopra
-   c'è un'altra sezione e un taglio netto si vedrebbe come una riga. --------- */
-
 .settimana__sfondo {
   position: absolute;
   z-index: -1;
@@ -129,9 +50,7 @@
   block-size: min(100%, max(36rem, 72vw));
   overflow: hidden;
   pointer-events: none;
-  /* closest-side: i raggi arrivano esattamente ai bordi, quindi lì l'opacità è
-     zero su tutti e quattro i lati. Il centro sta un po' in alto, dove c'è la
-     testata. Code rgba(…, 0) per non passare dal nero nell'interpolazione. */
+
   -webkit-mask-image: radial-gradient(closest-side at 50% 42%, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0.6) 72%, rgba(0, 0, 0, 0) 100%);
   mask-image: radial-gradient(closest-side at 50% 42%, rgba(0, 0, 0, 1) 42%, rgba(0, 0, 0, 0.6) 72%, rgba(0, 0, 0, 0) 100%);
 }
@@ -142,28 +61,10 @@
   object-fit: cover;
   object-position: var(--fuoco, 50% 50%);
   opacity: var(--intensita, 0.3);
-  /* Un filo più luminosa dell'originale: a intensità 30 una grafica scura
-     sparirebbe nel fondo. Il bianco resta bianco, quindi il conto del velo qui
-     sotto vale lo stesso. */
+
   filter: brightness(1.25) saturate(1.05);
 }
 
-/* Velo del fondale. Cresce con l'intensità quanto serve e non di più, così a
-   30 l'immagine si vede davvero e a 100 la testata resta leggibile anche con
-   un'immagine bianca. Il conto: sopra il fondo pieno un'immagine bianca
-   all'intensità i, velata di v, schiarisce di i × (1 − v) × 248; perché
-   --testo-tenue resti a 4.5:1 il fondo deve stare sotto rgb(45), cioè
-   i × (1 − v) ≤ 0.153, da cui v = 1 − 0.153 / i (a 30 fa 49%, a 100 fa 85%).
-   In mezzo passa il nastro, che ha un fondo suo, e il titolo degli eventi
-   (--testo, 4.5:1 fino a rgb(110)): lì basta v = 1 − 0.415 / i, che fino a
-   un'intensità di 41 vale zero.
-   Le misure sono in rem e non in percentuale perché la testata ha un'altezza
-   sua, non una quota del fondale: in alto 20rem pieni (a 320px occhiello,
-   titolo e testo ci stanno; da 900px, con la testata su due colonne, ne
-   bastano 13), poi si apre verso il nastro; in fondo si richiude sul testo del
-   piede quando la sezione è più bassa del fondale.
-   z-index 1 serve: l'immagine ha opacity e filter, che la dipingono sullo
-   strato dei posizionati, e senza indice verrebbe dopo il velo, cioè sopra. */
 .settimana__sfondo.con-immagine::before {
   --scrim-bordo: color-mix(in srgb, var(--fondo) clamp(0%, calc(100% - 15.3% / var(--intensita, 0.3)), 100%), transparent);
   --scrim-mezzo: color-mix(in srgb, var(--fondo) clamp(0%, calc(100% - 41.5% / var(--intensita, 0.3)), 100%), transparent);
@@ -186,7 +87,6 @@
   .settimana__sfondo.con-immagine::before { --scrim-alto: 13rem; }
 }
 
-/* La trama a griglia della copertina: è il filo che dice «stessa regia». */
 .settimana__sfondo.con-immagine::after {
   content: "";
   position: absolute;
@@ -198,29 +98,16 @@
   opacity: 0.7;
 }
 
-
-/* --- Il nastro: impianto da computer ----------------------------------------
-   Flex e non grid: la larghezza di una colonna dipende da che giorno è (una
-   diretta pesa quattro volte un riposo) e la generazione non dice quante
-   dirette ci sono. Con flex-grow i conti tornano da soli con uno, quattro o
-   sette giorni accesi, senza scorrimento laterale. I riposi stanno quasi
-   sempre al loro minimo (3.75rem, dove la data va a capo in «22 / SET»), così
-   la larghezza avanza alle locandine.
-   L'altezza è quella di un manifesto e non di una striscia: fra 21 e 26rem
-   (336–416 px), che con quattro dirette a 1400 px dà locandine di circa
-   2:3. ---------------------------------------------------------------------- */
-
 .nastro {
   display: flex;
   gap: var(--passo);
 }
 
 .nastro__giorno {
-  /* Rientro interno, ripreso dalle sfumature che devono arrivare al bordo. */
+
   --pad: clamp(10px, 1.05vw, 18px);
   position: relative;
-  /* isolation: immagine, velo e filigrana usano z-index negativi, e devono
-     restare dentro la locandina invece di finire dietro al fondale. */
+
   isolation: isolate;
   display: flex;
   flex-direction: column;
@@ -231,16 +118,13 @@
   overflow: hidden;
   border: 1px solid var(--linea);
   border-radius: var(--raggio);
-  /* Quasi opaco: un fondale chiaro non deve far diventare grigi i riposi. */
+
   background-color: color-mix(in srgb, var(--fondo-2) 80%, transparent);
   transition:
     border-color var(--durata) var(--curva),
     box-shadow   var(--durata) var(--curva);
 }
 
-/* Una settimana senza dirette (solo eventi, o una pausa) non ha locandine da
-   allineare: sette strisce alte da manifesto sarebbero una fila di scatole
-   vuote, e il nastro si abbassa. */
 @media (min-width: 1100px) {
   .nastro:not(:has(.is-diretta)) .nastro__giorno { min-block-size: 12rem; }
 }
@@ -251,15 +135,6 @@
   border-color: var(--linea-forte);
   background-color: var(--fondo-2);
 }
-
-/* --- Locandina senza immagine -----------------------------------------------
-   È il caso di partenza (nessuno ha ancora caricato niente), quindi deve essere
-   bella da sola. Sotto c'è la città notturna della copertina (img/copertina.webp,
-   la grafica «foto storie» già scaricata per la regia): ogni giorno ne mostra
-   un tratto diverso, da sinistra il lunedì a destra la domenica, così le
-   locandine in fila compongono un panorama. Sopra, il cielo si chiude nel buio
-   in alto, un alone viola sale dal basso e passa la trama della regia; il nome
-   del giorno in filigrana fa da testata tipografica. ------------------------- */
 
 .nastro__giorno.is-diretta:not(.con-immagine) {
   background-image:
@@ -281,13 +156,6 @@
 .nastro__giorno[data-giorno="6"] { --panorama: 83.3%; }
 .nastro__giorno[data-giorno="0"] { --panorama: 100%; }
 
-/* Filigrana: solo contorno, così non compete con il testo. Scritta in
-   verticale lungo la locandina, da sotto la targa in giù, e sfumata prima di
-   arrivare al corpo: che non si legga tutta è voluto, è un segno grafico e non
-   un'informazione (il nome del giorno è anche nella targa).
-   Attenzione ai nomi: le proprietà logiche seguono la scrittura
-   dell'elemento, che qui è verticale. inline-start è l'alto, block-start è la
-   destra. */
 .nastro__filigrana {
   position: absolute;
   z-index: -1;
@@ -309,8 +177,6 @@
   user-select: none;
 }
 
-/* --- Locandina con immagine -------------------------------------------------- */
-
 .nastro__sfondo {
   position: absolute;
   z-index: -2;
@@ -323,11 +189,6 @@
   transition: scale var(--durata-lunga) var(--curva);
 }
 
-/* Il velo sull'immagine scende dall'alto verso il basso: quasi niente nella
-   metà alta, dove l'immagine si deve riconoscere (con il velo di serie, 0.6,
-   il 7% in cima e il 13% a metà), e sempre di più verso il testo (il 48% sul
-   fondo). Quanto scurisce lo decide il velo; la leggibilità del testo non
-   dipende da questo strato ma dalla sfumatura del corpo, qui sotto. */
 .nastro__giorno.con-immagine::before,
 .evento.con-immagine .evento__manifesto::before {
   content: "";
@@ -342,10 +203,6 @@
   );
 }
 
-/* --- Oggi: la barra magenta in cima ------------------------------------------
-   Il colore raro della palette, e solo qui. Una barra dentro il bordo, non un
-   bordo in più: niente si sposta di un pixel quando compare. ------------------ */
-
 .nastro__giorno::after {
   content: "";
   position: absolute;
@@ -359,13 +216,6 @@
 }
 
 .nastro__giorno.is-oggi::after { opacity: 1; }
-
-/* --- Prossima e in onda: la luce al neon -----------------------------------
-   Un'ombra e il colore del bordo, mai un bordo più spesso: il contenuto resta
-   dov'è. Viola per la prossima (è «la scelta»), rosso della spia per la
-   diretta in corso. La luce respira piano, come un'insegna: è l'unico
-   movimento che si ripete, e con il movimento ridotto resta ferma (vedi il
-   paragrafo 6). Un giorno con un evento ha il bordo appena ciano. ---------- */
 
 .nastro__giorno.ha-evento { border-color: color-mix(in srgb, var(--ciano) 45%, transparent); }
 
@@ -388,8 +238,6 @@
   50% { box-shadow: 0 0 0 1px var(--luce), 0 0 40px color-mix(in srgb, var(--luce) 62%, transparent); }
 }
 
-/* Al passaggio del mouse l'immagine si avvicina appena e il bordo si accende:
-   solo dove il puntatore esiste, e non sui giorni che hanno già una luce. */
 @media (hover: hover) {
   .nastro__giorno.is-diretta:hover .nastro__sfondo { scale: 1.045; }
 
@@ -397,8 +245,6 @@
     border-color: color-mix(in srgb, var(--viola-chiaro) 55%, transparent);
   }
 }
-
-/* --- Testa della locandina: targa e segni -------------------------------------- */
 
 .nastro__testa {
   display: flex;
@@ -424,9 +270,6 @@
 
 .nastro__abbr { color: var(--testo); }
 
-/* Sull'immagine la targa è una piastrina scura. 92% e non meno: è il minimo in
-   cui anche l'abbreviazione magenta di «oggi» resta sopra 4.5:1 su un'immagine
-   bianca (sfondo composito sotto rgb(28)). */
 .con-immagine .nastro__targa {
   padding: 3px 7px;
   border-radius: var(--raggio-s);
@@ -435,11 +278,8 @@
 
 .is-oggi .nastro__abbr { color: var(--magenta); }
 
-/* La data la scrive sito.js: senza JavaScript il contenitore resta vuoto e non
-   deve lasciare un buco nella targa. */
 .nastro__data:empty { display: none; }
 
-/* Il nome intero è per chi usa un lettore di schermo: a vista basta «LUN». */
 .nastro__nome {
   position: absolute;
   inline-size: 1px;
@@ -452,9 +292,6 @@
   border: 0;
 }
 
-/* I segni li scrive sito.js. Lo spazio di una riga è tenuto da parte anche
-   vuoto: quando compaiono il corpo della locandina, ancorato in basso, non si
-   muove. */
 .nastro__segni {
   display: flex;
   flex-wrap: wrap;
@@ -463,8 +300,6 @@
   margin: 0;
 }
 
-/* Le etichette dei segni: una piastrina per ciascuno, stessa forma e colori
-   diversi, come le spie di una consolle. Servono anche agli eventi. */
 .segno {
   display: inline-flex;
   align-items: center;
@@ -486,23 +321,17 @@
 .segno--evento { color: var(--ciano); }
 .segno--onda   { color: var(--live); }
 
-/* Pieno di viola: --testo sul viola sta a 4.7:1 qualunque cosa ci sia sotto. */
 .segno--prossima {
   border-color: var(--viola);
   background-color: var(--viola);
   color: var(--testo);
 }
 
-/* La spia della consolle dentro l'etichetta «in onda»: è la stessa .spia di
-   base.css, con la sua pulsazione e il suo movimento ridotto. */
 .segno .spia { --spia-d: 7px; }
-
-/* --- Corpo della locandina ------------------------------------------------- */
 
 .nastro__corpo {
   position: relative;
-  /* isolation: la sfumatura sta a z-index -1 dentro il corpo, sopra
-     all'immagine e sotto al testo. */
+
   isolation: isolate;
   display: flex;
   flex-direction: column;
@@ -511,13 +340,6 @@
   padding-block-start: var(--passo-2);
 }
 
-/* La sfumatura sotto il testo. Parte 32px sopra al corpo, arriva ai bordi
-   della locandina e diventa piena dove comincia il testo: segue la sua altezza,
-   che cambia da un giorno all'altro, invece di coprire una quota fissa.
-   Opacità 80% + 18% del velo: con il velo al minimo (0.3) il fondo sotto il
-   testo è coperto almeno all'85%, cioè sotto rgb(43) anche su bianco pieno,
-   senza contare il velo dell'immagine: --testo 12.6:1, --testo-medio 7.7:1,
-   --testo-tenue 4.8:1. */
 .nastro__giorno.is-diretta .nastro__corpo::before {
   content: "";
   position: absolute;
@@ -545,8 +367,6 @@
   margin: 0;
 }
 
-/* In una locandina stretta l'etichetta sta sopra l'ora, che così ha tutta la
-   larghezza per crescere. */
 @media (min-width: 1100px) {
   .nastro__giorno.is-diretta .nastro__quando {
     flex-direction: column;
@@ -564,8 +384,6 @@
   letter-spacing: var(--spazio-etichetta);
 }
 
-/* Ora e fine: la fine va a capo tutta intera se la locandina è stretta,
-   non si spezza a metà. */
 .nastro__orario {
   display: inline-flex;
   flex-wrap: wrap;
@@ -577,8 +395,6 @@
   line-height: 1.15;
 }
 
-/* L'ora è il dato che si cerca: grande, in monospazio, con un alone ciano
-   appena percepibile che la fa sembrare accesa. */
 .nastro__ora {
   color: var(--testo);
   font-size: clamp(1.45rem, 0.85rem + 1.25vw, 2.3rem);
@@ -593,12 +409,6 @@
   white-space: nowrap;
 }
 
-/* --- Il giorno che un evento speciale si è preso ----------------------------
-   Finché un evento speciale è acceso è lui il programma: la serata regolare
-   che gli finisce sotto resta scritta — quando l'evento finisce torna a
-   valere, e sito.js toglie is-sostituito senza ripubblicare niente — ma si
-   legge come quello che non vale adesso: l'orario sbarrato, i testi in
-   secondo piano e una riga ciano col titolo dell'evento che comanda. */
 .nastro__giorno.is-sostituito { border-color: color-mix(in srgb, var(--ciano) 45%, transparent); }
 
 .nastro__giorno.is-sostituito .nastro__orario {
@@ -632,11 +442,6 @@
   overflow-wrap: anywhere;
 }
 
-/* --- Un giorno saltato per un motivo personale --------------------------
-   Vince su tutto il resto di quel giorno, anche su un evento speciale in
-   corso (server/lib/costruisci.js non scrive mai «sostituito» insieme a
-   «saltata»): niente orario, niente locandina, solo l'etichetta e il
-   motivo. Colore di attenzione, non ciano: non è un evento, è un'assenza. */
 .nastro__giorno.is-saltata { border-color: color-mix(in srgb, var(--allerta) 45%, transparent); }
 
 .nastro__saltata {
@@ -654,10 +459,6 @@
   text-wrap: balance;
 }
 
-/* --- La data limite facoltativa di un evento speciale -------------------
-   Un piccolo box a parte, in alto a destra del corpo: e' un avviso fuori
-   dal racconto dell'evento (titolo/quando/gioco/nota), non una riga in
-   mezzo alle altre. .evento__corpo e' position:relative apposta. */
 .evento__limite {
   position: absolute;
   inset-block-start: clamp(14px, 1.8vw, 20px);
@@ -686,7 +487,6 @@
   letter-spacing: var(--spazio-etichetta);
 }
 
-/* L'ora di chi guarda (sito.js), solo se è diversa da quella del canale. */
 .nastro__locale,
 .evento__locale {
   margin: 0;
@@ -732,20 +532,12 @@
   overflow-wrap: anywhere;
 }
 
-/* Nelle locandine strette la nota scende di un punto: con sette dirette e note
-   lunghe è quello che tiene le locandine vicine alla loro altezza da manifesto
-   invece di farle crescere. 13px restano sopra la soglia di lettura comoda. */
 @media (min-width: 1100px) {
   .nastro__giorno.is-diretta .nastro__nota {
     font-size: 0.8125rem;
     line-height: 1.4;
   }
 }
-
-/* --- Giorno di riposo al computer -------------------------------------------
-   Una striscia stretta e spenta: abbreviazione e data in cima, la parola
-   «riposo» in verticale fra due filetti. I segni vanno in verticale anche
-   loro, perché «speciale» in orizzontale non ci starebbe in 3.75rem. ------- */
 
 .nastro__giorno:not(.is-diretta) {
   --pad: 10px;
@@ -800,13 +592,6 @@
   color: var(--testo-tenue);
 }
 
-
-/* --- Sotto i 1100px: una colonna ---------------------------------------------
-   Nessuno scorrimento laterale e i giorni in ordine. Le dirette diventano
-   fasce orizzontali: la testa in alto, il corpo in basso e in mezzo uno spazio
-   garantito dove l'immagine si vede senza niente sopra — è quello che la fa
-   riconoscere. I riposi diventano righe sottili. ------------------------------ */
-
 @media (max-width: 1099.98px) {
   .nastro {
     flex-direction: column;
@@ -820,8 +605,6 @@
     min-block-size: 0;
   }
 
-  /* Una fascia e non un riquadro: circa 16:9 al telefono, molto più larga che
-     alta sul tablet. */
   .nastro__giorno.is-diretta { min-block-size: clamp(11rem, 50vw, 15rem); }
 
   .nastro__giorno.is-diretta .nastro__testa {
@@ -829,8 +612,7 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    /* Lo spazio dell'immagine: con testi lunghi la fascia si allunga, ma
-       questa fetta resta libera. */
+
     margin-block-end: clamp(2.5rem, 9vw, 4rem);
   }
 
@@ -838,17 +620,11 @@
 
   .nastro__giorno.is-diretta .nastro__corpo > * { max-inline-size: 40rem; }
 
-  /* Il testo sta a sinistra, entro 40rem: oltre, la sfumatura si alleggerisce
-     in 16rem e sulla destra di una fascia larga l'immagine torna a vedersi.
-     Misure fisse e non percentuali: su una fascia poco più larga del testo
-     una percentuale farebbe la sfumatura in pochi pixel, cioè uno scalino. */
   .nastro__giorno.is-diretta .nastro__corpo::before {
     -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) calc(40rem + var(--pad) * 2), rgba(0, 0, 0, 0.3) calc(56rem + var(--pad) * 2));
     mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) calc(40rem + var(--pad) * 2), rgba(0, 0, 0, 0.3) calc(56rem + var(--pad) * 2));
   }
 
-  /* In orizzontale la filigrana corre lungo la fascia, in alto a destra, e si
-     sfuma verso sinistra, dove comincia il testo. */
   .nastro__filigrana {
     inset-inline-start: auto;
     inset-inline-end: var(--pad);
@@ -859,8 +635,6 @@
     mask-image: linear-gradient(to left, rgba(0, 0, 0, 1) 30%, rgba(0, 0, 0, 0) 100%);
   }
 
-  /* Oggi: la barra passa sul lato d'inizio, dove comincia la lettura della
-     riga. */
   .nastro__giorno::after {
     inset-block: 0;
     inset-inline: 0 auto;
@@ -924,16 +698,6 @@
   .nastro__giorno:not(.is-diretta) .nastro__tag { writing-mode: horizontal-tb; }
 }
 
-
-/* --- Eventi speciali ----------------------------------------------------------
-   Schede e non righe: sono le serate fuori dal solito, e devono farsi vedere.
-   A sinistra il «manifesto» — immagine, data grande, etichetta — e a destra il
-   testo. Il manifesto ha una larghezza sua (--manifesto) ed è alto almeno 4/3
-   di quella, cioè è una locandina verticale: un'immagine verticale (come la
-   grafica «STARTING» al neon) ci entra quasi intera, una orizzontale si
-   inquadra con il fuoco. Al telefono il manifesto va sopra al testo, in 5:4,
-   ancora abbastanza alto da non ridurre un'immagine verticale a una striscia. ---------------------------------------------------------------------- */
-
 .eventi { margin-block-start: clamp(var(--passo-6), 5vw, var(--passo-8)); }
 
 .eventi__titolo {
@@ -944,7 +708,6 @@
   color: var(--testo);
 }
 
-/* Un rombo ciano: il segno di «speciale», lo stesso colore dell'etichetta. */
 .eventi__titolo::before {
   content: "";
   flex: none;
@@ -967,11 +730,6 @@
   );
 }
 
-/* Due colonne quando ce ne stanno due da 27rem (da circa 1000px in su),
-   altrimenti una; mai tre, perché una scheda più stretta della metà schiaccia
-   il testo accanto al manifesto (il max() alza il minimo a mezza riga). L'ultimo
-   di un numero dispari di eventi (uno solo compreso) prende tutta la riga
-   invece di lasciarne mezza vuota. */
 .eventi__elenco {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, max(27rem, calc((100% - var(--passo-2)) / 2))), 1fr));
@@ -986,7 +744,7 @@
   overflow: hidden;
   border: 1px solid var(--linea-forte);
   border-radius: var(--raggio);
-  /* Fondo opaco sotto il vetro: il fondale non deve trasparire nel testo. */
+
   background-color: var(--fondo-2);
   background-image: var(--grad-pannello);
   transition:
@@ -996,7 +754,6 @@
 
 .evento:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
-/* A tutta riga al computer il manifesto cresce: la scheda è larga il doppio. */
 @media (min-width: 1100px) {
   .evento:last-child:nth-child(odd) { --manifesto: clamp(13rem, 22vw, 21rem); }
 }
@@ -1009,10 +766,7 @@
   gap: var(--passo);
   padding: clamp(14px, 1.6vw, 20px);
   border-inline-end: 1px solid var(--linea);
-  /* Senza immagine: le due barre di luce dello stinger (la grafica del
-     fondale, già scaricata) velate, con la trama della regia. È il segno
-     «fuori programma»: le locandine regolari hanno la città, gli speciali la
-     luce. */
+
   background-color: var(--fondo-2);
   background-image:
     linear-gradient(to top, color-mix(in srgb, var(--fondo-2) 88%, transparent) 0%, color-mix(in srgb, var(--fondo-2) 45%, transparent) 60%, color-mix(in srgb, var(--fondo-2) 70%, transparent) 100%),
@@ -1039,8 +793,6 @@
   transition: scale var(--durata-lunga) var(--curva);
 }
 
-/* Le etichette in alto, la data in basso: nel DOM la data viene prima perché
-   si legge prima, qui si impagina come un manifesto. */
 .evento__segni {
   grid-row: 1;
   display: flex;
@@ -1061,7 +813,6 @@
   line-height: 1;
 }
 
-/* La stessa sfumatura del corpo delle locandine, dietro alla data. */
 .evento.con-immagine .evento__data::before {
   content: "";
   position: absolute;
@@ -1090,8 +841,7 @@
 
 .evento__numero {
   margin-block: 2px 4px;
-  /* Il padding tiene dentro il ritaglio del gradiente la coda dell'ultima
-     cifra, che con la spaziatura negativa sborderebbe. */
+
   padding-inline-end: 0.06em;
   color: var(--testo);
   font-family: var(--font-titolo);
@@ -1103,9 +853,6 @@
   filter: drop-shadow(0 0 22px color-mix(in srgb, var(--viola) 55%, transparent));
 }
 
-/* La data grande con lo stesso gradiente del titolo della copertina: ogni
-   tono sta sopra 7:1 sul fondo scuro che ha sotto. Solo dove il ritaglio
-   esiste, altrimenti resta bianca. */
 @supports (-webkit-background-clip: text) or (background-clip: text) {
   .evento__numero {
     background-image: var(--grad-titolo);
@@ -1192,7 +939,6 @@
   line-height: 1.55;
 }
 
-/* Sotto i 760px il manifesto è una fascia sopra al testo. */
 @media (max-width: 759.98px) {
   .evento {
     grid-template-columns: minmax(0, 1fr);
@@ -1207,8 +953,6 @@
 
   .evento__numero { font-size: clamp(3.5rem, 2rem + 8vw, 5rem); }
 }
-
-/* --- Piede della sezione ---------------------------------------------------- */
 
 .settimana__piede {
   display: flex;
@@ -1228,22 +972,6 @@
   font-size: var(--t-piccolo);
   line-height: 1.55;
 }
-
-
-/* =============================================================================
-   3. CHI SONO — la figurina e il racconto
-   La sezione più personale del sito, e deve sembrarlo: il ritratto è grande e
-   storto come una figurina attaccata al quaderno, la citazione è un fumetto
-   della chat, le etichette sono adesivi colorati. Il linguaggio resta quello
-   della regia — monospazio per le etichette, linee da 1px — ma qui si scalda.
-
-   Disposizione (le aree le assegna .chi__griglia, CONTRATTO-4 §5.5):
-     · stretto:      ritratto / corpo / margine, in colonna;
-     · da 1100px:    corpo accanto al ritratto, e sotto il margine a tutta
-                     larghezza con le tre note e i tre numeri in fila.
-   Il margine non è più sticky: stando sotto al racconto non ha niente accanto
-   a cui restare agganciato. La deroga è motivata in CONTRATTO.md §2.
-   ============================================================================= */
 
 .chi__griglia {
   display: grid;
@@ -1271,11 +999,8 @@
   }
 }
 
-/* --- Il racconto ------------------------------------------------------------ */
-
 .chi__corpo {
-  /* Sopra le ~62 battute per riga l'occhio perde il capo riga: è il limite di
-     leggibilità, non un vezzo grafico. */
+
   max-inline-size: 62ch;
 }
 
@@ -1284,7 +1009,6 @@
   color: var(--testo-medio);
 }
 
-/* L'apertura è la voce che saluta: più grande e in tinta piena. */
 .chi__apertura {
   font-size: clamp(1.15rem, 1rem + 0.6vw, 1.45rem);
   line-height: 1.5;
@@ -1292,8 +1016,6 @@
 
 .chi__corpo .chi__apertura { color: var(--testo); }
 
-/* La citazione è un messaggio in chat: un fumetto con la coda in basso a
-   sinistra e le virgolette grandi appese al bordo come un adesivo. */
 .chi__citazione {
   position: relative;
   margin-block: var(--passo-6) var(--passo-6);
@@ -1327,8 +1049,6 @@
   text-shadow: var(--bagliore-ciano);
 }
 
-/* La coda del fumetto: un quadratino ruotato con i due bordi che servono,
-   dello stesso colore pieno del fumetto così copre il bordo che attraversa. */
 .chi__citazione::after {
   content: "";
   position: absolute;
@@ -1341,10 +1061,6 @@
   background-color: color-mix(in srgb, var(--viola) 14%, var(--fondo));
   rotate: 45deg;
 }
-
-/* --- Gli adesivi ------------------------------------------------------------
-   Il .tag di base.css con un pallino colorato davanti. I colori girano sui
-   tre accenti del marchio; al passaggio l'adesivo si stacca un filo. ------- */
 
 .chi__tag {
   display: flex;
@@ -1384,13 +1100,6 @@
 }
 
 .chi__corpo .btn { margin-block-start: var(--passo); }
-
-/* --- La figurina ------------------------------------------------------------
-   L'avatar è un primo piano molto stretto del pollo: grande regge solo se è
-   quadrato e pieno. Dietro c'è un cartoncino viola e ciano storto
-   dall'altra parte, e la didascalia è un'etichetta attaccata sopra.
-   Le rotazioni stanno sui figli e sugli pseudo-elementi, mai sul blocco: fra
-   riquadro e blocco non ci devono essere trasformazioni (CONTRATTO-4 §5.5). */
 
 .chi__ritratto {
   --lato: min(100%, 300px);
@@ -1449,22 +1158,6 @@
   rotate: 2deg;
 }
 
-/* --- Il pollo che parla ------------------------------------------------------
-   Bottone e fumetto li crea js/sito.js solo se dal pannello arriva almeno una
-   frase. Il bottone è solo un involucro: l'aspetto resta quello della foto.
-
-   Il fumetto compare ogni volta in un punto a caso intorno al ritratto, come
-   le ore di un orologio. Il punto lo sceglie il JS e lo passa in variabili:
-     --fx, --fy   dove sta, in px dentro la figura (un punto del bordo del
-                  ritratto, un po' più in fuori);
-     --dx, --dy   da che parte cresce, fra -1 e 1: il fumetto si attacca a
-                  quel punto con il lato che guarda il pollo;
-     --ux, --uy   la stessa direzione lunga 1, per i due pallini che fanno
-                  da coda verso il pollo;
-     --sx         lo spostamento che lo tiene dentro lo schermo.
-   Compare con opacity e scale partendo dal lato del pollo, non scivola: da
-   un clic all'altro cambia posto e deve sembrare un fumetto nuovo. */
-
 .chi__parla {
   display: block;
   padding: 0;
@@ -1518,9 +1211,6 @@
     scale var(--durata) var(--curva);
 }
 
-/* La coda: due pallini fuori dal lato che guarda il pollo, il secondo più
-   piccolo e più lontano, come nei fumetti dei pensieri. Con il fumetto
-   spostato per stare nello schermo puntano un po' di lato: si vede appena. */
 .chi__fumetto::before,
 .chi__fumetto::after {
   content: "";
@@ -1544,9 +1234,6 @@
   translate: calc(-50% - var(--ux) * 22px) calc(-50% - var(--uy) * 22px);
 }
 
-/* Le emote di Twitch dentro la frase: alte come una riga e mezza, sulla
-   linea del testo come in chat. Il selettore batte `.chi__ritratto img` e
-   anche `.chi__ritratto:hover img`: le emote non ruotano e non saltano. */
 .chi__ritratto .chi__fumetto .chi__emote {
   display: inline-block;
   inline-size: 1.75em;
@@ -1575,12 +1262,116 @@
   40%      { translate: 0 -10px; }
 }
 
-/* Sul telefono la figurina non deve prendersi tutto lo schermo. */
+.chi__ritratto.is-arrabbiato img { animation: chi-trema 90ms linear 10; }
+
+@keyframes chi-trema {
+  0%, 100% { translate: 0 0;     rotate: 0deg; }
+  25%      { translate: -5px 2px; rotate: -4deg; }
+  75%      { translate: 5px -2px; rotate: 4deg; }
+}
+
+.pollo-gif {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-velo) + 5);
+  display: grid;
+  place-items: center;
+  padding: var(--passo-3);
+  background-color: var(--velo);
+  opacity: 0;
+  transition: opacity var(--durata) var(--curva);
+}
+
+.pollo-gif.is-aperto { opacity: 1; }
+
+.pollo-gif__riquadro {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--passo);
+  inline-size: fit-content;
+  max-inline-size: min(92vw, 560px);
+  margin: 0;
+  padding: var(--passo-2);
+  border: 1px solid var(--linea-forte);
+  border-radius: var(--raggio);
+  background-color: var(--pannello-2);
+  background-image: var(--grad-pannello);
+  box-shadow: var(--ombra-morbida);
+  scale: 0.6;
+  rotate: -6deg;
+  transition:
+    scale var(--durata-lunga) cubic-bezier(0.34, 1.56, 0.64, 1),
+    rotate var(--durata-lunga) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pollo-gif.is-aperto .pollo-gif__riquadro {
+  scale: 1;
+  rotate: 0deg;
+}
+
+.pollo-gif__img {
+  display: block;
+  inline-size: auto;
+  max-inline-size: 100%;
+  block-size: auto;
+  min-block-size: 160px;
+  max-block-size: 60vh;
+  border-radius: var(--raggio-s);
+  object-fit: contain;
+}
+
+.pollo-gif__scritta {
+  max-inline-size: 100%;
+  margin: 0;
+  color: var(--testo);
+  font-family: var(--font-titolo);
+  font-size: clamp(1.25rem, 5vw, 2rem);
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow:
+    2px 2px 0 var(--fondo),
+    -2px 2px 0 var(--fondo),
+    2px -2px 0 var(--fondo),
+    -2px -2px 0 var(--fondo),
+    0 4px 18px color-mix(in srgb, var(--viola) 60%, transparent);
+}
+
+.pollo-gif__chiudi {
+  position: absolute;
+  inset-block-start: calc(var(--passo) * -1);
+  inset-inline-end: calc(var(--passo) * -1);
+  inline-size: 36px;
+  block-size: 36px;
+  border: 1px solid var(--linea-comando);
+  border-radius: 50%;
+  background-color: var(--pannello-2);
+  color: var(--testo);
+  transition: border-color var(--durata) var(--curva);
+}
+
+.pollo-gif__chiudi:hover { border-color: var(--linea-viva); }
+
+.pollo-gif__chiudi::before,
+.pollo-gif__chiudi::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  inline-size: 14px;
+  block-size: 2px;
+  background-color: currentColor;
+}
+
+.pollo-gif__chiudi::before { translate: -50% -50%; rotate: 45deg; }
+.pollo-gif__chiudi::after  { translate: -50% -50%; rotate: -45deg; }
+
 @media (max-width: 639.98px) {
   .chi__ritratto { --lato: min(100%, 220px); }
 }
-
-/* --- Il margine: tre bigliettini e i numeri --------------------------------- */
 
 .chi__margine {
   display: grid;
@@ -1603,7 +1394,6 @@
   overflow: hidden;
 }
 
-/* Una striscia colorata in cima a ogni bigliettino, come nastro adesivo. */
 .nota::before {
   content: "";
   position: absolute;
@@ -1638,20 +1428,12 @@
   .chi__tag .tag:hover     { translate: none; rotate: none; }
   .chi__ritratto:hover img { rotate: -3deg; }
   .chi__ritratto.is-parla img { animation: none; }
+  .chi__ritratto.is-arrabbiato img { animation: none; }
   .chi__fumetto { transition: none; }
+  .pollo-gif,
+  .pollo-gif__riquadro { transition: none; }
+  .pollo-gif__riquadro { scale: 1; rotate: 0deg; }
 }
-
-
-/* =============================================================================
-   4. SUPPORTO — il listino
-   Righe divise da linee da 1px. Una card per voce farebbe sembrare cinque
-   offerte quello che è un elenco di modi per dare una mano, e il primo — che è
-   gratis — non deve pesare come gli altri.
-
-   Impostato prima per lo schermo stretto (due livelli) e poi allargato a quattro
-   colonne da 720px: il caso difficile è quello piccolo, conviene scriverlo per
-   primo invece di smontarlo dopo.
-   ============================================================================= */
 
 .listino {
   border-block-start: 1px solid var(--linea);
@@ -1662,17 +1444,13 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--passo-2);
-  /* Il rientro negativo fa sì che l'accensione al passaggio del mouse sbordi
-     appena oltre il testo senza spostare le linee, che restano allineate al
-     bordo della sezione. Resta dentro --margine anche a 320px. */
+
   margin-inline: calc(var(--passo) * -1);
   padding: var(--passo-3) var(--passo);
   border-block-end: 1px solid var(--linea);
   transition: background-color var(--durata) var(--curva);
 }
 
-/* :focus-within e non solo :hover: chi arriva col Tab deve vedere la riga
-   accendersi come chi ci passa sopra col mouse. */
 .listino__riga:hover,
 .listino__riga:focus-within {
   background-color: var(--pannello);
@@ -1742,8 +1520,7 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  /* Sul livello basso spinge sé stesso a destra: tag a sinistra, azione a
-     destra, senza aggiungere un contenitore che nel markup non c'è. */
+
   margin-inline-start: auto;
   min-block-size: 40px;
   padding-inline: var(--passo-2);
@@ -1769,7 +1546,6 @@
   background-color: var(--pannello-2);
 }
 
-/* Da 720px la riga si distende: icona, testo, tag e azione su una linea sola. */
 @media (min-width: 720px) {
   .listino__riga {
     flex-wrap: nowrap;
@@ -1787,14 +1563,6 @@
   font-size: var(--t-piccolo);
   line-height: 1.6;
 }
-
-
-/* =============================================================================
-   5. SALUTI — la schermata di fine diretta
-   Due colonne divise da una linea: dove trovarmi a sinistra, come scrivermi a
-   destra. In fondo una riga sola, centrata e in tono minore: è il congedo, non
-   un'altra chiamata all'azione.
-   ============================================================================= */
 
 .saluti__griglia {
   display: grid;
@@ -1817,16 +1585,11 @@
   }
 }
 
-/* --- Social: righe, non griglia di card ------------------------------------- */
-
 .social {
   margin-block-start: var(--passo-4);
   border-block-start: 1px solid var(--linea);
 }
 
-/* Ogni riga ha due blocchi: il link a sinistra e, se c'è, il contatore in un
-   blocco suo a destra. Lo sfondo al passaggio è della riga intera, così link e
-   numeri si accendono insieme. */
 .social__riga {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1838,9 +1601,6 @@
   transition: background-color var(--durata) var(--curva);
 }
 
-/* Icona, nome e handle in tre colonne: la colonna del nome ha una larghezza fissa,
-   tutte le righe, così gli handle partono tutti dallo stesso punto, un po'
-   verso il centro invece che attaccati al nome. */
 .social__voce {
   display: grid;
   grid-template-columns: 20px 13rem minmax(0, 1fr);
@@ -1873,8 +1633,6 @@
   overflow-wrap: anywhere;
 }
 
-/* «Iscritti 3.670 / Goal 5.000», il blocco a destra. Cifre tabellari: i
-   numeri delle righe si allineano fra loro. */
 .social__conta {
   display: flex;
   flex-wrap: wrap;
@@ -1921,8 +1679,6 @@
   color: var(--ciano);
 }
 
-/* Sul telefono non ci sta tutto su una riga: l'handle torna accanto al nome
-   e il contatore scende sotto, allineato al nome. */
 @media (max-width: 599px) {
   .social__riga {
     grid-template-columns: minmax(0, 1fr);
@@ -1938,8 +1694,6 @@
   }
 }
 
-/* --- Contatti --------------------------------------------------------------- */
-
 .contatti__titolo {
   margin: 0 0 var(--passo);
   color: var(--testo);
@@ -1953,9 +1707,6 @@
   line-height: 1.6;
 }
 
-/* L'indirizzo è un dato da copiare, non un pezzo di prosa: riquadro e
-   monospazio lo dichiarano. `anywhere` perché a 320px un indirizzo lungo è la
-   causa più facile di scroll orizzontale. */
 .contatti__email {
   display: inline-block;
   padding: var(--passo) var(--passo-2);
@@ -1974,14 +1725,6 @@
   gap: var(--passo-2);
   margin-block-start: var(--passo-3);
 }
-
-/* --- Referral Amazon --------------------------------------------------------
-   Sta sotto «Scrivimi», nella stessa colonna, ma non è la stessa cosa: lì
-   si chiede di scrivere, qui si chiede di comprare. Per questo è l'unico
-   riquadro della pagina che porta un colore che non è del sito — l'arancio
-   di Amazon, da --amazon, che come --twitch si usa SOLO dove si va là.
-   La riga in fondo è la dichiarazione che il programma di affiliazione
-   obbliga a mostrare: non e' una nota di stile, non si toglie. */
 
 .referral {
   margin-block-start: var(--passo-4);
@@ -2069,10 +1812,6 @@
   .referral__vai { transition: none; }
 }
 
-/* --- Il congedo -------------------------------------------------------------
-   Una riga sola con due filetti ai lati, come la sigla che scorre quando la
-   diretta finisce. In tono minore: non deve competere con niente. */
-
 .saluti__chiusura {
   display: flex;
   align-items: center;
@@ -2096,17 +1835,6 @@
   block-size: 1px;
   background-color: var(--linea-forte);
 }
-
-
-/* =============================================================================
-   6. MOVIMENTO RIDOTTO
-   Le transizioni di questo foglio (bordi, contorni, l'immagine che si avvicina,
-   righe del listino e dei social) passano tutte dai token --durata*, che
-   base.css azzera. L'unica animazione che si ripete è della schedule: la luce
-   che respira intorno alla prossima diretta e a quella in onda. Con il
-   movimento ridotto si ferma e resta la luce ferma: il segno si vede lo
-   stesso. La spia «in onda» è la .spia di base.css, che si ferma lì.
-   ============================================================================= */
 
 @media (prefers-reduced-motion: reduce) {
   .nastro__giorno.is-prossima,

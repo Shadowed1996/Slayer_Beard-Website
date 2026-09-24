@@ -1,40 +1,12 @@
-/* =====================================================================
-   media.js — la libreria delle immagini.
-
-   Lo stesso pezzo di interfaccia serve due volte: come sezione del
-   pannello (si carica, si copia il percorso, si elimina) e come finestra
-   di scelta quando un campo di tipo «immagine» chiede una foto. Cambia la
-   modalita', non il codice.
-
-   Il server rifiuta la cancellazione di un file ancora citato nei
-   contenuti: quel rifiuto (409) non e' un guasto ma una risposta, e va
-   spiegato con parole, non con un codice.
-
-   Ogni immagine che parte da qui passa prima da preparaImmagine()
-   (CONTRATTO-5 §7.2): una foto da 5 MB presa dal telefono o un PNG
-   esportato a 4K diventano un WebP di qualche centinaio di kB prima di
-   lasciare il browser. Il sito poi la scarica a ogni visita, e il pannello
-   la carica in un attimo invece di sbattere contro il limite dei 4 MB.
-   ===================================================================== */
-
 import { api, ErroreApi } from './api.js';
 import { el, bottone, svuota, formattaPeso, formattaData, copiaTesto, urlRisorsa } from './dom.js';
 import { avviso, avvisoAttesa, apriDialogo, conferma } from './avvisi.js';
 
-/* Formati e peso del contratto §8. Il controllo qui davanti non sostituisce
-   quello del server: evita solo di spedire 12 MB per sentirsi dire di no.
-   Il peso si guarda DOPO la preparazione: un PNG da 9 MB che diventa un
-   WebP da 600 kB è un caricamento buono, non un file da rifiutare. */
-const ESTENSIONI = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
+const ESTENSIONI = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
 const PESO_MASSIMO = 4 * 1024 * 1024;
 
-/* Sotto questa soglia (e dentro latoMax) un'immagine si lascia com'è:
-   ricodificare un file già leggero toglie qualità per risparmiare poco. */
 const SOGLIA_PESO = 350 * 1024;
 
-/* I formati che il browser sa ridurre e riscrivere. SVG è testo e si
-   ingrandisce senza perdere niente; una GIF può essere animata e ridotta
-   a un fotogramma perderebbe il movimento: nessuno dei due si tocca. */
 const RIDUCIBILI = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' };
 
 function estensioneDi(nome) {
@@ -51,9 +23,6 @@ function messaggioDi(errore, ripiego) {
   return errore instanceof ErroreApi ? errore.message : ripiego;
 }
 
-/* --- preparazione ---------------------------------------------------- */
-
-/** Il formato vero dai primi byte, indipendente dal nome: 'png' | 'jpg' | 'webp' | 'gif' | ''. */
 async function formatoDaiByte(file) {
   const b = new Uint8Array(await file.slice(0, 16).arrayBuffer());
   const ascii = (da, a) => String.fromCharCode(...b.slice(da, a));
@@ -64,12 +33,6 @@ async function formatoDaiByte(file) {
   return '';
 }
 
-/**
- * Vero se il file è un'animazione (PNG animato o WebP animato). Riscriverlo
- * da una tela ne terrebbe solo il primo fotogramma, quindi si lascia com'è.
- * Si leggono solo le intestazioni: nel PNG il pezzo acTL sta per regola
- * prima dei dati dell'immagine, nel WebP c'è un bit apposta in VP8X.
- */
 async function animata(file, formato) {
   if (formato === 'webp') {
     const b = new Uint8Array(await file.slice(0, 21).arrayBuffer());
@@ -97,32 +60,16 @@ function inBlob(tela, tipo, qualita) {
   return new Promise((risolvi) => tela.toBlob(risolvi, tipo, qualita));
 }
 
-/**
- * Prepara un'immagine per il caricamento (CONTRATTO-5 §7.2).
- *
- * PNG, JPEG e WebP oltre i 350 kB, o con il lato lungo oltre `latoMax`,
- * si riducono (se serve) e si riscrivono in WebP nel browser. Se il WebP
- * non pesa meno dell'originale, resta l'originale. SVG, GIF, formati
- * sconosciuti e animazioni tornano indietro così come sono: il controllo
- * del formato lo fa chi carica, e l'ultima parola resta al server.
- *
- * @param {File} file
- * @param {{ latoMax?: number, qualita?: number }} opzioni
- * @returns {Promise<File>} il file da caricare: nuovo (nome.webp) oppure lo stesso
- * @throws {Error} con un messaggio già scritto per chi usa il pannello, se un
- *   PNG/JPEG/WebP non si apre come immagine (file rovinato, o con il nome sbagliato)
- */
 export async function preparaImmagine(file, { latoMax = 2400, qualita = 0.82 } = {}) {
   if (!file) return file;
   const dalNome = estensioneDi(file.name);
-  // Solo i raster che il browser sa riscrivere; tutto il resto (svg, gif, …) non si tocca.
+
   if (!RIDUCIBILI[dalNome]) return file;
 
   const formato = await formatoDaiByte(file);
   const nonSiApre = () => new Error('«' + file.name + '» non si apre come immagine: il file è rovinato o non è davvero un '
     + (dalNome === 'jpeg' ? 'JPG' : dalNome.toUpperCase()) + '.');
-  // Dal nome un raster, dentro no (un testo rinominato, una GIF chiamata .png):
-  // meglio dirlo qui con parole chiare che farselo rifiutare dal server.
+
   if (!RIDUCIBILI[formato]) throw nonSiApre();
   if (await animata(file, formato)) return file;
 
@@ -135,9 +82,7 @@ export async function preparaImmagine(file, { latoMax = 2400, qualita = 0.82 } =
 
   try {
     const latoLungo = Math.max(bitmap.width, bitmap.height);
-    // Il contenuto conta più del nome: un JPEG salvato come .png il server lo
-    // rifiuterebbe con un errore poco chiaro. Se non c'è niente da ridurre si
-    // corregge solo l'estensione e il file parte com'è.
+
     const nomeGiusto = formato === (dalNome === 'jpeg' ? 'jpg' : dalNome) ? file.name : nomeCon(file.name, formato);
     const originale = nomeGiusto === file.name
       ? file
@@ -149,8 +94,6 @@ export async function preparaImmagine(file, { latoMax = 2400, qualita = 0.82 } =
     const larghezza = Math.max(1, Math.round(bitmap.width * scala));
     const altezza = Math.max(1, Math.round(bitmap.height * scala));
 
-    // La riduzione la fa createImageBitmap con il filtro migliore del browser:
-    // disegnare in piccolo su una tela userebbe il filtro veloce e seghettato.
     const ridotta = scala < 1
       ? await createImageBitmap(file, { resizeWidth: larghezza, resizeHeight: altezza, resizeQuality: 'high' })
       : bitmap;
@@ -161,9 +104,8 @@ export async function preparaImmagine(file, { latoMax = 2400, qualita = 0.82 } =
     if (ridotta !== bitmap) ridotta.close();
 
     const webp = await inBlob(tela, 'image/webp', qualita);
-    tela.width = 0; // libera subito la memoria della tela: una foto da 24 MP ne occupa quasi 100 MB
-    // Un browser che non sa scrivere WebP restituisce un PNG: in quel caso, o se
-    // il WebP non conviene, parte l'originale.
+    tela.width = 0;
+
     if (!webp || webp.type !== 'image/webp' || webp.size >= originale.size) return originale;
     return new File([webp], nomeCon(file.name, 'webp'), { type: 'image/webp', lastModified: Date.now() });
   } finally {
@@ -171,23 +113,15 @@ export async function preparaImmagine(file, { latoMax = 2400, qualita = 0.82 } =
   }
 }
 
-/** Il percorso restituito dal server dopo un caricamento, o '' se non c'è. */
 function percorsoDellaRisposta(risposta) {
   const salvata = (risposta && (risposta.file || risposta.media || risposta.voce)) || null;
   return salvata ? String(salvata.percorso || salvata.url || salvata.path || '').replace(/^\/+/, '') : '';
 }
 
-/**
- * Prepara e carica un'immagine nella libreria (POST /api/media).
- * Gli errori li mostra lei con un avviso, chi chiama non deve farlo.
- *
- * @param {File} file
- * @returns {Promise<string|null>} il percorso 'contenuti/media/…', o null se non è andata
- */
 export async function caricaImmagine(file) {
   if (!file) return null;
   if (!estensioneOk(file.name)) {
-    avviso('«' + file.name + '» non è un formato accettato. Servono PNG, JPG, WEBP o SVG.',
+    avviso('«' + file.name + '» non è un formato accettato. Servono PNG, JPG, WEBP, GIF o SVG.',
       { tipo: 'errore', titolo: 'Formato non valido' });
     return null;
   }
@@ -212,7 +146,7 @@ export async function caricaImmagine(file) {
   try {
     const risposta = await api.caricaMedia(pronto);
     let percorso = percorsoDellaRisposta(risposta);
-    // Un server che non rimanda il percorso: lo si cerca nell'elenco per nome.
+
     if (!percorso) percorso = (await api.media()).find((m) => m.nome === pronto.name)?.percorso || '';
     const nome = percorso ? percorso.split('/').pop() : pronto.name;
     inCorso.riuscito('Caricata: ' + nome + (ridotta ? ' · ' + formattaPeso(file.size) + ' → ' + formattaPeso(pronto.size) + ' in WebP' : ''));
@@ -223,15 +157,6 @@ export async function caricaImmagine(file) {
   }
 }
 
-/**
- * Costruisce la libreria.
- *
- * @param {object} opzioni
- *   - modalita: 'gestione' | 'scelta'
- *   - onScegli(percorso): chiamata in modalita' scelta
- *   - usoDi(percorso): elenco leggibile dei campi che usano quel file
- *   - valoreCorrente: percorso gia' impostato nel campo che ha aperto la scelta
- */
 export function creaLibreria({ modalita = 'gestione', onScegli = null, usoDi = () => [], valoreCorrente = '' } = {}) {
   const griglia = el('div', { classe: 'media' });
   const stato = el('p', { classe: 'campo__aiuto', testo: 'Carico l\'elenco…' });
@@ -243,34 +168,27 @@ export function creaLibreria({ modalita = 'gestione', onScegli = null, usoDi = (
   const zona = el('div', { classe: 'zona' }, [
     el('p', { testo: 'Trascina qui le immagini, oppure scegli un file dal computer.' }),
     bottone({ testo: 'Scegli un file', ico: 'immagine', classe: 'btn btn--primario', su: () => scelta.click() }),
-    el('p', { classe: 'zona__limiti', testo: 'PNG, JPG, WEBP, SVG · massimo 4 MB per file' }),
+    el('p', { classe: 'zona__limiti', testo: 'PNG, JPG, WEBP, GIF, SVG · massimo 4 MB per file' }),
     scelta
   ]);
 
   const nodo = el('div', { classe: 'lavoro__corpo' }, [zona, stato, griglia]);
 
-  /* --- caricamento --------------------------------------------------- */
-
   async function carica(elencoFile) {
     const file = Array.from(elencoFile || []);
     if (!file.length) return;
 
-    // Uno alla volta: più foto grandi ridotte insieme terrebbero in memoria
-    // tutte le loro tele nello stesso momento.
     for (const f of file) {
       const percorso = await caricaImmagine(f);
       if (!percorso) continue;
       await aggiorna();
 
-      // Chi carica dentro la finestra di scelta vuole quella foto lì per
-      // lì: gliela si passa subito, senza fargliela ricercare a mano.
       if (modalita === 'scelta' && onScegli) { onScegli(percorso); return; }
     }
   }
 
   scelta.addEventListener('change', () => { carica(scelta.files); scelta.value = ''; });
 
-  // Senza preventDefault su dragover il browser apre il file al posto nostro.
   for (const evento of ['dragenter', 'dragover']) {
     zona.addEventListener(evento, (e) => { e.preventDefault(); zona.classList.add('is-sopra'); });
   }
@@ -283,8 +201,6 @@ export function creaLibreria({ modalita = 'gestione', onScegli = null, usoDi = (
     zona.classList.remove('is-sopra');
     if (e.dataTransfer && e.dataTransfer.files) carica(e.dataTransfer.files);
   });
-
-  /* --- eliminazione -------------------------------------------------- */
 
   async function elimina(file) {
     const usato = usoDi(file.percorso);
@@ -310,7 +226,7 @@ export function creaLibreria({ modalita = 'gestione', onScegli = null, usoDi = (
     } catch (errore) {
       inCorso.chiudi();
       if (errore instanceof ErroreApi && errore.stato === 409) {
-        // Caso previsto dal contratto: il file e' ancora citato nei contenuti.
+
         await apriDialogo({
           titolo: 'Immagine ancora in uso',
           ico: 'attenzione',
@@ -327,8 +243,6 @@ export function creaLibreria({ modalita = 'gestione', onScegli = null, usoDi = (
       }
     }
   }
-
-  /* --- griglia ------------------------------------------------------- */
 
   function scheda(file) {
     const usato = usoDi(file.percorso);
@@ -392,10 +306,6 @@ export function creaLibreria({ modalita = 'gestione', onScegli = null, usoDi = (
   return { nodo, aggiorna };
 }
 
-/**
- * Finestra di scelta usata dai campi di tipo «immagine».
- * Torna il percorso scelto, oppure null se si chiude senza scegliere.
- */
 export async function scegliImmagine({ usoDi = () => [], valoreCorrente = '' } = {}) {
   const risultato = await apriDialogo({
     titolo: 'Libreria immagini',

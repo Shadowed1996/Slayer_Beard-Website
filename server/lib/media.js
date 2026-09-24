@@ -1,17 +1,4 @@
 'use strict';
-/* =====================================================================
-   media.js — la cartella contenuti/media/ vista dal pannello.
-
-   Il caricamento arriva come multipart/form-data, che e quello che manda
-   un <input type="file"> senza JavaScript di mezzo. Il parser sta qui
-   sotto ed e volutamente minimo: cerca il confine, taglia, legge le
-   intestazioni della parte, prende il file. Non gestisce il multipart
-   annidato perche nessun browser lo manda per un modulo con un file.
-
-   Regole: png, jpg, webp e svg, al massimo 4 MB, nome normalizzato e reso
-   unico. Il tipo dichiarato non basta: i primi byte devono corrispondere.
-   Un file citato nei contenuti non si cancella.
-   ===================================================================== */
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -21,12 +8,9 @@ const { assicuraCartella, scriviAtomico } = require('./file');
 const { erroreHttp } = require('./risposte');
 
 const MAX_BYTE = 4 * 1024 * 1024;
-const ESTENSIONI = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
-const TIPI = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', svg: 'image/svg+xml' };
+const ESTENSIONI = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
+const TIPI = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml' };
 
-/* --- MULTIPART ----------------------------------------------------- */
-
-/** Il confine dichiarato in Content-Type, oppure null. */
 function confineDi(intestazione) {
   if (typeof intestazione !== 'string' || intestazione.indexOf('multipart/form-data') === -1) { return null; }
   const trovato = /boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(intestazione);
@@ -34,11 +18,6 @@ function confineDi(intestazione) {
   return trovato[1] || trovato[2];
 }
 
-/**
- * Tutte le parti del modulo, file e campi di testo: { campo, nomeFile, dati }.
- * `nomeFile` e null per un campo di testo. Il corpo si scorre come Buffer:
- * passare da una stringa rovinerebbe i byte di un PNG alla prima conversione.
- */
 function campiModulo(corpo, confine) {
   const separatore = Buffer.from('--' + confine);
   const fuori = [];
@@ -47,7 +26,7 @@ function campiModulo(corpo, confine) {
 
   while (posizione !== -1) {
     const inizio = posizione + separatore.length;
-    // "--" subito dopo il confine chiude il corpo.
+
     if (corpo.slice(inizio, inizio + 2).toString('latin1') === '--') { break; }
 
     const prossimo = corpo.indexOf(separatore, inizio);
@@ -59,13 +38,12 @@ function campiModulo(corpo, confine) {
     if (stacco === -1) { continue; }
 
     const intestazioni = blocco.slice(0, stacco).toString('utf8');
-    // Fra la fine dei dati e il confine successivo c'e sempre un CRLF.
+
     let dati = blocco.slice(stacco + 4);
     if (dati.length >= 2 && dati[dati.length - 2] === 13 && dati[dati.length - 1] === 10) {
       dati = dati.slice(0, dati.length - 2);
     }
 
-    // `name=` va cercato come parola intera: dentro `filename=` c'e anche lui.
     const campo = /(?:^|[;\s])name="([^"]*)"/i.exec(intestazioni);
     const nome = /filename\*?=(?:"([^"]*)"|([^;\r\n]+))/i.exec(intestazioni);
     fuori.push({
@@ -77,20 +55,12 @@ function campiModulo(corpo, confine) {
   return fuori;
 }
 
-/** Le sole parti con un nome di file: { nome, dati }. */
 function parti(corpo, confine) {
   return campiModulo(corpo, confine)
     .filter((parte) => parte.nomeFile !== null)
     .map((parte) => ({ nome: parte.nomeFile, dati: parte.dati }));
 }
 
-/* --- NOMI ---------------------------------------------------------- */
-
-/**
- * Nome di file sicuro: minuscolo, spazi in trattino, via tutto il resto.
- * I nomi con ".." o barre non si ripuliscono, si rifiutano: chi li manda
- * non sta caricando un'immagine.
- */
 function normalizzaNome(grezzo) {
   const originale = String(grezzo == null ? '' : grezzo).trim();
   if (!originale) { throw erroreHttp(400, 'Manca il nome del file.'); }
@@ -116,7 +86,6 @@ function normalizzaNome(grezzo) {
   return { base: base, estensione: estensione, nome: base + '.' + estensione };
 }
 
-/** Se il nome e gia occupato si aggiunge -2, -3, … invece di sovrascrivere. */
 function nomeLibero(base, estensione) {
   let nome = base + '.' + estensione;
   let n = 2;
@@ -127,9 +96,6 @@ function nomeLibero(base, estensione) {
   return nome;
 }
 
-/* --- CONTROLLO DEL CONTENUTO --------------------------------------- */
-
-/** I primi byte devono dire la stessa cosa dell'estensione. */
 function contenutoCoerente(estensione, dati) {
   if (dati.length < 12) { return 'Il file e troppo corto per essere un immagine.'; }
   const testa = dati.slice(0, 12);
@@ -144,8 +110,11 @@ function contenutoCoerente(estensione, dati) {
     return (testa.slice(0, 4).toString('latin1') === 'RIFF' && testa.slice(8, 12).toString('latin1') === 'WEBP')
       ? null : 'Questo file non e un WebP.';
   }
-  // Un SVG e testo, e viene servito con il suo tipo MIME: se contiene
-  // script diventa codice che gira nel sito. Meglio rifiutarlo.
+  if (estensione === 'gif') {
+    const firma = testa.slice(0, 6).toString('latin1');
+    return (firma === 'GIF87a' || firma === 'GIF89a') ? null : 'Questo file non e una GIF.';
+  }
+
   const testo = dati.toString('utf8');
   if (testo.indexOf('<svg') === -1) { return 'Questo file non contiene un elemento <svg>.'; }
   if (/<script[\s>]/i.test(testo) || /\son\w+\s*=/i.test(testo) || /javascript:/i.test(testo)) {
@@ -154,15 +123,12 @@ function contenutoCoerente(estensione, dati) {
   return null;
 }
 
-/* --- OPERAZIONI ---------------------------------------------------- */
-
 function descrivi(nome) {
   const stato = fs.statSync(path.join(P.media, nome));
   const estensione = nome.slice(nome.lastIndexOf('.') + 1).toLowerCase();
   return {
     nome: nome,
-    // `percorso` e il valore da mettere nei campi immagine (relativo, come
-    // in index.html); `href` serve al pannello per l'anteprima.
+
     percorso: 'contenuti/media/' + nome,
     href: '/contenuti/media/' + nome,
     tipo: TIPI[estensione] || 'application/octet-stream',
@@ -171,7 +137,6 @@ function descrivi(nome) {
   };
 }
 
-/** I file presenti, dal piu recente. */
 function elenco() {
   if (!fs.existsSync(P.media)) { return []; }
   const fuori = [];
@@ -181,13 +146,12 @@ function elenco() {
     try {
       if (!fs.statSync(path.join(P.media, nome)).isFile()) { continue; }
       fuori.push(descrivi(nome));
-    } catch (e) { /* file sparito nel frattempo */ }
+    } catch (e) {}
   }
   fuori.sort((a, b) => (a.quando < b.quando ? 1 : a.quando > b.quando ? -1 : 0));
   return fuori;
 }
 
-/** Salva il file di una richiesta multipart gia letta in memoria. */
 function salva(corpo, tipoContenuto) {
   const confine = confineDi(tipoContenuto);
   if (!confine) {
@@ -211,16 +175,6 @@ function salva(corpo, tipoContenuto) {
   return descrivi(nome);
 }
 
-/**
- * Le chiavi dei contenuti che citano questo file.
- *
- * Si scende in ogni oggetto E in ogni elenco (le chiavi di un elenco sono
- * i suoi indici), non solo nei campi `immagine` dello schema: le immagini
- * della schedule stanno in config.orari.schede.N.immagine,
- * config.orari.eventi.N.immagine e config.orari.sfondo.immagine, e una
- * locandina cancellata dalla libreria lascerebbe un buco nella pagina
- * pubblicata alla prima generazione.
- */
 function doveUsato(nome, contenuti) {
   const candidati = ['contenuti/media/' + nome, '/contenuti/media/' + nome, './contenuti/media/' + nome, nome];
   const usi = [];
@@ -242,7 +196,6 @@ function doveUsato(nome, contenuti) {
   return usi;
 }
 
-/** Elimina un file, se nessun contenuto lo sta citando. */
 function elimina(nomeGrezzo, contenuti) {
   const { nome } = normalizzaNome(nomeGrezzo);
   const file = path.join(P.media, nome);

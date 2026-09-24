@@ -1,104 +1,44 @@
 'use strict';
-/* =====================================================================
-   schema.js — la descrizione dei campi del sito (CONTRATTO §7,
-   CONTRATTO-2 §5 e §10.1).
 
-   È il file che rende il backend facile da modificare: il pannello non sa
-   niente dei campi, li chiede a /api/contenuti e costruisce il form da qui.
-   Aggiungere un campo al sito costa una riga in questo elenco e un {{…}}
-   nel modello — niente altro, da nessuna parte.
-
-   Ogni campo ha:
-     chiave      il percorso dentro contenuti.json, con la stessa forma che
-                 si usa nel modello: le chiavi di "testi" sono piatte
-                 ("deck.titolo"), quelle di configurazione sono sotto
-                 "config." ("config.twitch.canale");
-     etichetta   in italiano, comprensibile a chi non programma;
-     tipo        uno di TIPI, decide come lo disegna il pannello e come lo
-                 controlla server/lib/convalida.js;
-     aiuto       facoltativo, la riga sotto al campo: quando la scelta ha
-                 una conseguenza, la conseguenza si scrive qui;
-     max/min     lunghezza massima del testo, oppure intervallo del numero;
-     facoltativo se vuoto va bene (per esempio un social non ancora attivo);
-     slot        solo per il tipo "font": quale dei tre font del sito si sta
-                 scegliendo, così la convalida sa in quale catalogo cercare;
-     predefinito il valore che vale se la chiave in contenuti.json NON C'È.
-
-   PREDEFINITO: i campi nati dopo la messa online. Un sito già in piedi ha il
-   suo contenuti.json, che chi amministra ha riempito e che
-   docs/HOSTING.md dice esplicitamente di NON sovrascrivere quando arriva
-   una versione nuova del programma. Senza questa proprietà, ogni campo
-   aggiunto qui dentro dopo quel giorno farebbe fallire la prima Pubblica —
-   copertura e convalida pretendono che schema e contenuti combacino, ed è
-   la regola giusta: è così che un campo sparito si nota subito. Un campo
-   con "predefinito" dice invece che la sua assenza non è una perdita ma
-   un'aggiunta non ancora arrivata: completa() ce la mette col valore di
-   partenza, la copertura non la segnala, e il primo salvataggio la scrive
-   sul disco una volta per tutte. Vale solo per i campi nuovi: toglierlo a
-   un campo esistente vorrebbe dire non accorgersi più se sparisce.
-
-   TESTO RICCO (CONTRATTO-2 §7). I campi di tipo "ricco" contengono un po'
-   di HTML ristretto (grassetto, corsivo, <br>, link). Sono ricche SOLO le
-   chiavi che finiscono dentro un elemento di testo e che il modello stampa
-   con la tripla graffa. Restano semplici tutte quelle che finiscono dentro
-   un attributo HTML (alt, aria-label, title) o dentro js/dati.js: lì
-   l'HTML grezzo non verrebbe interpretato, verrebbe stampato, e la pagina
-   si romperebbe. Su un campo "ricco" il "max" conta i caratteri visibili,
-   non i tag.
-
-   I gruppi seguono l'ordine della pagina — meta, marchio, deck, diretta,
-   account, lurk, pollo, settimana, chi, supporto, saluti, piede — e in coda ci sono i due
-   gruppi che non stanno in nessun punto della pagina perché valgono
-   dappertutto: "canale" (i dati tecnici) e "aspetto" (colori e font).
-   ===================================================================== */
-
-// I quattro tipi in coda sono quelli nuovi del CONTRATTO-2 §5: li disegna
-// l'agente 7 nel pannello e li controlla l'agente 5 nella convalida.
 const TIPI = ['testo', 'testolungo', 'url', 'email', 'numero', 'immagine',
   'orario', 'orari', 'scelta', 'elencoTesti', 'elenco',
   'ricco', 'colore', 'font', 'interruttore', 'dataora'];
 
-// Chiavi che il sistema gestisce da solo: non si modificano dal pannello e
-// non devono comparire fra quelle "scoperte".
 const SISTEMA = ['versione', 'aggiornatoIl'];
 
-// I rami che NON si scrivono a mano: li riempie il server alla
-// pubblicazione, chiedendoli a Twitch (server/lib/twitch.js). Non hanno un
-// campo nello schema, e non devono averlo: un campo nel pannello sarebbe
-// una casella che la pubblicazione successiva riscrive sotto le dita di chi
-// l'ha appena compilata. La copertura li salta invece di segnalarli come
-// chiavi scoperte, ed e l'unica eccezione ammessa alla regola «lo schema
-// copre esattamente contenuti.json».
-//
-// `config.ultimaDiretta` e `config.dati.follower` NON stanno qui: restano
-// campi scritti a mano, che il server si limita a tenere aggiornati se il
-// collegamento c'e.
-// `config.clip.archivio` e` il fratello piu` largo di `voci`: le clip dei
-// quattro periodi della pagina «clip.html», messe insieme una volta sola
-// alla pubblicazione perche il browser possa filtrarle senza chiedere
-// niente a nessuno (le chiavi di Twitch non escono da questo computer).
 const GENERATI = ['config.clip.voci', 'config.clip.archivio', 'config.iscrittiYoutube'];
 
-// I rami che scrive l'editor con controlli suoi (CONTRATTO-4 §2.4): ordine
-// e visibilità delle sezioni, stile per elemento, blocchi posizionati. Non
-// sono campi da form: un colore per dispositivo o un rettangolo in unità
-// del riquadro non si scrivono in una casella, si scelgono cliccando
-// l'anteprima. La copertura li salta come GENERATI, e la loro forma la
-// controlla convalida.js con le funzioni di pannello/condivisi/stili.js.
-// A differenza di GENERATI coprono tutto quello che c'è sotto: le chiavi
-// di config.stili contengono punti e due punti, e ogni foglia diventerebbe
-// una chiave «scoperta».
 const EDITOR = ['config.sezioni', 'config.stili', 'config.disposizione'];
 
-/** Vero se la chiave è un ramo dell'editor o sta dentro uno di essi. */
 function diEditor(chiave) {
   return EDITOR.some((ramo) => chiave === ramo || chiave.startsWith(ramo + '.'));
 }
 
-// Le icone disponibili sono i file in modelli/icone/: se se ne aggiunge una
-// si aggiunge qui il nome, e la generazione la trova da sola.
 const ICONE_SOCIAL = ['twitch', 'youtube', 'instagram', 'tiktok', 'telegram', 'amazon-wishlist', 'amazon'];
 const ICONE_SUPPORTO = ['star', 'crown', 'gem', 'heart', 'coffee', 'mail'];
+
+const GIF_RAFFICA = [
+  { immagine: 'img/pollo-gif/raffica-ufficio.gif', scritta: 'VUOI ROMPERE IL MOUSE?' },
+  { immagine: 'img/pollo-gif/raffica-gatto-gamer.gif', scritta: 'HAI ROTTO.' },
+  { immagine: 'img/pollo-gif/raffica-portatile.gif', scritta: 'IL MOUSE HA CHIAMATO IL SINDACATO' },
+  { immagine: 'img/pollo-gif/raffica-gatto-bottone.gif', scritta: 'NON È UN BOTTONE, È UN POLLO' },
+  { immagine: 'img/pollo-gif/raffica-polli-tocco.gif', scritta: 'SMETTILA DI TOCCARMI' }
+];
+
+const GIF_SCROLL = [
+  { immagine: 'img/pollo-gif/scroll-uccello-stordito.gif', scritta: 'TI GIRA LA TESTA?' },
+  { immagine: 'img/pollo-gif/scroll-occhi-spirale.gif', scritta: 'DECIDITI: SU O GIÙ?' },
+  { immagine: 'img/pollo-gif/scroll-vomito.gif', scritta: 'SU E GIÙ, SU E GIÙ… BLEAH' },
+  { immagine: 'img/pollo-gif/scroll-psichedelico.gif', scritta: 'HAI IL MAL DI MARE?' }
+];
+
+const GIF_INSISTENZA = [
+  { immagine: 'img/pollo-gif/insistenza-gatto.gif', scritta: 'NON HAI DI MEGLIO DA FARE?' },
+  { immagine: 'img/pollo-gif/insistenza-cane.gif', scritta: 'ANCORA TU?' },
+  { immagine: 'img/pollo-gif/insistenza-polli-sguardo.gif', scritta: 'SEMPRE QUI SEI?' },
+  { immagine: 'img/pollo-gif/insistenza-polli-tavolo.gif', scritta: 'VAI A SEGUIRE LA LIVE, INVECE' },
+  { immagine: 'img/pollo-gif/insistenza-alice.gif', scritta: 'CI SIAMO ANNOIATI, EH?' }
+];
 
 const gruppi = [
   {
@@ -128,8 +68,7 @@ const gruppi = [
       { chiave: 'marchio.ruolo', etichetta: 'Riga sotto al nome', tipo: 'testo', max: 60,
         aiuto: 'Per esempio il ruolo su Twitch e l\'anno di inizio.' },
       { chiave: 'nav.regia', etichetta: 'Voce del menu — Regia', tipo: 'testo', max: 20 },
-      // Sei voci devono stare nel dock anche a 360px: le etichette vanno
-      // tenute corte, altrimenti restano solo i punti.
+
       { chiave: 'nav.diretta', etichetta: 'Voce del menu — Diretta', tipo: 'testo', max: 20,
         aiuto: 'Sotto i 700px il dock mostra sei voci in fila: più corta è, meglio si legge.' },
       { chiave: 'nav.settimana', etichetta: 'Voce del menu — Settimana', tipo: 'testo', max: 20 },
@@ -162,8 +101,7 @@ const gruppi = [
       { chiave: 'deck.etichettaUltima', etichetta: 'Etichetta «ultima diretta»', tipo: 'testo', max: 40 },
       { chiave: 'deck.etichettaStato', etichetta: 'Etichetta del riquadro di stato', tipo: 'testo', max: 40,
         aiuto: 'Non si vede: la leggono i lettori di schermo per annunciare il riquadro delle spie.' },
-      // Il primo numero non ha un valore da scrivere: e il numero dei
-      // follower, config.dati.follower nel gruppo «Canale e contatti».
+
       { chiave: 'deck.dato1Etichetta', etichetta: 'Primo numero — etichetta', tipo: 'testo', max: 30,
         aiuto: 'Il valore è il numero vero dei follower del canale (campo «Follower» in «Canale e contatti»), che la pubblicazione aggiorna da Twitch.' },
       { chiave: 'deck.dato2Valore', etichetta: 'Secondo numero — valore', tipo: 'testo', max: 12 },
@@ -187,9 +125,7 @@ const gruppi = [
         aiuto: 'Una o due righe sopra al player.' },
       { chiave: 'diretta.nota', etichetta: 'Nota sotto al player', tipo: 'ricco', max: 300,
         aiuto: 'Cosa fare se il player non parte. Vale la pena tenerci un link a Twitch: è l\'unica via d\'uscita quando l\'embed viene bloccato.' },
-      // Queste tre chiavi si chiamano ancora "deck." perché il player è nato
-      // nella copertina: il nome resta com'è (lo leggono js/dati.js e il
-      // modello), ma il campo sta dove sta la cosa che descrive.
+
       { chiave: 'deck.notaPlayer', etichetta: 'Riga dentro il piede del monitor', tipo: 'testolungo', max: 220,
         aiuto: 'Sta stretta sotto allo schermo, accanto ai bottoni: tienila breve.' },
       { chiave: 'deck.chatApri', etichetta: 'Bottone della chat — apri', tipo: 'testo', max: 30 },
@@ -197,14 +133,6 @@ const gruppi = [
     ]
   },
 
-  // Il profilo del sito. Sta fra «diretta» e «lurk» perché la tessera è
-  // stampata in cima alla sezione della diretta, sopra al pannello del lurk.
-  //
-  // Il login NON è più una cosa della modalità lurk: è un profilo del sito,
-  // autenticato da Twitch, che vale anche col messaggio in chat spento. Da
-  // qui passano la tessera dell'account, l'aggiornamento dell'ultima diretta
-  // e lo stato del canale letto da Twitch invece che dedotto dal player. La
-  // modalità lurk ci si appoggia — window.Account — invece di averne uno suo.
   {
     id: 'account',
     titolo: 'Profilo del sito (login con Twitch)',
@@ -212,10 +140,7 @@ const gruppi = [
     campi: [
       { chiave: 'config.account.attivo', etichetta: 'Permetti di collegarsi con Twitch', tipo: 'interruttore',
         aiuto: 'Spento, sul sito non compare nessun login: niente tessera, niente aggiornamento dell\'ultima diretta, e il messaggio in chat della modalità lurk resta spento comunque — senza account non c\'è nessuno a nome di cui parlare.' },
-      // `forma` fa controllare a convalida.js che sia davvero un Client ID e
-      // non un promemoria scritto a mano: un valore sbagliato qui non si
-      // scopre salvando, si scopre quando un visitatore clicca e Twitch gli
-      // risponde «invalid client».
+
       { chiave: 'config.account.clientId', etichetta: 'Client ID dell\'app Twitch', tipo: 'testo', max: 40, facoltativo: true, forma: 'clientIdTwitch',
         aiuto: 'Si crea su dev.twitch.tv/console/apps (serve la verifica in due passaggi sul tuo account). Il Client ID è pubblico per natura e finisce nella pagina: va bene. Il «client secret» invece NON va messo qui né in nessun altro campo del pannello: si imposta con «node server/imposta-twitch.js», resta sul computer di chi amministra e non finisce mai nel sito pubblicato.' },
       { chiave: 'config.account.urlRitorno', etichetta: 'Indirizzo di ritorno dopo il login', tipo: 'url', facoltativo: true,
@@ -230,11 +155,6 @@ const gruppi = [
     ]
   },
 
-  // Il gruppo della modalità lurk sta fra «diretta» e «pollo» perché segue
-  // l'ordine della pagina (CONTRATTO §7): il pannello del lurk è stampato
-  // subito sotto al monitor. Il perché di tutta questa roba, e in particolare
-  // perché NON esiste un invio automatico ripetuto, sta in
-  // docs/PRESENZA-TWITCH.md: leggerlo prima di aggiungere campi qui.
   {
     id: 'lurk',
     titolo: 'Modalità lurk',
@@ -266,8 +186,6 @@ const gruppi = [
       { chiave: 'lurk.ciSei', etichetta: 'Domanda «ci sei ancora?»', tipo: 'testo', max: 80 },
       { chiave: 'lurk.ciSono', etichetta: 'Bottone — «sono qui»', tipo: 'testo', max: 30 },
 
-      // Questi sette stati li scrive js/lurk.js con textContent: se fossero
-      // «ricco», i tag verrebbero stampati letterali invece che interpretati.
       { chiave: 'lurk.statoSpento', etichetta: 'Stato — spenta', tipo: 'testo', max: 80 },
       { chiave: 'lurk.statoVivo', etichetta: 'Stato — il video sta andando', tipo: 'testo', max: 80 },
       { chiave: 'lurk.statoFermo', etichetta: 'Stato — il video si è fermato', tipo: 'testo', max: 80 },
@@ -286,13 +204,11 @@ const gruppi = [
       { chiave: 'lurk.contoRiavvii', etichetta: 'Contatore — con i riavvii', tipo: 'testo', max: 60,
         aiuto: 'Qui puoi usare {durata} e {riavvii}.' },
 
-      // ---- Il messaggio in chat. Da qui in giù serve un'app Twitch. ----
       { chiave: 'config.lurk.messaggioAttivo', etichetta: 'Permetti di dire in chat che si sta guardando', tipo: 'interruttore',
         aiuto: 'ATTENZIONE: non aumenta il numero di spettatori — Twitch non conta chi scrive in chat, conta chi ha il video acceso. Serve solo a farsi vedere dalla chat e da chi trasmette. Richiede il profilo del sito acceso e il suo Client ID (gruppo «Profilo del sito»), altrimenti resta spento comunque.' },
       { chiave: 'config.lurk.frasi', etichetta: 'Frasi del messaggio di lurk', tipo: 'elencoTesti',
         aiuto: 'IMPORTANTE: devono DICHIARARE che si sta guardando in silenzio («Lurko dal sito»), non fingere presenza attiva («Ci sono, sono attivo!»). È la differenza fra un messaggio onesto e uno ingannevole, ed è l\'unica cosa che rende accettabile questa funzione: il codice è identico, cambia solo cosa c\'è scritto.' },
-      // Nato dopo la messa online (CONTRATTO-3 §4.1), quindi con un
-      // predefinito: sul sito già in piedi compare da solo con 10.
+
       { chiave: 'config.lurk.minutiFraMessaggi', etichetta: 'Ogni quanti minuti ripetere il messaggio in chat', tipo: 'numero', min: 2, max: 120, predefinito: 10,
         aiuto: 'Da 2 a 120, di serie 10. Col lurk acceso il primo messaggio parte all\'attivazione, poi uno ogni tot minuti finché resta acceso. Più è basso, più è facile che Twitch o i moderatori lo prendano per spam: e a rimetterci è l\'account di chi guarda.' },
       { chiave: 'lurk.preavviso', etichetta: 'Avviso di cosa verrà detto in chat', tipo: 'testo', max: 90,
@@ -316,10 +232,6 @@ const gruppi = [
         aiuto: 'È l\'etichetta del bottone, letta dai lettori di schermo: descrivi l\'azione («Apri la chat del canale»), non l\'immagine.' },
       { chiave: 'pollo.nascondi', etichetta: 'Etichetta del bottone «nascondi»', tipo: 'testo', max: 40,
         aiuto: 'Chi lo usa non rivede il pollo: la scelta resta memorizzata nel suo browser.' },
-      // Qui NON c'è una descrizione dell'immagine, e non è una dimenticanza:
-      // il disegno del pollo sta dentro un bottone che ha già il suo nome
-      // (l'etichetta qui sopra). Descrivendo anche l'immagine, un lettore di
-      // schermo annuncerebbe due volte la stessa cosa.
 
       { chiave: 'config.pollo.chatVera', etichetta: 'Ascolta la chat vera del canale', tipo: 'interruttore',
         aiuto: 'Acceso, il sito si collega in sola lettura alla chat di Twitch e il pollo reagisce quando qualcuno scrive davvero. Spento, il pollo si limita a stato del canale e clic.' },
@@ -330,10 +242,7 @@ const gruppi = [
         aiuto: 'Da tre a sei frasi brevi, nessuna vuota: il pollo ne pesca una a caso.' },
       { chiave: 'config.pollo.frasi.click', etichetta: 'Frasi — quando gli si clicca sopra', tipo: 'elencoTesti',
         aiuto: 'Il clic apre anche la chat: le frasi possono darlo per scontato.' },
-      // Questo elenco serve a due momenti diversi: un messaggio dalla chat
-      // vera (il nome si sa) e il visitatore che smette di scrivere nella
-      // chat incorporata (il nome non si sa, l'iframe è di un altro dominio).
-      // Per il secondo caso servono frasi che stiano in piedi senza {nome}.
+
       { chiave: 'config.pollo.frasi.chat', etichetta: 'Frasi — quando qualcuno scrive in chat', tipo: 'elencoTesti',
         aiuto: 'Qui, e solo qui, puoi scrivere {nome}: viene sostituito dal nome di chi ha scritto (negli altri elenchi resterebbe stampato così com\'è). Tienine almeno un paio SENZA {nome}: quando a scrivere sei tu nella chat qui sul sito, il nome non si sa e il pollo usa quelle.' },
       { chiave: 'config.pollo.frasi.scrive', etichetta: 'Frasi — mentre il visitatore scrive nella chat', tipo: 'elencoTesti',
@@ -346,9 +255,6 @@ const gruppi = [
     ]
   },
 
-  // La vetrina delle clip sta in fondo alla sezione «diretta», sotto il
-  // riquadro del lurk: quindi il gruppo viene dopo «pollo» e prima della
-  // «settimana», come tutto il resto segue l'ordine in cui si scende.
   {
     id: 'clip',
     titolo: 'Le clip',
@@ -366,19 +272,14 @@ const gruppi = [
           { valore: 'sempre', etichetta: 'Da sempre' }
         ],
         aiuto: 'Twitch le ordina per visualizzazioni, dalla più vista in giù. Periodo stretto = vetrina che cambia spesso ma può restare vuota nelle settimane fiacche; «da sempre» = sempre piena, ma sempre uguale. Vale per la vetrina in home: nella pagina «Tutte le clip» il periodo lo sceglie chi visita.' },
-      // Il numero della PAGINA, che è un'altra cosa da «quante ne mostra la
-      // vetrina»: lì si sceglie quante se ne vedono, qui quante il server ne
-      // porta a casa da Twitch per ciascuno dei quattro periodi. Chi visita
-      // le filtra nel browser fra quelle già incorporate, quindi questo
-      // numero è anche il tetto di quante ne può vedere per periodo.
+
       { chiave: 'config.clip.quanteArchivio', etichetta: 'Quante clip nella pagina, per ogni periodo', tipo: 'numero', min: 4, max: 50, predefinito: 12,
         aiuto: 'Da 4 a 50, di serie 12. La pagina «clip.html» le porta già tutte dentro di sé e chi visita sceglie il periodo (24 ore, 3 giorni, 7 giorni, 30 giorni) senza aspettare niente: il prezzo è il peso della pagina, perché ogni clip in più è un\'anteprima in più da scaricare. Alzalo se il canale ne produce tante.' },
       { chiave: 'clip.occhiello', etichetta: 'Occhiello', tipo: 'testo', max: 40 },
       { chiave: 'clip.titolo', etichetta: 'Titolo della vetrina', tipo: 'testo', max: 60 },
       { chiave: 'clip.testo', etichetta: 'Riga di presentazione', tipo: 'ricco', max: 220,
         aiuto: 'Una riga sotto al titolo. Può restare vuota.' },
-      // L'invito in home che ha preso il posto della vetrina: nati dopo la
-      // messa online, quindi con un predefinito (riquadro PREDEFINITO in cima).
+
       { chiave: 'clip.invitoTitolo', etichetta: 'Home — titolo dell\'invito alle clip', tipo: 'testo', max: 60, predefinito: 'Migliori highlights',
         aiuto: 'In home, in fondo a «La diretta», al posto delle clip: il titolo sopra il bottone che porta alla pagina.' },
       { chiave: 'clip.invitoTesto', etichetta: 'Home — riga sotto il titolo', tipo: 'ricco', max: 160, facoltativo: true,
@@ -393,9 +294,6 @@ const gruppi = [
       { chiave: 'clip.di', etichetta: 'Parola prima del nome di chi l\'ha creata', tipo: 'testo', max: 20,
         aiuto: 'Le clip le ritaglia chi guarda, non chi trasmette: questo dice di chi è il merito. Per esempio «clip di».' },
 
-      // Da qui in giù: la pagina «clip.html». Tutti con un predefinito,
-      // perché sono nati dopo la messa online e su un contenuti.json di
-      // prima non ci sono — vedi il riquadro PREDEFINITO in cima al file.
       { chiave: 'clip.paginaTitolo', etichetta: 'Pagina — titolo', tipo: 'testo', max: 60, predefinito: 'Tutte le clip',
         aiuto: 'Il titolo della pagina «clip.html», e anche il link che ci porta da sotto la vetrina in home.' },
       { chiave: 'clip.paginaTesto', etichetta: 'Pagina — riga di presentazione', tipo: 'ricco', max: 220, predefinito: 'Le clip più viste del canale. Scegli il periodo: cambia quello che vedi, non la pagina.',
@@ -447,9 +345,7 @@ const gruppi = [
       { chiave: 'settimana.titolo', etichetta: 'Titolo della sezione', tipo: 'testo', max: 60 },
       { chiave: 'settimana.testo', etichetta: 'Testo introduttivo', tipo: 'ricco', max: 240 },
       { chiave: 'settimana.nota', etichetta: 'Nota in fondo', tipo: 'ricco', max: 300 },
-      // Le etichette del nastro e degli eventi finiscono anche in js/dati.js,
-      // che le scrive con textContent, e nel testo di un attributo: restano
-      // testo semplice, senza HTML.
+
       { chiave: 'settimana.etichettaDiretta', etichetta: 'Etichetta dei giorni con diretta', tipo: 'testo', max: 20 },
       { chiave: 'settimana.etichettaRiposo', etichetta: 'Etichetta dei giorni di riposo', tipo: 'testo', max: 20 },
       { chiave: 'settimana.etichettaOggi', etichetta: 'Etichetta «oggi»', tipo: 'testo', max: 20 },
@@ -499,12 +395,43 @@ const gruppi = [
       { chiave: 'chi.nota3Testo', etichetta: 'Terza nota a margine — testo', tipo: 'ricco', max: 160 },
       { chiave: 'chi.ritrattoAlt', etichetta: 'Descrizione del ritratto', tipo: 'testolungo', max: 160,
         aiuto: 'Finisce nell\'attributo alt dell\'immagine: solo testo, niente formattazione.' },
-      // Nato dopo la messa online: col predefinito il sito già in piedi lo
-      // trova vuoto invece di rifiutare la prima Pubblica. Finisce in
-      // js/dati.js, quindi è testo semplice e non ricco.
+
       { chiave: 'config.chi.frasi', etichetta: 'Frasi del pollo — quando si clicca il ritratto', tipo: 'elencoTesti',
         facoltativo: true, predefinito: [],
-        aiuto: 'Cliccando il pollo del ritratto qui in «Chi sono» compare in un fumetto una di queste frasi, a caso, mai la stessa due volte di fila. Una riga per frase, lunghe quanto vuoi. EMOTE: scrivi il nome esatto come in chat (per esempio slayer156Love o Kappa), staccato da spazi: sul sito diventa l\'immagine dell\'emote. Valgono le emote del canale e quelle globali di Twitch, e compaiono dopo la Pubblica, quando il server le va a prendere. Le emoji normali (😂❤️) funzionano sempre. Lasciato vuoto, il ritratto resta una semplice immagine.' }
+        aiuto: 'Cliccando il pollo del ritratto qui in «Chi sono» compare in un fumetto una di queste frasi, a caso, mai la stessa due volte di fila. Una riga per frase, lunghe quanto vuoi. EMOTE: scrivi il nome esatto come in chat (per esempio slayer156Love o Kappa), staccato da spazi: sul sito diventa l\'immagine dell\'emote. Valgono le emote del canale e quelle globali di Twitch, e compaiono dopo la Pubblica, quando il server le va a prendere. Le emoji normali (😂❤️) funzionano sempre. Lasciato vuoto, il ritratto resta una semplice immagine.' },
+      { chiave: 'config.chi.gifOgni', etichetta: 'GIF «non hai di meglio da fare?» — ogni quanti clic', tipo: 'numero', min: 0, max: 100,
+        facoltativo: true, predefinito: 5,
+        aiuto: 'Ogni tot clic sul ritratto si apre a sorpresa una GIF dell\'elenco «insistenza» qui sotto. 0 = mai.' },
+      { chiave: 'config.chi.gifRaffica', etichetta: 'GIF — quando si clicca troppo veloce', tipo: 'elenco', etichettaVoce: 'scritta',
+        facoltativo: true, predefinito: GIF_RAFFICA,
+        aiuto: 'Chi clicca a raffica il ritratto (6 clic in 2 secondi) si becca una di queste GIF a tutto schermo, con la sua scritta sopra. Le GIF si caricano da «Immagini» (massimo 4 MB): tienile brevi, sotto i 2 MB si aprono subito.',
+        campi: [
+          { chiave: 'immagine', etichetta: 'GIF', tipo: 'immagine' },
+          { chiave: 'scritta', etichetta: 'Scritta sulla GIF', tipo: 'testo', max: 80, facoltativo: true, predefinito: '',
+            aiuto: 'Vuota: ne pesca una da «Scritte di riserva» qui sotto.' }
+        ] },
+      { chiave: 'config.chi.scritteRaffica', etichetta: 'Scritte di riserva — clic troppo veloci', tipo: 'elencoTesti',
+        facoltativo: true, predefinito: ['VUOI ROMPERE IL MOUSE?', 'HAI ROTTO.', 'PIANO, IL TASTO SINISTRO HA UNA FAMIGLIA', 'CALMA, SONO UN POLLO, NON UN PUNCHING BALL'] },
+      { chiave: 'config.chi.gifInsistenza', etichetta: 'GIF — ogni tot clic', tipo: 'elenco', etichettaVoce: 'scritta',
+        facoltativo: true, predefinito: GIF_INSISTENZA,
+        aiuto: 'Una di queste GIF si apre ogni tot clic (il numero qui sopra), con la sua scritta.',
+        campi: [
+          { chiave: 'immagine', etichetta: 'GIF', tipo: 'immagine' },
+          { chiave: 'scritta', etichetta: 'Scritta sulla GIF', tipo: 'testo', max: 80, facoltativo: true, predefinito: '',
+            aiuto: 'Vuota: ne pesca una da «Scritte di riserva» qui sotto.' }
+        ] },
+      { chiave: 'config.chi.scritteInsistenza', etichetta: 'Scritte di riserva — ogni tot clic', tipo: 'elencoTesti',
+        facoltativo: true, predefinito: ['NON HAI DI MEGLIO DA FARE?', 'SEMPRE QUI SEI?', 'VAI A SEGUIRE LA LIVE, INVECE', 'IL POLLO TI STA GIUDICANDO'] },
+      { chiave: 'config.chi.gifScroll', etichetta: 'GIF — quando si scorre su e giù come matti', tipo: 'elenco', etichettaVoce: 'scritta',
+        facoltativo: true, predefinito: GIF_SCROLL,
+        aiuto: 'Chi scorre la pagina su e giù di continuo (quattro cambi di direzione in due secondi e mezzo) si becca una di queste GIF. Al massimo una ogni 20 secondi.',
+        campi: [
+          { chiave: 'immagine', etichetta: 'GIF', tipo: 'immagine' },
+          { chiave: 'scritta', etichetta: 'Scritta sulla GIF', tipo: 'testo', max: 80, facoltativo: true, predefinito: '',
+            aiuto: 'Vuota: ne pesca una da «Scritte di riserva» qui sotto.' }
+        ] },
+      { chiave: 'config.chi.scritteScroll', etichetta: 'Scritte di riserva — scroll su e giù', tipo: 'elencoTesti',
+        facoltativo: true, predefinito: ['TI GIRA LA TESTA?', 'HAI IL MAL DI MARE?', 'DECIDITI: SU O GIÙ?'] }
     ]
   },
 
@@ -545,8 +472,7 @@ const gruppi = [
       { chiave: 'saluti.testo', etichetta: 'Testo introduttivo', tipo: 'ricco', max: 240 },
       { chiave: 'saluti.contattiTitolo', etichetta: 'Contatti — titolo', tipo: 'testo', max: 40 },
       { chiave: 'saluti.contattiTesto', etichetta: 'Contatti — testo', tipo: 'ricco', max: 240 },
-      // Il testo di questo bottone lo riscrive js/sito.js dopo la copia:
-      // deve restare una stringa semplice, non un pezzo di HTML.
+
       { chiave: 'saluti.copiaBtn', etichetta: 'Bottone «copia l\'email»', tipo: 'testo', max: 30 },
       { chiave: 'saluti.copiaFatto', etichetta: 'Conferma dopo la copia', tipo: 'testo', max: 30 },
       { chiave: 'saluti.scriviBtn', etichetta: 'Bottone «scrivi una mail»', tipo: 'testo', max: 30 },
@@ -577,9 +503,7 @@ const gruppi = [
             aiuto: 'Vuoto = la voce sparisce dal sito.' },
           { chiave: 'icona', etichetta: 'Icona', tipo: 'scelta', opzioni: ICONE_SOCIAL,
             aiuto: 'Corrisponde al file modelli/icone/<nome>.svg.' },
-          // I tre campi del contatore sono nati dopo la messa online: le voci
-          // di un contenuti.json vecchio li ricevono da completa(), e il
-          // contatore parte da quello che l'icona fa capire.
+
           { chiave: 'contatore', etichetta: 'Numero accanto alla voce', tipo: 'scelta',
             opzioni: [
               { valore: 'nessuno', etichetta: 'Nessuno' },
@@ -773,11 +697,6 @@ const gruppi = [
   }
 ];
 
-/* ------------------------------------------------------------------ */
-/* COPERTURA                                                           */
-/* ------------------------------------------------------------------ */
-
-/** Tutti i campi, in fila, senza i gruppi intorno. */
 function campi() {
   const fuori = [];
   for (const gruppo of gruppi) {
@@ -786,7 +705,6 @@ function campi() {
   return fuori;
 }
 
-/** Il campo con questa chiave, oppure null. */
 function campo(chiave) {
   for (const c of campi()) { if (c.chiave === chiave) { return c; } }
   return null;
@@ -796,11 +714,6 @@ function haChiave(oggetto, nome) {
   return oggetto !== null && typeof oggetto === 'object' && Object.prototype.hasOwnProperty.call(oggetto, nome);
 }
 
-/**
- * Segue un percorso dentro i contenuti con la stessa regola del motore di
- * template: prima la chiave letterale (in "testi" i punti fanno parte del
- * nome), poi la discesa segmento per segmento.
- */
 function valoreDi(contenuti, chiave) {
   const radice = chiave.startsWith('config.') ? contenuti.config : contenuti.testi;
   const percorso = chiave.startsWith('config.') ? chiave.slice('config.'.length) : chiave;
@@ -814,7 +727,6 @@ function valoreDi(contenuti, chiave) {
   return { trovato: true, valore: corrente };
 }
 
-/** Elenca le chiavi vere presenti nei contenuti, nella forma usata dallo schema. */
 function chiaviDeiContenuti(contenuti) {
   const fuori = [];
   for (const chiave of Object.keys((contenuti && contenuti.testi) || {})) { fuori.push(chiave); }
@@ -823,8 +735,7 @@ function chiaviDeiContenuti(contenuti) {
     for (const nome of Object.keys(nodo || {})) {
       const valore = nodo[nome];
       const percorso = prefisso + '.' + nome;
-      // Un oggetto si apre, un elenco no: gli elenchi sono un campo solo,
-      // con i loro sottocampi descritti dentro al campo stesso.
+
       if (valore !== null && typeof valore === 'object' && !Array.isArray(valore)) { scendi(valore, percorso); }
       else { fuori.push(percorso); }
     }
@@ -833,16 +744,10 @@ function chiaviDeiContenuti(contenuti) {
   return fuori;
 }
 
-/** Copia profonda di un valore di partenza: due contenuti non lo condividono. */
 function copiaValore(valore) {
   return (valore !== null && typeof valore === 'object') ? JSON.parse(JSON.stringify(valore)) : valore;
 }
 
-/**
- * Scrive una chiave dentro i contenuti, creando gli oggetti che mancano.
- * I testi sono piatti (il punto fa parte del nome), la configurazione
- * scende: è la stessa regola di valoreDi(), al contrario.
- */
 function scrivi(contenuti, chiave, valore) {
   if (!chiave.startsWith('config.')) {
     contenuti.testi[chiave] = valore;
@@ -860,20 +765,6 @@ function scrivi(contenuti, chiave, valore) {
   corrente[pezzi[pezzi.length - 1]] = valore;
 }
 
-/*
- * SUPERATE — il contrario di "predefinito". Non chiavi nuove da aggiungere,
- * ma chiavi vecchie di una funzione TOLTA che un contenuti.json gia
- * pubblicato puo ancora avere scritte sul disco. Senza questo elenco la
- * copertura le vedrebbe come chiavi scoperte e Pubblica si fermerebbe con
- * un 422, su un sito che fino a un momento prima funzionava.
- *
- * Si tolgono appena letto il file, come i predefiniti si aggiungono: da li
- * in giu nessuno deve sapere che siano mai esistite. Un percorso che finisce
- * su un oggetto (config.spotify) porta via tutto quello che c'e sotto.
- *
- * Una voce qui non si cancella mai per pulizia: finche esiste un sito con
- * quella chiave sul disco, questa riga e l'unica cosa che lo tiene in piedi.
- */
 const SUPERATE = [
   'spotify.titolo',
   'spotify.ascolta',
@@ -883,7 +774,6 @@ const SUPERATE = [
   'config.spotify'
 ];
 
-/** Toglie una chiave dai contenuti. Vero se c'era davvero. */
 function cancella(contenuti, chiave) {
   if (!chiave.startsWith('config.')) {
     if (!haChiave(contenuti.testi, chiave)) { return false; }
@@ -903,10 +793,6 @@ function cancella(contenuti, chiave) {
   return true;
 }
 
-/**
- * Toglie le chiavi di SUPERATE. Muta il documento e restituisce l'elenco di
- * quelle che c'erano davvero.
- */
 function dimentica(contenuti) {
   if (!contenuti || typeof contenuti !== 'object') { return []; }
   if (!contenuti.testi || typeof contenuti.testi !== 'object') { return []; }
@@ -919,16 +805,6 @@ function dimentica(contenuti) {
   return tolte;
 }
 
-/**
- * Mette a posto i campi nati dopo la messa online: quelli che hanno un
- * "predefinito" e che in questo contenuti.json ancora non ci sono.
- *
- * Muta il documento e restituisce l'elenco delle chiavi aggiunte. Si chiama
- * appena letto il file (server/lib/archivio.js), quindi prima della
- * copertura, della convalida e della generazione: da lì in giù nessuno deve
- * sapere che un contenuti.json possa essere più vecchio del programma.
- * Non scrive niente su disco da sé — ci pensa il primo salvataggio.
- */
 function completa(contenuti) {
   if (!contenuti || typeof contenuti !== 'object') { return []; }
   if (!contenuti.testi || typeof contenuti.testi !== 'object') { return []; }
@@ -947,11 +823,6 @@ function completa(contenuti) {
   return aggiunte;
 }
 
-/**
- * Lo stesso, dentro le voci di un elenco: un sottocampo nato dopo la messa
- * online manca a tutte le voci che c'erano gia. `predefinitoVoce`, se c'e,
- * sceglie il valore guardando il resto della voce.
- */
 function completaVoci(contenuti, campo, aggiunte) {
   const esito = valoreDi(contenuti, campo.chiave);
   if (!esito.trovato || !Array.isArray(esito.valore)) { return; }
@@ -967,11 +838,6 @@ function completaVoci(contenuti, campo, aggiunte) {
   });
 }
 
-/**
- * Confronta schema e contenuti e restituisce l'elenco dei problemi.
- * Vuoto = copertura totale. Ogni voce è { tipo, chiave, messaggio }.
- * La chiama il server all'avvio e la generazione prima di scrivere.
- */
 function verificaCopertura(contenuti) {
   const problemi = [];
   const tutti = campi();
@@ -989,24 +855,19 @@ function verificaCopertura(contenuti) {
     if (!c.etichetta) {
       problemi.push({ tipo: 'etichetta', chiave: c.chiave, messaggio: 'Il campo "' + c.chiave + '" non ha un\'etichetta.' });
     }
-    // Un font senza slot non è controllabile: il catalogo di tema.js è
-    // diviso per slot, e senza sapere quale non si sa dove cercarlo.
+
     if (c.tipo === 'font' && !c.slot) {
       problemi.push({ tipo: 'slot', chiave: c.chiave, messaggio: 'Il campo "' + c.chiave + '" è di tipo font ma non dice a quale slot appartiene (titolo, testo o mono).' });
     }
 
     const esito = valoreDi(contenuti, c.chiave);
     if (!esito.trovato) {
-      // Un campo nato dopo la messa online non è una chiave sparita: è una
-      // chiave non ancora arrivata, e completa() sa con che valore farla
-      // nascere. Segnalarla vorrebbe dire rifiutarsi di generare un sito che
-      // funziona benissimo, solo perché i suoi contenuti sono di ieri.
+
       if (Object.prototype.hasOwnProperty.call(c, 'predefinito')) { continue; }
       problemi.push({ tipo: 'inesistente', chiave: c.chiave, messaggio: 'Il campo "' + c.chiave + '" punta a una chiave che in contenuti.json non esiste.' });
       continue;
     }
 
-    // Per gli elenchi si controlla anche che i sottocampi coprano le voci vere.
     if (c.tipo === 'elenco' && Array.isArray(esito.valore)) {
       const dichiaratiVoce = new Set((c.campi || []).map((v) => v.chiave));
       const visti = new Set();
@@ -1028,11 +889,11 @@ function verificaCopertura(contenuti) {
 
   for (const chiave of chiaviDeiContenuti(contenuti)) {
     if (dichiarate.has(chiave)) { continue; }
-    // I rami riempiti dal server non hanno un campo, ed e voluto.
+
     if (GENERATI.indexOf(chiave) !== -1) { continue; }
-    // Nemmeno quelli dell'editor, con tutto quello che hanno dentro.
+
     if (diEditor(chiave)) { continue; }
-    // Un campo che descrive un ramo intero (config.orari) copre le sue foglie.
+
     let coperta = false;
     if (chiave.startsWith('config.')) {
       const pezzi = chiave.split('.');
