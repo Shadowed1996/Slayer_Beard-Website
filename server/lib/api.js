@@ -19,6 +19,7 @@ const youtube = require('./youtube');
 const giochi = require('./giochi');
 const sondaggi = require('./sondaggi');
 const meteora = require('./meteora');
+const spettatori = require('./spettatori');
 const schema = require('../../contenuti/schema.js');
 const SBStili = require('../../pannello/condivisi/stili.js');
 
@@ -26,7 +27,7 @@ const MAX_JSON = 1024 * 1024;
 const MAX_FILE = 4 * 1024 * 1024 + 64 * 1024;
 const MAX_FONT = font.MAX_BYTE + 64 * 1024;
 
-const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra', '/api/sondaggio', '/api/sondaggio/voto', '/api/meteora']);
+const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra', '/api/sondaggio', '/api/sondaggio/voto', '/api/meteora', '/api/spettatori']);
 
 function leggiCorpo(req, massimo) {
   return new Promise((risolvi, rifiuta) => {
@@ -525,6 +526,9 @@ async function gestisci(req, res, percorso) {
   }
   if (percorso === '/api/meteora') {
     return metodo === 'GET' ? json(res, 200, meteora.stato()) : metodoNonAmmesso(res, 'GET');
+  }
+  if (percorso === '/api/spettatori') {
+    return metodo === 'GET' ? json(res, 200, await spettatori.stato()) : metodoNonAmmesso(res, 'GET');
   }
   if (percorso === '/api/meteora/lancia') {
     return metodo === 'POST' ? json(res, 200, meteora.lancia()) : metodoNonAmmesso(res, 'POST');

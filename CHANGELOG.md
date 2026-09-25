@@ -15,6 +15,21 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Volume regolabile nella pagina di manutenzione.** Accanto al bottone della
+  musica c'è un bottone coi cursori che apre due regolazioni separate: musica
+  d'attesa (predefinito 20) e canzone di Pollo Run (predefinito 30). Il volume
+  cambia mentre si trascina e ogni visitatore lo ritrova uguale
+  (`localStorage` `sb-manutenzione-volumi`). Un clic sul pannello durante la
+  corsa non fa saltare il pollo.
+- **Spettatori in diretta.** Nuova rotta pubblica `GET /api/spettatori`
+  (`server/lib/spettatori.js`): il server chiede `helix/streams` con l'app
+  token al massimo una volta al minuto per tutti i visitatori e tiene la
+  lettura in `server/dati/twitch-spettatori.json`, così vale anche con più
+  processi Passenger. `js/spettatori.js` la rilegge ogni minuto a pagina
+  visibile e riempie ogni `[data-spettatori]`: una pillola accanto a LIVE nella
+  barra del player e un riquadro dentro la card dell'evento speciale in onda
+  (`.evento.is-in-onda`), a destra sugli schermi larghi e sotto il titolo su
+  quelli stretti. Fuori onda spariscono.
 - **Pollo Run diventa sempre più cattivo, e ti prende in giro.** A 100, 250,
   500, 750, 1000, 1500, 2000, 2500, 3000 punti e poi ogni 1000 si sale di
   livello: la velocità non ha più tetto, i varchi fra gli ostacoli si stringono

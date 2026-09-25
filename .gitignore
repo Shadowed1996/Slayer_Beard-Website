@@ -10,6 +10,7 @@ server/dati/twitch-accesso.json
 # non e un segreto: e l'ultima lettura di cosa c'e in onda, cambia da se
 server/dati/twitch-diretta.json
 server/dati/meteora.json
+server/dati/twitch-spettatori.json
 
 # log e file temporanei
 *.log

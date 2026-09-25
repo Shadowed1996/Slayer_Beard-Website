@@ -316,6 +316,38 @@
   background-color: color-mix(in srgb, var(--ciano) 70%, transparent);
 }
 
+.monitor__spettatori:not([hidden]) { display: inline-flex; }
+
+.monitor__spettatori {
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 3px var(--passo);
+  border: 1px solid color-mix(in srgb, var(--ciano) 45%, transparent);
+  border-radius: var(--raggio-pill);
+  background-color: color-mix(in srgb, var(--ciano) 12%, transparent);
+  color: var(--ciano);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.monitor__spettatori svg {
+  inline-size: 14px;
+  block-size: 14px;
+}
+
+.monitor__spettatori b { font-weight: 600; }
+
+.monitor__spettatori.is-cambiato b { animation: spettatori-guizza 0.6s var(--curva); }
+
+@keyframes spettatori-guizza {
+  0%   { color: var(--testo); text-shadow: 0 0 10px var(--ciano); }
+  100% { color: inherit; text-shadow: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .monitor__badge::before { animation: none; }
+  .monitor__spettatori.is-cambiato b { animation: none; }
 }

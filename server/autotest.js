@@ -1100,7 +1100,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
       'gli script facoltativi non stanno in fondo: ' + soloNostri.join(','));
     esigiUguale(fissi.join(','),
-      'js/ritorno.js,js/dati.js,js/player.js,js/festa.js,js/sito.js,js/meteora.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js,js/cima.js,js/guardia.js,js/sondaggio.js',
+      'js/ritorno.js,js/dati.js,js/player.js,js/festa.js,js/sito.js,js/meteora.js,js/account.js,js/canale.js,js/spettatori.js,js/lurk.js,js/pollo.js,js/cima.js,js/guardia.js,js/sondaggio.js',
       'ordine degli script del sito');
   });
 
@@ -4644,12 +4644,16 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
     esigiUguale(dopo.eventi[0].detail.attiva, true, 'detail.attiva');
   });
 
-  await prova('la musica d attesa: file fisso, in loop, volume basso, bottone per fermarla', async () => {
+  await prova('la musica d attesa: file fisso, in loop, volume basso regolabile, bottone per fermarla', async () => {
     const modello = fs.readFileSync(P.modelloManutenzione, 'utf8');
     esigiDentro(modello, 'src="mp3/ElevatorMaintenance.mp3" loop', 'audio');
     esigiDentro(modello, 'id="mnt-musica"', 'bottone');
     const script = fs.readFileSync(P.scriptManutenzione, 'utf8');
-    esigiDentro(script, 'audio.volume = 0.2', 'volume');
+    esigiDentro(script, 'audio: audio, base: 20', 'volume');
+    esigiDentro(script, 'audio: brano, base: 30', 'volume del gioco');
+    esigiDentro(script, 'sb-manutenzione-volumi', 'volumi ricordati');
+    esigiDentro(modello, 'id="mnt-vol-attesa"', 'cursore della musica d attesa');
+    esigiDentro(modello, 'id="mnt-vol-gioco"', 'cursore della canzone del gioco');
     esigiDentro(script, "addEventListener('pointerdown'", 'partenza al primo gesto');
   });
 

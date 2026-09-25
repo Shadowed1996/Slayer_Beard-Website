@@ -794,7 +794,7 @@
   document.addEventListener('pointerdown', function (evento) {
     if (evento.button || stato !== 'corsa') { return; }
     var bersaglio = evento.target;
-    if (bersaglio && bersaglio.closest && bersaglio.closest('#mnt-musica, a, button')) { return; }
+    if (bersaglio && bersaglio.closest && bersaglio.closest('#mnt-audio-box, a, button, input')) { return; }
     salta();
   });
 
@@ -857,8 +857,56 @@
     var corrente = audio;
     var branoRotto = !brano;
     try { spenta = sessionStorage.getItem(CHIAVE_MUSICA) === 'no'; } catch (e) { }
-    audio.volume = 0.2;
-    if (brano) { brano.volume = 0.3; }
+    var CHIAVE_VOLUMI = 'sb-manutenzione-volumi';
+    var scatola = document.getElementById('mnt-audio-box') || tasto;
+    var regola = document.getElementById('mnt-regola');
+    var pannello = document.getElementById('mnt-volumi');
+    var cursori = {
+      attesa: { input: document.getElementById('mnt-vol-attesa'), valore: document.getElementById('mnt-vol-attesa-valore'), audio: audio, base: 20 },
+      gioco: { input: document.getElementById('mnt-vol-gioco'), valore: document.getElementById('mnt-vol-gioco-valore'), audio: brano, base: 30 }
+    };
+    var salvati = {};
+    try { salvati = JSON.parse(localStorage.getItem(CHIAVE_VOLUMI) || '{}') || {}; } catch (e) { salvati = {}; }
+    var salvaVolumi = function () {
+      var dati = {};
+      Object.keys(cursori).forEach(function (nome) { dati[nome] = cursori[nome].livello; });
+      try { localStorage.setItem(CHIAVE_VOLUMI, JSON.stringify(dati)); } catch (e) { }
+    };
+    Object.keys(cursori).forEach(function (nome) {
+      var c = cursori[nome];
+      var letto = Number(salvati[nome]);
+      c.livello = isFinite(letto) && letto >= 0 && letto <= 100 ? Math.round(letto) : c.base;
+      var applica = function () {
+        if (c.audio) { c.audio.volume = c.livello / 100; }
+        if (c.valore) { c.valore.textContent = String(c.livello); }
+        if (c.input) { c.input.value = String(c.livello); }
+      };
+      applica();
+      if (!c.input) { return; }
+      c.input.addEventListener('input', function () {
+        var n = Math.round(Number(c.input.value));
+        c.livello = isFinite(n) ? Math.min(100, Math.max(0, n)) : c.base;
+        applica();
+        salvaVolumi();
+      });
+    });
+    if (!brano) {
+      var rigaGioco = document.getElementById('mnt-riga-gioco');
+      if (rigaGioco) { rigaGioco.hidden = true; }
+    }
+    if (regola && pannello) {
+      var apriPannello = function (aperto) {
+        pannello.hidden = !aperto;
+        regola.setAttribute('aria-expanded', aperto ? 'true' : 'false');
+      };
+      regola.addEventListener('click', function () { apriPannello(pannello.hidden); });
+      document.addEventListener('pointerdown', function (evento) {
+        if (!pannello.hidden && evento.target && !scatola.contains(evento.target)) { apriPannello(false); }
+      });
+      document.addEventListener('keydown', function (evento) {
+        if (evento.key === 'Escape' && !pannello.hidden) { apriPannello(false); regola.focus(); }
+      });
+    }
     var segna = function () {
       var suona = !corrente.paused;
       tasto.classList.toggle('is-suona', suona);
@@ -901,7 +949,7 @@
     });
     audio.addEventListener('play', segna);
     audio.addEventListener('pause', segna);
-    audio.addEventListener('error', function () { tasto.hidden = true; });
+    audio.addEventListener('error', function () { scatola.hidden = true; });
     if (brano) {
       brano.addEventListener('play', segna);
       brano.addEventListener('pause', segna);
