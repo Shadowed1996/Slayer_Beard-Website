@@ -31,6 +31,7 @@
   body {
     padding: 0;
     overflow-x: hidden;
+    touch-action: manipulation;
   }
 
   .mnt {
@@ -330,21 +331,25 @@
     white-space: nowrap;
   }
 
-  .mnt__pollo {
+  .mnt__gioco {
     position: fixed;
+    inset-inline: 0;
     inset-block-end: 34px;
-    inset-inline-start: 0;
-    z-index: 1;
-    inline-size: clamp(58px, 9vw, 86px);
+    z-index: 0;
+    display: block;
+    inline-size: 100%;
+    block-size: clamp(150px, 32vh, 300px);
     pointer-events: none;
-    animation: mnt-cammina 26s linear infinite;
   }
 
-  .mnt__pollo img {
-    inline-size: 100%;
-    block-size: auto;
-    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .6));
-    animation: mnt-saltella .5s ease-in-out infinite alternate;
+  .mnt {
+    transition: opacity 400ms var(--curva), filter 400ms var(--curva);
+  }
+
+  body.is-gioca .mnt {
+    opacity: .1;
+    filter: blur(2px);
+    pointer-events: none;
   }
 
   .mnt__piede {
@@ -435,19 +440,6 @@
 
   @keyframes mnt-scorri { to { transform: translateX(-50%); } }
 
-  @keyframes mnt-cammina {
-    0% { transform: translateX(-120px) scaleX(1); }
-    49% { transform: translateX(calc(100vw + 20px)) scaleX(1); }
-    50% { transform: translateX(calc(100vw + 20px)) scaleX(-1); }
-    99% { transform: translateX(-120px) scaleX(-1); }
-    100% { transform: translateX(-120px) scaleX(1); }
-  }
-
-  @keyframes mnt-saltella {
-    from { translate: 0 0; rotate: -4deg; }
-    to { translate: 0 -6px; rotate: 4deg; }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .mnt__griglia,
     .mnt__righe::after,
@@ -457,17 +449,16 @@
     .mnt__barre span,
     .mnt__eq span,
     .mnt__scorre,
-    .mnt__pollo,
-    .mnt__pollo img,
     .mnt__stato .spia::after,
     .mnt__due { animation: none; }
-    .mnt__pollo { inset-inline-start: auto; inset-inline-end: 16px; }
+    .mnt { transition: none; }
   }
 </style>
 </head>
 <body>
 <div class="mnt__griglia" aria-hidden="true"></div>
 <div class="mnt__righe" aria-hidden="true"></div>
+<canvas class="mnt__gioco" id="mnt-gioco" data-pollo="{{manutenzione.mascotte}}" aria-hidden="true"></canvas>
 
 <main class="mnt">
   <section class="mnt__monitor" aria-labelledby="mnt-titolo">
@@ -506,8 +497,6 @@
     <p class="mnt__piede">© {{manutenzione.anno}} {{manutenzione.nome}}</p>
   </section>
 </main>
-
-<div class="mnt__pollo" aria-hidden="true"><img src="{{manutenzione.mascotte}}" alt="" width="386" height="556" decoding="async"></div>
 
 <div class="mnt__nastro" aria-hidden="true">
   <div class="mnt__scorre">
