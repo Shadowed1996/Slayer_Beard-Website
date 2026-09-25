@@ -9,6 +9,7 @@ server/dati/chiavi.js
 server/dati/twitch-accesso.json
 # non e un segreto: e l'ultima lettura di cosa c'e in onda, cambia da se
 server/dati/twitch-diretta.json
+server/dati/meteora.json
 
 # log e file temporanei
 *.log
@@ -43,3 +44,6 @@ mp3/
 server/dati/sondaggi.json
 
 stato-sito.json
+
+# i suoni della meteora stanno sul server (httpdocs/suoni_meteora)
+suoni_meteora/

@@ -566,7 +566,9 @@
     const insistenza = categoriaGif('insistenza');
     const scroll = categoriaGif('scroll');
     const gifOgni = (DATI.chi && Number.isInteger(DATI.chi.gifOgni) && DATI.chi.gifOgni > 0) ? DATI.chi.gifOgni : 0;
-    if (!immagine || (!frasi.length && !raffica.gif.length && !insistenza.gif.length && !scroll.gif.length)) { return; }
+    const festa = window.PolloFesta || null;
+    const conIcone = !!(festa && festa.icona);
+    if (!immagine || (!frasi.length && !raffica.gif.length && !insistenza.gif.length && !scroll.gif.length && !conIcone)) { return; }
 
     const bottone = document.createElement('button');
     bottone.type = 'button';
@@ -656,7 +658,9 @@
     let soglia = gifOgni;
     let pausaFino = 0;
     let timerInsistenza = null;
-    let timerArrabbiato = null;
+    let timerGelo = null;
+    let timerDisgelo = null;
+    let timerGifGelo = null;
     const popup = { nodo: null, img: null, scritta: null, chiudi: null, timer: null, aperto: false };
 
     function categoriaGif(nome) {
@@ -748,12 +752,20 @@
       }
     }
 
-    function arrabbiati() {
-      clearTimeout(timerArrabbiato);
-      figura.classList.remove('is-arrabbiato');
+    function congela() {
+      clearTimeout(timerGelo);
+      clearTimeout(timerDisgelo);
+      figura.classList.remove('is-parla', 'is-sgela', 'is-congelato');
       void figura.offsetWidth;
-      figura.classList.add('is-arrabbiato');
-      timerArrabbiato = setTimeout(function () { figura.classList.remove('is-arrabbiato'); }, 900);
+      figura.classList.add('is-congelato');
+      if (festa) {
+        try { festa.spruzzo(bottone); } catch (e) { }
+      }
+      timerGelo = setTimeout(function () {
+        figura.classList.remove('is-congelato');
+        figura.classList.add('is-sgela');
+        timerDisgelo = setTimeout(function () { figura.classList.remove('is-sgela'); }, 650);
+      }, RAFFICA_PAUSA);
     }
 
     function contaClic() {
@@ -763,14 +775,16 @@
       tempi.push(ora);
       tempi = tempi.filter(function (t) { return ora - t <= RAFFICA_FINESTRA; });
 
-      if (tempi.length >= RAFFICA_CLIC && raffica.gif.length) {
+      if (tempi.length >= RAFFICA_CLIC && (raffica.gif.length || conIcone)) {
         tempi = [];
         conta = 0;
         soglia = gifOgni;
         pausaFino = ora + RAFFICA_PAUSA;
         clearTimeout(timerInsistenza);
-        arrabbiati();
-        apriGif(raffica);
+        clearTimeout(spegni);
+        congela();
+        clearTimeout(timerGifGelo);
+        timerGifGelo = setTimeout(function () { apriGif(raffica); }, conIcone ? 450 : 0);
         return true;
       }
 
@@ -826,7 +840,11 @@
     ascoltaScroll();
 
     bottone.addEventListener('click', function () {
-      if (contaClic() || !frasi.length) { return; }
+      if (contaClic()) { return; }
+      if (festa) {
+        try { festa.sbuffo(bottone); } catch (e) { }
+      }
+      if (!frasi.length) { return; }
       ultima = pesca(frasi.length, ultima);
       oraUltima = pesca(ORE.length, oraUltima);
 

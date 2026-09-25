@@ -841,6 +841,20 @@ const gruppi = [
         predefinito: ['Lavori in corso', 'La regia si sta rifacendo il look', 'Torniamo presto', 'Intanto: twitch.tv/slayer_beard', 'Il pollo sorveglia il cantiere'],
         aiuto: 'Scorrono una dopo l\'altra, separate da un puntino.' }
     ]
+  },
+
+  {
+    id: 'meteora',
+    titolo: 'Meteora col polletto',
+    descrizione: 'Il polletto che attraversa la home come una stella cadente: chi lo prende al volo lo fa esplodere in una pioggia di icone. La lanci tu con «Lancia meteora», oppure parte da sola se accendi il timer.',
+    campi: [
+      { chiave: 'config.meteora.timer', etichetta: 'Timer automatico', tipo: 'interruttore', facoltativo: true, predefinito: false,
+        aiuto: 'Spento (consigliato per la sorpresa): la meteora parte solo quando premi «Lancia meteora». Acceso, salva e premi Pubblica: ogni visitatore della home la vede passare da sola, a caso, fra i minuti scritti qui sotto.' },
+      { chiave: 'config.meteora.ogniMin', etichetta: 'Timer — al più presto dopo (minuti)', tipo: 'numero', min: 1, max: 120, facoltativo: true, predefinito: 3,
+        aiuto: 'Conta solo con il timer acceso. Il tempo parte da quando il visitatore apre la pagina, e riparte dopo ogni passaggio.' },
+      { chiave: 'config.meteora.ogniMax', etichetta: 'Timer — al più tardi dopo (minuti)', tipo: 'numero', min: 1, max: 120, facoltativo: true, predefinito: 8,
+        aiuto: 'Fra questo numero e quello sopra il sito sceglie un momento a caso, diverso per ogni visitatore.' }
+    ]
   }
 ];
 

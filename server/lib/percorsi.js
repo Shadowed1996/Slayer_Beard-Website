@@ -40,6 +40,8 @@ function calcola(radice) {
     icone: path.join(radice, 'modelli', 'icone'),
 
     immagini: path.join(radice, 'img'),
+    iconeSlayer: path.join(radice, 'icone_slayer'),
+    suoniMeteora: path.join(radice, 'suoni_meteora'),
     pannello: path.join(radice, 'pannello'),
     css: path.join(radice, 'css'),
 
@@ -58,6 +60,7 @@ function calcola(radice) {
     giochiTwitch: path.join(radice, 'server', 'dati', 'giochi-twitch.json'),
     giochiRegistro: path.join(radice, 'server', 'dati', 'giochi-registro.json'),
     sondaggi: path.join(radice, 'server', 'dati', 'sondaggi.json'),
+    meteora: path.join(radice, 'server', 'dati', 'meteora.json'),
     backup: path.join(radice, 'server', 'backup'),
     modelloDati: path.join(radice, 'server', 'modelli', 'dati.js.tpl')
   };
@@ -96,6 +99,7 @@ function applicaAmbiente(percorsi) {
     percorsi.giochiTwitch = path.join(dati, 'giochi-twitch.json');
     percorsi.giochiRegistro = path.join(dati, 'giochi-registro.json');
     percorsi.sondaggi = path.join(dati, 'sondaggi.json');
+    percorsi.meteora = path.join(dati, 'meteora.json');
   }
 
   const backup = cartellaDaAmbiente('SB_BACKUP');

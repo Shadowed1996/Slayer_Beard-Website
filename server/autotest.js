@@ -411,7 +411,7 @@ async function proveSchema(contenutiVeri) {
   await prova('i gruppi seguono l ordine della pagina', () => {
 
     const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'giochi', 'sondaggio', 'settimana', 'chi',
-      'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'manutenzione'];
+      'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'manutenzione', 'meteora'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
 
@@ -1100,7 +1100,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
       'gli script facoltativi non stanno in fondo: ' + soloNostri.join(','));
     esigiUguale(fissi.join(','),
-      'js/ritorno.js,js/dati.js,js/player.js,js/sito.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js,js/cima.js,js/guardia.js,js/sondaggio.js',
+      'js/ritorno.js,js/dati.js,js/player.js,js/festa.js,js/sito.js,js/meteora.js,js/account.js,js/canale.js,js/lurk.js,js/pollo.js,js/cima.js,js/guardia.js,js/sondaggio.js',
       'ordine degli script del sito');
   });
 
@@ -1756,6 +1756,58 @@ async function proveSondaggi(archivio) {
     sondaggi.sostituisciVerifica(null);
     sondaggi.dimentica();
     fs.rmSync(percorsi.P.sondaggi, { force: true });
+    auth.azzeraTutto();
+    await new Promise((risolvi) => server.close(risolvi));
+  }
+}
+
+async function proveMeteora(costruisci, archivio) {
+  apriSezione('8c. Meteora col polletto');
+
+  const { creaServer } = require('./server.js');
+  const auth = require('./lib/autenticazione');
+  const server = creaServer();
+  await new Promise((risolvi) => server.listen(0, '127.0.0.1', risolvi));
+  const porta = server.address().port;
+  fs.rmSync(percorsi.P.meteora, { force: true });
+  auth.azzeraTutto();
+
+  try {
+    await prova('la rotta pubblica risponde vuota finche nessuno la lancia, e il lancio vuole la sessione', async () => {
+      const r = await chiama(porta, 'GET', '/api/meteora');
+      esigiUguale(r.stato, 200, 'stato');
+      esigiUguale(r.dati.id, '', 'id');
+      esigiUguale(r.testa['cache-control'], 'no-store', 'cache');
+      esigiUguale((await chiama(porta, 'POST', '/api/meteora/lancia')).stato, 401, 'lancio senza sessione');
+      esigiUguale((await chiama(porta, 'POST', '/api/meteora')).stato, 405, 'la rotta pubblica non si scrive');
+    });
+
+    await prova('con la sessione la meteora parte per tutti, e due lanci ravvicinati valgono uno', async () => {
+      const entra = await chiama(porta, 'POST', '/api/entra', { json: { password: PASSWORD_COLLAUDO } });
+      const biscotto = biscottoDa(entra);
+      const primo = await chiama(porta, 'POST', '/api/meteora/lancia', { biscotto });
+      esigiUguale(primo.stato, 200, 'stato');
+      esigi(/^[0-9a-f]{12}$/.test(primo.dati.id), 'id');
+      const pubblico = await chiama(porta, 'GET', '/api/meteora');
+      esigiUguale(pubblico.dati.id, primo.dati.id, 'la vede chi visita');
+      const secondo = await chiama(porta, 'POST', '/api/meteora/lancia', { biscotto });
+      esigiUguale(secondo.dati.id, primo.dati.id, 'stesso lancio');
+      esigiUguale(secondo.dati.gia, true, 'segnalato come gia partito');
+    });
+
+    await prova('i dati della home portano timer spento, minuti in ordine, icone e suoni dalle cartelle', async () => {
+      const contenuti = archivio.leggi();
+      contenuti.config.meteora = { ogniMin: 20, ogniMax: 5 };
+      const dati = costruisci.oggettoDati(contenuti, {});
+      esigiUguale(dati.meteora.timer, false, 'timer spento se non acceso');
+      esigiUguale(dati.meteora.ogniMin, 5, 'minimo');
+      esigiUguale(dati.meteora.ogniMax, 20, 'massimo');
+      for (const src of dati.meteora.icone) { esigi(/^icone_slayer\/[^/]+$/.test(src), 'icona ' + src); }
+      for (const src of dati.meteora.suoni) { esigi(/^suoni_meteora\/[^/]+\.(mp3|wav|ogg|m4a)$/i.test(src), 'suono ' + src); }
+      esigiUguale(dati.chi.icone.length, dati.meteora.icone.length, 'stesse icone per il ritratto');
+    });
+  } finally {
+    fs.rmSync(percorsi.P.meteora, { force: true });
     auth.azzeraTutto();
     await new Promise((risolvi) => server.close(risolvi));
   }
@@ -5131,6 +5183,7 @@ async function esegui() {
     await proveLurk(contenutiVeri, costruisci, archivio);
     await proveApi(costruisci);
     await proveSondaggi(archivio);
+    await proveMeteora(costruisci, archivio);
     await proveTwitch(costruisci, archivio);
     await proveClip(contenutiVeri, costruisci, archivio);
     await proveSchedule(contenutiVeri, costruisci, archivio);

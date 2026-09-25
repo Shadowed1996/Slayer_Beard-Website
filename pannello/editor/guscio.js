@@ -93,6 +93,7 @@ const MENU = [
   { vista: 'canale', nome: 'Canale, contatti e immagini', nota: 'Canale Twitch, email, immagini del sito', ico: 'canale' },
   { vista: 'meta', nome: 'Google e social', nota: 'Come appare il sito nelle ricerche e nei link condivisi', ico: 'mondo' },
   { vista: 'manutenzione', nome: 'Manutenzione', nota: 'Metti il sito in pausa: i visitatori vedono la pagina di manutenzione', ico: 'attenzione' },
+  { vista: 'meteora', nome: 'Meteora col polletto', nota: 'Lancia la meteora a chi è sulla home, o accendi il timer automatico', ico: 'meteora' },
   { vista: 'sondaggi', nome: 'Sondaggi', nota: 'Crea un sondaggio per chi è collegato con Twitch e guarda i risultati', ico: 'sondaggio' },
   { vista: 'immagini', nome: 'Immagini', nota: 'Carica e gestisci i file', ico: 'immagine' },
   { vista: 'backup', nome: 'Copie di sicurezza', nota: 'Torna a com\'era il sito prima di una pubblicazione', ico: 'backup' },
@@ -119,6 +120,11 @@ const VISTE = {
     nota: 'Accendi «Sito in manutenzione», salva e premi Pubblica: la home e clip.html diventano la pagina di manutenzione per tutti, e player, lurk, pollo, musica e sondaggi si fermano. Per riaprire il sito spegnilo, salva e pubblica. L\'anteprima qui a fianco mostra sempre il sito vero.',
     gruppo: 'manutenzione'
   },
+  meteora: {
+    titolo: 'Meteora col polletto',
+    nota: '«Lancia meteora» la fa passare subito sulla home di chi è sul sito, senza pubblicare. Il timer invece vale dopo Salva e Pubblica.',
+    gruppo: 'meteora'
+  },
   immagini: {
     titolo: 'Immagini',
     nota: 'I file caricati qui restano sul server. Un\'immagine del sito si cambia anche cliccandola nell\'anteprima.'
@@ -132,7 +138,7 @@ const VISTE = {
 };
 
 /* I gruppi che hanno una vista loro invece di un punto della pagina. */
-const VISTA_DEL_GRUPPO = { aspetto: 'impostazioni', canale: 'canale', meta: 'meta', manutenzione: 'manutenzione' };
+const VISTA_DEL_GRUPPO = { aspetto: 'impostazioni', canale: 'canale', meta: 'meta', manutenzione: 'manutenzione', meteora: 'meteora' };
 
 const MODULI = [
   { nome: 'motore', file: './motore.js', cosa: 'l\'anteprima modificabile (editor/motore.js)' },
@@ -886,6 +892,38 @@ function disegnaGruppo(scorri, gruppo) {
   if (gruppo.id === 'canale') scorri.append(creaCollegamentoTwitch());
   if (gruppo.id === 'sondaggio') scorri.prepend(rimandoSondaggi());
   if (gruppo.id === 'manutenzione') scorri.append(anteprimaManutenzione());
+  if (gruppo.id === 'meteora') scorri.prepend(lancioMeteora());
+}
+
+function lancioMeteora() {
+  const esito = el('p', { classe: 'lancio-meteora__esito', 'aria-live': 'polite' });
+  const tasto = bottone({
+    testo: 'LANCIA METEORA', ico: 'meteora', classe: 'btn btn--primario lancio-meteora__tasto',
+    su: async () => {
+      tasto.disabled = true;
+      esito.textContent = 'Lancio…';
+      try {
+        const r = await api.lanciaMeteora();
+        esito.textContent = r && r.gia
+          ? 'Già lanciata un attimo fa: arriva a chi è sul sito entro 15 secondi.'
+          : 'Lanciata! Arriva sulla home di chi è sul sito entro 15 secondi.';
+      } catch (e) {
+        esito.textContent = rottaAssente(e)
+          ? 'Il server non ha ancora questa funzione: carica l\'aggiornamento su Plesk e riavvia l\'app.'
+          : (e instanceof ErroreApi ? e.message : 'Non sono riuscito a lanciarla.');
+      } finally {
+        setTimeout(() => { tasto.disabled = false; }, 3000);
+      }
+    }
+  });
+  return el('div', { classe: 'spiegazione' }, [
+    icona('meteora'),
+    el('div', {}, [
+      el('p', { testo: 'La meteora passa sulla home di chi è sul sito in quel momento (entro 15 secondi). Chi la prende al volo la fa esplodere: pioggia di polletti e un suono a caso della cartella suoni_meteora.' }),
+      el('div', { classe: 'lato__azioni' }, [tasto]),
+      esito
+    ])
+  ]);
 }
 
 function anteprimaManutenzione() {

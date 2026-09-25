@@ -771,6 +771,11 @@
         "Eventi speciali"
       ],
       "correzioni": []
+    },
+    "meteora": {
+      "timer": false,
+      "ogniMin": 3,
+      "ogniMax": 8
     }
   }
 }

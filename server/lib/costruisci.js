@@ -869,6 +869,54 @@ function polloDi(config, testi) {
   };
 }
 
+const RE_ICONA = /\.(?:webp|png|gif|avif)$/i;
+const ICONA_PRINCIPALE = '1-anno-72x72.webp';
+
+const RE_SUONO = /\.(?:mp3|wav|ogg|m4a)$/i;
+
+function fileDellaCartella(cartella, filtro) {
+  let nomi = [];
+  try { nomi = fs.readdirSync(cartella); } catch (e) { return []; }
+  return nomi
+    .filter((nome) => filtro.test(nome) && nome.indexOf('..') === -1 && !nome.startsWith('.'))
+    .filter((nome) => { try { return fs.statSync(path.join(cartella, nome)).isFile(); } catch (e) { return false; } })
+    .sort((a, b) => a.localeCompare(b, 'it', { numeric: true }));
+}
+
+function suoniMeteora() {
+  return fileDellaCartella(P.suoniMeteora, RE_SUONO).map((nome) => 'suoni_meteora/' + encodeURIComponent(nome));
+}
+
+function iconeSlayer() {
+  const buoni = fileDellaCartella(P.iconeSlayer, RE_ICONA);
+  const tutte = buoni.map((nome) => 'icone_slayer/' + encodeURIComponent(nome));
+  const principale = buoni.indexOf(ICONA_PRINCIPALE) !== -1
+    ? 'icone_slayer/' + encodeURIComponent(ICONA_PRINCIPALE)
+    : (tutte[0] || '');
+  return { principale: principale, tutte: tutte };
+}
+
+function minutiDi(valore, chiave) {
+  const n = Number(valore);
+  if (Number.isFinite(n) && n >= 1 && n <= 120) { return n; }
+  return schema.campo(chiave).predefinito;
+}
+
+function meteoraDi(config, icone) {
+  const meteora = (config.meteora && typeof config.meteora === 'object') ? config.meteora : {};
+  let min = minutiDi(meteora.ogniMin, 'config.meteora.ogniMin');
+  let max = minutiDi(meteora.ogniMax, 'config.meteora.ogniMax');
+  if (min > max) { const scambio = min; min = max; max = scambio; }
+  return {
+    timer: meteora.timer === true,
+    ogniMin: min,
+    ogniMax: max,
+    icona: icone.principale,
+    icone: icone.tutte,
+    suoni: suoniMeteora()
+  };
+}
+
 function chiDi(config) {
   const chi = (config.chi && typeof config.chi === 'object') ? config.chi : {};
   const frasi = (Array.isArray(chi.frasi) ? chi.frasi : [])
@@ -1118,6 +1166,7 @@ function oggettoDati(contenuti, opzioni) {
   const testi = contenuti.testi;
   const twitch = config.twitch || {};
   const profilo = accountDi(config, testi);
+  const icone = iconeSlayer();
 
   const sito = controlli.indirizzoSito(config);
   const delSito = sito.host ? [sito.host, 'www.' + sito.host] : [];
@@ -1166,7 +1215,8 @@ function oggettoDati(contenuti, opzioni) {
       }
     },
     pollo: polloDi(config, testi),
-    chi: chiDi(config),
+    chi: Object.assign(chiDi(config), { icona: icone.principale, icone: icone.tutte }),
+    meteora: meteoraDi(config, icone),
 
     account: profilo,
     lurk: lurkDi(config, testi, profilo)

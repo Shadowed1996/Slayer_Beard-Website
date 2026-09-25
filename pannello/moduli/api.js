@@ -410,5 +410,6 @@ export const api = {
   sondaggi: () => richiesta('GET', '/api/sondaggi'),
   creaSondaggio: (dati) => richiesta('POST', '/api/sondaggi', dati),
   chiudiSondaggio: () => richiesta('POST', '/api/sondaggi/chiudi'),
+  lanciaMeteora: () => richiesta('POST', '/api/meteora/lancia'),
   eliminaSondaggio: (id) => richiesta('DELETE', '/api/sondaggi/' + encodeURIComponent(id))
 };

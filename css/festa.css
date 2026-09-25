@@ -1,0 +1,144 @@
+.festa {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-velo) + 10);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.festa__icona,
+.festa__coriandolo {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  display: block;
+  opacity: 0;
+  will-change: transform, opacity;
+  user-select: none;
+}
+
+.festa__icona {
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .45));
+}
+
+.festa__coriandolo {
+  border-radius: 2px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.festa__lampo {
+  position: absolute;
+  inline-size: 40px;
+  block-size: 40px;
+  margin: -20px 0 0 -20px;
+  border: 4px solid var(--ciano);
+  border-radius: 50%;
+  box-shadow: 0 0 30px var(--ciano), inset 0 0 24px var(--magenta);
+  background: radial-gradient(circle, rgba(255, 255, 255, .95), color-mix(in srgb, var(--allerta) 70%, transparent) 40%, transparent 70%);
+  animation: festa-lampo 800ms var(--curva) forwards;
+}
+
+@keyframes festa-lampo {
+  0%   { opacity: 1; scale: .3; }
+  60%  { opacity: .9; }
+  100% { opacity: 0; scale: 9; border-width: 1px; }
+}
+
+.meteora {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: calc(var(--z-velo) + 8);
+  inline-size: var(--meteora-lato, 88px);
+  block-size: var(--meteora-lato, 88px);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: crosshair;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.meteora::before {
+  content: "";
+  position: absolute;
+  inset: -34%;
+  border-radius: 50%;
+}
+
+.meteora__coda {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: 50%;
+  inline-size: calc(var(--meteora-lato, 88px) * 3.6);
+  block-size: calc(var(--meteora-lato, 88px) * .5);
+  translate: 0 -50%;
+  transform-origin: 100% 50%;
+  rotate: var(--meteora-angolo, 0deg);
+  border-radius: 50% 0 0 50% / 50% 0 0 50%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--viola) 45%, transparent) 30%, color-mix(in srgb, var(--magenta) 75%, transparent) 70%, color-mix(in srgb, var(--ciano) 95%, white));
+  filter: blur(3px);
+  -webkit-mask-image: linear-gradient(0deg, transparent, black 30%, black 70%, transparent);
+  mask-image: linear-gradient(0deg, transparent, black 30%, black 70%, transparent);
+  pointer-events: none;
+}
+
+.meteora__alone {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ciano) 55%, transparent), transparent 68%);
+  animation: meteora-pulsa 600ms ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.meteora__icona {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px var(--ciano)) drop-shadow(0 0 22px var(--magenta));
+  animation: meteora-gira 2.4s linear infinite;
+  pointer-events: none;
+}
+
+.meteora__scintilla {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: calc(var(--z-velo) + 7);
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 8px var(--ciano), 0 0 14px var(--magenta);
+  pointer-events: none;
+  animation: meteora-scintilla 700ms ease-out forwards;
+}
+
+.meteora:focus-visible .meteora__icona {
+  outline: 3px solid var(--allerta);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+
+@keyframes meteora-gira { to { rotate: 360deg; } }
+
+@keyframes meteora-pulsa {
+  from { opacity: .6; scale: .9; }
+  to   { opacity: 1; scale: 1.15; }
+}
+
+@keyframes meteora-scintilla {
+  from { opacity: 1; scale: 1; }
+  to   { opacity: 0; scale: .2; translate: var(--sx, 0) var(--sy, 20px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .festa__lampo,
+  .meteora__alone,
+  .meteora__icona,
+  .meteora__scintilla { animation: none; }
+}

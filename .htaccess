@@ -391,6 +391,7 @@
 # tipo sbagliato non si carica: due guasti che sembrano guasti del sito.
 <IfModule mod_mime.c>
   AddType image/webp .webp
+  AddType audio/wav .wav
   AddType image/avif .avif
   AddType font/woff2 .woff2
   AddType font/woff .woff

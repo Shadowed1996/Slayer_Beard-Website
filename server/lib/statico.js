@@ -52,6 +52,9 @@ const TIPI = {
   '.mp4': 'video/mp4',
   '.webm': 'video/webm',
   '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.m4a': 'audio/mp4',
   '.pdf': 'application/pdf'
 };
 

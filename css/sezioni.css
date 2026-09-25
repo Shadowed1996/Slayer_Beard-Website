@@ -1159,6 +1159,7 @@
 }
 
 .chi__parla {
+  position: relative;
   display: block;
   padding: 0;
   border: 0;
@@ -1262,7 +1263,52 @@
   40%      { translate: 0 -10px; }
 }
 
-.chi__ritratto.is-arrabbiato img { animation: chi-trema 90ms linear 10; }
+.chi__parla::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--raggio-g);
+  rotate: -3deg;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(255, 255, 255, .95) 0 3px, transparent 4px),
+    radial-gradient(circle at 16% 6%, rgba(255, 255, 255, .8) 0 2px, transparent 3px),
+    radial-gradient(circle at 92% 88%, rgba(255, 255, 255, .95) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 95%, rgba(255, 255, 255, .8) 0 2px, transparent 3px),
+    radial-gradient(circle at 90% 12%, rgba(255, 255, 255, .7) 0 2px, transparent 3px),
+    radial-gradient(ellipse at 0% 0%, rgba(210, 250, 255, .75), transparent 42%),
+    radial-gradient(ellipse at 100% 100%, rgba(210, 250, 255, .75), transparent 42%),
+    radial-gradient(ellipse at 100% 0%, rgba(210, 250, 255, .5), transparent 35%),
+    radial-gradient(ellipse at 0% 100%, rgba(210, 250, 255, .5), transparent 35%),
+    linear-gradient(135deg, rgba(160, 240, 255, .35), rgba(34, 224, 255, .12) 50%, rgba(255, 255, 255, .3));
+  box-shadow: inset 0 0 0 3px rgba(200, 248, 255, .85), inset 0 0 28px rgba(160, 240, 255, .9), 0 0 26px rgba(34, 224, 255, .7);
+  opacity: 0;
+  scale: 1.04;
+  pointer-events: none;
+  transition: opacity 180ms ease, scale 180ms ease;
+}
+
+.chi__ritratto.is-congelato .chi__parla { cursor: not-allowed; }
+.chi__ritratto.is-congelato .chi__parla::after { opacity: 1; scale: 1; }
+
+.chi__ritratto.is-congelato img {
+  rotate: -3deg;
+  filter: saturate(.35) hue-rotate(-25deg) brightness(1.15) contrast(1.1);
+  transition: none;
+  animation: chi-gelo 60ms steps(2) 7;
+}
+
+.chi__ritratto.is-congelato::before {
+  background: linear-gradient(135deg, rgb(216, 251, 255), var(--ciano));
+  box-shadow: 0 0 34px color-mix(in srgb, var(--ciano) 70%, transparent);
+}
+
+.chi__ritratto.is-sgela img { animation: chi-trema 90ms linear 5; }
+
+@keyframes chi-gelo {
+  0%   { translate: -4px 1px; }
+  50%  { translate: 4px -1px; }
+  100% { translate: 0 0; }
+}
 
 @keyframes chi-trema {
   0%, 100% { translate: 0 0;     rotate: 0deg; }
@@ -1428,7 +1474,9 @@
   .chi__tag .tag:hover     { translate: none; rotate: none; }
   .chi__ritratto:hover img { rotate: -3deg; }
   .chi__ritratto.is-parla img { animation: none; }
-  .chi__ritratto.is-arrabbiato img { animation: none; }
+  .chi__ritratto.is-congelato img,
+  .chi__ritratto.is-sgela img { animation: none; }
+  .chi__parla::after { transition: none; }
   .chi__fumetto { transition: none; }
   .pollo-gif,
   .pollo-gif__riquadro { transition: none; }
