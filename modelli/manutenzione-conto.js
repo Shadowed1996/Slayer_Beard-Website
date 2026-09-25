@@ -365,7 +365,6 @@
 
   function messaggi() {
     var fs = Math.max(11, U * 0.26);
-    var parti = tocco ? 'TOCCA' : 'SPAZIO';
     ctx.save();
     ctx.textBaseline = 'alphabetic';
     if (stato === 'fermo') {
@@ -375,11 +374,11 @@
       scritta('POLLO RUN', x, suolo - U * 0.6, fs * 1.15, '700', MONO, C.magenta, 'left');
       ctx.shadowBlur = 0;
       ctx.globalAlpha = fermo ? 1 : 0.55 + 0.45 * Math.sin(t * 4);
-      scritta(parti + ' per correre', x, suolo - U * 0.18, fs, '500', MONO, C.testo, 'left');
+      scritta((tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', x, suolo - U * 0.18, fs, '500', MONO, C.testo, 'left');
     }
     if (stato === 'corsa' && punti < 20) {
       ctx.globalAlpha = 1 - punti / 20;
-      scritta(parti + (tocco ? '' : ' / ↑') + ' per saltare', W / 2, orizzonte * 0.5, fs, '500', MONO, C.testo, 'center');
+      scritta('SPAZIO / ↑ per saltare', W / 2, orizzonte * 0.5, fs, '500', MONO, C.testo, 'center');
     }
     if (stato === 'fine') {
       var gx = W / 2;
@@ -395,7 +394,7 @@
         ctx.shadowBlur = 0;
       }
       ctx.globalAlpha = fermo ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
-      scritta(parti + ' per riprovare' + (tocco ? '' : ' · ESC per uscire'), gx, gy + fs * 1.6, fs, '500', MONO, C.testo, 'center');
+      scritta('SPAZIO per riprovare · ESC per uscire', gx, gy + fs * 1.6, fs, '500', MONO, C.testo, 'center');
     }
     ctx.restore();
   }
@@ -614,7 +613,8 @@
 
   document.addEventListener('keydown', function (evento) {
     if (evento.key === 'Escape' && stato !== 'fermo') { torna(); return; }
-    var tasto = evento.code === 'Space' || evento.key === ' ' || evento.key === 'ArrowUp';
+    var spazio = evento.code === 'Space' || evento.key === ' ';
+    var tasto = spazio || (evento.key === 'ArrowUp' && stato === 'corsa');
     if (!tasto || evento.altKey || evento.ctrlKey || evento.metaKey) { return; }
     var bersaglio = evento.target;
     if (stato === 'fermo' && bersaglio && bersaglio.closest && bersaglio.closest('a, button, input, textarea, select')) { return; }
@@ -624,13 +624,9 @@
   });
 
   document.addEventListener('pointerdown', function (evento) {
-    if (evento.button) { return; }
+    if (evento.button || stato !== 'corsa') { return; }
     var bersaglio = evento.target;
-    if (bersaglio && bersaglio.closest && bersaglio.closest('#mnt-musica')) { return; }
-    if (stato === 'fermo') {
-      if (bersaglio && bersaglio.closest && bersaglio.closest('a, button, .mnt__monitor')) { return; }
-      if (evento.clientY < tela.getBoundingClientRect().top) { return; }
-    }
+    if (bersaglio && bersaglio.closest && bersaglio.closest('#mnt-musica, a, button')) { return; }
     salta();
   });
 
