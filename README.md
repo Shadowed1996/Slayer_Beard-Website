@@ -83,7 +83,10 @@ sito/
 ├─ js/
 │  ├─ dati.js            ← GENERATO. Configurazione letta dal front-end.
 │  ├─ player.js          player Twitch: embed, stato in onda, chat
-│  ├─ sito.js            navigazione, conto alla rovescia, schedule (date, segni, eventi), copia email
+│  ├─ sito.js            navigazione, conto alla rovescia, schedule (date, segni, eventi), copia email,
+│  │                     il ritratto di «Chi sono» (frasi, iconcina, gif ai 5 clic, freeze a raffica)
+│  ├─ festa.js           gli effetti con le icone di icone_slayer/: iconcina, raffica, pioggia
+│  ├─ meteora.js         la meteora col polletto: la lancia il pannello o il timer, esplode al clic
 │  ├─ account.js         il profilo del sito: login con Twitch, tessera, revoca
 │  ├─ canale.js          per chi è collegato: stato del canale e titolo dell'ultima diretta
 │  ├─ lurk.js            la modalità lurk: sorveglia il video e lo fa ripartire
@@ -100,9 +103,14 @@ sito/
 │  ├─ pollo.css          il pollo: posizione, fumetto, animazioni
 │  ├─ clip.css           la vetrina delle clip, in fondo alla «diretta»
 │  ├─ account.css        la tessera di chi si è collegato con Twitch
-│  └─ lurk.css           il pannello della modalità lurk, sotto al monitor
+│  ├─ lurk.css           il pannello della modalità lurk, sotto al monitor
+│  └─ festa.css          raffica e pioggia di icone, la meteora con la scia
 ├─ img/                  le immagini fisse: avatar, mascotte, copertina, anteprima
 │                        social, favicon, fondale della schedule (capitolo «Le immagini»)
+├─ icone_slayer/         le icone del polletto (badge degli abbonati): il ritratto e la
+│                        meteora le usano tutte, 1-anno-72x72.webp è quella principale
+├─ suoni_meteora/        SOLO SUL SERVER, fuori dal repo: i suoni che la meteora pesca a
+│                        caso quando esplode (mp3, wav, ogg, m4a)
 │
 ├─ contenuti/
 │  ├─ contenuti.json     ← LA VERITÀ: testi e configurazione, compresi ordine delle
@@ -123,6 +131,7 @@ sito/
 │  ├─ lib/chiavi.js      LE CHIAVI: un file solo, e da lì le prende tutto
 │  ├─ lib/twitch.js      l'unico punto in cui il server locale chiama Twitch
 │  ├─ lib/font.js        i font caricati: formato, limite di 2 MB, elenco, dove sono usati
+│  ├─ lib/meteora.js     «Lancia meteora»: l'ultimo lancio in dati/meteora.json
 │  ├─ modelli/chiavi.esempio.js  il modello da copiare, con le istruzioni
 │  └─ dati/              password del pannello e chiavi.js. Non si carica
 │                        online e non sta nel controllo di versione.

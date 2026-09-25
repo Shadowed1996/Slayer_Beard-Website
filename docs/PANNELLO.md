@@ -1004,6 +1004,9 @@ clic nell'anteprima fa tornare all'editor anche lui.
 | **Impostazioni del sito** | colori, font (anche caricati da te) e forma di tutto il sito — capitoli 15 e 16 |
 | **Struttura della pagina** | ordine e visibilità delle sezioni: il Navigatore — capitolo 12 |
 | **Canale, contatti e immagini** | canale Twitch, email, numeri del canale, immagini del sito |
+| **Manutenzione** | mette il sito in pausa con la pagina di manutenzione (e Pollo Run) |
+| **Meteora col polletto** | il bottone **LANCIA METEORA** e il timer automatico |
+| **Sondaggi** | crea un sondaggio e guarda i risultati |
 | **Google e social** | come appare il sito nelle ricerche e nei link condivisi |
 | **Immagini** | la libreria: carica e gestisci i file — capitolo 8 |
 | **Copie di sicurezza** | torna a com'era il sito prima di una pubblicazione — capitolo 23 |
@@ -1039,6 +1042,41 @@ icona della linguetta.
 
 L'email che si vede in *Dove mi trovi* non si clicca nell'anteprima: si cambia da
 qui.
+
+### Meteora col polletto
+
+Il polletto che attraversa la home come una stella cadente. Chi lo clicca al volo
+lo fa esplodere: pioggia di polletti su tutto lo schermo e un suono a caso.
+
+- **LANCIA METEORA** — la fa partire adesso, per chi è sulla home in quel momento:
+  arriva entro 15 secondi. **Non serve pubblicare.** Premuto due volte di fila
+  vale un lancio solo; chi apre il sito più tardi non la rivede.
+- **Timer automatico** — **spento di base**, così la sorpresa la fai tu durante la
+  live. Acceso (poi Salva e Pubblica), ogni visitatore della home la vede passare
+  da sola in un momento a caso fra *al più presto dopo* e *al più tardi dopo*
+  (minuti), e poi di nuovo, finché la pagina resta aperta.
+- Le icone sono quelle della cartella `icone_slayer/` sul server, i suoni quelli
+  di `suoni_meteora/`: per aggiungerne uno lo carichi lì da Plesk e premi
+  **Pubblica**, che rilegge le due cartelle.
+
+Se premendo il bottone il pannello risponde che il server non ha ancora questa
+funzione, è stato caricato il codice nuovo senza **Restart App** in Plesk.
+
+### Il pollo di «Chi sono» e Pollo Run
+
+Non hanno una voce loro, ma è bene sapere come si comportano.
+
+- **Il ritratto di «Chi sono»**: ogni clic mostra una frase e l'iconcina del
+  polletto sopra la testa; **5 clic e una pausa** aprono una gif dell'elenco
+  «GIF — ogni tot clic» (il numero si cambia con *GIF … ogni quanti clic*); chi
+  **martella** (10 clic in 3 secondi) lo congela per 4 secondi e fa schizzare
+  intorno tutte le icone. Gli elenchi «GIF — quando si clicca troppo veloce» per
+  ora non vengono usati.
+- **Pollo Run**, nella pagina di manutenzione: parte **solo con la barra
+  spaziatrice**; un clic sulla pagina fa partire la musica d'attesa. Durante la
+  partita suona `mp3/DJVI - Back On Track.mp3`, poi torna l'ascensore. La musica
+  prova a partire da sola all'apertura: se il browser lo blocca, parte al primo
+  clic o tasto.
 
 ### Google e social
 

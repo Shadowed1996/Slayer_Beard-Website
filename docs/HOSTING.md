@@ -108,6 +108,9 @@ Alla fine, dentro `httpdocs`, ci devono essere:
 |---|---|
 | `index.html` | la pagina del sito, già generata |
 | `css/` `js/` `img/` | stili, script e immagini fisse |
+| `icone_slayer/` | le icone del polletto per il ritratto e la meteora |
+| `suoni_meteora/` | i suoni della meteora: si caricano da Plesk, non sono nell'archivio |
+| `mp3/` | le tracce del lettore e della manutenzione (ascensore, DJVI): si caricano da Plesk |
 | `contenuti/` | i testi e la configurazione, più `media/` (la libreria delle immagini) e `font/` |
 | `modelli/` | la struttura da cui nasce `index.html` |
 | `pannello/` | il pannello di modifica |

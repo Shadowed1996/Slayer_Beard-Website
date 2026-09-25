@@ -15,6 +15,34 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Pollo Run nella pagina di manutenzione.** Il pollo che camminava in fondo
+  alla pagina ora è un mini-gioco synthwave su `<canvas>`: sole a righe,
+  montagne al neon, griglia in prospettiva. Il pollo aspetta fermo a sinistra e
+  parte **solo con la barra spaziatrice**; in corsa si salta con Spazio, freccia
+  su o clic, ESC per uscire. Punte e blocchi al neon, velocità che cresce, record
+  nel browser (`localStorage`). Durante la partita la musica dell'ascensore si
+  ferma e suona `mp3/DJVI - Back On Track.mp3`; al ritorno riparte l'ascensore.
+  Tutto sta in `modelli/manutenzione-conto.js`, quindi l'impronta CSP si
+  aggiorna da sola a ogni pubblicazione.
+- **Il ritratto di «Chi sono» fa festa.** Ogni clic, oltre alla frase, fa uscire
+  sopra la testa l'iconcina `icone_slayer/1-anno-72x72.webp`. Cinque clic e una
+  pausa aprono la gif come prima. Chi martella (10 clic in 3 secondi) congela il
+  ritratto per 4 secondi — patina di ghiaccio, brina negli angoli — e fa schizzare
+  intorno tutte le icone di `icone_slayer/`, senza gif. È il vecchio «blocco»
+  dei clic veloci, diventato un effetto voluto. Gli elenchi «GIF — quando si
+  clicca troppo veloce» restano nel pannello ma non sono più usati.
+- **La meteora col polletto (solo home).** Il polletto attraversa lo schermo come
+  una stella cadente, con scia e scintille; chi lo prende al volo lo fa esplodere
+  in una pioggia di polletti e coriandoli, con un suono a caso della cartella
+  `suoni_meteora/`. Nel pannello, menu ☰ → «Meteora col polletto»:
+  **LANCIA METEORA** la fa passare subito a chi è sul sito (entro 15 secondi,
+  senza pubblicare) e il **timer automatico**, spento di base, la manda da sola fra
+  un minimo e un massimo di minuti. Il lancio passa da `POST /api/meteora/lancia`
+  (con sessione) e finisce in `server/dati/meteora.json`; le pagine lo leggono da
+  `GET /api/meteora`, pubblica. Icone e suoni si rileggono dalle cartelle a ogni
+  pubblicazione.
+- Il server e `.htaccess` conoscono anche `.wav`, `.ogg` e `.m4a`.
+
 - **L'icona del lettore di musica si sceglie dal pannello.** Il bottone tondo
   in basso a destra — quello che riapre il lettore quando è ridotto — di serie
   porta il disegno delle note. Con `config.musica.icona` ci si carica
