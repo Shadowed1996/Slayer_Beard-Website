@@ -101,7 +101,7 @@
     if (festa.fermo && festa.fermo()) { return false; }
     const largo = window.innerWidth;
     const alto = window.innerHeight;
-    const lato = Math.round(Math.max(64, Math.min(104, largo * 0.07)));
+    const lato = Math.round(Math.max(110, Math.min(190, largo * 0.1)));
     const via = traiettoria(largo, alto, lato);
     const durata = caso(3800, 5000);
 

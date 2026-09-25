@@ -485,13 +485,14 @@ const gruppi = [
         aiuto: 'Ogni tot clic sul ritratto si apre a sorpresa una GIF dell\'elenco «insistenza» qui sotto. 0 = mai.' },
       { chiave: 'config.chi.gifRaffica', etichetta: 'GIF — quando si clicca troppo veloce', tipo: 'elenco', etichettaVoce: 'scritta',
         facoltativo: true, predefinito: GIF_RAFFICA,
-        aiuto: 'Chi clicca a raffica il ritratto (6 clic in 2 secondi) si becca una di queste GIF a tutto schermo, con la sua scritta sopra. Le GIF si caricano da «Immagini» (massimo 4 MB): tienile brevi, sotto i 2 MB si aprono subito.',
+        aiuto: 'Per ora NON vengono usate: chi clicca a raffica il ritratto (6 clic in 2 secondi) lo fa congelare e schizzare intorno i polletti, senza GIF. L\'elenco resta qui nel caso la si voglia rimettere.',
         campi: [
           { chiave: 'immagine', etichetta: 'GIF', tipo: 'immagine' },
           { chiave: 'scritta', etichetta: 'Scritta sulla GIF', tipo: 'testo', max: 80, facoltativo: true, predefinito: '',
             aiuto: 'Vuota: ne pesca una da «Scritte di riserva» qui sotto.' }
         ] },
       { chiave: 'config.chi.scritteRaffica', etichetta: 'Scritte di riserva — clic troppo veloci', tipo: 'elencoTesti',
+        aiuto: 'Per ora non vengono usate, come le GIF qui sopra.',
         facoltativo: true, predefinito: ['VUOI ROMPERE IL MOUSE?', 'HAI ROTTO.', 'PIANO, IL TASTO SINISTRO HA UNA FAMIGLIA', 'CALMA, SONO UN POLLO, NON UN PUNCHING BALL'] },
       { chiave: 'config.chi.gifInsistenza', etichetta: 'GIF — ogni tot clic', tipo: 'elenco', etichettaVoce: 'scritta',
         facoltativo: true, predefinito: GIF_INSISTENZA,

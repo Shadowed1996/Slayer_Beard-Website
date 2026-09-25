@@ -660,7 +660,6 @@
     let timerInsistenza = null;
     let timerGelo = null;
     let timerDisgelo = null;
-    let timerGifGelo = null;
     const popup = { nodo: null, img: null, scritta: null, chiudi: null, timer: null, aperto: false };
 
     function categoriaGif(nome) {
@@ -775,7 +774,7 @@
       tempi.push(ora);
       tempi = tempi.filter(function (t) { return ora - t <= RAFFICA_FINESTRA; });
 
-      if (tempi.length >= RAFFICA_CLIC && (raffica.gif.length || conIcone)) {
+      if (tempi.length >= RAFFICA_CLIC) {
         tempi = [];
         conta = 0;
         soglia = gifOgni;
@@ -783,8 +782,6 @@
         clearTimeout(timerInsistenza);
         clearTimeout(spegni);
         congela();
-        clearTimeout(timerGifGelo);
-        timerGifGelo = setTimeout(function () { apriGif(raffica); }, conIcone ? 450 : 0);
         return true;
       }
 
