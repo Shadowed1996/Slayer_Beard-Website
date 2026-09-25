@@ -485,6 +485,10 @@
     }
   }
 
+  function annuncia(attivo) {
+    try { document.dispatchEvent(new CustomEvent('sb:gioco', { detail: { attivo: attivo } })); } catch (e) { }
+  }
+
   function inizia() {
     stato = 'corsa';
     avanzato = 0;
@@ -501,6 +505,7 @@
     prenotato = 0;
     nuovoRecord = false;
     corpo.classList.add('is-gioca');
+    annuncia(true);
     chiedi();
   }
 
@@ -512,6 +517,7 @@
     aTerra = true;
     giro = 0;
     corpo.classList.remove('is-gioca');
+    annuncia(false);
     chiedi();
   }
 
@@ -679,38 +685,67 @@
   window.addEventListener('pageshow', controlla);
 
   var audio = document.getElementById('mnt-audio');
+  var brano = document.getElementById('mnt-audio-gioco');
   var tasto = document.getElementById('mnt-musica');
   if (audio && tasto) {
     var CHIAVE_MUSICA = 'sb-manutenzione-musica';
     var spenta = false;
+    var corrente = audio;
+    var branoRotto = !brano;
     try { spenta = sessionStorage.getItem(CHIAVE_MUSICA) === 'no'; } catch (e) { }
     audio.volume = 0.2;
+    if (brano) { brano.volume = 0.3; }
     var segna = function () {
-      var suona = !audio.paused;
+      var suona = !corrente.paused;
       tasto.classList.toggle('is-suona', suona);
       tasto.setAttribute('aria-pressed', suona ? 'true' : 'false');
       tasto.setAttribute('aria-label', suona ? 'Ferma la musica d’attesa' : 'Fai partire la musica d’attesa');
     };
     var parti = function () {
-      var promessa = audio.play();
+      var promessa = corrente.play();
       if (promessa && typeof promessa.catch === 'function') { promessa.catch(function () { }); }
+    };
+    var smetti = function () {
+      document.removeEventListener('pointerdown', alPrimoGesto, true);
+      document.removeEventListener('keydown', alPrimoGesto, true);
     };
     var alPrimoGesto = function (evento) {
       if (evento && tasto.contains(evento.target)) { return; }
-      document.removeEventListener('pointerdown', alPrimoGesto, true);
-      document.removeEventListener('keydown', alPrimoGesto, true);
-      if (!spenta && audio.paused) { parti(); }
+      smetti();
+      if (!spenta && corrente.paused) { parti(); }
+    };
+    var passaA = function (nuovo) {
+      if (nuovo === corrente) { return; }
+      var vecchio = corrente;
+      corrente = nuovo;
+      vecchio.pause();
+      if (nuovo === brano) { try { brano.currentTime = 0; } catch (e) { } }
+      if (!spenta) { parti(); }
+      segna();
     };
     tasto.addEventListener('click', function () {
-      document.removeEventListener('pointerdown', alPrimoGesto, true);
-      document.removeEventListener('keydown', alPrimoGesto, true);
-      spenta = !audio.paused;
-      if (spenta) { audio.pause(); } else { parti(); }
+      smetti();
+      spenta = !corrente.paused;
+      if (spenta) { corrente.pause(); } else { parti(); }
       try { sessionStorage.setItem(CHIAVE_MUSICA, spenta ? 'no' : 'si'); } catch (e) { }
+    });
+    document.addEventListener('sb:gioco', function (evento) {
+      var attivo = !!(evento.detail && evento.detail.attivo);
+      if (attivo) { smetti(); }
+      if (attivo && branoRotto) { if (!spenta && audio.paused) { parti(); } return; }
+      passaA(attivo ? brano : audio);
     });
     audio.addEventListener('play', segna);
     audio.addEventListener('pause', segna);
     audio.addEventListener('error', function () { tasto.hidden = true; });
+    if (brano) {
+      brano.addEventListener('play', segna);
+      brano.addEventListener('pause', segna);
+      brano.addEventListener('error', function () {
+        branoRotto = true;
+        if (corrente === brano) { passaA(audio); }
+      });
+    }
     if (!spenta) {
       document.addEventListener('pointerdown', alPrimoGesto, true);
       document.addEventListener('keydown', alPrimoGesto, true);
