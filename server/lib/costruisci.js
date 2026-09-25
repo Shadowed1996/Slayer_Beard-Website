@@ -1390,6 +1390,9 @@ function contestoManutenzione(contenuti, adesso, cache) {
     .map((frase) => frase.trim());
   const nastro = '&nbsp;★ ' + (frasi.length ? frasi : schema.campo('config.manutenzione.nastro').predefinito)
     .map((frase) => modello.proteggi(frase)).join(' &nbsp;·&nbsp; ') + ' &nbsp;';
+  const scherno = (Array.isArray(ramo.scherno) ? ramo.scherno : [])
+    .filter((frase) => typeof frase === 'string' && frase.trim())
+    .map((frase) => frase.trim().slice(0, 80));
 
   return {
     stato: testoDi('manutenzione.stato'),
@@ -1404,6 +1407,7 @@ function contestoManutenzione(contenuti, adesso, cache) {
     messaggio: testoricco.sanifica(testoDi('manutenzione.messaggio')),
     avatar: String(immagini.avatar || ''),
     mascotte: String(immagini.mascotte || ''),
+    frasiPollo: JSON.stringify(scherno.length ? scherno : schema.campo('config.manutenzione.scherno').predefinito),
     og: String(immagini.og || ''),
     favicon: String(immagini.favicon || ''),
     fontUrl: tema.urlGoogleFonts(config.tema, []),

@@ -4880,6 +4880,19 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       esigiDentro(html, '&nbsp;★ Prima &lt;b&gt;frase&lt;/b&gt; &nbsp;·&nbsp; Seconda &amp; ultima &nbsp;', 'nastro');
     });
 
+    await prova('le frasi di scherno di Pollo Run arrivano al gioco come JSON protetto', () => {
+      const lunga = 'x'.repeat(100);
+      const scritte = pagina(accesa({ scherno: ['Ti senti "forte"? <b>', '  ', 'L\'oro & basta', lunga] }));
+      esigiDentro(scritte, 'data-frasi="[&quot;Ti senti \\&quot;forte\\&quot;? &lt;b&gt;&quot;,&quot;L&#39;oro &amp; basta&quot;,&quot;' +
+        'x'.repeat(80) + '&quot;]"', 'frasi scritte nel pannello');
+      const vuote = pagina(accesa({ scherno: [] }));
+      const trovato = /data-frasi="([^"]*)"/.exec(vuote);
+      esigi(trovato, 'manca data-frasi');
+      const lette = JSON.parse(trovato[1].replace(/&quot;/g, '"').replace(/&#39;/g, '\'').replace(/&amp;/g, '&'));
+      esigiUguale(JSON.stringify(lette), JSON.stringify(schema.campo('config.manutenzione.scherno').predefinito), 'frasi predefinite');
+      esigiDentro(lette[0], 'coglione d\'oro', 'prima frase predefinita');
+    });
+
     await prova('i social vengono da config.social, senza Twitch e senza le voci vuote', () => {
       const d = documento((x) => {
         accesa()(x);

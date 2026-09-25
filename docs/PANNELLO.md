@@ -1076,7 +1076,11 @@ Non hanno una voce loro, ma è bene sapere come si comportano.
   spaziatrice**; un clic sulla pagina fa partire la musica d'attesa. Durante la
   partita suona `mp3/DJVI - Back On Track.mp3`, poi torna l'ascensore. La musica
   prova a partire da sola all'apertura: se il browser lo blocca, parte al primo
-  clic o tasto.
+  clic o tasto. Più si va avanti più diventa difficile: a 100, 250, 500, 750,
+  1000, 1500, 2000… punti sale di livello e compare una frase di scherno. Le
+  frasi si scrivono in **Manutenzione → Pollo Run — frasi di scherno** (una per
+  riga, corte); lasciato vuoto usa quelle predefinite. Ricordati **Salva** e
+  **Pubblica**.
 
 ### Google e social
 

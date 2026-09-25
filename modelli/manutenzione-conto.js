@@ -12,8 +12,13 @@
   var V0 = 10;
   var ARIA = 2 * V0 / G;
   var V_INIZIO = 6.5;
-  var V_MAX = 15;
+  var V_CROCIERA = 15;
+  var V_PER_LIVELLO = 1;
   var SPINTA = 0.15;
+  var SPINTA_LENTA = 0.06;
+  var MARGINE = 0.12;
+  var SOGLIE = [100, 250, 500, 750, 1000, 1500, 2000, 2500, 3000];
+  var DURATA_BEFFA = 2.8;
   var PROPORZIONE = 386 / 556;
 
   var stile = getComputedStyle(document.documentElement);
@@ -38,6 +43,17 @@
   pollo.onload = function () { polloPronto = true; disegna(); };
   pollo.src = tela.getAttribute('data-pollo') || '';
 
+  var frasi = [];
+  try {
+    var lette = JSON.parse(tela.getAttribute('data-frasi') || '[]');
+    if (Array.isArray(lette)) {
+      for (var f = 0; f < lette.length; f++) {
+        if (typeof lette[f] === 'string' && lette[f].trim()) { frasi.push(lette[f].trim()); }
+      }
+    }
+  } catch (e) { frasi = []; }
+  var mazzo = [], ultimaFrase = '';
+
   var record = 0;
   try { record = parseInt(localStorage.getItem(CHIAVE_RECORD), 10) || 0; } catch (e) { record = 0; }
 
@@ -47,6 +63,7 @@
   var y = 0, vy = 0, aTerra = true, giro = 0, prenotato = 0, scia = 0;
   var ostacoli = [], scintille = [], prossimo = 0, lampo = 0, scossa = 0, fineDa = 0, nuovoRecord = false;
   var ultimo = 0, acceso = false;
+  var livello = 0, beffa = null;
 
   function casuale(seme) {
     return function () {
@@ -264,12 +281,55 @@
     ctx.globalAlpha = 1;
   }
 
+  function rombo(cx, cy, largo, alto, colore) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - alto / 2);
+    ctx.lineTo(cx + largo / 2, cy);
+    ctx.lineTo(cx, cy + alto / 2);
+    ctx.lineTo(cx - largo / 2, cy);
+    ctx.closePath();
+    ctx.fillStyle = C.fondo;
+    ctx.fill();
+    ctx.strokeStyle = colore;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = colore;
+    ctx.shadowBlur = 14;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    var battito = fermo ? 0.5 : 0.5 + 0.5 * Math.sin(t * 10);
+    ctx.globalAlpha = 0.35 + 0.4 * battito;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - alto * 0.24);
+    ctx.lineTo(cx + largo * 0.24, cy);
+    ctx.lineTo(cx, cy + alto * 0.24);
+    ctx.lineTo(cx - largo * 0.24, cy);
+    ctx.closePath();
+    ctx.fillStyle = colore;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  function volante(o) {
+    var cy = suolo - o.alto - o.h / 2;
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(o.x + o.w / 2, suolo, o.w * 0.3, U * 0.04, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    rombo(o.x + o.w / 2, cy, o.w, o.h, C.magenta);
+  }
+
   function disegnaOstacoli() {
     ctx.save();
     for (var i = 0; i < ostacoli.length; i++) {
       var o = ostacoli[i];
       if (o.tipo === 'punta') { punta(o.x, suolo, o.w, o.h, C.ciano); }
       if (o.tipo === 'doppia') { punta(o.x, suolo, o.w / 2, o.h, C.ciano); punta(o.x + o.w / 2, suolo, o.w / 2, o.h, C.ciano); }
+      if (o.tipo === 'tripla') {
+        for (var p = 0; p < 3; p++) { punta(o.x + o.w * p / 3, suolo, o.w / 3, p === 1 ? o.h * 1.15 : o.h, p === 1 ? C.magenta : C.ciano); }
+      }
+      if (o.tipo === 'volante') { volante(o); }
       if (o.tipo === 'blocco') { blocco(o.x, suolo - o.h, o.w, o.h, C.allerta); }
       if (o.tipo === 'alto') {
         var corpoAlto = o.h - U * 0.4;
@@ -363,6 +423,60 @@
     ctx.restore();
   }
 
+  function impagina(testo, fsLivello) {
+    var massimo = Math.max(18, U * 0.45);
+    var largo = Math.max(60, W - 32);
+    var righe = testo ? [testo] : [];
+    ctx.font = '700 ' + Math.round(massimo) + 'px ' + TITOLO;
+    if (testo && ctx.measureText(testo).width > largo) {
+      var meta = testo.length / 2;
+      var taglio = -1;
+      for (var i = 1; i < testo.length - 1; i++) {
+        if (testo.charAt(i) === ' ' && (taglio < 0 || Math.abs(i - meta) < Math.abs(taglio - meta))) { taglio = i; }
+      }
+      if (taglio > 0) { righe = [testo.slice(0, taglio), testo.slice(taglio + 1)]; }
+    }
+    var piuLarga = 1;
+    for (var r = 0; r < righe.length; r++) { piuLarga = Math.max(piuLarga, ctx.measureText(righe[r]).width); }
+    var dimensione = massimo * Math.min(1, largo / piuLarga);
+    var spazio = orizzonte - 14 - fsLivello * 1.4;
+    if (righe.length) { dimensione = Math.min(dimensione, spazio / (righe.length * 1.1)); }
+    return { righe: righe, dimensione: Math.max(11, dimensione) };
+  }
+
+  function disegnaBeffa(fs) {
+    var eta = DURATA_BEFFA - beffa.vita;
+    var fsLivello = fs * 0.95;
+    if (!beffa.pagina || beffa.W !== W || beffa.U !== U) {
+      beffa.pagina = impagina(beffa.testo, fsLivello);
+      beffa.W = W;
+      beffa.U = U;
+    }
+    var righe = beffa.pagina.righe;
+    var dim = beffa.pagina.dimensione;
+    var alto = fsLivello * 1.4 + righe.length * dim * 1.1;
+    var cima = Math.max(10, (orizzonte - alto) / 2);
+    var zoom = fermo ? 1 : 1 + 0.3 * Math.max(0, 1 - eta / 0.22);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, eta / 0.12, beffa.vita / 0.5));
+    ctx.translate(W / 2, cima + alto / 2);
+    ctx.scale(zoom, zoom);
+    ctx.translate(0, -alto / 2);
+    ctx.textBaseline = 'top';
+    ctx.shadowColor = C.allerta;
+    ctx.shadowBlur = 10;
+    scritta('LIVELLO ' + (livello + 1), 0, 0, fsLivello, '700', MONO, C.allerta, 'center');
+    ctx.shadowBlur = 0;
+    var scarto = fermo ? 2 : 2 + (Math.random() < 0.12 ? U * 0.05 : 0);
+    for (var r = 0; r < righe.length; r++) {
+      var ry = fsLivello * 1.4 + r * dim * 1.1;
+      scritta(righe[r], -scarto, ry, dim, '700', TITOLO, C.magenta, 'center');
+      scritta(righe[r], scarto, ry, dim, '700', TITOLO, C.ciano, 'center');
+      scritta(righe[r], 0, ry, dim, '700', TITOLO, C.testo, 'center');
+    }
+    ctx.restore();
+  }
+
   function messaggi() {
     var fs = Math.max(11, U * 0.26);
     ctx.save();
@@ -380,6 +494,7 @@
       ctx.globalAlpha = 1 - punti / 20;
       scritta('SPAZIO / ↑ per saltare', W / 2, orizzonte * 0.5, fs, '500', MONO, C.testo, 'center');
     }
+    if (stato === 'corsa' && beffa) { disegnaBeffa(fs); }
     if (stato === 'fine') {
       var gx = W / 2;
       var gy = orizzonte * 0.62;
@@ -427,17 +542,32 @@
     }
   }
 
+  function soglia(n) {
+    return n < SOGLIE.length ? SOGLIE[n] : SOGLIE[SOGLIE.length - 1] + (n - SOGLIE.length + 1) * 1000;
+  }
+
   function crea() {
     var tipi = ['punta', 'punta'];
-    if (punti > 60) { tipi.push('doppia', 'blocco'); }
-    if (punti > 250) { tipi.push('alto', 'doppia'); }
+    if (livello >= 1) { tipi.push('doppia', 'blocco'); }
+    if (livello >= 2) { tipi.push('alto', 'doppia'); }
+    if (livello >= 3) { tipi.push('tripla'); }
+    if (livello >= 4) { tipi.push('volante'); }
+    if (livello >= 6) { tipi.push('tripla', 'alto'); }
+    if (livello >= 8) { tipi.push('volante', 'tripla'); }
     var tipo = tipi[Math.floor(Math.random() * tipi.length)];
     var o = { tipo: tipo, x: W + 10, w: U * 0.56, h: U * 0.62 };
     if (tipo === 'doppia') { o.w = U * 1.1; }
+    if (tipo === 'tripla') { o.w = U * 1.6; }
     if (tipo === 'blocco') { o.w = U * 0.62; o.h = U * 0.62; }
     if (tipo === 'alto') { o.w = U * 0.6; o.h = U * 1.05; }
+    if (tipo === 'volante') { o.w = U * 0.62; o.h = U * 0.55; o.alto = U * 1.2; }
     ostacoli.push(o);
-    prossimo = o.w + velocita * (0.72 + Math.random() * 0.8) + (Math.random() < 0.2 ? velocita * 0.6 : 0);
+    var stretta = Math.pow(0.93, livello);
+    var minimo = velocita * (ARIA + MARGINE);
+    var varco = velocita * (0.72 + Math.random() * 0.8) * stretta + (Math.random() < 0.2 * stretta ? velocita * 0.6 : 0);
+    var raffica = livello >= 5 ? Math.min(0.45, 0.08 * (livello - 4)) : 0;
+    if (Math.random() < raffica) { varco = minimo; }
+    prossimo = o.w + Math.max(minimo, varco);
   }
 
   function sovrapposti(a0, a1, b0, b1, c0, c1, d0, d1) {
@@ -455,6 +585,8 @@
       if (o.x > x1 || o.x + o.w < x0) { continue; }
       if (o.tipo === 'punta' && sovrapposti(x0, x1, y0, y1, o.x + o.w * 0.3, o.x + o.w * 0.7, suolo - o.h * 0.75, suolo)) { return true; }
       if (o.tipo === 'doppia' && sovrapposti(x0, x1, y0, y1, o.x + o.w * 0.15, o.x + o.w * 0.85, suolo - o.h * 0.75, suolo)) { return true; }
+      if (o.tipo === 'tripla' && sovrapposti(x0, x1, y0, y1, o.x + o.w * 0.1, o.x + o.w * 0.9, suolo - o.h * 0.85, suolo)) { return true; }
+      if (o.tipo === 'volante' && sovrapposti(x0, x1, y0, y1, o.x + o.w * 0.2, o.x + o.w * 0.8, suolo - o.alto - o.h * 0.85, suolo - o.alto - o.h * 0.1)) { return true; }
       if (o.tipo === 'blocco' && sovrapposti(x0, x1, y0, y1, o.x + 2, o.x + o.w - 2, suolo - o.h + 2, suolo)) { return true; }
       if (o.tipo === 'alto' && sovrapposti(x0, x1, y0, y1, o.x + 2, o.x + o.w - 2, suolo - o.h + U * 0.15, suolo)) { return true; }
     }
@@ -468,6 +600,7 @@
   function schianto() {
     stato = 'fine';
     fineDa = t;
+    beffa = null;
     lampo = 1;
     scossa = fermo ? 0 : 0.35;
     nuovoRecord = punti > record;
@@ -494,6 +627,8 @@
     punti = 0;
     traguardo = 0;
     bagliore = 0;
+    livello = 0;
+    beffa = null;
     velocita = V_INIZIO * U;
     ostacoli = [];
     prossimo = Math.max(W * 0.55, U * 8);
@@ -511,6 +646,7 @@
   function torna() {
     stato = 'fermo';
     ostacoli = [];
+    beffa = null;
     y = 0;
     vy = 0;
     aTerra = true;
@@ -518,6 +654,31 @@
     corpo.classList.remove('is-gioca');
     annuncia(false);
     chiedi();
+  }
+
+  function pesca() {
+    if (!frasi.length) { return ''; }
+    if (!mazzo.length) {
+      mazzo = frasi.slice();
+      for (var i = mazzo.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tieni = mazzo[i];
+        mazzo[i] = mazzo[j];
+        mazzo[j] = tieni;
+      }
+      if (mazzo.length > 1 && mazzo[mazzo.length - 1] === ultimaFrase) {
+        mazzo.unshift(mazzo.pop());
+      }
+    }
+    ultimaFrase = mazzo.pop();
+    return ultimaFrase;
+  }
+
+  function sali() {
+    var prima = livello;
+    while (punti >= soglia(livello)) { livello++; }
+    if (livello === prima) { return; }
+    beffa = { testo: pesca(), vita: DURATA_BEFFA };
   }
 
   function salta() {
@@ -542,7 +703,9 @@
     bagliore = Math.max(0, bagliore - dt);
     if (stato === 'fermo' && !fermo) { deriva += U * 0.6 * dt; }
     if (stato === 'corsa') {
-      velocita = Math.min(V_MAX * U, velocita + SPINTA * U * dt);
+      var crociera = (V_CROCIERA + V_PER_LIVELLO * livello) * U;
+      var spinta = velocita < V_CROCIERA * U ? SPINTA : SPINTA_LENTA;
+      if (velocita < crociera) { velocita = Math.min(crociera, velocita + spinta * U * dt); }
       var passo = velocita * dt;
       avanzato += passo;
       deriva += passo;
@@ -550,6 +713,11 @@
       if (Math.floor(punti / 100) > traguardo) {
         traguardo = Math.floor(punti / 100);
         bagliore = 0.8;
+      }
+      sali();
+      if (beffa) {
+        beffa.vita -= dt;
+        if (beffa.vita <= 0) { beffa = null; }
       }
       prenotato = Math.max(0, prenotato - dt);
       if (!aTerra) {

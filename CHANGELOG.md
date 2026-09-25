@@ -15,6 +15,16 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Pollo Run diventa sempre più cattivo, e ti prende in giro.** A 100, 250,
+  500, 750, 1000, 1500, 2000, 2500, 3000 punti e poi ogni 1000 si sale di
+  livello: la velocità non ha più tetto, i varchi fra gli ostacoli si stringono
+  (mai sotto il tempo di un salto più un margine, quindi resta superabile) e
+  arrivano ostacoli nuovi — tripla punta, rombo volante che va lasciato passare
+  **senza** saltare, raffiche ravvicinate. A ogni livello compare «LIVELLO N»
+  con una frase di scherno, presa dal nuovo campo del pannello *Pollo Run —
+  frasi di scherno* (`config.manutenzione.scherno`, vuoto = frasi predefinite),
+  a caso e senza ripetersi. Le frasi arrivano al gioco nell'attributo
+  `data-frasi` del canvas, così l'impronta CSP dello script non cambia.
 - **Pollo Run nella pagina di manutenzione.** Il pollo che camminava in fondo
   alla pagina ora è un mini-gioco synthwave su `<canvas>`: sole a righe,
   montagne al neon, griglia in prospettiva. Il pollo aspetta fermo a sinistra e

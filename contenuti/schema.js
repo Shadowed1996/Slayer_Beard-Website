@@ -840,7 +840,11 @@ const gruppi = [
         predefinito: 'Guarda su Twitch' },
       { chiave: 'config.manutenzione.nastro', etichetta: 'Frasi del nastro che scorre in basso', tipo: 'elencoTesti',
         predefinito: ['Lavori in corso', 'La regia si sta rifacendo il look', 'Torniamo presto', 'Intanto: twitch.tv/slayer_beard', 'Il pollo sorveglia il cantiere'],
-        aiuto: 'Scorrono una dopo l\'altra, separate da un puntino.' }
+        aiuto: 'Scorrono una dopo l\'altra, separate da un puntino.' },
+      { chiave: 'config.manutenzione.scherno', etichetta: 'Pollo Run — frasi di scherno', tipo: 'elencoTesti', facoltativo: true,
+        predefinito: ['Bravo, hai ottenuto il coglione d\'oro', 'Ti senti forte?', 'Ti stai divertendo?', 'Samminca',
+          'Il pollo corre meglio di te', 'Ancora vivo? Strano.', 'Ok, adesso si fa sul serio', 'Non hai niente di meglio da fare?'],
+        aiuto: 'Nel gioco della pagina di manutenzione più vai avanti più diventa difficile: a 100, 250, 500, 750, 1000, 1500, 2000… punti sale di livello e compare una di queste frasi, a caso e senza ripetersi. Tienile corte (massimo 80 caratteri). Vuoto: le frasi predefinite.' }
     ]
   },
 
