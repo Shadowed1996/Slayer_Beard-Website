@@ -647,8 +647,8 @@
       s.setProperty('--sx', sx.toFixed(1) + 'px');
     }
 
-    const RAFFICA_CLIC = 6;
-    const RAFFICA_FINESTRA = 2000;
+    const RAFFICA_CLIC = 10;
+    const RAFFICA_FINESTRA = 3000;
     const RAFFICA_PAUSA = 4000;
     const ATTESA_INSISTENZA = 800;
     const DURATA_GIF = 6500;

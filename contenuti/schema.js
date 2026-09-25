@@ -485,7 +485,7 @@ const gruppi = [
         aiuto: 'Ogni tot clic sul ritratto si apre a sorpresa una GIF dell\'elenco «insistenza» qui sotto. 0 = mai.' },
       { chiave: 'config.chi.gifRaffica', etichetta: 'GIF — quando si clicca troppo veloce', tipo: 'elenco', etichettaVoce: 'scritta',
         facoltativo: true, predefinito: GIF_RAFFICA,
-        aiuto: 'Per ora NON vengono usate: chi clicca a raffica il ritratto (6 clic in 2 secondi) lo fa congelare e schizzare intorno i polletti, senza GIF. L\'elenco resta qui nel caso la si voglia rimettere.',
+        aiuto: 'Per ora NON vengono usate: chi clicca a raffica il ritratto (10 clic in 3 secondi) lo fa congelare e schizzare intorno i polletti, senza GIF. L\'elenco resta qui nel caso la si voglia rimettere.',
         campi: [
           { chiave: 'immagine', etichetta: 'GIF', tipo: 'immagine' },
           { chiave: 'scritta', etichetta: 'Scritta sulla GIF', tipo: 'testo', max: 80, facoltativo: true, predefinito: '',
