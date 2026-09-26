@@ -229,6 +229,9 @@
     "giochi.cercaVuoto": "Nessun gioco corrisponde alla ricerca. Prova con un altro nome o togli i filtri."
   },
   "config": {
+    "slayer": {
+      "attivo": true
+    },
     "twitch": {
       "canale": "slayer_beard",
       "idUtente": "47738247",

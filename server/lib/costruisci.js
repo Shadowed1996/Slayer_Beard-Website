@@ -807,6 +807,7 @@ function costruisciContesto(contenuti, opzioni) {
   };
 
   contesto.sito.sponsorInHome = !!(attiva.sponsor && contesto.sponsor.attivo);
+  contesto.sito.slayer = !(config.slayer && config.slayer.attivo === false);
   contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
 
   const presentazioneSponsor = testoricco.soloTesto(testi['sponsor.paginaTesto'] || '');

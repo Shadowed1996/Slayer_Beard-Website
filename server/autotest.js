@@ -1094,7 +1094,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
 
     const soloNostri = script.map((s) => s.src).filter((s) => s.indexOf('js/') === 0);
 
-    const facoltativi = ['js/musica.js', 'js/sponsor.js'];
+    const facoltativi = ['js/slayer.js', 'js/musica.js', 'js/sponsor.js'];
     const fissi = soloNostri.filter((s) => facoltativi.indexOf(s) === -1);
     const coda = soloNostri.slice(fissi.length);
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
@@ -4508,6 +4508,380 @@ async function provePaginaGiochi(contenutiVeri, costruisci, archivio) {
   costruisci.genera();
 }
 
+async function proveSorpresaSlayer(costruisci, archivio) {
+  apriSezione('11e. La sorpresa SLAYER: canzone e polletti per 21 secondi');
+
+  const vm = require('node:vm');
+  const jsSlayer = fs.readFileSync(path.join(RADICE_VERA, 'js', 'slayer.js'), 'utf8');
+  const jsFesta = fs.readFileSync(path.join(RADICE_VERA, 'js', 'festa.js'), 'utf8');
+
+  const nuovoOrologio = () => {
+    let ora = 1000000;
+    let seme = 0;
+    let compiti = [];
+    const aggiungi = (fn, ritardo, ogni) => {
+      const id = ++seme;
+      compiti.push({ id: id, t: ora + Math.max(0, ritardo), fn: fn, ogni: ogni });
+      return id;
+    };
+    const togli = (id) => { compiti = compiti.filter((c) => c.id !== id); };
+    return {
+      adesso: () => ora,
+      setTimeout: (fn, ms) => aggiungi(fn, ms || 0, 0),
+      clearTimeout: togli,
+      setInterval: (fn, ms) => aggiungi(fn, ms, ms),
+      clearInterval: togli,
+      requestAnimationFrame: (fn) => aggiungi(() => fn(ora), 16, 0),
+      avanza(ms) {
+        const fine = ora + ms;
+        for (;;) {
+          const prossimo = compiti.filter((c) => c.t <= fine).sort((a, b) => a.t - b.t || a.id - b.id)[0];
+          if (!prossimo) { break; }
+          ora = prossimo.t;
+          if (prossimo.ogni) { prossimo.t += prossimo.ogni; } else { togli(prossimo.id); }
+          prossimo.fn();
+        }
+        ora = fine;
+      }
+    };
+  };
+
+  const nodoFinto = () => {
+    const n = { style: {}, children: [], parentNode: null, isConnected: true, className: '' };
+    n.setAttribute = () => {};
+    n.appendChild = (c) => { c.parentNode = n; n.children.push(c); return c; };
+    n.removeChild = (c) => {
+      const i = n.children.indexOf(c);
+      if (i >= 0) { n.children.splice(i, 1); }
+      c.parentNode = null;
+      return c;
+    };
+    return n;
+  };
+
+  const montaFesta = (ridotto) => {
+    const orologio = nuovoOrologio();
+    const corpo = nodoFinto();
+    const finestra = {
+      DATI: { meteora: { icona: 'icone_slayer/1-anno-72x72.webp', icone: ['icone_slayer/1-anno-72x72.webp', 'icone_slayer/2-anni-72x72.webp', 'icone_slayer/72-4-anni (1).webp'] } },
+      innerWidth: 1200,
+      innerHeight: 800,
+      matchMedia: () => ({ matches: !!ridotto })
+    };
+    vm.runInNewContext(jsFesta, {
+      window: finestra,
+      document: { createElement: nodoFinto, body: corpo },
+      Date: { now: orologio.adesso },
+      setTimeout: orologio.setTimeout,
+      clearTimeout: orologio.clearTimeout,
+      setInterval: orologio.setInterval,
+      clearInterval: orologio.clearInterval,
+      requestAnimationFrame: orologio.requestAnimationFrame
+    });
+    const particelle = () => (corpo.children[0] ? corpo.children[0].children.filter((c) => c.className !== 'festa__lampo').length : 0);
+    return { orologio: orologio, festa: finestra.PolloFesta, particelle: particelle };
+  };
+
+  await prova('festa.js: il coro dei polletti dura 21 secondi, poi la pagina e pulita, anche se nessuno lo ferma', () => {
+    const f = montaFesta(false);
+    esigi(typeof f.festa.coro === 'function' && typeof f.festa.svuota === 'function', 'PolloFesta non ha coro e svuota');
+    f.festa.coro(21);
+    f.orologio.avanza(1000);
+    esigi(f.particelle() > 10, 'dopo un secondo i polletti sono troppo pochi: ' + f.particelle());
+    f.orologio.avanza(9000);
+    const mezzo = f.particelle();
+    esigi(mezzo > 30 && mezzo <= 280, 'a meta ci sono ' + mezzo + ' pezzi: troppo pochi, o piu del tetto');
+    f.orologio.avanza(10000);
+    esigi(f.particelle() > 0, 'a 20 secondi non c e piu niente: il coro e finito troppo presto');
+    f.orologio.avanza(1300);
+    esigiUguale(f.particelle(), 0, 'a 21,3 secondi restano dei pezzi in pagina');
+    f.orologio.avanza(5000);
+    esigiUguale(f.particelle(), 0, 'dopo la fine ne nascono ancora');
+  });
+
+  await prova('festa.js: fermare il coro toglie tutto subito e non ne nascono altri', () => {
+    const f = montaFesta(false);
+    const coro = f.festa.coro(21);
+    f.orologio.avanza(6000);
+    esigi(f.particelle() > 0, 'a 6 secondi non c e niente da fermare');
+    coro.ferma();
+    esigiUguale(f.particelle(), 0, 'fermato, ma restano dei pezzi');
+    f.orologio.avanza(4000);
+    esigiUguale(f.particelle(), 0, 'fermato, ma ne nascono ancora');
+  });
+
+  await prova('festa.js: con il movimento ridotto i polletti non cadono ma compaiono e si spengono, per 21 secondi', () => {
+    const f = montaFesta(true);
+    f.festa.coro(21);
+    f.orologio.avanza(3000);
+    esigi(f.particelle() > 0, 'con il movimento ridotto non compare niente');
+    f.orologio.avanza(17000);
+    esigi(f.particelle() > 0, 'a 20 secondi non c e piu niente');
+    f.orologio.avanza(1500);
+    esigiUguale(f.particelle(), 0, 'a 21,5 secondi restano dei pezzi');
+  });
+
+  const monta = (opzioni) => {
+    const o = Object.assign({ musicaSuona: false, festa: true, rifiutata: false, festaInPagina: false }, opzioni || {});
+    const orologio = nuovoOrologio();
+    const registro = { coro: [], coroFermato: 0, play: 0, pause: 0, musicaFerma: 0, musicaParti: 0, audio: [], appesi: [] };
+    const classi = new Set();
+    const ascoltatori = {};
+    const finestra = { addEventListener: (tipo, fn) => { ascoltatori['w:' + tipo] = fn; } };
+    const creaCoro = (s) => {
+      registro.coro.push(s);
+      return { ferma: () => { registro.coroFermato++; } };
+    };
+    if (o.festa) { finestra.PolloFesta = { coro: creaCoro }; }
+    if (o.musicaSuona !== null) {
+      finestra.Musica = {
+        suStato: (fn) => fn({ suona: o.musicaSuona }),
+        ferma: () => { registro.musicaFerma++; },
+        parti: () => { registro.musicaParti++; }
+      };
+    }
+    function Audio(src) {
+      const a = {
+        src: src,
+        currentTime: 0,
+        volume: 1,
+        preload: '',
+        play() { registro.play++; return o.rifiutata ? Promise.reject(new Error('rifiutata')) : Promise.resolve(); },
+        pause() { registro.pause++; }
+      };
+      registro.audio.push(a);
+      return a;
+    }
+    const documento = {
+      addEventListener: (tipo, fn) => { ascoltatori[tipo] = fn; },
+      documentElement: { classList: { add: (c) => classi.add(c), remove: (c) => classi.delete(c), contains: (c) => classi.has(c) } },
+      head: { appendChild: (n) => { registro.appesi.push(n); } },
+      createElement: (tag) => ({ tag: tag }),
+      querySelector: (s) => (o.festaInPagina && s === 'script[src="js/festa.js"]' ? {} : null)
+    };
+    vm.runInNewContext(jsSlayer, {
+      window: finestra,
+      document: documento,
+      Audio: Audio,
+      Date: { now: orologio.adesso },
+      setTimeout: orologio.setTimeout,
+      clearTimeout: orologio.clearTimeout,
+      setInterval: orologio.setInterval,
+      clearInterval: orologio.clearInterval
+    });
+    const tasto = (key, extra) => ascoltatori.keydown(Object.assign({
+      key: key, target: { tagName: 'BODY', nodeType: 1 }, ctrlKey: false, altKey: false, metaKey: false, repeat: false, isComposing: false, defaultPrevented: false
+    }, extra || {}));
+    const scrivi = (testo, extra, pausa) => {
+      for (const c of testo) {
+        tasto(c, extra);
+        orologio.avanza(pausa === undefined ? 120 : pausa);
+      }
+    };
+    return { orologio: orologio, registro: registro, classi: classi, finestra: finestra, tasto: tasto, scrivi: scrivi, ascoltatori: ascoltatori };
+  };
+
+  await prova('slayer.js: scrivendo SLAYER parte la canzone col coro di 21 secondi, e a 21 secondi finisce tutto', () => {
+    const p = monta();
+    p.scrivi('slayer');
+    esigiUguale(p.registro.coro.join(','), '21', 'il coro deve partire una volta sola, per 21 secondi');
+    esigiUguale(p.registro.audio.length, 1, 'un solo audio');
+    esigiUguale(p.registro.audio[0].src, 'mp3/J%20(mp3cut.net).mp3', 'la canzone');
+    esigiUguale(p.registro.play, 1, 'la canzone non parte');
+    esigi(p.classi.has('slayer-festa'), 'manca la classe sulla pagina');
+    esigiUguale(p.finestra.PolloSlayer.durata, 21000, 'la durata');
+    p.orologio.avanza(20000);
+    esigi(p.classi.has('slayer-festa') && p.finestra.PolloSlayer.inCorso(), 'e finita prima dei 21 secondi');
+    esigiUguale(p.registro.coroFermato, 0, 'il coro e stato fermato prima dei 21 secondi');
+    p.orologio.avanza(1000);
+    esigi(!p.classi.has('slayer-festa') && !p.finestra.PolloSlayer.inCorso(), 'non e finita ai 21 secondi');
+    esigiUguale(p.registro.coroFermato, 1, 'il coro non e stato fermato');
+    esigi(p.registro.pause >= 1, 'la canzone non e stata fermata');
+    esigiUguale(p.registro.audio[0].currentTime, 0, 'la canzone non e tornata all inizio');
+    esigiUguale(p.registro.audio[0].volume, 0.9, 'il volume non e tornato a posto dopo la dissolvenza');
+    p.scrivi('slayer');
+    esigiUguale(p.registro.coro.length, 2, 'finita, si puo far ripartire');
+  });
+
+  await prova('slayer.js: minuscolo, maiuscolo, misto e con il blocco maiuscole', () => {
+    const maiuscolo = monta();
+    for (const c of 'SLAYER') { maiuscolo.tasto('Shift'); maiuscolo.tasto(c); maiuscolo.orologio.avanza(100); }
+    esigiUguale(maiuscolo.registro.coro.length, 1, 'SLAYER con Shift');
+    const misto = monta();
+    for (const c of 'SlAyEr') { if (c === c.toUpperCase()) { misto.tasto('Shift'); } misto.tasto(c); misto.orologio.avanza(100); }
+    esigiUguale(misto.registro.coro.length, 1, 'SlAyEr');
+    const blocco = monta();
+    blocco.tasto('CapsLock');
+    blocco.scrivi('SLAYER');
+    esigiUguale(blocco.registro.coro.length, 1, 'SLAYER con il blocco maiuscole');
+    const dentro = monta();
+    dentro.scrivi('ciao slayer ciao');
+    esigiUguale(dentro.registro.coro.length, 1, 'la parola dentro una frase');
+  });
+
+  await prova('slayer.js: non parte scrivendo in un campo, tenendo premuto Ctrl, con i tasti che si ripetono, con pause lunghe o con altre lettere in mezzo', () => {
+    const campo = monta();
+    campo.scrivi('slayer', { target: { tagName: 'INPUT', nodeType: 1 } });
+    campo.scrivi('slayer', { target: { tagName: 'TEXTAREA', nodeType: 1 } });
+    campo.scrivi('slayer', { target: { tagName: 'DIV', nodeType: 1, isContentEditable: true } });
+    esigiUguale(campo.registro.coro.length, 0, 'e partito scrivendo in un campo di testo');
+
+    const ctrl = monta();
+    ctrl.scrivi('slaye');
+    ctrl.tasto('r', { ctrlKey: true });
+    esigiUguale(ctrl.registro.coro.length, 0, 'e partito con Ctrl');
+
+    const ripetuti = monta();
+    ripetuti.scrivi('slayer', { repeat: true });
+    esigiUguale(ripetuti.registro.coro.length, 0, 'e partito coi tasti che si ripetono');
+
+    const lento = monta();
+    lento.scrivi('slay');
+    lento.orologio.avanza(2500);
+    lento.scrivi('er');
+    esigiUguale(lento.registro.coro.length, 0, 'e partito dopo una pausa lunga');
+
+    const spezzato = monta();
+    spezzato.scrivi('slaxyer');
+    esigiUguale(spezzato.registro.coro.length, 0, 'e partito con una lettera in mezzo');
+
+    const cancella = monta();
+    cancella.scrivi('sla');
+    cancella.tasto('Backspace');
+    cancella.scrivi('yer');
+    esigiUguale(cancella.registro.coro.length, 0, 'e partito dopo un Backspace');
+
+    const vicino = monta();
+    vicino.scrivi('slayerr slaye');
+    esigiUguale(vicino.registro.coro.length, 1, 'slayerr conta una volta sola, slaye niente');
+  });
+
+  await prova('slayer.js: durante la sorpresa non riparte, e Esc la ferma subito', () => {
+    const p = monta();
+    p.scrivi('slayer');
+    p.orologio.avanza(2000);
+    p.scrivi('slayer');
+    esigiUguale(p.registro.coro.length, 1, 'e ripartita mentre era in corso');
+    p.tasto('Escape');
+    esigi(!p.finestra.PolloSlayer.inCorso() && !p.classi.has('slayer-festa'), 'Esc non ferma');
+    esigiUguale(p.registro.coroFermato, 1, 'Esc non ferma il coro');
+    p.orologio.avanza(40000);
+    esigiUguale(p.registro.coroFermato, 1, 'dopo Esc il coro viene fermato una seconda volta');
+  });
+
+  await prova('slayer.js: il lettore di sottofondo del sito si mette in pausa e riparte dopo, solo se suonava', () => {
+    const suonava = monta({ musicaSuona: true });
+    suonava.scrivi('slayer');
+    esigiUguale(suonava.registro.musicaFerma, 1, 'la musica del sito non e stata fermata');
+    esigiUguale(suonava.registro.musicaParti, 0, 'la musica riparte troppo presto');
+    suonava.orologio.avanza(21000);
+    esigiUguale(suonava.registro.musicaParti, 1, 'la musica del sito non riparte');
+
+    const zitta = monta({ musicaSuona: false });
+    zitta.scrivi('slayer');
+    zitta.orologio.avanza(21000);
+    esigiUguale(zitta.registro.musicaFerma + zitta.registro.musicaParti, 0, 'ha toccato una musica che non suonava');
+
+    const senza = monta({ musicaSuona: null });
+    senza.scrivi('slayer');
+    senza.orologio.avanza(21000);
+    esigiUguale(senza.registro.coro.length, 1, 'senza lettore la sorpresa non parte');
+  });
+
+  await prova('slayer.js: se il browser rifiuta la canzone i polletti partono lo stesso', () => {
+    const p = monta({ rifiutata: true });
+    p.scrivi('slayer');
+    esigiUguale(p.registro.coro.length, 1, 'i polletti non partono senza canzone');
+    p.orologio.avanza(21000);
+    esigi(!p.finestra.PolloSlayer.inCorso(), 'non finisce');
+  });
+
+  await prova('slayer.js: nelle pagine senza polletti carica da solo dati, stile e festa, e solo alla prima volta', () => {
+    const p = monta({ festa: false });
+    p.scrivi('slayer');
+    const stile = p.registro.appesi.find((n) => n.tag === 'link');
+    const dati = p.registro.appesi.find((n) => n.tag === 'script' && n.src === 'js/dati.js');
+    esigi(stile && stile.href === 'css/festa.css', 'lo stile dei polletti non viene caricato');
+    esigi(dati !== undefined, 'js/dati.js non viene caricato');
+    esigi(!p.registro.appesi.some((n) => n.src === 'js/festa.js'), 'festa.js viene caricato prima di dati.js');
+    p.finestra.DATI = {};
+    dati.onload();
+    const festa = p.registro.appesi.find((n) => n.tag === 'script' && n.src === 'js/festa.js');
+    esigi(festa !== undefined, 'js/festa.js non viene caricato dopo dati.js');
+    p.finestra.PolloFesta = { coro: (s) => { p.registro.coro.push(s); return { ferma: () => { p.registro.coroFermato++; } }; } };
+    festa.onload();
+    esigiUguale(p.registro.coro.join(','), '21', 'il coro non parte a caricamento finito');
+
+    const inPagina = monta({ festa: false, festaInPagina: true });
+    inPagina.scrivi('slayer');
+    inPagina.orologio.avanza(500);
+    esigiUguale(inPagina.registro.appesi.length, 0, 'ricarica un file che la pagina sta gia caricando');
+    inPagina.finestra.PolloFesta = { coro: (s) => { inPagina.registro.coro.push(s); return { ferma: () => {} }; } };
+    inPagina.orologio.avanza(200);
+    esigiUguale(inPagina.registro.coro.join(','), '21', 'non aspetta il festa.js della pagina');
+
+    const mai = monta({ festa: false, festaInPagina: true });
+    mai.scrivi('slayer');
+    mai.orologio.avanza(25000);
+    esigi(!mai.finestra.PolloSlayer.inCorso(), 'senza polletti la sorpresa non finisce');
+  });
+
+  await prova('la sorpresa e su tutte le pagine del sito, dopo la guardia e senza toccare l ordine dei primi script', () => {
+    const riga = '<script src="js/slayer.js" defer></script>';
+    for (const modello of ['index', 'clip', 'giochi', 'sponsor']) {
+      const testo = fs.readFileSync(path.join(RADICE_VERA, 'modelli', modello + '.html'), 'utf8');
+      esigiUguale(testo.split(riga).length - 1, 1, 'modelli/' + modello + '.html: lo script c e una volta sola');
+      esigi(testo.indexOf('js/guardia.js') < testo.indexOf(riga), 'modelli/' + modello + '.html: lo script deve venire dopo la guardia');
+    }
+    const home = costruisci.rendi(archivio.leggi()).html;
+    esigiUguale(home.split(riga).length - 1, 1, 'nella home generata');
+    esigi(home.indexOf('js/ritorno.js') < home.indexOf(riga), 'ritorno.js non e piu il primo');
+  });
+
+  await prova('l interruttore del pannello: acceso lo script e in tutte le pagine, spento non viene nemmeno stampato', () => {
+    const riga = '<script src="js/slayer.js" defer></script>';
+    const campo = schema.campo('config.slayer.attivo');
+    esigi(campo && campo.tipo === 'interruttore' && campo.predefinito === true, 'il campo nello schema deve essere un interruttore acceso di partenza');
+    esigiUguale(schema.gruppi.find((g) => g.campi.some((c) => c.chiave === 'config.slayer.attivo')).id, 'pollo', 'il campo sta nel gruppo del pollo');
+    esigiUguale(archivio.leggi().config.slayer.attivo, true, 'nei contenuti di partenza e acceso');
+    esigiUguale(convalida.convalidaCampo('config.slayer.attivo', 'no').length > 0, true, 'l interruttore accetta una parola');
+    esigiUguale(convalida.convalidaCampo('config.slayer.attivo', false).length, 0, 'l interruttore rifiuta un vero falso');
+
+    const acceso = archivio.leggi();
+    const pagineAccese = costruisci.rendi(acceso);
+    esigiUguale(pagineAccese.html.split(riga).length - 1, 1, 'acceso: nella home');
+    esigi(typeof pagineAccese.giochi !== 'string' || pagineAccese.giochi.split(riga).length - 1 === 1, 'acceso: nella pagina dei giochi');
+
+    const spento = archivio.leggi();
+    spento.config.slayer.attivo = false;
+    const pagineSpente = costruisci.rendi(spento);
+    esigi(pagineSpente.html.indexOf('js/slayer.js') === -1, 'spento: la home stampa ancora lo script');
+    esigi(typeof pagineSpente.giochi !== 'string' || pagineSpente.giochi.indexOf('js/slayer.js') === -1, 'spento: la pagina dei giochi stampa ancora lo script');
+    esigi(pagineSpente.html.indexOf('js/guardia.js') !== -1, 'spento: e sparita anche la guardia');
+    esigiUguale(convalida.convalida(spento).length, 0, 'spento: i contenuti non passano la convalida');
+
+    const vecchio = archivio.leggi();
+    delete vecchio.config.slayer;
+    esigiUguale(costruisci.rendi(vecchio).html.split(riga).length - 1, 1, 'senza la chiave (contenuti di ieri) la sorpresa resta accesa');
+    schema.completa(vecchio);
+    esigiUguale(vecchio.config.slayer.attivo, true, 'la chiave mancante viene aggiunta accesa');
+    esigiUguale(JSON.stringify(schema.verificaCopertura(vecchio)), '[]', 'la copertura si lamenta');
+  });
+
+  await prova('slayer.js: la parola, la durata e la canzone sono quelle scelte, e il codice e pulito', () => {
+    const p = monta();
+    esigiUguale(p.finestra.PolloSlayer.parola, 'slayer', 'la parola');
+    esigiUguale(p.finestra.PolloSlayer.durata, 21000, 'la durata');
+    esigiUguale(p.finestra.PolloSlayer.canzone, 'mp3/J%20(mp3cut.net).mp3', 'il file della canzone');
+    for (const [nome, testo] of [['js/slayer.js', jsSlayer], ['js/festa.js', jsFesta]]) {
+      esigi(!/(^|[^:'"])\/\/ /m.test(testo) && testo.indexOf('/*') === -1, nome + ' contiene dei commenti');
+      esigi(![...testo].some((c) => c.charCodeAt(0) > 127), nome + ' contiene caratteri non ASCII');
+    }
+    const htaccess = fs.readFileSync(path.join(RADICE_VERA, '.htaccess'), 'utf8');
+    esigi(htaccess.indexOf('RewriteRule ^mp3/[^/]+\\.(mp3|m4a|ogg|opus|webm)$ - [L]') !== -1, 'l.htaccess non lascia passare i file di mp3 con spazi e parentesi');
+  });
+}
+
 async function proveManutenzione(contenutiVeri, costruisci, archivio) {
   apriSezione('11b. Modalita manutenzione');
 
@@ -5206,6 +5580,7 @@ async function esegui() {
     await proveSchedule(contenutiVeri, costruisci, archivio);
     await proveSponsor(contenutiVeri, costruisci, archivio);
     await provePaginaGiochi(contenutiVeri, costruisci, archivio);
+    await proveSorpresaSlayer(costruisci, archivio);
     await proveManutenzione(contenutiVeri, costruisci, archivio);
     await proveGiochiDati();
 

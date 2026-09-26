@@ -2039,6 +2039,19 @@ l'immagine (per cambiarla), `Esc` sale alla parte; la piccola «x» accanto sele
 subito la parte. Nell'anteprima il pollo è fermo e non parla: le frasi si provano sul
 sito.
 
+### La sorpresa «slayer»
+
+Chi scrive **slayer** con la tastiera, in qualunque pagina del sito e in minuscolo o
+in maiuscolo, fa partire per **21 secondi** una pioggia di polletti con la canzone
+`mp3/J (mp3cut.net).mp3` (il file si carica da Plesk, come le altre tracce). Il
+lettore di sottofondo del sito si mette in pausa e riparte alla fine, e `Esc`
+ferma tutto subito. Non parte scrivendo dentro una casella di testo, per esempio
+nelle ricerche. Se il file della canzone manca, i polletti partono lo stesso in
+silenzio; con il movimento ridotto nel sistema non cadono, compaiono e si spengono.
+
+Si spegne dall'interruttore **Sorpresa «slayer»**, in fondo alla parte *Il pollo*:
+da spenta lo script non viene nemmeno caricato. Vale dalla prossima **Pubblica**.
+
 ### Cosa dice
 
 Sette elenchi di frasi, uno per situazione: quando non succede niente, quando

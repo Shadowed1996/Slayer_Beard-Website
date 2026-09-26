@@ -234,6 +234,109 @@
     setTimeout(function () { pioggia(); }, 250);
   }
 
+  function svuota() {
+    particelle.forEach(function (p) {
+      if (p.nodo.parentNode) { p.nodo.parentNode.removeChild(p.nodo); }
+    });
+    particelle = [];
+  }
+
+  function coro(secondi) {
+    const totale = Math.max(1, Number(secondi) || 21);
+    if (!ICONE.length) { return { ferma: function () {} }; }
+    const inizio = Date.now();
+    const timer = [];
+    const immobile = fermo();
+    let giro = null;
+    let vivo = true;
+    let numero = 0;
+
+    function resto() { return totale - (Date.now() - inizio) / 1000; }
+
+    function fine() {
+      vivo = false;
+      if (giro !== null) { clearInterval(giro); giro = null; }
+      timer.forEach(function (t) { clearTimeout(t); });
+    }
+
+    function centro(x, y) {
+      return { getBoundingClientRect: function () { return { left: x, top: y, width: 0, height: 0 }; } };
+    }
+
+    function scoppio(x, y) {
+      lampo(x, y);
+      spruzzo(centro(x, y));
+    }
+
+    function giroFermo(r) {
+      const largo = window.innerWidth;
+      const alto = window.innerHeight;
+      for (let i = 0; i < 3; i++) {
+        const p = base(caso(48, Math.max(60, largo - 48)), caso(64, Math.max(80, alto - 64)));
+        p.durata = Math.min(3.2, r);
+        p.dissolvenza = 0.5;
+        aggiungi(iconaNodo(ICONE[numero++ % ICONE.length], Math.round(caso(40, 72))), p);
+      }
+    }
+
+    function giroPieno(r, intensita) {
+      const largo = window.innerWidth;
+      const quante = Math.max(1, Math.round(Math.max(3, Math.min(7, largo / 200)) * intensita));
+      for (let i = 0; i < quante; i++) {
+        const p = base(caso(0, largo), -caso(30, 90));
+        p.vy = caso(180, 380);
+        p.vmax = caso(320, 520);
+        p.gravita = 300;
+        p.vx = caso(-40, 40);
+        p.vr = caso(-220, 220);
+        p.r = caso(-40, 40);
+        p.oscilla = caso(2, 5);
+        p.ampiezza = caso(12, 40);
+        p.fase = caso(0, 6);
+        p.durata = Math.min(5, r);
+        p.dissolvenza = 0.85;
+        aggiungi(iconaNodo(ICONE[numero++ % ICONE.length], Math.round(caso(34, 72))), p);
+      }
+      for (let k = 0; k < Math.max(1, Math.round(quante / 3)); k++) {
+        const p = base(caso(0, largo), -caso(20, 80));
+        p.vy = caso(150, 300);
+        p.vmax = caso(240, 400);
+        p.gravita = 240;
+        p.vr = caso(-500, 500);
+        p.oscilla = caso(3, 6);
+        p.ampiezza = caso(8, 22);
+        p.fase = caso(0, 6);
+        p.durata = Math.min(5, r);
+        p.dissolvenza = 0.85;
+        aggiungi(coriandoloNodo(caso(8, 13)), p);
+      }
+    }
+
+    function passoCoro() {
+      if (!vivo) { return; }
+      const r = resto();
+      if (r <= 0.2) { fine(); return; }
+      if (immobile) { giroFermo(r); return; }
+      const salita = Math.min(1, 0.35 + (totale - r) / 2);
+      const discesa = Math.min(1, Math.max(0.15, r / 3));
+      giroPieno(r, Math.min(salita, discesa));
+    }
+
+    if (!immobile) {
+      scoppio(window.innerWidth / 2, window.innerHeight / 2);
+      [4.5, 9, 13.5, 18].forEach(function (secondo) {
+        if (secondo >= totale - 2.2) { return; }
+        timer.push(setTimeout(function () {
+          if (vivo) { scoppio(caso(window.innerWidth * 0.15, window.innerWidth * 0.85), caso(window.innerHeight * 0.2, window.innerHeight * 0.65)); }
+        }, secondo * 1000));
+      });
+    }
+    passoCoro();
+    giro = setInterval(passoCoro, immobile ? 700 : 260);
+
+    return { ferma: function () { fine(); svuota(); } };
+  }
+
   window.PolloFesta = {
     icona: PRINCIPALE,
     icone: ICONE.slice(),
@@ -241,6 +344,8 @@
     sbuffo: sbuffo,
     spruzzo: spruzzo,
     pioggia: pioggia,
-    esplodi: esplodi
+    esplodi: esplodi,
+    coro: coro,
+    svuota: svuota
   };
 }());

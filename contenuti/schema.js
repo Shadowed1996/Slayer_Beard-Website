@@ -252,7 +252,10 @@ const gruppi = [
       { chiave: 'config.pollo.frasi.lurk', etichetta: 'Frasi — quando si attiva la modalità lurk', tipo: 'elencoTesti',
         aiuto: 'Le dice quando il visitatore accende il lurk qui sopra. Se la modalità lurk è spenta, questo elenco non viene mai usato.' },
       { chiave: 'config.pollo.frasi.offline', etichetta: 'Frasi — quando il canale è spento', tipo: 'elencoTesti',
-        aiuto: 'Meglio non scriverci dentro giorni e orari fissi: se cambi le dirette qui sotto, queste frasi resterebbero indietro.' }
+        aiuto: 'Meglio non scriverci dentro giorni e orari fissi: se cambi le dirette qui sotto, queste frasi resterebbero indietro.' },
+
+      { chiave: 'config.slayer.attivo', etichetta: 'Sorpresa «slayer»: canzone e polletti', tipo: 'interruttore', predefinito: true,
+        aiuto: 'Chi scrive «slayer» con la tastiera, in qualunque pagina del sito, fa partire per 21 secondi la pioggia di polletti con la canzone «J (mp3cut.net).mp3» della cartella mp3. Non parte scrivendo dentro una casella di testo e si ferma con Esc. Spenta, la sorpresa non esiste: lo script non viene nemmeno caricato. Vale dalla prossima Pubblica, ed è indipendente dal pollo qui sopra.' }
     ]
   },
 
