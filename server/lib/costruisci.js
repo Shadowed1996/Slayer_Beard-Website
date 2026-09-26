@@ -808,6 +808,11 @@ function costruisciContesto(contenuti, opzioni) {
 
   contesto.sito.sponsorInHome = !!(attiva.sponsor && contesto.sponsor.attivo);
   contesto.sito.slayer = !(config.slayer && config.slayer.attivo === false);
+  contesto.sito.pollorun = {
+    attivo: !(config.pollorun && config.pollorun.attivo === false),
+    pollo: String((config.immagini && config.immagini.mascotte) || ''),
+    frasi: frasiPolloRun(config)
+  };
   contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
 
   const presentazioneSponsor = testoricco.soloTesto(testi['sponsor.paginaTesto'] || '');
@@ -1360,6 +1365,14 @@ function fineManutenzione(valore) {
   return istanteItaliano(valore);
 }
 
+function frasiPolloRun(config) {
+  const ramo = (config && config.manutenzione) || {};
+  const scherno = (Array.isArray(ramo.scherno) ? ramo.scherno : [])
+    .filter((frase) => typeof frase === 'string' && frase.trim())
+    .map((frase) => frase.trim().slice(0, 80));
+  return JSON.stringify(scherno.length ? scherno : schema.campo('config.manutenzione.scherno').predefinito);
+}
+
 function contestoManutenzione(contenuti, adesso, cache) {
   const testi = (contenuti && contenuti.testi) || {};
   const config = (contenuti && contenuti.config) || {};
@@ -1381,7 +1394,11 @@ function contestoManutenzione(contenuti, adesso, cache) {
     throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.scriptManutenzione) +
       ': e lo script della pagina di manutenzione.');
   }
-  const script = '\n' + fs.readFileSync(P.scriptManutenzione, 'utf8');
+  if (!eFile(P.scriptPolloRun)) {
+    throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.scriptPolloRun) +
+      ': e il motore del gioco della pagina di manutenzione.');
+  }
+  const script = '\n' + fs.readFileSync(P.scriptPolloRun, 'utf8') + '\n' + fs.readFileSync(P.scriptManutenzione, 'utf8');
   const impronta = 'sha256-' + crypto.createHash('sha256').update(script, 'utf8').digest('base64');
 
   const testoDi = (chiave) => (typeof testi[chiave] === 'string' && testi[chiave].trim()
@@ -1391,10 +1408,6 @@ function contestoManutenzione(contenuti, adesso, cache) {
     .map((frase) => frase.trim());
   const nastro = '&nbsp;★ ' + (frasi.length ? frasi : schema.campo('config.manutenzione.nastro').predefinito)
     .map((frase) => modello.proteggi(frase)).join(' &nbsp;·&nbsp; ') + ' &nbsp;';
-  const scherno = (Array.isArray(ramo.scherno) ? ramo.scherno : [])
-    .filter((frase) => typeof frase === 'string' && frase.trim())
-    .map((frase) => frase.trim().slice(0, 80));
-
   return {
     stato: testoDi('manutenzione.stato'),
     occhiello: testoDi('manutenzione.occhiello'),
@@ -1408,7 +1421,7 @@ function contestoManutenzione(contenuti, adesso, cache) {
     messaggio: testoricco.sanifica(testoDi('manutenzione.messaggio')),
     avatar: String(immagini.avatar || ''),
     mascotte: String(immagini.mascotte || ''),
-    frasiPollo: JSON.stringify(scherno.length ? scherno : schema.campo('config.manutenzione.scherno').predefinito),
+    frasiPollo: frasiPolloRun(config),
     og: String(immagini.og || ''),
     favicon: String(immagini.favicon || ''),
     fontUrl: tema.urlGoogleFonts(config.tema, []),

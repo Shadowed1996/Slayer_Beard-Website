@@ -1076,11 +1076,29 @@ Non hanno una voce loro, ma è bene sapere come si comportano.
   spaziatrice**; un clic sulla pagina fa partire la musica d'attesa. Durante la
   partita suona `mp3/DJVI - Back On Track.mp3`, poi torna l'ascensore. La musica
   prova a partire da sola all'apertura: se il browser lo blocca, parte al primo
-  clic o tasto. Più si va avanti più diventa difficile: a 100, 250, 500, 750,
-  1000, 1500, 2000… punti sale di livello e compare una frase di scherno. Le
+  clic o tasto. Il gioco è a **livelli veri**: ogni livello è un percorso fisso con il
+  traguardo, una barra di avanzamento in alto e la scritta «LIVELLO N
+  COMPLETATO»; a fine livello compare una frase di scherno e **SPAZIO** porta al
+  livello dopo. Chi sbatte riprova lo stesso livello (sempre uguale, così si
+  impara); **INVIO** dalla schermata iniziale riprende dal livello più alto
+  raggiunto. I livelli sono infiniti e ogni volta più difficili: più veloci, con
+  ostacoli più fitti e più complessi (blocchi e piattaforme su cui atterrare,
+  buche, scale, isolotti sopra le buche, valli di punte, rombi da non toccare,
+  catene ravvicinate) e uno sfondo di colori diversi. Ogni livello è controllato
+  dal programma: se ne esistesse uno impossibile non uscirebbe. Le
   frasi si scrivono in **Manutenzione → Pollo Run — frasi di scherno** (una per
   riga, corte); lasciato vuoto usa quelle predefinite. Ricordati **Salva** e
   **Pubblica**.
+
+- **Pollo Run anche sul sito normale**: chi scrive **pollorun** con la
+  tastiera, in qualunque pagina e senza che il sito sia in manutenzione, apre il
+  gioco a tutto schermo; **Esc** (o la x in alto a destra) lo chiude. Non parte
+  scrivendo dentro una casella di testo. Durante la partita il lettore di
+  sottofondo del sito si ferma e riparte alla chiusura, e suona la canzone del
+  gioco con il volume scelto nella pagina di manutenzione. Si spegne
+  dall'interruttore **Pollo Run sul sito: scrivi «pollorun»**, in fondo alla
+  parte *Il pollo* (spento, lo script non viene nemmeno caricato). Le frasi sono
+  le stesse. Vale dalla prossima **Pubblica**.
 
 ### Google e social
 

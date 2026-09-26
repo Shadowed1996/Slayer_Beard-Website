@@ -232,6 +232,9 @@
     "slayer": {
       "attivo": true
     },
+    "pollorun": {
+      "attivo": true
+    },
     "twitch": {
       "canale": "slayer_beard",
       "idUtente": "47738247",

@@ -15,6 +15,29 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Pollo Run a livelli veri.** Al posto della corsa infinita a punteggio ogni
+  livello è un percorso fisso con traguardo, barra di avanzamento e «LIVELLO N
+  COMPLETATO»: compare una frase di scherno (`config.manutenzione.scherno`) e
+  SPAZIO porta al livello dopo; se si muore si riprova lo stesso livello
+  (tentativo N), INVIO riprende dal livello più alto raggiunto
+  (`localStorage` `sb-pollo-livello`). I livelli sono infiniti e generati sempre
+  uguali per lo stesso numero: più velocità, più ostacoli e figure sempre più
+  complesse (blocchi e piattaforme su cui si atterra, buche, scale, isolotti
+  sopra le buche, valli di punte, rombi da non toccare, catene ravvicinate),
+  con un tema di colori diverso a ogni livello. La fisica è a passo fisso
+  (120 al secondo), uguale su qualunque schermo, e il generatore verifica ogni
+  figura con la stessa fisica del gioco: nessun livello può essere impossibile.
+  Il motore sta in `js/pollorun-gioco.js`; la pagina di manutenzione lo riceve
+  dentro il suo script (l'impronta CSP si ricalcola da sola). Il gioco è più
+  alto (`clamp(220px, 46vh, 420px)`) perché le piattaforme alte non escano dal
+  quadro.
+- **Pollo Run anche sul sito normale, scrivendo «pollorun».** Nuovi
+  `js/pollorun.js` e `css/pollorun.css`: il gioco si apre a tutto schermo in
+  qualunque pagina (home, clip, giochi, sponsor), si chiude con Esc o con la x,
+  ferma il lettore di sottofondo e suona la canzone del gioco con il volume
+  della manutenzione. Il motore si scarica solo alla prima volta. Interruttore
+  `config.pollorun.attivo` nel gruppo *Il pollo* (acceso di partenza; spento lo
+  script non è nemmeno in pagina).
 - **Volume regolabile nella pagina di manutenzione.** Accanto al bottone della
   musica c'è un bottone coi cursori che apre due regolazioni separate: musica
   d'attesa (predefinito 20) e canzone di Pollo Run (predefinito 30). Il volume

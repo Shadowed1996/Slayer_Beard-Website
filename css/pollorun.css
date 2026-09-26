@@ -1,0 +1,56 @@
+html.is-pollorun {
+  overflow: hidden;
+}
+
+.pollorun {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  align-items: center;
+  background: color-mix(in srgb, var(--fondo) 95%, transparent);
+  backdrop-filter: blur(4px);
+  outline: none;
+  animation: pollorun-entra 260ms ease-out;
+}
+
+.pollorun__tela {
+  display: block;
+  inline-size: 100%;
+  block-size: clamp(240px, 58vh, 480px);
+}
+
+.pollorun__chiudi {
+  position: absolute;
+  inset-block-start: 16px;
+  inset-inline-end: 16px;
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 1px solid var(--linea-viva, currentColor);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--fondo) 80%, transparent);
+  color: var(--testo);
+  font: 400 26px/1 var(--font-mono, monospace);
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.pollorun__chiudi:hover,
+.pollorun__chiudi:focus-visible {
+  border-color: var(--ciano);
+  color: var(--ciano);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--ciano) 45%, transparent);
+}
+
+@keyframes pollorun-entra {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pollorun { animation: none; }
+  .pollorun__chiudi { transition: none; }
+}

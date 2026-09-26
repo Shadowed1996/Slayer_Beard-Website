@@ -667,6 +667,8 @@ async function proveTema() {
 function preparaProgetto(radice) {
   fs.mkdirSync(path.join(radice, 'contenuti'), { recursive: true });
   fs.mkdirSync(path.join(radice, 'server', 'modelli'), { recursive: true });
+  fs.mkdirSync(path.join(radice, 'js'), { recursive: true });
+  fs.copyFileSync(path.join(RADICE_VERA, 'js', 'pollorun-gioco.js'), path.join(radice, 'js', 'pollorun-gioco.js'));
   fs.cpSync(path.join(RADICE_VERA, 'modelli'), path.join(radice, 'modelli'), { recursive: true });
   fs.copyFileSync(path.join(RADICE_VERA, 'contenuti', 'contenuti.json'), path.join(radice, 'contenuti', 'contenuti.json'));
   fs.copyFileSync(path.join(RADICE_VERA, 'server', 'modelli', 'dati.js.tpl'), path.join(radice, 'server', 'modelli', 'dati.js.tpl'));
@@ -1094,7 +1096,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
 
     const soloNostri = script.map((s) => s.src).filter((s) => s.indexOf('js/') === 0);
 
-    const facoltativi = ['js/slayer.js', 'js/musica.js', 'js/sponsor.js'];
+    const facoltativi = ['js/slayer.js', 'js/pollorun.js', 'js/musica.js', 'js/sponsor.js'];
     const fissi = soloNostri.filter((s) => facoltativi.indexOf(s) === -1);
     const coda = soloNostri.slice(fissi.length);
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
@@ -4882,6 +4884,735 @@ async function proveSorpresaSlayer(costruisci, archivio) {
   });
 }
 
+async function proveGiocoPollo(costruisci, archivio) {
+  apriSezione('11f. Pollo Run: livelli veri, e il gioco anche sul sito scrivendo «pollorun»');
+
+  const vm = require('node:vm');
+  const fileGioco = path.join(RADICE_VERA, 'js', 'pollorun-gioco.js');
+  const fileSito = path.join(RADICE_VERA, 'js', 'pollorun.js');
+  const fileStile = path.join(RADICE_VERA, 'css', 'pollorun.css');
+  const jsGioco = fs.readFileSync(fileGioco, 'utf8');
+  const jsSito = fs.readFileSync(fileSito, 'utf8');
+
+  const caricaMotore = () => {
+    const finestra = {};
+    vm.runInNewContext(jsGioco, { window: finestra });
+    return finestra.PolloRun;
+  };
+  const motore = caricaMotore();
+  const L = motore.livelli;
+  const K = L.costanti;
+
+  const attornoCompleto = (M, x, mx) => {
+    const at = { solidi: [], pericoli: [], mx: mx };
+    for (const e of M.suoli) { if (e.x1 >= x - 1 && e.x0 <= x + 1) { at.solidi.push(e); } }
+    for (const e of M.solidi) { if (e.x1 >= x - 1 && e.x0 <= x + 1) { at.solidi.push(e); } }
+    for (const e of M.pericoli) { if (e.x1 >= x - 1 && e.x0 <= x + 1) { at.pericoli.push(e); } }
+    return at;
+  };
+
+  const chiaveStato = (s) => Math.round(s.alt * 2000) + ':' + Math.round(s.va * 200) + ':' + (s.aTerra ? 1 : 0) + ':' + (s.buf > 0 ? 1 : 0);
+
+  const percorsoGiocatore = (M, mx, decisione, daInizio) => {
+    let corrente = [{ s: daInizio ? L.nuovoStato(M.v) : L.statoIniziale(M.v), prev: null, premi: false }];
+    let indice = Math.round(corrente[0].s.t / K.PASSO);
+    const primo = indice;
+    let passi = 0;
+    while (corrente.length && corrente[0].s.x < M.lunghezza + 4) {
+      const at = attornoCompleto(M, corrente[0].s.x, mx);
+      const prossimi = new Map();
+      const decide = indice % decisione === 0;
+      for (const nodo of corrente) {
+        const a = L.copia(nodo.s);
+        L.passo(a, at);
+        if (!a.morto) {
+          prossimi.set(chiaveStato(a), { s: a, prev: nodo, premi: false });
+          if (a.aTerra && !nodo.s.aTerra) {
+            const q = L.copia(a);
+            q.va = K.V0;
+            q.aTerra = false;
+            q.salto = true;
+            prossimi.set(chiaveStato(q), { s: q, prev: nodo, premi: 'buffer' });
+          }
+        }
+        if (decide && nodo.s.aTerra) {
+          const b = L.copia(nodo.s);
+          b.richiesta = true;
+          L.passo(b, at);
+          if (!b.morto) { prossimi.set(chiaveStato(b), { s: b, prev: nodo, premi: true }); }
+        }
+      }
+      corrente = Array.from(prossimi.values());
+      indice++;
+      passi++;
+    }
+    if (!corrente.length) { return null; }
+    const secondi = [];
+    let nodo = corrente[0];
+    let i = indice;
+    while (nodo.prev) {
+      i--;
+      if (nodo.premi === true) { secondi.push(i * K.PASSO); } else if (nodo.premi === 'buffer') { secondi.push((i - 8) * K.PASSO); }
+      nodo = nodo.prev;
+    }
+    return { secondi: secondi.sort((x, y) => x - y), passi: passi, primo: primo };
+  };
+
+  const soloTerraPiatta = () => ({
+    suoli: [{ x0: -1000, x1: 100000, b: K.FONDO, t: 0 }], solidi: [], pericoli: [], buche: [], lungoS: 0, lungoP: 0
+  });
+
+  const simula = (M, opzioni) => {
+    const o = Object.assign({ v: 10, x: 5, premeAl: [], passi: 600, mx: 0 }, opzioni || {});
+    const s = L.statoIniziale(o.v);
+    s.x = o.x;
+    const at = { solidi: [], pericoli: [], mx: o.mx };
+    const traccia = { alt: [], morto: 0, atterrato: null, apice: 0 };
+    let saltato = false;
+    for (let i = 0; i < o.passi; i++) {
+      if (o.premeAl.indexOf(i) !== -1) { s.richiesta = true; }
+      const eraInAria = !s.aTerra;
+      L.vicino(M, s.x, o.mx, at);
+      L.passo(s, at);
+      traccia.alt.push(s.alt);
+      traccia.apice = Math.max(traccia.apice, s.alt);
+      if (!s.aTerra) { saltato = true; }
+      if (saltato && s.aTerra && eraInAria && traccia.atterrato === null) { traccia.atterrato = i; }
+      if (s.morto) { traccia.morto = s.morto; break; }
+    }
+    traccia.stato = s;
+    return traccia;
+  };
+
+  const conElementi = (elementi) => {
+    const M = soloTerraPiatta();
+    for (const e of elementi) {
+      if (e.tipo === 'blocco') { const b = { x0: e.x0, x1: e.x1, b: e.b === undefined ? K.FONDO : e.b, t: e.t }; M.solidi.push(b); M.lungoS = Math.max(M.lungoS, b.x1 - b.x0); }
+      if (e.tipo === 'punta') { M.pericoli.push({ x0: e.x0, x1: e.x1, y0: 0, y1: 0.465 }); M.lungoP = Math.max(M.lungoP, e.x1 - e.x0); }
+      if (e.tipo === 'buca') {
+        M.buche.push({ x0: e.x0, x1: e.x1 });
+      }
+    }
+    if (M.buche.length) {
+      const suoli = [];
+      let da = -1000;
+      for (const b of M.buche) { suoli.push({ x0: da, x1: b.x0, b: K.FONDO, t: 0 }); da = b.x1; }
+      suoli.push({ x0: da, x1: 100000, b: K.FONDO, t: 0 });
+      M.suoli = suoli;
+    }
+    M.solidi.sort((a, b) => a.x0 - b.x0);
+    M.pericoli.sort((a, b) => a.x0 - b.x0);
+    return M;
+  };
+
+  await prova('pollorun-gioco.js, pollorun.js e pollorun.css: si compilano e non hanno commenti', () => {
+    for (const [nome, testo] of [['pollorun-gioco.js', jsGioco], ['pollorun.js', jsSito]]) {
+      try { new Function(testo); } catch (errore) { throw new Error(nome + ': ' + errore.message); }
+      esigi(!/\/\/|\/\*/.test(testo), nome + ' contiene commenti');
+    }
+    esigi(!/\/\*/.test(fs.readFileSync(fileStile, 'utf8')), 'pollorun.css contiene commenti');
+  });
+
+  await prova('fisica: un salto dura 2 V0 / G, sale di 1,5 caselle e ricade dove ha iniziato', () => {
+    const t = simula(soloTerraPiatta(), { premeAl: [0], passi: 200 });
+    esigiUguale(t.morto, 0, 'muore saltando sul piano');
+    esigi(Math.abs(t.apice - 1.5) < 0.06, 'apice ' + t.apice);
+    esigi(t.atterrato !== null && Math.abs(t.atterrato * K.PASSO - K.ARIA) < 0.03, 'aria ' + (t.atterrato * K.PASSO) + ' invece di ' + K.ARIA);
+    esigiUguale(t.stato.alt, 0, 'non e tornato a terra');
+  });
+
+  await prova('fisica: una punta uccide chi la tocca e lascia passare chi la salta', () => {
+    const M = conElementi([{ tipo: 'punta', x0: 12, x1: 12.25 }]);
+    esigiUguale(simula(M, { passi: 200 }).morto, 1, 'correndo contro la punta non muore');
+    const passo = Math.round((12 - 5 - 3.2) / 10 / K.PASSO);
+    esigiUguale(simula(M, { premeAl: [passo], passi: 260 }).morto, 0, 'saltando in tempo muore lo stesso');
+  });
+
+  await prova('fisica: si atterra sopra un blocco, ci si corre sopra e si cade dal bordo; il fianco invece uccide', () => {
+    const M = conElementi([{ tipo: 'blocco', x0: 12, x1: 20, t: 0.62 }]);
+    esigiUguale(simula(M, { passi: 200 }).morto, 2, 'correndo contro il blocco non muore');
+    const sopra = simula(M, { premeAl: [Math.round(0.55 / K.PASSO)], passi: 330 });
+    esigiUguale(sopra.morto, 0, 'saltando sul blocco muore');
+    esigi(sopra.alt.some((a) => Math.abs(a - 0.62) < 1e-9), 'non atterra mai sulla cima');
+    esigiUguale(sopra.stato.alt, 0, 'dal bordo del blocco non ricade a terra');
+    const alto = conElementi([{ tipo: 'blocco', x0: 12, x1: 20, t: 1.24 }]);
+    esigiUguale(simula(alto, { premeAl: [Math.round(0.4 / K.PASSO)], passi: 330 }).morto, 0, 'la cima a 2 caselle non si raggiunge con un salto ben fatto');
+  });
+
+  await prova('fisica: una buca inghiotte chi non salta, e chi salta ne esce', () => {
+    const M = conElementi([{ tipo: 'buca', x0: 12, x1: 15.5 }]);
+    esigiUguale(simula(M, { passi: 400 }).morto, 3, 'corre sulla buca e non cade');
+    esigiUguale(simula(M, { premeAl: [Math.round(0.55 / K.PASSO)], passi: 400 }).morto, 0, 'salta la buca e cade lo stesso');
+  });
+
+  await prova('fisica: premere in aria fa saltare di nuovo appena si tocca terra, ma solo entro 0,14 secondi', () => {
+    const M = soloTerraPiatta();
+    const presto = simula(M, { premeAl: [0, 60], passi: 300 });
+    esigi(presto.alt.filter((a, i) => i > 72 && a > 0.05).length > 30, 'con il tasto premuto in aria non salta di nuovo');
+    const troppoPresto = simula(M, { premeAl: [0, 20], passi: 300 });
+    esigi(troppoPresto.alt.filter((a, i) => i > 90 && a > 0.05).length === 0, 'il tasto premuto troppo presto salta lo stesso');
+  });
+
+  const nomiFigura = { punta: 1, punte: 2, blocco: 2, piattaforma: 3, piattaformaPunte: 4, catena: 5, buca: 6, scala: 7, bucaPunta: 8, romboPunta: 8, vallata: 9, isole: 10, piattaformaRombo: 11, catenaMista: 12, scalaPunte: 14 };
+
+  await prova('livelli: sempre gli stessi per lo stesso numero, e diversi tra loro', () => {
+    const a = L.crea(7);
+    const b = caricaMotore().livelli.crea(7);
+    esigiUguale(JSON.stringify(a.el), JSON.stringify(b.el), 'lo stesso livello cambia');
+    esigi(JSON.stringify(L.crea(8).el) !== JSON.stringify(a.el), 'due livelli uguali');
+  });
+
+  await prova('livelli: velocita in salita, margini sempre piu stretti, mai un ostacolo che non si e ancora sbloccato', () => {
+    let vPrima = 0;
+    let tauPrima = 1;
+    for (let n = 1; n <= 60; n++) {
+      const P = L.parametri(n);
+      esigi(P.v >= vPrima, 'la velocita scende al livello ' + n);
+      esigi(P.tau <= tauPrima, 'il margine si allarga al livello ' + n);
+      esigi(P.durata >= 22 && P.durata <= 46, 'durata fuori misura al livello ' + n);
+      vPrima = P.v;
+      tauPrima = P.tau;
+    }
+    for (let n = 1; n <= 30; n++) {
+      for (const nome of L.crea(n).figure) { esigi(nomiFigura[nome] <= n, 'la figura ' + nome + ' compare al livello ' + n + ' prima di sbloccarsi'); }
+    }
+  });
+
+  await prova('livelli: piu si sale piu ostacoli ci sono e piu sono complessi: buche, scale, isolotti, rombi, catene', () => {
+    const densita = (da, a) => {
+      let el = 0;
+      let lung = 0;
+      for (let n = da; n <= a; n++) { const M = L.crea(n); el += M.el.length; lung += M.lunghezza; }
+      return el / lung * 100;
+    };
+    esigi(densita(20, 26) > densita(1, 3) * 1.3, 'gli ostacoli non aumentano: ' + densita(1, 3).toFixed(1) + ' contro ' + densita(20, 26).toFixed(1));
+    const tipiIn = (da, a) => {
+      const visti = new Set();
+      for (let n = da; n <= a; n++) { for (const nome of L.crea(n).figure) { visti.add(nome); } }
+      return visti;
+    };
+    esigiUguale(Array.from(tipiIn(1, 1)).join(','), 'punta', 'il primo livello deve avere solo punte');
+    for (const complessa of ['buca', 'scala', 'isole', 'vallata', 'romboPunta', 'catena']) {
+      esigi(!tipiIn(1, 4).has(complessa), complessa + ' arriva troppo presto');
+      esigi(tipiIn(15, 30).has(complessa), complessa + ' non arriva mai');
+    }
+    esigi(tipiIn(20, 30).size >= 12, 'nei livelli alti le figure diverse sono solo ' + tipiIn(20, 30).size);
+    const buche = L.crea(1).el.concat(L.crea(2).el, L.crea(3).el).filter((e) => e.k === 'u' || (e.k === 'b' && e.pil));
+    esigiUguale(buche.length, 0, 'buche nei primi livelli');
+  });
+
+  await prova('livelli: ogni livello e superabile, anche con il margine di sicurezza (risolutore indipendente)', () => {
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 25, 30, 35, 40, 55, 75, 100]) {
+      const M = L.crea(n);
+      const senzaMargine = percorsoGiocatore(M, 0, 2, false);
+      esigi(senzaMargine, 'il livello ' + n + ' non e superabile');
+      const conMargine = percorsoGiocatore(M, M.mx, 1, false);
+      esigi(conMargine, 'il livello ' + n + ' non e superabile con il margine di sicurezza');
+    }
+  });
+
+  await prova('livelli: rincorsa iniziale, respiro prima del traguardo, terra piatta dopo', () => {
+    for (const n of [1, 5, 10, 20, 40]) {
+      const M = L.crea(n);
+      const primo = Math.min.apply(null, M.el.map((e) => e.x));
+      const ultimo = Math.max.apply(null, M.el.map((e) => e.x1));
+      esigi(primo >= M.v * 1.6, 'livello ' + n + ': il primo ostacolo e troppo vicino alla partenza');
+      esigi(ultimo <= M.lunghezza - M.v * 1.8, 'livello ' + n + ': ostacoli troppo vicini al traguardo');
+      esigi(M.buche.every((b) => b.x1 < M.lunghezza), 'livello ' + n + ': una buca dopo il traguardo');
+    }
+  });
+
+  const rendiFinta = () => {
+    const registro = { testi: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [] };
+    let inAttesa = null;
+    let ora = 1000;
+    const contesto = new Proxy({}, {
+      get(t, nome) {
+        if (nome === 'fillText') { return (testo) => { registro.testi.push(String(testo)); }; }
+        if (nome === 'measureText') { return (testo) => ({ width: String(testo).length * 8 }); }
+        if (nome === 'createLinearGradient') { return () => ({ addColorStop: () => {} }); }
+        if (nome in t) { return t[nome]; }
+        return () => {};
+      },
+      set(t, nome, valore) { t[nome] = valore; return true; }
+    });
+    const tela = { getContext: () => contesto, getBoundingClientRect: () => ({ width: 1200, height: 380 }), width: 0, height: 0 };
+    const finestra = {
+      matchMedia: () => ({ matches: false }),
+      devicePixelRatio: 1,
+      addEventListener: (tipo, fn) => { registro.ascoltatori['w:' + tipo] = fn; },
+      removeEventListener: (tipo) => { delete registro.ascoltatori['w:' + tipo]; }
+    };
+    const documento = {
+      hidden: false,
+      documentElement: {},
+      addEventListener: (tipo, fn) => { registro.ascoltatori[tipo] = fn; },
+      removeEventListener: (tipo) => { delete registro.ascoltatori[tipo]; }
+    };
+    const memoria = registro.memoria;
+    vm.runInNewContext(jsGioco, {
+      window: finestra,
+      document: documento,
+      getComputedStyle: () => ({ getPropertyValue: () => '' }),
+      Image: function () { },
+      localStorage: { getItem: (k) => (k in memoria ? memoria[k] : null), setItem: (k, v) => { memoria[k] = String(v); } },
+      requestAnimationFrame: (cb) => { inAttesa = cb; return 1; },
+      cancelAnimationFrame: () => { inAttesa = null; },
+      setTimeout: (fn) => { registro.timer.push(fn); return registro.timer.length; },
+      clearTimeout: () => {},
+      Math: Math,
+      JSON: JSON,
+      Date: Date
+    });
+    const frasi = ['Prima frase di prova', 'Seconda frase di prova'];
+    const crea = (extra) => finestra.PolloRun.crea(Object.assign({
+      tela: tela, pollo: 'img/mascotte.webp', frasi: frasi,
+      suPartita: (a) => { registro.suPartita.push(a); },
+      suChiudi: () => { registro.suChiudi++; }
+    }, extra || {}));
+    const frame = (dtMs) => {
+      ora += dtMs;
+      const cb = inAttesa;
+      inAttesa = null;
+      if (cb) { cb(ora); }
+      return !!cb;
+    };
+    const tasto = (key, code, extra) => {
+      const fn = registro.ascoltatori.keydown;
+      if (!fn) { return; }
+      fn(Object.assign({ key: key, code: code || key, altKey: false, ctrlKey: false, metaKey: false, repeat: false, target: { closest: () => null }, preventDefault: () => {} }, extra || {}));
+    };
+    const testiUltimo = (dtMs) => { registro.testi = []; frame(dtMs === undefined ? 1000 / 60 : dtMs); return registro.testi.join('|'); };
+    const attendi = (secondi) => { for (let t = 0; t < secondi; t += 1 / 60) { frame(1000 / 60); } };
+    return { registro: registro, crea: crea, frame: frame, tasto: tasto, testiUltimo: testiUltimo, attendi: attendi, finestra: finestra, frasi: frasi, ora: () => ora };
+  };
+
+  const giocaSchedule = (h, secondi, dtMs, limiteSec) => {
+    let t = 0;
+    let indice = 0;
+    let esito = null;
+    const limite = limiteSec * 1000;
+    while (t * 1000 < limite && !esito) {
+      while (indice < secondi.length && secondi[indice] <= t) { h.tasto(' ', 'Space'); indice++; }
+      h.registro.testi = [];
+      h.frame(dtMs);
+      t += dtMs / 1000;
+      const testo = h.registro.testi.join('|');
+      if (testo.indexOf('COMPLETATO') !== -1) { esito = 'vinto'; }
+      if (testo.indexOf('GAME OVER') !== -1) { esito = 'morto'; }
+    }
+    return { esito: esito, t: t };
+  };
+
+  await prova('gioco: dalla schermata iniziale a SPAZIO parte il livello 1; senza saltare si muore e SPAZIO riprova lo stesso livello', () => {
+    const h = rendiFinta();
+    const gioco = h.crea();
+    gioco.avvia();
+    esigiDentro(h.testiUltimo(), 'POLLO RUN', 'schermata iniziale');
+    h.tasto(' ', 'Space');
+    esigiUguale(h.registro.suPartita.join(','), 'true', 'la partita non viene annunciata');
+    esigiDentro(h.testiUltimo(), 'LIVELLO 1', 'il livello 1 non parte');
+    const r = giocaSchedule(h, [], 1000 / 60, 40);
+    esigiUguale(r.esito, 'morto', 'senza saltare non muore');
+    esigiDentro(h.testiUltimo(), 'SPAZIO per riprovare il livello 1', 'schermata di fine partita');
+    h.tasto(' ', 'Space');
+    esigiDentro(h.testiUltimo(), 'GAME OVER', 'riprova troppo presto: deve aspettare');
+    h.attendi(0.6);
+    h.tasto(' ', 'Space');
+    const dopo = h.testiUltimo();
+    esigiDentro(dopo, 'LIVELLO 1', 'non riparte il livello');
+    esigiDentro(dopo, 'TENTATIVO 2', 'il secondo tentativo non e contato');
+    esigiUguale(h.registro.suPartita.join(','), 'true', 'la partita e stata annunciata di nuovo');
+  });
+
+  await prova('gioco: finito il livello 1 compare LIVELLO 1 COMPLETATO con una frase, e SPAZIO porta al livello 2', () => {
+    const h = rendiFinta();
+    h.crea().avvia();
+    h.tasto(' ', 'Space');
+    const M = L.crea(1);
+    const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
+    esigi(p, 'nessun percorso per il livello 1');
+    const r = giocaSchedule(h, p.secondi, 1000 / 60, 40);
+    esigiUguale(r.esito, 'vinto', 'il livello 1 non si finisce');
+    esigi(Math.abs(r.t - M.lunghezza / M.v) < 1.5, 'il livello dura ' + r.t.toFixed(1) + ' secondi invece di circa ' + (M.lunghezza / M.v).toFixed(1));
+    h.attendi(1);
+    const schermata = h.testiUltimo();
+    esigiDentro(schermata, 'LIVELLO 1 COMPLETATO', 'titolo di fine livello');
+    esigiDentro(schermata, 'SPAZIO per il livello 2', 'invito al livello dopo');
+    esigi(h.frasi.some((f) => schermata.indexOf(f) !== -1), 'nessuna frase di scherno: ' + schermata);
+    esigiUguale(h.registro.memoria['sb-pollo-livello'], '2', 'il livello raggiunto non e salvato');
+    h.tasto(' ', 'Space');
+    const partito = h.testiUltimo();
+    esigiDentro(partito, 'LIVELLO 2', 'SPAZIO non porta al livello 2');
+    esigi(partito.indexOf('COMPLETATO') === -1, 'e ancora la schermata di fine livello');
+    esigiDentro(partito, 'TENTATIVO 1', 'i tentativi non ripartono da 1');
+    esigiUguale(h.registro.suPartita.join(','), 'true', 'passare di livello non deve fermare e riavviare la musica');
+  });
+
+  await prova('gioco: le frasi di scherno escono una per livello, a caso e senza ripetersi finche non sono finite', () => {
+    const h = rendiFinta();
+    h.crea().avvia();
+    h.tasto(' ', 'Space');
+    const viste = [];
+    for (let n = 1; n <= 4; n++) {
+      const M = L.crea(n);
+      const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
+      esigi(p, 'nessun percorso per il livello ' + n);
+      const r = giocaSchedule(h, p.secondi, 1000 / 60, 60);
+      esigiUguale(r.esito, 'vinto', 'il livello ' + n + ' non si finisce');
+      h.attendi(1);
+      const s = h.testiUltimo();
+      viste.push(h.frasi.find((f) => s.indexOf(f) !== -1));
+      h.tasto(' ', 'Space');
+    }
+    esigi(viste.every(Boolean), 'una frase manca: ' + JSON.stringify(viste));
+    esigi(viste[0] !== viste[1] && viste[2] !== viste[3], 'le frasi si ripetono di seguito: ' + JSON.stringify(viste));
+    esigiUguale(new Set(viste.slice(0, 2)).size, 2, 'in due livelli si e ripetuta una frase con solo due a disposizione');
+  });
+
+  await prova('gioco: la fisica e a passo fisso, quindi il livello si finisce uguale a 60, 144 e 30 fotogrammi al secondo', () => {
+    const M = L.crea(6);
+    const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
+    esigi(p, 'nessun percorso per il livello 6');
+    for (const dt of [1000 / 60, 1000 / 144, 1000 / 30]) {
+      const h = rendiFinta();
+      h.registro.memoria['sb-pollo-livello'] = '6';
+      h.crea().avvia();
+      h.tasto('Enter', 'Enter');
+      const r = giocaSchedule(h, p.secondi, dt, 60);
+      esigiUguale(r.esito, 'vinto', 'a ' + Math.round(1000 / dt) + ' fotogrammi al secondo il livello 6 non si finisce');
+    }
+  });
+
+  await prova('gioco: Esc esce dalla partita, e con il sipario un secondo Esc chiude tutto; INVIO riprende dal livello raggiunto', () => {
+    const h = rendiFinta();
+    const gioco = h.crea({ sipario: true });
+    gioco.avvia();
+    h.tasto(' ', 'Space');
+    h.testiUltimo();
+    h.tasto('Escape', 'Escape');
+    esigiDentro(h.testiUltimo(), 'POLLO RUN', 'Esc non riporta alla schermata iniziale');
+    esigiUguale(h.registro.suPartita.join(','), 'true,false', 'la fine della partita non e annunciata');
+    esigiUguale(h.registro.suChiudi, 0, 'un solo Esc chiude tutto');
+    h.tasto('Escape', 'Escape');
+    esigiUguale(h.registro.suChiudi, 1, 'il secondo Esc non chiude');
+
+    const pagina = rendiFinta();
+    pagina.crea({ sipario: false }).avvia();
+    pagina.tasto('Escape', 'Escape');
+    esigiUguale(pagina.registro.suChiudi, 0, 'nella pagina di manutenzione Esc non deve chiudere niente');
+
+    const riprende = rendiFinta();
+    riprende.registro.memoria['sb-pollo-livello'] = '5';
+    riprende.crea().avvia();
+    esigiDentro(riprende.testiUltimo(), 'MIGLIORE LIVELLO 5', 'il record non si vede');
+    esigiDentro(riprende.testiUltimo(), 'INVIO per riprendere dal livello 5', 'manca l invito a riprendere');
+    riprende.tasto('Enter', 'Enter');
+    esigiDentro(riprende.testiUltimo(), 'LIVELLO 5', 'INVIO non riprende dal livello 5');
+  });
+
+  await prova('gioco: fermarlo toglie tutti gli ascoltatori, e avviarlo due volte non li raddoppia', () => {
+    const h = rendiFinta();
+    const gioco = h.crea();
+    gioco.avvia();
+    gioco.avvia();
+    const conAscolto = Object.keys(h.registro.ascoltatori).sort().join(',');
+    esigiUguale(conAscolto, 'keydown,pointerdown,visibilitychange,w:resize', 'ascoltatori');
+    h.tasto(' ', 'Space');
+    gioco.ferma();
+    esigiUguale(Object.keys(h.registro.ascoltatori).length, 0, 'restano ascoltatori dopo ferma');
+    esigiUguale(h.registro.suPartita.join(','), 'true,false', 'fermare il gioco in partita non lo annuncia');
+    esigiUguale(h.frame(16), false, 'dopo ferma c e ancora un fotogramma in coda');
+  });
+
+  await prova('la pagina di manutenzione porta il motore dentro lo script e lo avvia', () => {
+    const html = costruisci.anteprimaManutenzione(archivio.leggi());
+    const script = /<script>([\s\S]*?)<\/script>/.exec(html);
+    esigi(script, 'manca lo script della pagina');
+    esigiDentro(script[1], 'PolloRun.livelli = {', 'il motore dei livelli non e nella pagina');
+    esigiDentro(script[1], 'window.PolloRun.crea = crea;', 'il gioco non e nella pagina');
+    esigiDentro(script[1], 'window.PolloRun.crea({', 'la pagina non avvia il gioco');
+    esigi(script[1].indexOf('window.PolloRun.crea = crea;') < script[1].indexOf('window.PolloRun.crea({'), 'il gioco parte prima di essere definito');
+    esigiDentro(html, 'data-frasi="', 'le frasi di scherno non arrivano al canvas');
+    esigi(!/\/\*/.test(script[1]), 'lo script della pagina contiene commenti');
+  });
+
+  const montaSito = (opzioni) => {
+    const o = Object.assign({ musicaSuona: false, motoreCaricato: false, frasiAttr: '["Una","Due"]', polloAttr: 'img/mascotte.webp', volume: null, motoreRotto: false }, opzioni || {});
+    let ora = 5000000;
+    const registro = { appesi: [], nodi: [], audio: [], play: 0, pause: 0, musicaFerma: 0, musicaParti: 0, crea: [], avvia: 0, ferma: 0, focus: 0, blur: 0 };
+    const classi = new Set();
+    const ascoltatori = {};
+    const memoria = {};
+    if (o.volume !== null) { memoria['sb-manutenzione-volumi'] = JSON.stringify({ attesa: 10, gioco: o.volume }); }
+    const finestra = { addEventListener: (tipo, fn) => { ascoltatori['w:' + tipo] = fn; } };
+    if (o.musicaSuona !== null) {
+      finestra.Musica = {
+        suStato: (fn) => fn({ suona: o.musicaSuona }),
+        ferma: () => { registro.musicaFerma++; },
+        parti: () => { registro.musicaParti++; }
+      };
+    }
+    const controllerFinto = () => ({ avvia: () => { registro.avvia++; }, ferma: () => { registro.ferma++; } });
+    if (o.motoreCaricato) { finestra.PolloRun = { crea: (op) => { registro.crea.push(op); return controllerFinto(); } }; }
+    function Audio(src) {
+      const a = { src: src, loop: false, volume: 1, currentTime: 0, preload: '', play() { registro.play++; return Promise.resolve(); }, pause() { registro.pause++; } };
+      registro.audio.push(a);
+      return a;
+    }
+    const nodo = (tag) => {
+      const n = {
+        tag: tag, className: '', children: [], attrs: {}, parentNode: null, textContent: '', tabIndex: 0,
+        setAttribute(k, v) { this.attrs[k] = v; },
+        getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
+        appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
+        removeChild(c) { this.children = this.children.filter((x) => x !== c); c.parentNode = null; },
+        addEventListener(tipo, fn) { this.attrs['@' + tipo] = fn; },
+        focus() { registro.focus++; }
+      };
+      registro.nodi.push(n);
+      return n;
+    };
+    const testa = {
+      appendChild: (n) => {
+        registro.appesi.push(n);
+        return n;
+      }
+    };
+    const corpo = nodo('body');
+    const script = nodo('script');
+    script.setAttribute('data-pollo', o.polloAttr);
+    script.setAttribute('data-frasi', o.frasiAttr);
+    const documento = {
+      currentScript: script,
+      body: corpo,
+      head: testa,
+      activeElement: { blur: () => { registro.blur++; } },
+      addEventListener: (tipo, fn) => { ascoltatori[tipo] = fn; },
+      documentElement: { classList: { add: (c) => classi.add(c), remove: (c) => classi.delete(c), contains: (c) => classi.has(c) } },
+      createElement: nodo,
+      querySelector: (s) => { const m = /link\[href="([^"]+)"\]/.exec(s); return m && registro.appesi.some((n) => n.tag === 'link' && n.href === m[1]) ? {} : null; }
+    };
+    vm.runInNewContext(jsSito, {
+      window: finestra,
+      document: documento,
+      Audio: Audio,
+      localStorage: { getItem: (k) => (k in memoria ? memoria[k] : null) },
+      Date: { now: () => ora },
+      JSON: JSON,
+      encodeURIComponent: encodeURIComponent
+    });
+    const tasto = (key, extra) => ascoltatori.keydown(Object.assign({
+      key: key, target: { tagName: 'BODY', nodeType: 1 }, ctrlKey: false, altKey: false, metaKey: false, repeat: false, isComposing: false, defaultPrevented: false
+    }, extra || {}));
+    const scrivi = (testo, extra, pausa) => {
+      for (const c of testo) { tasto(c, extra); ora += pausa === undefined ? 120 : pausa; }
+    };
+    const carica = () => {
+      for (const n of registro.appesi) {
+        if (n.tag === 'link' && n.onload && !n.caricato) { n.caricato = true; n.onload(); }
+      }
+      for (const n of registro.appesi) {
+        if (n.tag === 'script' && n.onload && !n.caricato) {
+          n.caricato = true;
+          if (n.src === 'js/pollorun-gioco.js' && !o.motoreRotto) { finestra.PolloRun = { crea: (op) => { registro.crea.push(op); return controllerFinto(); } }; }
+          n.onload();
+        }
+      }
+      for (const n of registro.appesi) {
+        if (n.tag === 'link' && n.onload && !n.caricato) { n.caricato = true; n.onload(); }
+      }
+    };
+    return { registro: registro, classi: classi, finestra: finestra, corpo: corpo, tasto: tasto, scrivi: scrivi, carica: carica, ascoltatori: ascoltatori, avanza: (ms) => { ora += ms; } };
+  };
+
+  await prova('pollorun.js: scrivendo pollorun carica stile e motore, monta il gioco a tutto schermo e lo avvia', () => {
+    const p = montaSito();
+    p.scrivi('pollorun');
+    esigiUguale(p.registro.appesi.length, 2, 'devono partire due caricamenti: stile e motore');
+    esigi(p.registro.appesi.some((n) => n.tag === 'link' && n.href === 'css/pollorun.css' && n.rel === 'stylesheet'), 'manca lo stile');
+    esigi(p.registro.appesi.some((n) => n.tag === 'script' && n.src === 'js/pollorun-gioco.js'), 'manca il motore');
+    esigiUguale(p.corpo.children.length, 0, 'il gioco compare prima che tutto sia caricato');
+    p.carica();
+    esigiUguale(p.corpo.children.length, 1, 'il gioco non compare');
+    const radice = p.corpo.children[0];
+    esigiUguale(radice.className, 'pollorun', 'classe');
+    esigiUguale(radice.getAttribute('role'), 'dialog', 'ruolo');
+    esigiUguale(radice.getAttribute('aria-modal'), 'true', 'aria-modal');
+    esigi(radice.children.some((c) => c.tag === 'canvas'), 'manca il canvas');
+    esigi(radice.children.some((c) => c.tag === 'button' && c.getAttribute('aria-label') === 'Chiudi Pollo Run'), 'manca il bottone per chiudere');
+    esigi(p.classi.has('is-pollorun'), 'la pagina non e bloccata sotto il gioco');
+    esigiUguale(p.registro.crea.length, 1, 'il gioco deve nascere una volta sola');
+    const op = p.registro.crea[0];
+    esigiUguale(op.pollo, 'img/mascotte.webp', 'immagine del pollo');
+    esigiUguale(JSON.stringify(op.frasi), '["Una","Due"]', 'frasi di scherno');
+    esigiUguale(op.sipario, true, 'deve girare in modalita sipario');
+    esigiUguale(p.registro.avvia, 1, 'il gioco non parte');
+    esigi(p.registro.blur >= 1 && p.registro.focus >= 1, 'il focus non passa al gioco: SPAZIO attiverebbe il link sotto');
+  });
+
+  await prova('pollorun.js: senza aspettare il caricamento non si aprono due giochi, e a motore gia caricato non si scarica di nuovo', () => {
+    const p = montaSito();
+    p.scrivi('pollorun');
+    p.scrivi('pollorun');
+    esigiUguale(p.registro.appesi.length, 2, 'ha caricato due volte mentre aspettava');
+    p.carica();
+    esigiUguale(p.corpo.children.length, 1, 'due giochi aperti');
+    esigi(p.registro.crea[0].suChiudi, 'manca suChiudi');
+    p.registro.crea[0].suChiudi();
+    esigiUguale(p.corpo.children.length, 0, 'suChiudi non toglie il gioco');
+    esigi(!p.classi.has('is-pollorun'), 'la pagina resta bloccata');
+    esigiUguale(p.registro.ferma, 1, 'il gioco non viene fermato');
+    p.scrivi('pollorun');
+    esigiUguale(p.registro.appesi.length, 2, 'la seconda volta ricarica stile o motore');
+    p.carica();
+    esigiUguale(p.corpo.children.length, 1, 'non si riapre');
+    esigiUguale(p.registro.crea.length, 2, 'non ricrea il gioco');
+  });
+
+  await prova('pollorun.js: minuscolo, maiuscolo, misto; non parte in un campo, con Ctrl, a tasti ripetuti, con pause lunghe o lettere in mezzo; aperto, non riparte', () => {
+    const provaCosi = (fn) => { const p = montaSito(); fn(p); p.carica(); return p.corpo.children.length; };
+    esigiUguale(provaCosi((p) => { for (const c of 'POLLORUN') { p.tasto('Shift'); p.tasto(c); p.avanza(100); } }), 1, 'POLLORUN con Shift');
+    esigiUguale(provaCosi((p) => { p.tasto('CapsLock'); p.scrivi('POLLORUN'); }), 1, 'con il blocco maiuscole');
+    esigiUguale(provaCosi((p) => { p.scrivi('ciao pollorun ciao'); }), 1, 'dentro una frase');
+    esigiUguale(provaCosi((p) => { p.scrivi('pollorun', { target: { tagName: 'INPUT', nodeType: 1 } }); }), 0, 'in un input');
+    esigiUguale(provaCosi((p) => { p.scrivi('pollorun', { target: { tagName: 'TEXTAREA', nodeType: 1 } }); }), 0, 'in una textarea');
+    esigiUguale(provaCosi((p) => { p.scrivi('pollorun', { target: { tagName: 'DIV', nodeType: 1, isContentEditable: true } }); }), 0, 'in un campo modificabile');
+    esigiUguale(provaCosi((p) => { p.scrivi('pollor'); p.tasto('u', { ctrlKey: true }); p.tasto('n'); }), 0, 'con Ctrl');
+    esigiUguale(provaCosi((p) => { p.scrivi('pollorun', { repeat: true }); }), 0, 'con i tasti che si ripetono');
+    esigiUguale(provaCosi((p) => { p.scrivi('pollo'); p.avanza(2500); p.scrivi('run'); }), 0, 'dopo una pausa lunga');
+    esigiUguale(provaCosi((p) => { p.scrivi('pollxorun'); }), 0, 'con una lettera in mezzo');
+    esigiUguale(provaCosi((p) => { p.scrivi('pol'); p.tasto('Backspace'); p.scrivi('lorun'); }), 0, 'dopo un Backspace');
+    esigiUguale(provaCosi((p) => { p.scrivi('pollorun'); p.carica(); p.scrivi('pollorun'); }), 1, 'gia aperto, riparte');
+    esigiUguale(provaCosi((p) => { p.scrivi('pollo'); }), 0, 'la parola a meta non apre niente');
+  });
+
+  await prova('pollorun.js: se lo script del gioco non si scarica non si apre niente e riscrivendo la parola si riprova', () => {
+    const p = montaSito({ motoreRotto: true });
+    p.scrivi('pollorun');
+    for (const n of p.registro.appesi) { if (n.tag === 'link' && n.onload) { n.onload(); } }
+    const script = p.registro.appesi.find((n) => n.tag === 'script');
+    script.onerror();
+    esigiUguale(p.corpo.children.length, 0, 'si apre senza motore');
+    esigi(!p.classi.has('is-pollorun'), 'la pagina resta bloccata');
+    p.scrivi('pollorun');
+    esigiUguale(p.registro.appesi.filter((n) => n.tag === 'script').length, 2, 'non riprova a scaricare il motore');
+  });
+
+  await prova('pollorun.js: il lettore di sottofondo del sito si ferma mentre il gioco e aperto e riparte alla chiusura, solo se suonava', () => {
+    const suonava = montaSito({ musicaSuona: true });
+    suonava.scrivi('pollorun');
+    suonava.carica();
+    esigiUguale(suonava.registro.musicaFerma, 1, 'la musica del sito non si ferma');
+    esigiUguale(suonava.registro.musicaParti, 0, 'riparte troppo presto');
+    suonava.registro.crea[0].suChiudi();
+    esigiUguale(suonava.registro.musicaParti, 1, 'la musica del sito non riparte');
+
+    const zitta = montaSito({ musicaSuona: false });
+    zitta.scrivi('pollorun');
+    zitta.carica();
+    zitta.registro.crea[0].suChiudi();
+    esigiUguale(zitta.registro.musicaFerma + zitta.registro.musicaParti, 0, 'tocca una musica che non suonava');
+
+    const senza = montaSito({ musicaSuona: null });
+    senza.scrivi('pollorun');
+    senza.carica();
+    esigiUguale(senza.corpo.children.length, 1, 'senza lettore il gioco non si apre');
+  });
+
+  await prova('pollorun.js: la canzone del gioco parte quando inizia la partita, con il volume scelto nella manutenzione, e si ferma alla fine', () => {
+    const p = montaSito({ volume: 55 });
+    p.scrivi('pollorun');
+    p.carica();
+    const op = p.registro.crea[0];
+    const brani = () => p.registro.audio.filter((a) => a.src === 'mp3/DJVI%20-%20Back%20On%20Track.mp3');
+    esigiUguale(p.registro.play, 0, 'la canzone parte prima della partita');
+    op.suPartita(true);
+    esigiUguale(brani().length, 1, 'un solo brano');
+    esigiUguale(brani()[0].loop, true, 'il brano deve ripetersi');
+    esigiUguale(brani()[0].volume, 0.55, 'il volume non e quello della manutenzione');
+    esigiUguale(p.registro.play, 1, 'la canzone non parte');
+    op.suPartita(false);
+    esigiUguale(p.registro.pause, 1, 'la canzone non si ferma a fine partita');
+    op.suPartita(true);
+    esigiUguale(brani().length, 1, 'ricrea il brano a ogni partita');
+    p.registro.crea[0].suChiudi();
+    esigiUguale(p.registro.pause, 2, 'chiudendo la canzone non si ferma');
+
+    const predefinito = montaSito();
+    predefinito.scrivi('pollorun');
+    predefinito.carica();
+    predefinito.registro.crea[0].suPartita(true);
+    esigiUguale(predefinito.registro.audio[0].volume, 0.3, 'volume di partenza');
+  });
+
+  await prova('pollorun.js: frasi rotte o mancanti non impediscono di giocare', () => {
+    for (const rotto of ['', 'non json', '{"a":1}', 'null']) {
+      const p = montaSito({ frasiAttr: rotto });
+      p.scrivi('pollorun');
+      p.carica();
+      esigiUguale(JSON.stringify(p.registro.crea[0].frasi), '[]', 'con ' + JSON.stringify(rotto));
+    }
+  });
+
+  await prova('il sito: lo script del gioco e in tutte le pagine con immagine e frasi, dopo la guardia e senza toccare i primi script', () => {
+    const inizio = '<script src="js/pollorun.js" data-pollo="';
+    for (const modello of ['index', 'clip', 'giochi', 'sponsor']) {
+      const testo = fs.readFileSync(path.join(RADICE_VERA, 'modelli', modello + '.html'), 'utf8');
+      esigiUguale(testo.split(inizio).length - 1, 1, 'modelli/' + modello + '.html: lo script c e una volta sola');
+      esigi(testo.indexOf('js/guardia.js') < testo.indexOf(inizio), 'modelli/' + modello + '.html: deve venire dopo la guardia');
+      esigiDentro(testo, '{{#se sito.pollorun.attivo}}', 'modelli/' + modello + '.html: manca il controllo dell interruttore');
+    }
+    const documento = archivio.leggi();
+    const pagine = costruisci.rendi(documento);
+    const trovato = /<script src="js\/pollorun\.js" data-pollo="([^"]*)" data-frasi="([^"]*)" defer><\/script>/.exec(pagine.html);
+    esigi(trovato, 'la home generata non ha lo script');
+    esigiUguale(trovato[1], documento.config.immagini.mascotte, 'immagine del pollo nella home');
+    const frasi = JSON.parse(trovato[2].replace(/&quot;/g, '"').replace(/&#39;/g, '\'').replace(/&amp;/g, '&'));
+    esigi(Array.isArray(frasi) && frasi.length > 0 && frasi.every((f) => typeof f === 'string' && f.length <= 80), 'frasi nella home');
+    esigi(pagine.html.indexOf('js/ritorno.js') < pagine.html.indexOf('js/pollorun.js'), 'ritorno.js non e piu il primo');
+    esigi(typeof pagine.giochi !== 'string' || pagine.giochi.indexOf('js/pollorun.js') !== -1, 'la pagina dei giochi non ha lo script');
+  });
+
+  await prova('il sito: le frasi di scherno del pannello arrivano anche nella home, tagliate a 80 caratteri, protette; vuote danno quelle predefinite', () => {
+    const scritte = archivio.leggi();
+    scritte.config.manutenzione.scherno = ['Ti senti "forte"? <b>', '  ', 'x'.repeat(100)];
+    const trovato = /data-pollo="[^"]*" data-frasi="([^"]*)"/.exec(costruisci.rendi(scritte).html);
+    esigi(trovato, 'manca data-frasi nella home');
+    esigiDentro(trovato[1], '&lt;b&gt;', 'le frasi non sono protette');
+    esigi(trovato[1].indexOf('<b>') === -1, 'una frase entra in pagina senza protezione');
+    const lette = JSON.parse(trovato[1].replace(/&quot;/g, '"').replace(/&#39;/g, '\'').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'));
+    esigiUguale(lette.length, 2, 'la frase vuota deve sparire');
+    esigiUguale(lette[1].length, 80, 'la frase lunga va tagliata a 80');
+    const vuote = archivio.leggi();
+    vuote.config.manutenzione.scherno = [];
+    const predefinite = /data-frasi="([^"]*)"/.exec(costruisci.rendi(vuote).html);
+    esigiDentro(predefinite[1], 'coglione d&#39;oro', 'frasi predefinite');
+  });
+
+  await prova('l interruttore del pannello: acceso lo script e in tutte le pagine, spento non viene nemmeno stampato', () => {
+    const campo = schema.campo('config.pollorun.attivo');
+    esigi(campo && campo.tipo === 'interruttore' && campo.predefinito === true, 'il campo nello schema deve essere un interruttore acceso di partenza');
+    esigiUguale(schema.gruppi.find((g) => g.campi.some((c) => c.chiave === 'config.pollorun.attivo')).id, 'pollo', 'il campo sta nel gruppo del pollo');
+    esigiUguale(archivio.leggi().config.pollorun.attivo, true, 'nei contenuti di partenza e acceso');
+    esigi(convalida.convalidaCampo('config.pollorun.attivo', 'no').length > 0, 'l interruttore accetta una parola');
+    esigiUguale(convalida.convalidaCampo('config.pollorun.attivo', false).length, 0, 'l interruttore rifiuta un vero falso');
+
+    const acceso = costruisci.rendi(archivio.leggi());
+    esigi(acceso.html.indexOf('js/pollorun.js') !== -1, 'acceso: manca nella home');
+    const spento = archivio.leggi();
+    spento.config.pollorun.attivo = false;
+    const pagineSpente = costruisci.rendi(spento);
+    esigi(pagineSpente.html.indexOf('js/pollorun.js') === -1, 'spento: la home stampa ancora lo script');
+    esigi(typeof pagineSpente.giochi !== 'string' || pagineSpente.giochi.indexOf('js/pollorun.js') === -1, 'spento: la pagina dei giochi stampa ancora lo script');
+    esigi(pagineSpente.html.indexOf('js/slayer.js') !== -1, 'spento: e sparita anche la sorpresa slayer');
+    esigi(pagineSpente.html.indexOf('js/guardia.js') !== -1, 'spento: e sparita anche la guardia');
+    const senzaRamo = archivio.leggi();
+    delete senzaRamo.config.pollorun;
+    esigi(costruisci.rendi(senzaRamo).html.indexOf('js/pollorun.js') !== -1, 'senza il ramo nei contenuti online deve restare acceso');
+  });
+}
+
 async function proveManutenzione(contenutiVeri, costruisci, archivio) {
   apriSezione('11b. Modalita manutenzione');
 
@@ -5581,6 +6312,7 @@ async function esegui() {
     await proveSponsor(contenutiVeri, costruisci, archivio);
     await provePaginaGiochi(contenutiVeri, costruisci, archivio);
     await proveSorpresaSlayer(costruisci, archivio);
+    await proveGiocoPollo(costruisci, archivio);
     await proveManutenzione(contenutiVeri, costruisci, archivio);
     await proveGiochiDati();
 

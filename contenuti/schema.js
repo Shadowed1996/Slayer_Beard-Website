@@ -255,7 +255,9 @@ const gruppi = [
         aiuto: 'Meglio non scriverci dentro giorni e orari fissi: se cambi le dirette qui sotto, queste frasi resterebbero indietro.' },
 
       { chiave: 'config.slayer.attivo', etichetta: 'Sorpresa «slayer»: canzone e polletti', tipo: 'interruttore', predefinito: true,
-        aiuto: 'Chi scrive «slayer» con la tastiera, in qualunque pagina del sito, fa partire per 21 secondi la pioggia di polletti con la canzone «J (mp3cut.net).mp3» della cartella mp3. Non parte scrivendo dentro una casella di testo e si ferma con Esc. Spenta, la sorpresa non esiste: lo script non viene nemmeno caricato. Vale dalla prossima Pubblica, ed è indipendente dal pollo qui sopra.' }
+        aiuto: 'Chi scrive «slayer» con la tastiera, in qualunque pagina del sito, fa partire per 21 secondi la pioggia di polletti con la canzone «J (mp3cut.net).mp3» della cartella mp3. Non parte scrivendo dentro una casella di testo e si ferma con Esc. Spenta, la sorpresa non esiste: lo script non viene nemmeno caricato. Vale dalla prossima Pubblica, ed è indipendente dal pollo qui sopra.' },
+      { chiave: 'config.pollorun.attivo', etichetta: 'Pollo Run sul sito: scrivi «pollorun»', tipo: 'interruttore', predefinito: true,
+        aiuto: 'Chi scrive «pollorun» con la tastiera, in qualunque pagina del sito, apre a tutto schermo il gioco Pollo Run, lo stesso della pagina di manutenzione, anche a sito acceso. Il tasto Esc (o la x in alto) lo chiude. Non parte scrivendo dentro una casella di testo. Spento, il gioco non esiste: lo script non viene nemmeno caricato. Le frasi che compaiono a fine livello sono quelle del gruppo «Modalità manutenzione». Vale dalla prossima Pubblica.' }
     ]
   },
 
@@ -847,7 +849,7 @@ const gruppi = [
       { chiave: 'config.manutenzione.scherno', etichetta: 'Pollo Run — frasi di scherno', tipo: 'elencoTesti', facoltativo: true,
         predefinito: ['Bravo, hai ottenuto il coglione d\'oro', 'Ti senti forte?', 'Ti stai divertendo?', 'Samminca',
           'Il pollo corre meglio di te', 'Ancora vivo? Strano.', 'Ok, adesso si fa sul serio', 'Non hai niente di meglio da fare?'],
-        aiuto: 'Nel gioco della pagina di manutenzione più vai avanti più diventa difficile: a 100, 250, 500, 750, 1000, 1500, 2000… punti sale di livello e compare una di queste frasi, a caso e senza ripetersi. Tienile corte (massimo 80 caratteri). Vuoto: le frasi predefinite.' }
+        aiuto: 'Quando finisci un livello del gioco compare una di queste frasi, a caso e senza ripetersi finché non sono finite. Tienile corte (massimo 80 caratteri). Valgono sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. Vuoto: le frasi predefinite.' }
     ]
   },
 
