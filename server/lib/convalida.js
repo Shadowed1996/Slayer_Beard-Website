@@ -1,51 +1,27 @@
 'use strict';
-/* =====================================================================
-   convalida.js — i contenuti contro lo schema (CONTRATTO §7 e §8).
-
-   Restituisce SEMPRE tutti gli errori insieme, mai solo il primo: il
-   pannello li appende al campo che li ha causati, e chi corregge vuole
-   vedere in una volta tutto quello che non va.
-
-   La chiave dell'errore e la stessa dello schema, cosi il pannello la
-   ritrova senza tradurre niente. Per le voci di un elenco si aggiunge
-   l'indice fra parentesi quadre:  config.social[3].url
-   ===================================================================== */
 
 const schema = require('../../contenuti/schema.js');
 const testoricco = require('./testoricco.js');
-// Il generatore dell'editor: le regole dei tre rami senza campo nello
-// schema stanno lì e non si ricopiano qui (CONTRATTO-4 §8).
+
 const SBStili = require('../../pannello/condivisi/stili.js');
-// Le regole della schedule (CONTRATTO-5 §3.5): le stesse che il pannello usa
-// per gli errori accanto alle caselle, così i due non possono dire cose diverse.
+
 const SBOrari = require('../../pannello/condivisi/orari.js');
 
-// Estensioni ammesse nei campi immagine: quelle che il sito sa mostrare.
 const ESTENSIONI_IMMAGINE = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'ico', 'gif', 'avif'];
 const RE_ORARIO = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 const RE_DATAORA = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/;
-// Esadecimale a 6 cifre col cancelletto: la forma corta (#abc) non si
-// accetta perche il tema.css calcola le sfumature dalle sei cifre.
+
 const RE_COLORE = /^#[0-9a-fA-F]{6}$/;
-// Volutamente permissiva: serve a intercettare gli errori di battitura, non
-// a decidere se una casella esiste davvero.
+
 const RE_EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
-/* ------------------------------------------------------------------ */
-/* CONTROLLI ELEMENTARI                                                */
-/* ------------------------------------------------------------------ */
-
-/**
- * URL ammessi dal contratto: http, https, mailto, oppure un percorso
- * relativo. Tutto il resto (javascript:, data:, //altrosito) fuori.
- */
 function urlAmmesso(valore) {
   const testo = valore.trim();
   if (testo.startsWith('//')) { return 'Un indirizzo che inizia con // eredita il protocollo della pagina: scrivi https:// per intero.'; }
   const schema2 = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(testo);
   if (!schema2) {
     if (testo.indexOf('\\') !== -1) { return 'Nei percorsi si usa la barra normale /, non la barra rovesciata.'; }
-    return null;   // percorso relativo: va bene
+    return null;
   }
   const protocollo = schema2[1].toLowerCase();
   if (protocollo === 'http' || protocollo === 'https') {
@@ -58,14 +34,7 @@ function urlAmmesso(valore) {
   return 'Protocollo non ammesso: sono accettati solo http, https, mailto e i percorsi relativi.';
 }
 
-/**
- * Il catalogo dei caratteri vive in server/lib/tema.js, ed e' l'unica
- * lista buona: qui non se ne tiene una copia, che invecchierebbe da sola.
- * Si carica al primo uso e non all'avvio, e se il modulo non c'e' o e'
- * rotto la convalida NON si blocca: un campo font non controllabile non
- * deve impedire di segnalare tutti gli altri errori del documento.
- */
-let catalogoCaricato;      // undefined = mai provato, null = non disponibile
+let catalogoCaricato;
 function catalogoFont() {
   if (catalogoCaricato !== undefined) { return catalogoCaricato; }
   try {
@@ -77,13 +46,6 @@ function catalogoFont() {
   return catalogoCaricato;
 }
 
-/**
- * La libreria dei font caricati (server/lib/font.js). Stessa regola del
- * catalogo, con una differenza: un'assenza non si ricorda. font.js può
- * arrivare dopo convalida.js (un server aggiornato a pezzi, una prova che
- * lo crea a metà), e ricordare «non c'è» vorrebbe dire rifiutarlo per
- * sempre. Un modulo trovato resta invece in memoria, come ogni require.
- */
 let libreriaCaricata = null;
 function libreriaFont() {
   if (libreriaCaricata) { return libreriaCaricata; }
@@ -96,13 +58,6 @@ function libreriaFont() {
   return libreriaCaricata;
 }
 
-/**
- * Le `opzioni` del generatore condiviso: una famiglia vale se sta in uno
- * qualunque dei tre slot del catalogo (lo stile di un elemento non è legato
- * a uno slot), un font caricato se la libreria lo conosce. Senza catalogo o
- * senza libreria la funzione manca, e il generatore tiene i valori di forma
- * giusta invece di bocciarli alla cieca.
- */
 function opzioniStili() {
   const opzioni = {};
   const catalogo = catalogoFont();
@@ -110,7 +65,6 @@ function opzioniStili() {
     opzioni.famiglia = (nome) => {
       for (const slot of Object.keys(catalogo)) {
         for (const voce of catalogo[slot] || []) {
-          // «Font di sistema» non è un nome da mettere in font-family.
           if (voce && voce.nome === nome && Array.isArray(voce.pesi) && voce.pesi.length) { return voce; }
         }
       }
@@ -124,31 +78,13 @@ function opzioniStili() {
   return opzioni;
 }
 
-/** I nomi delle famiglie di uno slot, qualunque forma abbiano le voci. */
 function famiglieDelloSlot(catalogo, slot) {
   const voci = catalogo[slot];
   if (!Array.isArray(voci)) { return null; }
   return voci.map((voce) => (voce && typeof voce === 'object' ? voce.nome : voce)).filter(Boolean);
 }
 
-/**
- * Le «forme»: controlli che non discendono dal tipo del campo ma da che
- * cosa quel testo e. Un Client ID e un `testo` come tanti, ma un testo
- * sbagliato li non si scopre salvando: si scopre quando un visitatore
- * clicca «Collegati con Twitch» e riceve {"status":400,"message":"invalid
- * client"} in faccia, che non dice niente a nessuno.
- *
- * Sono funzioni e non espressioni regolari dichiarate nello schema perche
- * lo schema viaggia in JSON fino al pannello, e una RegExp dentro JSON
- * diventa {} senza dire una parola.
- */
 const FORME = {
-  /**
-   * Il Client ID di un'app Twitch: trenta caratteri, solo minuscole e
-   * cifre. La forbice e 25..35 e non 30 fisso perche il formato lo decide
-   * Twitch e non noi: rifiutare un ID buono sarebbe peggio che accettarne
-   * uno lungo trentuno.
-   */
   clientIdTwitch(valore) {
     if (/^[a-z0-9]{25,35}$/.test(valore)) { return null; }
     const coda = ' Lo trovi su dev.twitch.tv/console/apps, nella scheda dell\'applicazione:'
@@ -157,8 +93,28 @@ const FORME = {
     if (/\s/.test(valore)) { return 'ci sono spazi in mezzo: probabilmente e stato copiato male.' + coda; }
     if (/[^a-z0-9]/.test(valore)) { return 'un Client ID di Twitch ha solo lettere minuscole e cifre.' + coda; }
     return 'sono ' + valore.length + ' caratteri, e un Client ID di Twitch ne ha una trentina.' + coda;
+  },
+
+  fileAudio(valore) {
+    return guaioFileAudio(valore);
   }
 };
+
+const ESTENSIONI_AUDIO = ['mp3', 'ogg', 'wav', 'm4a'];
+
+function guaioFileAudio(valore) {
+  const testo = typeof valore === 'string' ? valore.trim() : '';
+  if (!testo) { return 'manca il nome del file della canzone.'; }
+  if (/[\u0000-\u001f\u007f]/.test(testo)) { return 'il nome del file contiene caratteri invisibili: riscrivilo a mano.'; }
+  if (/[/\\]/.test(testo)) { return 'scrivi solo il nome del file, senza cartelle né barre: il file va caricato direttamente nella cartella «mp3» del sito.'; }
+  if (testo.indexOf('..') !== -1) { return 'il nome del file non può contenere due punti di fila («..»).'; }
+  const punto = testo.lastIndexOf('.');
+  const estensione = punto > 0 ? testo.slice(punto + 1).toLowerCase() : '';
+  if (ESTENSIONI_AUDIO.indexOf(estensione) === -1) {
+    return 'il file deve essere una canzone .mp3, .ogg, .wav o .m4a' + (estensione ? ', non «.' + estensione + '».' : ': manca l\'estensione.');
+  }
+  return null;
+}
 
 function estensioneDi(percorso) {
   const pulito = percorso.split('?')[0].split('#')[0];
@@ -166,22 +122,10 @@ function estensioneDi(percorso) {
   return punto === -1 ? '' : pulito.slice(punto + 1).toLowerCase();
 }
 
-/* ------------------------------------------------------------------ */
-/* UN CAMPO PER VOLTA                                                  */
-/* ------------------------------------------------------------------ */
-
-/**
- * Controlla un valore contro la descrizione di un campo.
- * `aggiungi(messaggio, dettagli)` incassa gli errori: cosi la stessa
- * funzione serve sia per i campi di primo livello sia per quelli dentro un
- * elenco. `dettagli`, facoltativo, si fonde nell'errore: lo usa la schedule
- * per dire dentro il campo quale casella ha sbagliato.
- */
 function controllaValore(campo, valore, aggiungi, chiave) {
   const etichetta = campo.etichetta || chiave;
   const vuotoAmmesso = campo.facoltativo === true;
 
-  // I tipi composti hanno una forma tutta loro: si trattano a parte.
   if (campo.tipo === 'orari') { return controllaOrari(valore, aggiungi, chiave); }
   if (campo.tipo === 'elencoTesti') { return controllaElencoTesti(campo, valore, aggiungi, vuotoAmmesso); }
   if (campo.tipo === 'elenco') { return controllaElenco(campo, valore, aggiungi, chiave); }
@@ -193,9 +137,6 @@ function controllaValore(campo, valore, aggiungi, chiave) {
     return;
   }
 
-  // Un interruttore e' un booleano vero. La stringa "true" arriva dai
-  // form scritti a mano e nel modello si comporterebbe da "acceso" anche
-  // quando dice "false": si rifiuta qui, non dopo.
   if (campo.tipo === 'interruttore') {
     if (typeof valore !== 'boolean') {
       aggiungi('«' + etichetta + '» può valere solo acceso o spento (true o false), non ' + descriviValore(valore) + '.');
@@ -205,8 +146,6 @@ function controllaValore(campo, valore, aggiungi, chiave) {
 
   if (typeof valore !== 'string') { aggiungi('«' + etichetta + '» deve essere un testo.'); return; }
 
-  // Il testo ricco ha una regola sua per il vuoto e per il massimo:
-  // contano i caratteri che si leggono, non i tag.
   if (campo.tipo === 'ricco') { return controllaRicco(campo, valore, aggiungi, etichetta, vuotoAmmesso); }
 
   const testo = valore.trim();
@@ -217,15 +156,11 @@ function controllaValore(campo, valore, aggiungi, chiave) {
   if (typeof campo.max === 'number' && valore.length > campo.max) {
     aggiungi('«' + etichetta + '» supera i ' + campo.max + ' caratteri: adesso sono ' + valore.length + '.');
   }
-  // Un a capo dentro un testo breve finisce quasi sempre in uno spazio
-  // strano dentro un attributo HTML: meglio dirlo.
+
   if (campo.tipo === 'testo' && /[\r\n]/.test(valore)) {
     aggiungi('«' + etichetta + '» deve stare su una riga sola.');
   }
 
-  // La forma dichiarata dallo schema, se c'e. Vale su qualunque tipo di
-  // testo e si ferma alla prima: due messaggi sullo stesso campo non
-  // aiutano a correggerlo.
   if (campo.forma && FORME[campo.forma]) {
     const guaio = FORME[campo.forma](testo);
     if (guaio) { aggiungi('«' + etichetta + '»: ' + guaio); return; }
@@ -269,10 +204,6 @@ function controllaValore(campo, valore, aggiungi, chiave) {
     return;
   }
   if (campo.tipo === 'scelta') {
-    // Un'opzione puo essere una stringa secca ('twitch') oppure una coppia
-    // { valore, etichetta }, che serve quando quello che si salva non e
-    // leggibile da solo: '30' vuol dire «ultimo mese», e nel pannello deve
-    // esserci scritto cosi. Qui conta il valore, li conta l'etichetta.
     const opzioni = (campo.opzioni || []).map((o) => (o && typeof o === 'object' ? String(o.valore) : String(o)));
     if (opzioni.indexOf(testo) === -1) {
       aggiungi('«' + etichetta + '» può valere solo: ' + opzioni.join(', ') + '.');
@@ -280,7 +211,6 @@ function controllaValore(campo, valore, aggiungi, chiave) {
   }
 }
 
-/** Come si chiama, in italiano, quello che e' arrivato al posto giusto. */
 function descriviValore(valore) {
   if (valore === null || valore === undefined) { return 'niente'; }
   if (Array.isArray(valore)) { return 'un elenco'; }
@@ -290,17 +220,10 @@ function descriviValore(valore) {
   return 'questo';
 }
 
-/**
- * Testo ricco: prima il conto dei caratteri VISIBILI (i tag non si
- * contano, altrimenti bastano tre grassetti per sforare un limite), poi
- * l'elenco dei problemi che il sanificatore ha davvero incontrato.
- */
 function controllaRicco(campo, valore, aggiungi, etichetta, vuotoAmmesso) {
   const visibile = testoricco.soloTesto(valore);
 
   if (!visibile) {
-    // Un campo con dentro solo tag e' vuoto per chi legge la pagina:
-    // vale la stessa regola degli altri campi.
     if (!vuotoAmmesso) { aggiungi('«' + etichetta + '» non può restare vuoto.'); }
     else if (valore.trim()) { aggiungi('«' + etichetta + '» contiene solo formattazione e nessun testo da leggere.'); }
     return;
@@ -312,7 +235,6 @@ function controllaRicco(campo, valore, aggiungi, etichetta, vuotoAmmesso) {
   for (const guaio of testoricco.problemi(valore, { etichetta: etichetta })) { aggiungi(guaio); }
 }
 
-/** Gli errori di battitura tipici di un colore, spiegati uno per uno. */
 function spiegaColore(testo) {
   const coda = ' Un colore si scrive così: #8b2fff.';
   if (/^[0-9a-fA-F]{6}$/.test(testo)) { return 'manca il cancelletto davanti.' + coda; }
@@ -323,21 +245,12 @@ function spiegaColore(testo) {
   return 'non è un colore.' + coda;
 }
 
-/**
- * Il carattere deve stare nel catalogo di tema.js, e nello slot giusto:
- * un font da titoli scelto per la strumentazione non e' una svista da
- * lasciar passare, e' un sito con il monospazio che non e' monospazio.
- */
 function controllaFont(campo, testo, aggiungi, etichetta, chiave) {
-  // Il nome finisce dentro css/tema.css: questi caratteri uscirebbero
-  // dalla dichiarazione. Si rifiutano sempre, catalogo o no.
   if (/[<>"'{};\\]/.test(testo) || /[\u0000-\u001f]/.test(testo)) {
     aggiungi('«' + etichetta + '»: il nome di un carattere può contenere solo lettere, numeri e spazi.');
     return;
   }
 
-  // Un font caricato dal pannello (CONTRATTO-4 §4.4): vale in qualunque
-  // slot, purché il file esista ancora.
   if (testo.startsWith('caricato:')) {
     controllaFontCaricato(testo.slice('caricato:'.length), aggiungi, etichetta);
     return;
@@ -351,7 +264,7 @@ function controllaFont(campo, testo, aggiungi, etichetta, chiave) {
   }
 
   const catalogo = catalogoFont();
-  if (!catalogo) { return; }        // catalogo non disponibile: non si blocca il resto
+  if (!catalogo) { return; }
 
   const famiglie = famiglieDelloSlot(catalogo, slot);
   if (!famiglie) {
@@ -370,8 +283,7 @@ function controllaFontCaricato(id, aggiungi, etichetta) {
     return;
   }
   const libreria = libreriaFont();
-  // Senza libreria non si può sapere se il file c'è: come per il catalogo,
-  // un controllo impossibile non blocca il salvataggio del resto.
+
   if (!libreria) { return; }
   let esiste = false;
   try { esiste = libreria.esiste(id) === true; } catch (e) { esiste = false; }
@@ -380,22 +292,6 @@ function controllaFontCaricato(id, aggiungi, etichetta) {
   }
 }
 
-/**
- * La schedule (CONTRATTO-5 §3). Le regole stanno tutte in
- * pannello/condivisi/orari.js e non si ricopiano qui: il pannello mostra
- * gli stessi messaggi accanto alle caselle prima ancora di salvare.
- *
- * Ogni errore porta la chiave del punto preciso, con la forma di tutte le
- * altre chiavi del pannello: `config.orari.schede.1.ora`,
- * `config.orari.eventi.0.data`. Il pannello risale da sé al campo
- * `config.orari` quando non ha una casella con quel nome, e più errori
- * sullo stesso campo non si coprono a vicenda. `percorso` ripete la parte
- * interna al ramo, quella che SBOrari.problemi() chiama così.
- *
- * Un ramo senza schede, eventi o fondale (un contenuti.json di prima della
- * schedule nuova) è valido: problemi() tollera le assenze, e il salvataggio
- * lo completa con normalizza().
- */
 function controllaOrari(valore, aggiungi, chiave) {
   const radice = chiave || 'config.orari';
   for (const problema of SBOrari.problemi(valore)) {
@@ -418,25 +314,8 @@ function controllaElencoTesti(campo, valore, aggiungi, vuotoAmmesso) {
 
 function controllaElenco(campo, valore, aggiungi, chiave) {
   if (!Array.isArray(valore)) { aggiungi('«' + campo.etichetta + '» deve essere un elenco di voci.'); return null; }
-  return valore;   // le voci le percorre chi ha il raccoglitore degli errori
+  return valore;
 }
-
-/* ------------------------------------------------------------------ */
-/* I RAMI DELL'EDITOR (CONTRATTO-4 §6.5, §8)                           */
-/* ------------------------------------------------------------------ */
-
-/*
-   config.sezioni, config.stili e config.disposizione arrivano qui GIÀ
-   ripuliti da pulisciSezioni / pulisciStili / pulisciDisposizione: un
-   valore sbagliato lì si scarta e non blocca il salvataggio del resto.
-   Qui si controlla solo che la forma rimasta sia quella pulita. Un errore
-   vuol dire che qualcuno ha saltato la pulizia (un file scritto a mano,
-   una rotta nuova), e allora è giusto fermarsi e dirlo.
-
-   Un ramo assente non è un errore: un contenuti.json di prima
-   dell'editor, o una copia di sicurezza vecchia, deve potersi ripristinare
-   e dà la pagina di sempre.
-*/
 
 function propria(oggetto, chiave) {
   return Object.prototype.hasOwnProperty.call(oggetto, chiave);
@@ -446,7 +325,6 @@ function oggettoSemplice(valore) {
   return valore !== null && typeof valore === 'object' && !Array.isArray(valore);
 }
 
-/** Uguaglianza profonda; l'ordine delle chiavi di un oggetto non conta. */
 function uguali(a, b) {
   if (a === b) { return true; }
   if (Array.isArray(a) || Array.isArray(b)) {
@@ -489,8 +367,6 @@ function controllaSezioni(valore, aggiungi) {
   }
 }
 
-/* Il player (CONTRATTO-3 §3.4) non si spegne lasciandolo acceso per Twitch:
-   ogni proprietà vietata ha il suo perché, detto a chi amministra. */
 const MOTIVI_PROTETTI = {
   nascosto: 'il player di Twitch non si nasconde',
   opacita: 'il player di Twitch non si rende trasparente',
@@ -499,10 +375,6 @@ const MOTIVI_PROTETTI = {
   riempimento: 'il player di Twitch non si rimpicciolisce'
 };
 
-/* I lati che sui protetti escono da SBStili.LATI_PROTETTI, per nome. I numeri
-   stanno solo lì (li legge anche la scheda Stile): qui si costruisce la
-   frase. Il messaggio dice quali lati, così chi amministra non deve
-   indovinare quale dei quattro cursori ha sbagliato. */
 function latiFuori(valore, limiti) {
   if (!oggettoSemplice(valore) || !limiti) { return []; }
   return ['sopra', 'destra', 'sotto', 'sinistra'].filter((lato) => typeof valore[lato] === 'number'
@@ -530,8 +402,6 @@ function controllaStili(valore, aggiungiSu) {
   const nomi = SBStili.PROPRIETA.map((p) => p.nome);
 
   for (const id of bersagli) {
-    // La chiave dell'errore porta il bersaglio: il pannello ci ritrova
-    // l'elemento da selezionare nell'anteprima.
     const suQuesto = aggiungiSu('config.stili.' + id);
     if (!SBStili.leggiBersaglio(id)) { suQuesto('«' + id + '» non è un elemento della pagina a cui si può dare uno stile.'); continue; }
     const voce = valore[id];
@@ -597,7 +467,7 @@ function controllaDisposizione(valore, aggiungi) {
     const elenco = blocchi[riquadro];
     if (!Array.isArray(elenco)) { aggiungi('I blocchi del riquadro «' + riquadro + '» devono essere un elenco.'); continue; }
     if (uguali(elenco, pulita[riquadro])) { continue; }
-    // Qualcosa non torna: si dice quale voce, invece di un «non va» generico.
+
     const visti = new Set();
     let segnalati = 0;
     const segnala = (messaggio) => { segnalati++; aggiungi(messaggio); };
@@ -611,7 +481,7 @@ function controllaDisposizione(valore, aggiungi) {
       if (visti.has(voce.id)) { segnala('Nella disposizione, il blocco «' + voce.id + '» compare due volte.'); return; }
       visti.add(voce.id);
       const attesa = pulita[riquadro].filter((p) => p.id === voce.id)[0];
-      if (!attesa) { return; }        // oltre il tetto dei blocchi: lo dice il controllo qui sotto
+      if (!attesa) { return; }
       if (!uguali(voce, attesa)) {
         segnala('Nella disposizione, la posizione del blocco «' + voce.id + '» non è nella forma pulita: servono telefono, tablet e computer, ciascuno vuoto o con x, y, l, a dentro i limiti.');
       }
@@ -622,7 +492,6 @@ function controllaDisposizione(valore, aggiungi) {
   }
 }
 
-/** I tre rami dell'editor, ciascuno se c'è. */
 function controllaEditor(contenuti, aggiungiSu) {
   const config = contenuti.config;
   if (propria(config, 'sezioni')) { controllaSezioni(config.sezioni, aggiungiSu('config.sezioni')); }
@@ -630,14 +499,6 @@ function controllaEditor(contenuti, aggiungiSu) {
   if (propria(config, 'disposizione')) { controllaDisposizione(config.disposizione, aggiungiSu('config.disposizione')); }
 }
 
-/* ------------------------------------------------------------------ */
-/* TUTTO IL DOCUMENTO                                                  */
-/* ------------------------------------------------------------------ */
-
-/**
- * Convalida i contenuti contro lo schema.
- * Ritorna un elenco di { chiave, messaggio }, vuoto se va tutto bene.
- */
 function convalida(contenuti) {
   const errori = [];
   const aggiungiSu = (chiave) => (messaggio, dettagli) =>
@@ -666,7 +527,6 @@ function convalida(contenuti) {
     const voci = controllaValore(campo, esito.valore, aggiungiSu(campo.chiave), campo.chiave);
     if (campo.tipo !== 'elenco' || !Array.isArray(voci)) { continue; }
 
-    // Voci dell'elenco: stessa storia, con la chiave indicizzata.
     const chiaviVoce = new Set();
     for (let i = 0; i < voci.length; i++) {
       const voce = voci[i];
@@ -683,8 +543,7 @@ function convalida(contenuti) {
         }
         controllaValore(sottocampo, voce[sottocampo.chiave], aggiungiSu(chiave), chiave);
       }
-      // La chiave interna distingue le voci fra loro: se si ripete, due voci
-      // diventano indistinguibili nei backup e nei confronti.
+
       const interna = typeof voce.chiave === 'string' ? voce.chiave.trim() : '';
       if (interna) {
         if (chiaviVoce.has(interna)) {
@@ -698,9 +557,7 @@ function convalida(contenuti) {
   return errori;
 }
 
-/** Le stesse regole, ma su un valore solo: serve al pannello per il salvataggio parziale. */
 function convalidaCampo(chiave, valore) {
-  // I rami dell'editor non sono campi, ma il salvataggio parziale li manda lo stesso.
   if ((schema.EDITOR || []).indexOf(chiave) !== -1) {
     const errori = [];
     const aggiungiSu = (dove) => (m) => errori.push({ chiave: dove, messaggio: m });
@@ -714,10 +571,9 @@ function convalidaCampo(chiave, valore) {
   return errori;
 }
 
-/** Riassunto in una riga sola, per il terminale. */
 function riassumi(errori) {
   if (!errori.length) { return 'nessun errore'; }
   return errori.length === 1 ? '1 errore' : errori.length + ' errori';
 }
 
-module.exports = { convalida, convalidaCampo, urlAmmesso, riassumi, RE_ORARIO, RE_EMAIL };
+module.exports = { convalida, convalidaCampo, urlAmmesso, guaioFileAudio, riassumi, RE_ORARIO, RE_EMAIL };

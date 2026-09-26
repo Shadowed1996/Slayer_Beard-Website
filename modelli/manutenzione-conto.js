@@ -4,10 +4,31 @@
   if (!tela || !window.PolloRun || typeof window.PolloRun.crea !== 'function') { return; }
   var frasi = [];
   try { frasi = JSON.parse(tela.getAttribute('data-frasi') || '[]'); } catch (e) { frasi = []; }
+  var musica = null;
+  try { musica = JSON.parse(tela.getAttribute('data-canzoni') || 'null'); } catch (e) { musica = null; }
+  var intero = !!musica && typeof musica === 'object' && !Array.isArray(musica);
+  var elenco = Array.isArray(musica) ? musica : (intero && Array.isArray(musica.canzoni) ? musica.canzoni : []);
+  var scelta = intero ? Number(musica.fissa) : 0;
+  var canzoni = [];
+  var fissa = 0;
+  for (var i = 0; i < elenco.length; i++) {
+    var voce = elenco[i];
+    if (!voce || typeof voce.file !== 'string' || voce.file.indexOf('mp3/') !== 0) { continue; }
+    if (i === scelta) { fissa = canzoni.length; }
+    canzoni.push({ titolo: typeof voce.titolo === 'string' ? voce.titolo : '', autore: typeof voce.autore === 'string' ? voce.autore : '', file: voce.file });
+  }
+  var modo = intero && (musica.modo === 'fissa' || musica.modo === 'ordine' || musica.modo === 'caso') ? musica.modo : 'ordine';
   window.PolloRun.crea({
     tela: tela,
     pollo: tela.getAttribute('data-pollo') || '',
     frasi: Array.isArray(frasi) ? frasi : [],
+    canzoni: canzoni,
+    modo: modo,
+    fissa: fissa,
+    suCanzone: function (voce) {
+      var file = voce && typeof voce.file === 'string' && voce.file.indexOf('mp3/') === 0 ? voce.file : '';
+      try { document.dispatchEvent(new CustomEvent('sb:canzone', { detail: { file: file } })); } catch (e) { }
+    },
     suPartita: function (attiva) {
       document.body.classList.toggle('is-gioca', attiva);
       try { document.dispatchEvent(new CustomEvent('sb:gioco', { detail: { attivo: attiva } })); } catch (e) { }
@@ -55,6 +76,9 @@
     var spenta = false;
     var corrente = audio;
     var branoRotto = !brano;
+    var inGioco = false;
+    var canzoneAttiva = false;
+    var branoFile = brano ? (brano.getAttribute('src') || '') : '';
     try { spenta = sessionStorage.getItem(CHIAVE_MUSICA) === 'no'; } catch (e) { }
     var CHIAVE_VOLUMI = 'sb-manutenzione-volumi';
     var scatola = document.getElementById('mnt-audio-box') || tasto;
@@ -113,6 +137,7 @@
       tasto.setAttribute('aria-label', suona ? 'Ferma la musica d’attesa' : 'Fai partire la musica d’attesa');
     };
     var parti = function () {
+      if (corrente === brano && !canzoneAttiva) { return; }
       var promessa = corrente.play();
       if (promessa && typeof promessa.catch === 'function') { promessa.catch(function () { }); }
     };
@@ -142,9 +167,34 @@
     });
     document.addEventListener('sb:gioco', function (evento) {
       var attivo = !!(evento.detail && evento.detail.attivo);
-      if (attivo) { smetti(); }
-      if (attivo && branoRotto) { if (!spenta && audio.paused) { parti(); } return; }
+      inGioco = attivo;
+      if (attivo) { smetti(); } else { canzoneAttiva = false; }
+      if ((attivo && branoRotto) || (!attivo && corrente === audio)) { if (!spenta && audio.paused) { parti(); } return; }
       passaA(attivo ? brano : audio);
+    });
+    document.addEventListener('sb:canzone', function (evento) {
+      if (!brano) { return; }
+      var file = evento.detail && typeof evento.detail.file === 'string' ? evento.detail.file : '';
+      if (!file) {
+        canzoneAttiva = false;
+        if (inGioco) { corrente.pause(); segna(); }
+        return;
+      }
+      canzoneAttiva = true;
+      if (file !== branoFile) {
+        branoFile = file;
+        branoRotto = false;
+        brano.src = file;
+      }
+      if (!inGioco) { return; }
+      if (branoRotto) {
+        if (corrente !== audio) { passaA(audio); } else if (!spenta && audio.paused) { parti(); }
+        return;
+      }
+      if (corrente !== brano) { passaA(brano); return; }
+      try { brano.currentTime = 0; } catch (e) { }
+      if (!spenta) { parti(); }
+      segna();
     });
     audio.addEventListener('play', segna);
     audio.addEventListener('pause', segna);
@@ -153,6 +203,7 @@
       brano.addEventListener('play', segna);
       brano.addEventListener('pause', segna);
       brano.addEventListener('error', function () {
+        if (!brano.error) { return; }
         branoRotto = true;
         if (corrente === brano) { passaA(audio); }
       });

@@ -1074,14 +1074,21 @@ Non hanno una voce loro, ma è bene sapere come si comportano.
   ora non vengono usati.
 - **Pollo Run**, nella pagina di manutenzione: parte **solo con la barra
   spaziatrice**; un clic sulla pagina fa partire la musica d'attesa. Durante la
-  partita suona `mp3/DJVI - Back On Track.mp3`, poi torna l'ascensore. La musica
+  partita suona la canzone del gioco scelta dal pannello (vedi *Le canzoni di
+  Pollo Run* qui sotto), poi torna l'ascensore. La musica
   prova a partire da sola all'apertura: se il browser lo blocca, parte al primo
   clic o tasto. Il gioco è a **livelli veri**: ogni livello è un percorso fisso con il
   traguardo, una barra di avanzamento in alto e la scritta «LIVELLO N
   COMPLETATO»; a fine livello compare una frase di scherno e **SPAZIO** porta al
-  livello dopo. Chi sbatte riprova lo stesso livello (sempre uguale, così si
-  impara); **INVIO** dalla schermata iniziale riprende dal livello più alto
-  raggiunto. I livelli sono infiniti e ogni volta più difficili: più veloci, con
+  livello dopo. Lo stile è quello di Geometry Dash: il pollo corre dentro un cubo che ruota
+  in aria, lo sfondo cambia colore da un livello all'altro (e scivola verso il
+  colore del livello dopo mentre si avanza), blocchi e punte sono neri col
+  bordo bianco, i rombi sono seghe rotanti, in alto c'è la barra con la
+  percentuale e nel percorso scorre la scritta «TENTATIVO N». Chi sbatte vede il cubo
+  rompersi e **dopo un secondo si riparte da soli** dall'inizio dello stesso
+  livello (sempre uguale, così si impara; SPAZIO fa ripartire subito). A fine
+  livello, oltre alla frase, compaiono tentativi, salti e tempo. **INVIO** dalla
+  schermata iniziale riprende dal livello più alto raggiunto. I livelli sono infiniti e ogni volta più difficili: più veloci, con
   ostacoli più fitti e più complessi (blocchi e piattaforme su cui atterrare,
   buche, scale, isolotti sopra le buche, valli di punte, rombi da non toccare,
   catene ravvicinate) e uno sfondo di colori diversi. Ogni livello è controllato
@@ -1097,8 +1104,34 @@ Non hanno una voce loro, ma è bene sapere come si comportano.
   sottofondo del sito si ferma e riparte alla chiusura, e suona la canzone del
   gioco con il volume scelto nella pagina di manutenzione. Si spegne
   dall'interruttore **Pollo Run sul sito: scrivi «pollorun»**, in fondo alla
-  parte *Il pollo* (spento, lo script non viene nemmeno caricato). Le frasi sono
-  le stesse. Vale dalla prossima **Pubblica**.
+  parte *Il pollo* (spento, lo script non viene nemmeno caricato). Le frasi e le
+  canzoni sono le stesse della pagina di manutenzione. Vale dalla prossima
+  **Pubblica**.
+
+- **Le canzoni di Pollo Run** si scelgono in **Manutenzione**, subito sotto le
+  frasi di scherno, e valgono sia nella pagina di manutenzione sia nel gioco che
+  si apre scrivendo «pollorun» (anche a manutenzione spenta):
+  - **Pollo Run — le canzoni del gioco**: l'elenco, con titolo, nome del file e
+    autore (facoltativo). Di partenza ci sono 12 canzoni, da «Stereo Madness» a
+    «Theory of Everything». **Per aggiungerne una**: carica il file da Plesk
+    nella cartella `mp3` del sito, aggiungi una voce scrivendo nel campo *Nome
+    del file* lo **stesso identico nome** (maiuscole, spazi e apostrofi
+    compresi, per esempio `DJVI - Back On Track.mp3`, senza cartelle davanti),
+    poi **Salva** e **Pubblica**. Sono ammessi `.mp3`, `.ogg`, `.wav` e `.m4a`.
+    Le voci il cui file **non c'è** nella cartella `mp3` al momento della
+    Pubblica vengono **ignorate** senza errori (se hai caricato il file dopo,
+    ripubblica); se non ne resta nessuna suona `DJVI - Back On Track.mp3`.
+    L'ordine dell'elenco conta: si cambia con le frecce su e giù di ogni voce.
+  - **Pollo Run — quale canzone suona**: *Sempre la stessa canzone*; *Una
+    diversa a ogni livello, nell'ordine dell'elenco* (il livello 1 suona la
+    prima canzone disponibile, il 2 la seconda e così via, finite si ricomincia:
+    è la scelta di partenza); *Una a caso a ogni livello* (mai la stessa due
+    livelli di fila). Dopo una morte il livello riparte con la stessa canzone,
+    dall'inizio; il titolo della canzone compare sullo schermo del gioco.
+  - **Pollo Run — numero della canzone «sempre la stessa»**: conta solo con
+    *Sempre la stessa canzone*. È la posizione nell'elenco completo, contando da
+    1 (di partenza 2 = «Back On Track»). Se quella canzone non ha il file, suona
+    la prima disponibile.
 
 ### Google e social
 

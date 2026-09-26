@@ -257,7 +257,7 @@ const gruppi = [
       { chiave: 'config.slayer.attivo', etichetta: 'Sorpresa «slayer»: canzone e polletti', tipo: 'interruttore', predefinito: true,
         aiuto: 'Chi scrive «slayer» con la tastiera, in qualunque pagina del sito, fa partire per 21 secondi la pioggia di polletti con la canzone «J (mp3cut.net).mp3» della cartella mp3. Non parte scrivendo dentro una casella di testo e si ferma con Esc. Spenta, la sorpresa non esiste: lo script non viene nemmeno caricato. Vale dalla prossima Pubblica, ed è indipendente dal pollo qui sopra.' },
       { chiave: 'config.pollorun.attivo', etichetta: 'Pollo Run sul sito: scrivi «pollorun»', tipo: 'interruttore', predefinito: true,
-        aiuto: 'Chi scrive «pollorun» con la tastiera, in qualunque pagina del sito, apre a tutto schermo il gioco Pollo Run, lo stesso della pagina di manutenzione, anche a sito acceso. Il tasto Esc (o la x in alto) lo chiude. Non parte scrivendo dentro una casella di testo. Spento, il gioco non esiste: lo script non viene nemmeno caricato. Le frasi che compaiono a fine livello sono quelle del gruppo «Modalità manutenzione». Vale dalla prossima Pubblica.' }
+        aiuto: 'Chi scrive «pollorun» con la tastiera, in qualunque pagina del sito, apre a tutto schermo il gioco Pollo Run, lo stesso della pagina di manutenzione, anche a sito acceso. Il tasto Esc (o la x in alto) lo chiude. Non parte scrivendo dentro una casella di testo. Spento, il gioco non esiste: lo script non viene nemmeno caricato. Le frasi che compaiono a fine livello e le canzoni del gioco sono quelle del gruppo «Modalità manutenzione», le stesse della pagina di manutenzione. Vale dalla prossima Pubblica.' }
     ]
   },
 
@@ -822,7 +822,7 @@ const gruppi = [
   {
     id: 'manutenzione',
     titolo: 'Modalità manutenzione',
-    descrizione: 'Mette il sito in pausa: al posto delle pagine chi lo apre vede la pagina di manutenzione, con il link a Twitch e ai social.',
+    descrizione: 'Mette il sito in pausa: al posto delle pagine chi lo apre vede la pagina di manutenzione, con il link a Twitch e ai social. In fondo al gruppo ci sono le frasi e le canzoni di Pollo Run: valgono sia per la pagina di manutenzione sia per il gioco che si apre scrivendo «pollorun» sul sito, anche a manutenzione spenta.',
     campi: [
       { chiave: 'config.manutenzione.attiva', etichetta: 'Sito in manutenzione', tipo: 'interruttore', predefinito: false,
         aiuto: 'Acceso, salva e premi Pubblica: da quel momento tutti i visitatori vedono la pagina di manutenzione, sulla home e su clip.html, e si fermano player di Twitch, modalità lurk con i suoi messaggi in chat, pollo, musica e sondaggi. Spento, salva e premi Pubblica: torna il sito normale. L\'anteprima qui nel pannello mostra sempre il sito vero, così puoi continuare a lavorarci.' },
@@ -849,7 +849,40 @@ const gruppi = [
       { chiave: 'config.manutenzione.scherno', etichetta: 'Pollo Run — frasi di scherno', tipo: 'elencoTesti', facoltativo: true,
         predefinito: ['Bravo, hai ottenuto il coglione d\'oro', 'Ti senti forte?', 'Ti stai divertendo?', 'Samminca',
           'Il pollo corre meglio di te', 'Ancora vivo? Strano.', 'Ok, adesso si fa sul serio', 'Non hai niente di meglio da fare?'],
-        aiuto: 'Quando finisci un livello del gioco compare una di queste frasi, a caso e senza ripetersi finché non sono finite. Tienile corte (massimo 80 caratteri). Valgono sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. Vuoto: le frasi predefinite.' }
+        aiuto: 'Quando finisci un livello del gioco compare una di queste frasi, a caso e senza ripetersi finché non sono finite. Tienile corte (massimo 80 caratteri). Valgono sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. Vuoto: le frasi predefinite.' },
+      { chiave: 'config.pollorun.canzoni', etichetta: 'Pollo Run — le canzoni del gioco', tipo: 'elenco', etichettaVoce: 'titolo',
+        predefinito: [
+          { titolo: 'Stereo Madness', file: 'ForeverBound - Stereo Madness.mp3', autore: 'ForeverBound' },
+          { titolo: 'Back On Track', file: 'DJVI - Back On Track.mp3', autore: 'DJVI' },
+          { titolo: 'Polargeist', file: 'Step - Polargeist.mp3', autore: 'Step' },
+          { titolo: 'Dry Out', file: 'DJVI - Dry Out.mp3', autore: 'DJVI' },
+          { titolo: 'Base After Base', file: 'DJVI - Base After Base.mp3', autore: 'DJVI' },
+          { titolo: 'Can\'t Let Go', file: 'DJVI - Can\'t Let Go.mp3', autore: 'DJVI' },
+          { titolo: 'Jumper', file: 'Waterflame - Jumper.mp3', autore: 'Waterflame' },
+          { titolo: 'Time Machine', file: 'Waterflame - Time Machine.mp3', autore: 'Waterflame' },
+          { titolo: 'Cycles', file: 'DJVI - Cycles.mp3', autore: 'DJVI' },
+          { titolo: 'xStep', file: 'DJVI - xStep.mp3', autore: 'DJVI' },
+          { titolo: 'Clutterfunk', file: 'Waterflame - Clutterfunk.mp3', autore: 'Waterflame' },
+          { titolo: 'Theory of Everything', file: 'DJVI - Theory of Everything.mp3', autore: 'DJVI' }
+        ],
+        aiuto: 'Le canzoni che possono suonare durante Pollo Run, sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. Per aggiungerne una: carica il file da Plesk nella cartella «mp3» del sito, scrivi qui lo stesso identico nome del file, poi Salva e Pubblica. Le voci il cui file non c\'è nella cartella «mp3» al momento della Pubblica vengono ignorate; se non ne resta nessuna suona «DJVI - Back On Track.mp3». L\'ordine dell\'elenco è l\'ordine dei livelli.',
+        campi: [
+          { chiave: 'titolo', etichetta: 'Titolo', tipo: 'testo', max: 60, predefinito: 'Titolo della canzone',
+            aiuto: 'Compare sullo schermo del gioco mentre la canzone suona.' },
+          { chiave: 'file', etichetta: 'Nome del file', tipo: 'testo', max: 100, forma: 'fileAudio', predefinito: '',
+            aiuto: 'Solo il nome del file dentro la cartella «mp3», scritto esattamente com\'è (maiuscole, spazi e apostrofi compresi), per esempio «DJVI - Back On Track.mp3». Niente cartelle. Formati: .mp3, .ogg, .wav, .m4a.' },
+          { chiave: 'autore', etichetta: 'Autore', tipo: 'testo', max: 60, facoltativo: true, predefinito: '',
+            aiuto: 'Facoltativo: compare accanto al titolo.' }
+        ] },
+      { chiave: 'config.pollorun.modo', etichetta: 'Pollo Run — quale canzone suona', tipo: 'scelta', predefinito: 'ordine',
+        opzioni: [
+          { valore: 'fissa', etichetta: 'Sempre la stessa canzone' },
+          { valore: 'ordine', etichetta: 'Una diversa a ogni livello, nell\'ordine dell\'elenco' },
+          { valore: 'caso', etichetta: 'Una a caso a ogni livello' }
+        ],
+        aiuto: 'Vale sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. «Nell\'ordine dell\'elenco»: il livello 1 suona la prima canzone disponibile, il 2 la seconda, e finite si ricomincia. «A caso»: a ogni livello una canzone diversa da quella di prima. Dopo una morte il livello riparte con la stessa canzone, dall\'inizio.' },
+      { chiave: 'config.pollorun.canzoneFissa', etichetta: 'Pollo Run — numero della canzone «sempre la stessa»', tipo: 'numero', min: 1, max: 50, predefinito: 2,
+        aiuto: 'Conta solo con «Sempre la stessa canzone», nella pagina di manutenzione e nel gioco che si apre scrivendo «pollorun» sul sito. È la posizione nell\'elenco qui sopra: 1 = la prima, 2 = la seconda (di serie «Back On Track»). Se quella canzone non ha il file nella cartella «mp3», suona la prima disponibile.' }
     ]
   },
 

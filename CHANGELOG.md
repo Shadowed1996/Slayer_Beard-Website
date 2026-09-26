@@ -15,6 +15,39 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Le canzoni di Pollo Run si scelgono dal pannello.** Nel gruppo
+  *Modalità manutenzione*, sotto le frasi di scherno: `config.pollorun.canzoni`
+  (elenco di titolo, nome del file nella cartella `mp3`, autore facoltativo; di
+  partenza 12 canzoni da «Stereo Madness» a «Theory of Everything»),
+  `config.pollorun.modo` (`fissa`, `ordine` una per livello, `caso` una a caso
+  a ogni livello; di partenza `ordine`) e `config.pollorun.canzoneFissa`
+  (posizione nell'elenco, di partenza 2 = «Back On Track»). Valgono sia per la
+  pagina di manutenzione sia per il gioco che si apre scrivendo «pollorun». Il
+  nome del file si convalida (niente cartelle, `..` o caratteri di controllo;
+  solo `.mp3 .ogg .wav .m4a`). A ogni Pubblica `canzoniPolloRun` tiene solo le
+  voci il cui file esiste davvero in `mp3/` (se nessuna, `DJVI - Back On
+  Track.mp3`) e le passa come `data-canzoni` al canvas della manutenzione e allo
+  script di `js/pollorun.js`. La canzone la sceglie il motore e la chiede con
+  `suCanzone`: una sola traccia che riparte da capo a ogni tentativo e si ferma
+  alla morte e all'uscita; in manutenzione una canzone che non si carica
+  ripiega sulla musica d'attesa solo finché quel brano è in errore. I file
+  audio non stanno nel repository: si caricano da Plesk.
+
+- **Pollo Run in stile Geometry Dash.** Il giocatore è un cubo con il pollo
+  dentro che ruota di 90° alla volta in aria e si raddrizza all'atterraggio;
+  sfondo a gradiente con quadrati che scorrono, di un colore diverso a ogni
+  livello e che scivola verso il colore del livello dopo man mano che si
+  avanza; pavimento a piastrelle con la linea luminosa; blocchi e punte neri con
+  il bordo bianco e un alone colorato; i rombi diventano seghe rotanti. In alto
+  c'è la barra di avanzamento con la percentuale, nel percorso scorre «TENTATIVO
+  N». Chi sbatte vede il cubo rompersi in quadratini con un'onda e un lampo, e
+  **dopo un secondo si ricomincia da soli** lo stesso livello (SPAZIO fa
+  ripartire subito); il «GAME OVER» non c'è più. La schermata di fine livello è
+  un riquadro con «LIVELLO N COMPLETATO!», la frase di scherno, tentativi,
+  salti e tempo, e la canzone. La fisica non cambia, ma l'area di contatto del
+  giocatore ora segue il cubo (quadrato di 0,66 caselle): i livelli sono stati
+  ricontrollati uno per uno. Durante la partita la scheda della manutenzione
+  sparisce del tutto (prima restava un fantasma al 10%).
 - **Pollo Run a livelli veri.** Al posto della corsa infinita a punteggio ogni
   livello è un percorso fisso con traguardo, barra di avanzamento e «LIVELLO N
   COMPLETATO»: compare una frase di scherno (`config.manutenzione.scherno`) e

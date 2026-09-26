@@ -233,7 +233,71 @@
       "attivo": true
     },
     "pollorun": {
-      "attivo": true
+      "attivo": true,
+      "canzoni": [
+        {
+          "titolo": "Stereo Madness",
+          "file": "ForeverBound - Stereo Madness.mp3",
+          "autore": "ForeverBound"
+        },
+        {
+          "titolo": "Back On Track",
+          "file": "DJVI - Back On Track.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Polargeist",
+          "file": "Step - Polargeist.mp3",
+          "autore": "Step"
+        },
+        {
+          "titolo": "Dry Out",
+          "file": "DJVI - Dry Out.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Base After Base",
+          "file": "DJVI - Base After Base.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Can't Let Go",
+          "file": "DJVI - Can't Let Go.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Jumper",
+          "file": "Waterflame - Jumper.mp3",
+          "autore": "Waterflame"
+        },
+        {
+          "titolo": "Time Machine",
+          "file": "Waterflame - Time Machine.mp3",
+          "autore": "Waterflame"
+        },
+        {
+          "titolo": "Cycles",
+          "file": "DJVI - Cycles.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "xStep",
+          "file": "DJVI - xStep.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Clutterfunk",
+          "file": "Waterflame - Clutterfunk.mp3",
+          "autore": "Waterflame"
+        },
+        {
+          "titolo": "Theory of Everything",
+          "file": "DJVI - Theory of Everything.mp3",
+          "autore": "DJVI"
+        }
+      ],
+      "modo": "ordine",
+      "canzoneFissa": 2
     },
     "twitch": {
       "canale": "slayer_beard",

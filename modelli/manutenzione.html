@@ -347,7 +347,7 @@
   }
 
   body.is-gioca .mnt {
-    opacity: .1;
+    opacity: 0;
     filter: blur(2px);
     pointer-events: none;
   }
@@ -512,7 +512,7 @@
 <body>
 <div class="mnt__griglia" aria-hidden="true"></div>
 <div class="mnt__righe" aria-hidden="true"></div>
-<canvas class="mnt__gioco" id="mnt-gioco" data-pollo="{{manutenzione.mascotte}}" data-frasi="{{manutenzione.frasiPollo}}" aria-hidden="true"></canvas>
+<canvas class="mnt__gioco" id="mnt-gioco" data-pollo="{{manutenzione.mascotte}}" data-frasi="{{manutenzione.frasiPollo}}" data-canzoni="{{manutenzione.canzoniPollo}}" aria-hidden="true"></canvas>
 
 <main class="mnt">
   <section class="mnt__monitor" aria-labelledby="mnt-titolo">
@@ -559,7 +559,7 @@
   </div>
 </div>
 <audio id="mnt-audio" src="mp3/ElevatorMaintenance.mp3" loop preload="auto"></audio>
-<audio id="mnt-audio-gioco" src="mp3/DJVI%20-%20Back%20On%20Track.mp3" loop preload="none"></audio>
+<audio id="mnt-audio-gioco" src="{{manutenzione.canzoneGioco}}" loop preload="none"></audio>
 <div class="mnt__audio" id="mnt-audio-box">
 <div class="mnt__volumi" id="mnt-volumi" hidden>
   <label class="mnt__volume" for="mnt-vol-attesa"><span class="mnt__volume-nome">Musica d'attesa</span><input type="range" id="mnt-vol-attesa" min="0" max="100" step="1" value="20"><output class="mnt__volume-valore" id="mnt-vol-attesa-valore" for="mnt-vol-attesa">20</output></label>

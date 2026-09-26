@@ -811,7 +811,8 @@ function costruisciContesto(contenuti, opzioni) {
   contesto.sito.pollorun = {
     attivo: !(config.pollorun && config.pollorun.attivo === false),
     pollo: String((config.immagini && config.immagini.mascotte) || ''),
-    frasi: frasiPolloRun(config)
+    frasi: frasiPolloRun(config),
+    canzoni: JSON.stringify(canzoniPolloRun(config))
   };
   contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
 
@@ -1373,6 +1374,33 @@ function frasiPolloRun(config) {
   return JSON.stringify(scherno.length ? scherno : schema.campo('config.manutenzione.scherno').predefinito);
 }
 
+const MODI_POLLORUN = ['fissa', 'ordine', 'caso'];
+const CANZONE_RIPIEGO = { titolo: 'Back On Track', autore: 'DJVI', file: 'mp3/DJVI%20-%20Back%20On%20Track.mp3' };
+
+function canzoniPolloRun(config) {
+  const ramo = (config && config.pollorun && typeof config.pollorun === 'object') ? config.pollorun : {};
+  const elenco = Array.isArray(ramo.canzoni) ? ramo.canzoni : schema.campo('config.pollorun.canzoni').predefinito;
+  const numero = Number(ramo.canzoneFissa);
+  const posizione = (Number.isInteger(numero) && numero >= 1 ? numero : schema.campo('config.pollorun.canzoneFissa').predefinito) - 1;
+  const modo = MODI_POLLORUN.indexOf(ramo.modo) !== -1 ? ramo.modo : 'ordine';
+  const canzoni = [];
+  let fissa = 0;
+  elenco.forEach((voce, indice) => {
+    if (!voce || typeof voce !== 'object') { return; }
+    const nome = typeof voce.file === 'string' ? voce.file.trim() : '';
+    if (convalida.guaioFileAudio(nome) || !eFile(path.join(P.radice, 'mp3', nome))) { return; }
+    const titolo = (typeof voce.titolo === 'string' ? voce.titolo.trim() : '').slice(0, 60);
+    if (indice === posizione) { fissa = canzoni.length; }
+    canzoni.push({
+      titolo: titolo || nome.replace(/\.[^.]+$/, ''),
+      autore: (typeof voce.autore === 'string' ? voce.autore.trim() : '').slice(0, 60),
+      file: 'mp3/' + encodeURIComponent(nome)
+    });
+  });
+  if (!canzoni.length) { return { canzoni: [Object.assign({}, CANZONE_RIPIEGO)], modo: modo, fissa: 0 }; }
+  return { canzoni: canzoni, modo: modo, fissa: fissa };
+}
+
 function contestoManutenzione(contenuti, adesso, cache) {
   const testi = (contenuti && contenuti.testi) || {};
   const config = (contenuti && contenuti.config) || {};
@@ -1398,6 +1426,7 @@ function contestoManutenzione(contenuti, adesso, cache) {
     throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.scriptPolloRun) +
       ': e il motore del gioco della pagina di manutenzione.');
   }
+  const canzoni = canzoniPolloRun(config);
   const script = '\n' + fs.readFileSync(P.scriptPolloRun, 'utf8') + '\n' + fs.readFileSync(P.scriptManutenzione, 'utf8');
   const impronta = 'sha256-' + crypto.createHash('sha256').update(script, 'utf8').digest('base64');
 
@@ -1422,6 +1451,8 @@ function contestoManutenzione(contenuti, adesso, cache) {
     avatar: String(immagini.avatar || ''),
     mascotte: String(immagini.mascotte || ''),
     frasiPollo: frasiPolloRun(config),
+    canzoniPollo: JSON.stringify(canzoni),
+    canzoneGioco: canzoni.canzoni[0].file,
     og: String(immagini.og || ''),
     favicon: String(immagini.favicon || ''),
     fontUrl: tema.urlGoogleFonts(config.tema, []),
@@ -1825,7 +1856,7 @@ module.exports = {
   fineManutenzione, istanteItaliano, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, sponsorDi, giochiDi, jsonSicuro, chiaviRicche,
-  orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta,
+  orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta, canzoniPolloRun,
 
   togliCommenti
 };

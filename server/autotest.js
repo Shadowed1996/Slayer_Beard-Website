@@ -5049,8 +5049,11 @@ async function proveGiocoPollo(costruisci, archivio) {
     const M = soloTerraPiatta();
     const presto = simula(M, { premeAl: [0, 60], passi: 300 });
     esigi(presto.alt.filter((a, i) => i > 72 && a > 0.05).length > 30, 'con il tasto premuto in aria non salta di nuovo');
+    esigiUguale(presto.stato.salti, 2, 'il salto ripartito da solo all atterraggio non viene contato');
     const troppoPresto = simula(M, { premeAl: [0, 20], passi: 300 });
     esigi(troppoPresto.alt.filter((a, i) => i > 90 && a > 0.05).length === 0, 'il tasto premuto troppo presto salta lo stesso');
+    esigiUguale(troppoPresto.stato.salti, 1, 'i salti contati sono piu di quelli fatti');
+    esigiUguale(simula(M, { premeAl: [], passi: 200 }).stato.salti, 0, 'senza premere niente c e un salto contato');
   });
 
   const nomiFigura = { punta: 1, punte: 2, blocco: 2, piattaforma: 3, piattaformaPunte: 4, catena: 5, buca: 6, scala: 7, bucaPunta: 8, romboPunta: 8, vallata: 9, isole: 10, piattaformaRombo: 11, catenaMista: 12, scalaPunte: 14 };
@@ -5122,8 +5125,8 @@ async function proveGiocoPollo(costruisci, archivio) {
     }
   });
 
-  const rendiFinta = () => {
-    const registro = { testi: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [] };
+  const rendiFinta = (casuale) => {
+    const registro = { testi: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [], eventi: [], voci: [], ordine: [] };
     let inAttesa = null;
     let ora = 1000;
     const contesto = new Proxy({}, {
@@ -5160,14 +5163,20 @@ async function proveGiocoPollo(costruisci, archivio) {
       cancelAnimationFrame: () => { inAttesa = null; },
       setTimeout: (fn) => { registro.timer.push(fn); return registro.timer.length; },
       clearTimeout: () => {},
-      Math: Math,
+      Math: casuale === undefined ? Math : Object.create(Math, { random: { value: () => casuale } }),
       JSON: JSON,
       Date: Date
     });
     const frasi = ['Prima frase di prova', 'Seconda frase di prova'];
+    const canzoni = [
+      { titolo: 'Prima', autore: 'Uno', file: 'mp3/prima.mp3' },
+      { titolo: 'Seconda', autore: '', file: 'mp3/seconda.mp3' },
+      { titolo: 'Terza', autore: 'Tre', file: 'mp3/terza.mp3' }
+    ];
     const crea = (extra) => finestra.PolloRun.crea(Object.assign({
-      tela: tela, pollo: 'img/mascotte.webp', frasi: frasi,
-      suPartita: (a) => { registro.suPartita.push(a); },
+      tela: tela, pollo: 'img/mascotte.webp', frasi: frasi, canzoni: canzoni, modo: 'ordine', fissa: 0,
+      suPartita: (a) => { registro.suPartita.push(a); registro.ordine.push('partita:' + a); },
+      suCanzone: (v) => { registro.eventi.push(v ? v.file : null); registro.voci.push(v); registro.ordine.push('canzone:' + (v ? v.file : null)); },
       suChiudi: () => { registro.suChiudi++; }
     }, extra || {}));
     const frame = (dtMs) => {
@@ -5184,7 +5193,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     };
     const testiUltimo = (dtMs) => { registro.testi = []; frame(dtMs === undefined ? 1000 / 60 : dtMs); return registro.testi.join('|'); };
     const attendi = (secondi) => { for (let t = 0; t < secondi; t += 1 / 60) { frame(1000 / 60); } };
-    return { registro: registro, crea: crea, frame: frame, tasto: tasto, testiUltimo: testiUltimo, attendi: attendi, finestra: finestra, frasi: frasi, ora: () => ora };
+    return { registro: registro, crea: crea, frame: frame, tasto: tasto, testiUltimo: testiUltimo, attendi: attendi, finestra: finestra, frasi: frasi, canzoni: canzoni, ora: () => ora };
   };
 
   const giocaSchedule = (h, secondi, dtMs, limiteSec) => {
@@ -5195,16 +5204,17 @@ async function proveGiocoPollo(costruisci, archivio) {
     while (t * 1000 < limite && !esito) {
       while (indice < secondi.length && secondi[indice] <= t) { h.tasto(' ', 'Space'); indice++; }
       h.registro.testi = [];
+      const eventiPrima = h.registro.eventi.length;
       h.frame(dtMs);
       t += dtMs / 1000;
       const testo = h.registro.testi.join('|');
       if (testo.indexOf('COMPLETATO') !== -1) { esito = 'vinto'; }
-      if (testo.indexOf('GAME OVER') !== -1) { esito = 'morto'; }
+      if (h.registro.eventi.slice(eventiPrima).indexOf(null) !== -1) { esito = 'morto'; }
     }
     return { esito: esito, t: t };
   };
 
-  await prova('gioco: dalla schermata iniziale a SPAZIO parte il livello 1; senza saltare si muore e SPAZIO riprova lo stesso livello', () => {
+  await prova('gioco: SPAZIO parte il livello 1; morendo il cubo esplode e si riprova da soli lo stesso livello, senza schermata di fine partita', () => {
     const h = rendiFinta();
     const gioco = h.crea();
     gioco.avvia();
@@ -5214,15 +5224,70 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiDentro(h.testiUltimo(), 'LIVELLO 1', 'il livello 1 non parte');
     const r = giocaSchedule(h, [], 1000 / 60, 40);
     esigiUguale(r.esito, 'morto', 'senza saltare non muore');
-    esigiDentro(h.testiUltimo(), 'SPAZIO per riprovare il livello 1', 'schermata di fine partita');
+    esigi(h.testiUltimo().indexOf('GAME OVER') === -1, 'compare ancora GAME OVER: si deve ripartire da soli');
     h.tasto(' ', 'Space');
-    esigiDentro(h.testiUltimo(), 'GAME OVER', 'riprova troppo presto: deve aspettare');
-    h.attendi(0.6);
+    h.testiUltimo();
+    esigiUguale(h.registro.eventi[h.registro.eventi.length - 1], null, 'SPAZIO subito dopo la morte fa ripartire troppo presto');
+    h.attendi(0.3);
     h.tasto(' ', 'Space');
     const dopo = h.testiUltimo();
     esigiDentro(dopo, 'LIVELLO 1', 'non riparte il livello');
     esigiDentro(dopo, 'TENTATIVO 2', 'il secondo tentativo non e contato');
     esigiUguale(h.registro.suPartita.join(','), 'true', 'la partita e stata annunciata di nuovo');
+    esigiUguale(h.registro.eventi.join(','), 'mp3/prima.mp3,,mp3/prima.mp3', 'a ogni tentativo la stessa canzone riparte da capo, e alla morte si ferma');
+    const morto2 = giocaSchedule(h, [], 1000 / 60, 40);
+    esigiUguale(morto2.esito, 'morto', 'il secondo tentativo senza saltare non muore');
+    h.attendi(1.2);
+    esigiDentro(h.testiUltimo(), 'TENTATIVO 3', 'dopo un secondo dalla morte non si riparte da soli');
+    esigiUguale(h.registro.eventi[h.registro.eventi.length - 1], 'mp3/prima.mp3', 'la ripartenza non rimette la canzone');
+  });
+
+  await prova('gioco: la canzone segue la modalita scelta: una per livello in ordine, sempre la stessa, o a caso senza ripetersi', () => {
+    const daLivello = (modo, fissa, livelloIniziale, casuale) => {
+      const h = rendiFinta(casuale);
+      h.registro.memoria['sb-pollo-livello'] = String(livelloIniziale);
+      h.crea({ modo: modo, fissa: fissa }).avvia();
+      h.tasto('Enter', 'Enter');
+      return h;
+    };
+    const primo = (h) => h.registro.eventi[0];
+    esigiUguale(primo(daLivello('ordine', 0, 1)), 'mp3/prima.mp3', 'ordine, livello 1');
+    esigiUguale(primo(daLivello('ordine', 0, 2)), 'mp3/seconda.mp3', 'ordine, livello 2');
+    esigiUguale(primo(daLivello('ordine', 0, 3)), 'mp3/terza.mp3', 'ordine, livello 3');
+    esigiUguale(primo(daLivello('ordine', 0, 4)), 'mp3/prima.mp3', 'ordine, livello 4: l elenco ricomincia');
+    esigiUguale(primo(daLivello('fissa', 2, 1)), 'mp3/terza.mp3', 'fissa sulla terza, livello 1');
+    esigiUguale(primo(daLivello('fissa', 2, 7)), 'mp3/terza.mp3', 'fissa sulla terza, livello 7');
+    esigiUguale(primo(daLivello('fissa', 9, 1)), 'mp3/prima.mp3', 'fissa oltre la fine dell elenco');
+    esigiUguale(primo(daLivello('sbagliata', 0, 2)), 'mp3/seconda.mp3', 'una modalita sconosciuta vale ordine');
+
+    const h = daLivello('ordine', 0, 2);
+    const voce = h.registro.voci[0];
+    esigiUguale(voce.titolo + '|' + voce.autore + '|' + voce.indice, 'Seconda||1', 'la voce data all ospite');
+    esigiUguale(h.registro.ordine.slice(0, 2).join(','), 'partita:true,canzone:mp3/seconda.mp3', 'suPartita deve arrivare prima della canzone');
+    giocaSchedule(h, [], 1000 / 60, 40);
+    h.attendi(1.2);
+    giocaSchedule(h, [], 1000 / 60, 40);
+    h.attendi(1.2);
+    esigiUguale(h.registro.eventi.join(','), 'mp3/seconda.mp3,,mp3/seconda.mp3,,mp3/seconda.mp3', 'i tentativi dello stesso livello riprendono la stessa canzone');
+
+    const caso = rendiFinta(0);
+    caso.crea({ modo: 'caso' }).avvia();
+    caso.tasto(' ', 'Space');
+    esigiUguale(caso.registro.eventi[0], 'mp3/prima.mp3', 'a caso, il primo livello');
+    const M1 = L.crea(1);
+    const p1 = percorsoGiocatore(M1, M1.mx * 0.5, 2, true);
+    esigiUguale(giocaSchedule(caso, p1.secondi, 1000 / 60, 40).esito, 'vinto', 'il livello 1 non si finisce');
+    caso.attendi(1);
+    caso.tasto(' ', 'Space');
+    const seconda = caso.registro.eventi[caso.registro.eventi.length - 1];
+    esigi(seconda !== null && seconda !== 'mp3/prima.mp3', 'a caso, il livello dopo ripete la stessa canzone anche se il caso la sceglie di nuovo: ' + seconda);
+
+    const senza = rendiFinta();
+    senza.crea({ canzoni: [] }).avvia();
+    senza.tasto(' ', 'Space');
+    esigiUguale(senza.registro.eventi.join(','), '', 'senza canzoni l ospite riceve solo uno stop');
+    esigiUguale(senza.registro.eventi.length, 1, 'senza canzoni l ospite deve ricevere un solo evento');
+    esigiUguale(senza.registro.eventi[0], null, 'senza canzoni l evento e uno stop');
   });
 
   await prova('gioco: finito il livello 1 compare LIVELLO 1 COMPLETATO con una frase, e SPAZIO porta al livello 2', () => {
@@ -5239,6 +5304,11 @@ async function proveGiocoPollo(costruisci, archivio) {
     const schermata = h.testiUltimo();
     esigiDentro(schermata, 'LIVELLO 1 COMPLETATO', 'titolo di fine livello');
     esigiDentro(schermata, 'SPAZIO per il livello 2', 'invito al livello dopo');
+    esigiDentro(schermata, 'TENTATIVI 1', 'statistica dei tentativi');
+    const salti = /SALTI (\d+)/.exec(schermata);
+    esigi(salti && Number(salti[1]) >= 8, 'statistica dei salti: ' + (salti && salti[1]));
+    esigi(/TEMPO 0:2\d/.test(schermata), 'statistica del tempo: ' + schermata);
+    esigiDentro(schermata, '♪ Prima — Uno', 'la canzone non e nella schermata di fine livello');
     esigi(h.frasi.some((f) => schermata.indexOf(f) !== -1), 'nessuna frase di scherno: ' + schermata);
     esigiUguale(h.registro.memoria['sb-pollo-livello'], '2', 'il livello raggiunto non e salvato');
     h.tasto(' ', 'Space');
@@ -5292,6 +5362,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     h.testiUltimo();
     h.tasto('Escape', 'Escape');
     esigiDentro(h.testiUltimo(), 'POLLO RUN', 'Esc non riporta alla schermata iniziale');
+    esigiUguale(h.registro.eventi[h.registro.eventi.length - 1], null, 'uscendo dalla partita la canzone non si ferma');
     esigiUguale(h.registro.suPartita.join(','), 'true,false', 'la fine della partita non e annunciata');
     esigiUguale(h.registro.suChiudi, 0, 'un solo Esc chiude tutto');
     h.tasto('Escape', 'Escape');
@@ -5306,7 +5377,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     riprende.registro.memoria['sb-pollo-livello'] = '5';
     riprende.crea().avvia();
     esigiDentro(riprende.testiUltimo(), 'MIGLIORE LIVELLO 5', 'il record non si vede');
-    esigiDentro(riprende.testiUltimo(), 'INVIO per riprendere dal livello 5', 'manca l invito a riprendere');
+    esigiDentro(riprende.testiUltimo(), 'INVIO: riprendi dal livello 5', 'manca l invito a riprendere');
     riprende.tasto('Enter', 'Enter');
     esigiDentro(riprende.testiUltimo(), 'LIVELLO 5', 'INVIO non riprende dal livello 5');
   });
@@ -5320,6 +5391,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiUguale(conAscolto, 'keydown,pointerdown,visibilitychange,w:resize', 'ascoltatori');
     h.tasto(' ', 'Space');
     gioco.ferma();
+    esigiUguale(h.registro.eventi[h.registro.eventi.length - 1], null, 'fermando il gioco la canzone non si ferma');
     esigiUguale(Object.keys(h.registro.ascoltatori).length, 0, 'restano ascoltatori dopo ferma');
     esigiUguale(h.registro.suPartita.join(','), 'true,false', 'fermare il gioco in partita non lo annuncia');
     esigiUguale(h.frame(16), false, 'dopo ferma c e ancora un fotogramma in coda');
@@ -5520,29 +5592,32 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiUguale(senza.corpo.children.length, 1, 'senza lettore il gioco non si apre');
   });
 
-  await prova('pollorun.js: la canzone del gioco parte quando inizia la partita, con il volume scelto nella manutenzione, e si ferma alla fine', () => {
+  await prova('pollorun.js: la canzone del gioco parte quando il motore la sceglie, con il volume scelto nella manutenzione, e si ferma alla fine', () => {
     const p = montaSito({ volume: 55 });
     p.scrivi('pollorun');
     p.carica();
     const op = p.registro.crea[0];
-    const brani = () => p.registro.audio.filter((a) => a.src === 'mp3/DJVI%20-%20Back%20On%20Track.mp3');
+    const voce = { titolo: 'Back On Track', autore: 'DJVI', file: 'mp3/DJVI%20-%20Back%20On%20Track.mp3', indice: 0 };
+    const brani = () => p.registro.audio.filter((a) => a.src === voce.file);
     esigiUguale(p.registro.play, 0, 'la canzone parte prima della partita');
     op.suPartita(true);
+    esigiUguale(p.registro.play, 0, 'suPartita non deve piu far suonare niente');
+    op.suCanzone(voce);
     esigiUguale(brani().length, 1, 'un solo brano');
     esigiUguale(brani()[0].loop, true, 'il brano deve ripetersi');
     esigiUguale(brani()[0].volume, 0.55, 'il volume non e quello della manutenzione');
     esigiUguale(p.registro.play, 1, 'la canzone non parte');
-    op.suPartita(false);
-    esigiUguale(p.registro.pause, 1, 'la canzone non si ferma a fine partita');
-    op.suPartita(true);
-    esigiUguale(brani().length, 1, 'ricrea il brano a ogni partita');
+    op.suCanzone(null);
+    esigiUguale(p.registro.pause, 1, 'la canzone non si ferma a fine tentativo');
+    op.suCanzone(voce);
+    esigiUguale(p.registro.audio.length, 1, 'ricrea il brano a ogni tentativo');
     p.registro.crea[0].suChiudi();
     esigiUguale(p.registro.pause, 2, 'chiudendo la canzone non si ferma');
 
     const predefinito = montaSito();
     predefinito.scrivi('pollorun');
     predefinito.carica();
-    predefinito.registro.crea[0].suPartita(true);
+    predefinito.registro.crea[0].suCanzone(voce);
     esigiUguale(predefinito.registro.audio[0].volume, 0.3, 'volume di partenza');
   });
 
@@ -5565,7 +5640,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     }
     const documento = archivio.leggi();
     const pagine = costruisci.rendi(documento);
-    const trovato = /<script src="js\/pollorun\.js" data-pollo="([^"]*)" data-frasi="([^"]*)" defer><\/script>/.exec(pagine.html);
+    const trovato = /<script src="js\/pollorun\.js" data-pollo="([^"]*)" data-frasi="([^"]*)" data-canzoni="[^"]*" defer><\/script>/.exec(pagine.html);
     esigi(trovato, 'la home generata non ha lo script');
     esigiUguale(trovato[1], documento.config.immagini.mascotte, 'immagine del pollo nella home');
     const frasi = JSON.parse(trovato[2].replace(/&quot;/g, '"').replace(/&#39;/g, '\'').replace(/&amp;/g, '&'));
@@ -5610,6 +5685,428 @@ async function proveGiocoPollo(costruisci, archivio) {
     const senzaRamo = archivio.leggi();
     delete senzaRamo.config.pollorun;
     esigi(costruisci.rendi(senzaRamo).html.indexOf('js/pollorun.js') !== -1, 'senza il ramo nei contenuti online deve restare acceso');
+  });
+}
+
+async function proveCanzoniPollo(costruisci, archivio) {
+  apriSezione('11g. Pollo Run: le canzoni del gioco scelte dal pannello');
+
+  const vm = require('node:vm');
+  const ELENCO = [
+    ['Stereo Madness', 'ForeverBound', 'ForeverBound - Stereo Madness.mp3'],
+    ['Back On Track', 'DJVI', 'DJVI - Back On Track.mp3'],
+    ['Polargeist', 'Step', 'Step - Polargeist.mp3'],
+    ['Dry Out', 'DJVI', 'DJVI - Dry Out.mp3'],
+    ['Base After Base', 'DJVI', 'DJVI - Base After Base.mp3'],
+    ['Can\'t Let Go', 'DJVI', 'DJVI - Can\'t Let Go.mp3'],
+    ['Jumper', 'Waterflame', 'Waterflame - Jumper.mp3'],
+    ['Time Machine', 'Waterflame', 'Waterflame - Time Machine.mp3'],
+    ['Cycles', 'DJVI', 'DJVI - Cycles.mp3'],
+    ['xStep', 'DJVI', 'DJVI - xStep.mp3'],
+    ['Clutterfunk', 'Waterflame', 'Waterflame - Clutterfunk.mp3'],
+    ['Theory of Everything', 'DJVI', 'DJVI - Theory of Everything.mp3']
+  ];
+  const RIPIEGO = 'mp3/DJVI%20-%20Back%20On%20Track.mp3';
+  const cartellaMp3 = path.join(P.radice, 'mp3');
+  const creati = [];
+  const cartellaNuova = !fs.existsSync(cartellaMp3);
+  const metti = (relativo) => {
+    const pieno = path.join(P.radice, relativo);
+    fs.mkdirSync(path.dirname(pieno), { recursive: true });
+    fs.writeFileSync(pieno, 'finto');
+    creati.push(pieno);
+  };
+  const pulisci = () => {
+    while (creati.length) { try { fs.unlinkSync(creati.pop()); } catch (e) {} }
+    try { fs.rmSync(path.join(cartellaMp3, 'sotto'), { recursive: true, force: true }); } catch (e) {}
+    if (cartellaNuova) { try { fs.rmSync(cartellaMp3, { recursive: true, force: true }); } catch (e) {} }
+  };
+  const disfa = (testo) => testo.replace(/&quot;/g, '"').replace(/&#39;/g, '\'').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const conPollorun = (ritocco) => {
+    const d = archivio.leggi();
+    d.config.pollorun = Object.assign({}, d.config.pollorun);
+    if (ritocco) { ritocco(d.config.pollorun, d); }
+    return d;
+  };
+
+  await prova('schema: elenco delle canzoni, modo e canzone fissa nel gruppo manutenzione, subito dopo le frasi di scherno', () => {
+    const gruppo = schema.gruppi.find((g) => g.id === 'manutenzione');
+    const chiavi = gruppo.campi.map((c) => c.chiave);
+    const dopo = chiavi.indexOf('config.manutenzione.scherno');
+    esigi(dopo !== -1, 'mancano le frasi di scherno');
+    esigiUguale(chiavi.slice(dopo + 1, dopo + 4).join(','), 'config.pollorun.canzoni,config.pollorun.modo,config.pollorun.canzoneFissa', 'posizione dei campi');
+    const canzoni = schema.campo('config.pollorun.canzoni');
+    esigiUguale(canzoni.tipo, 'elenco', 'tipo delle canzoni');
+    esigiUguale(canzoni.campi.map((c) => c.chiave + ':' + c.tipo + ':' + c.max).join(','), 'titolo:testo:60,file:testo:100,autore:testo:60', 'campi di una canzone');
+    esigi(canzoni.campi.every((c) => Object.prototype.hasOwnProperty.call(c, 'predefinito')), 'ogni campo di una canzone ha un predefinito');
+    esigiUguale(canzoni.campi.find((c) => c.chiave === 'autore').facoltativo, true, 'l autore e facoltativo');
+    esigiUguale(canzoni.campi.find((c) => c.chiave === 'file').forma, 'fileAudio', 'il file ha la sua regola');
+    esigiUguale(JSON.stringify(canzoni.predefinito), JSON.stringify(ELENCO.map((v) => ({ titolo: v[0], file: v[2], autore: v[1] }))), 'le 12 canzoni in ordine');
+    const modo = schema.campo('config.pollorun.modo');
+    esigiUguale(modo.tipo, 'scelta', 'tipo del modo');
+    esigiUguale(modo.predefinito, 'ordine', 'modo predefinito');
+    esigiUguale(modo.opzioni.map((o) => o.valore).join(','), 'fissa,ordine,caso', 'opzioni del modo');
+    const fissa = schema.campo('config.pollorun.canzoneFissa');
+    esigiUguale(fissa.tipo + ':' + fissa.min + ':' + fissa.max + ':' + fissa.predefinito, 'numero:1:50:2', 'la canzone fissa');
+    for (const c of [canzoni, modo, fissa]) {
+      esigiDentro(c.aiuto, 'pollorun', c.chiave + ': l aiuto deve dire che vale anche per il gioco sul sito');
+    }
+    esigiDentro(canzoni.aiuto, 'mp3', 'l aiuto spiega dove caricare i file');
+  });
+
+  await prova('contenuti.json: il ramo pollorun ha le stesse canzoni dello schema ed e coperto', () => {
+    const veri = JSON.parse(fs.readFileSync(path.join(RADICE_VERA, 'contenuti', 'contenuti.json'), 'utf8'));
+    esigiUguale(JSON.stringify(veri.config.pollorun.canzoni), JSON.stringify(schema.campo('config.pollorun.canzoni').predefinito), 'canzoni');
+    esigiUguale(veri.config.pollorun.modo, 'ordine', 'modo');
+    esigiUguale(veri.config.pollorun.canzoneFissa, 2, 'canzone fissa');
+    esigiUguale(veri.config.pollorun.attivo, true, 'interruttore');
+    esigiUguale(schema.verificaCopertura(veri).length, 0, 'copertura dello schema');
+    esigiUguale(convalida.convalida(veri).filter((e) => e.chiave.indexOf('config.pollorun') === 0).length, 0, 'le canzoni di partenza si convalidano');
+    const vecchi = JSON.parse(JSON.stringify(veri));
+    vecchi.config.pollorun = { attivo: true };
+    schema.completa(vecchi);
+    esigiUguale(vecchi.config.pollorun.canzoni.length, 12, 'un contenuti.json vecchio riceve le canzoni');
+    esigiUguale(vecchi.config.pollorun.modo + ':' + vecchi.config.pollorun.canzoneFissa, 'ordine:2', 'e modo e numero');
+  });
+
+  await prova('convalida: il nome del file e solo un nome, sicuro, di una canzone', () => {
+    const conFile = (file) => {
+      const d = archivio.leggi();
+      d.config.pollorun.canzoni = [{ titolo: 'Prova', file: file, autore: '' }];
+      return convalida.convalida(d).filter((e) => e.chiave === 'config.pollorun.canzoni[0].file');
+    };
+    for (const cattivo of ['../x.mp3', 'a/b.mp3', 'a\\b.mp3', 'x.exe', '', '   ', 'senza', '..mp3', 'x.mp3.txt', 'tab\tx.mp3', '.mp3']) {
+      const errori = conFile(cattivo);
+      esigi(errori.length > 0, JSON.stringify(cattivo) + ' deve essere un errore');
+      esigi(errori[0].messaggio.indexOf('Nome del file') !== -1,JSON.stringify(cattivo) + ': messaggio poco chiaro: ' + errori[0].messaggio);
+    }
+    for (const buono of ['DJVI - Back On Track.mp3', 'DJVI - Can\'t Let Go.mp3', 'CANZONE.MP3', 'Brano (remix) #2.Ogg', 'suono.wav', 'musica.m4a']) {
+      esigiUguale(conFile(buono).length, 0, JSON.stringify(buono) + ' deve essere valido');
+    }
+    esigiDentro(conFile('a/b.mp3')[0].messaggio, 'cartella', 'il messaggio sulle cartelle');
+    esigiDentro(conFile('x.exe')[0].messaggio, '.mp3', 'il messaggio sull estensione');
+    esigiUguale(convalida.guaioFileAudio('DJVI - Back On Track.mp3'), null, 'guaioFileAudio su un nome buono');
+    const d = archivio.leggi();
+    d.config.pollorun.canzoni = [{ titolo: 'Prova', file: 'ok.mp3' }];
+    esigi(convalida.convalida(d).some((e) => e.chiave === 'config.pollorun.canzoni[0].autore'), 'una voce senza autore deve dirlo');
+    d.config.pollorun.canzoni = [{ titolo: 'Prova', file: 'ok.mp3', autore: '' }];
+    d.config.pollorun.modo = 'boh';
+    d.config.pollorun.canzoneFissa = 0;
+    const errori = convalida.convalida(d).map((e) => e.chiave);
+    esigi(errori.indexOf('config.pollorun.modo') !== -1, 'un modo inventato passa');
+    esigi(errori.indexOf('config.pollorun.canzoneFissa') !== -1, 'la canzone numero 0 passa');
+    esigiUguale(convalida.convalidaCampo('config.pollorun.modo', 'caso').length, 0, 'il modo a caso');
+  });
+
+  await prova('canzoniPolloRun: senza file nella cartella mp3 resta la canzone che c e gia sul server', () => {
+    pulisci();
+    const esito = costruisci.canzoniPolloRun(archivio.leggi().config);
+    esigiUguale(JSON.stringify(esito), JSON.stringify({ canzoni: [{ titolo: 'Back On Track', autore: 'DJVI', file: RIPIEGO }], modo: 'ordine', fissa: 0 }), 'ripiego');
+    esigiUguale(JSON.stringify(costruisci.canzoniPolloRun({})), JSON.stringify(esito), 'senza ramo');
+    esigiUguale(JSON.stringify(costruisci.canzoniPolloRun({ pollorun: { canzoni: [] } })), JSON.stringify(esito), 'elenco vuoto');
+  });
+
+  try {
+    await prova('canzoniPolloRun: solo le voci con il file vero, in ordine, codificate; la fissa si ricalcola nell elenco filtrato', () => {
+      metti('mp3/DJVI - Back On Track.mp3');
+      metti('mp3/DJVI - Can\'t Let Go.mp3');
+      metti('mp3/DJVI - Cycles.mp3');
+      const config = archivio.leggi().config;
+      const esito = costruisci.canzoniPolloRun(config);
+      esigiUguale(esito.canzoni.map((c) => c.titolo).join('|'), 'Back On Track|Can\'t Let Go|Cycles', 'voci tenute');
+      esigiUguale(esito.canzoni[1].file, 'mp3/DJVI%20-%20Can\'t%20Let%20Go.mp3', 'nome con spazi e apostrofo');
+      esigiUguale(esito.canzoni[0].file, RIPIEGO, 'nome con spazi');
+      esigiUguale(esito.canzoni[2].autore, 'DJVI', 'autore');
+      esigiUguale(esito.modo, 'ordine', 'modo');
+      esigiUguale(esito.fissa, 0, 'la numero 2 (Back On Track) e la prima disponibile');
+      const con = (ritocco) => { const c = JSON.parse(JSON.stringify(config)); ritocco(c.pollorun); return costruisci.canzoniPolloRun(c); };
+      esigiUguale(con((r) => { r.canzoneFissa = 6; r.modo = 'fissa'; }).fissa, 1, 'la numero 6 e la seconda disponibile');
+      esigiUguale(con((r) => { r.canzoneFissa = 9; }).fissa, 2, 'la numero 9 e la terza disponibile');
+      esigiUguale(con((r) => { r.canzoneFissa = 3; }).fissa, 0, 'una canzone senza file ripiega sulla prima');
+      esigiUguale(con((r) => { r.canzoneFissa = 50; }).fissa, 0, 'oltre l elenco ripiega sulla prima');
+      esigiUguale(con((r) => { r.canzoneFissa = 'x'; }).fissa, 0, 'un numero rotto usa il predefinito');
+      esigiUguale(con((r) => { r.modo = 'caso'; }).modo, 'caso', 'modo a caso');
+      esigiUguale(con((r) => { r.modo = 'fissa'; }).modo, 'fissa', 'modo fisso');
+      esigiUguale(con((r) => { r.modo = 'boh'; }).modo, 'ordine', 'modo inventato');
+      esigiUguale(con((r) => { delete r.modo; }).modo, 'ordine', 'modo mancante');
+      const senzaRamo = costruisci.canzoniPolloRun({});
+      esigiUguale(senzaRamo.canzoni.length, 3, 'senza ramo usa l elenco predefinito');
+      esigiUguale(senzaRamo.fissa, 0, 'e la fissa predefinita (2)');
+    });
+
+    await prova('canzoniPolloRun: nomi pericolosi scartati anche se il file esiste, titolo vuoto preso dal nome', () => {
+      metti('fuori.mp3');
+      metti('mp3/sotto/dentro.mp3');
+      metti('mp3/programma.exe');
+      metti('mp3/Senza Titolo.ogg');
+      const esito = costruisci.canzoniPolloRun({ pollorun: { modo: 'fissa', canzoneFissa: 5, canzoni: [
+        { titolo: 'Fuori', file: '../fuori.mp3', autore: '' },
+        { titolo: 'Sotto', file: 'sotto/dentro.mp3', autore: '' },
+        { titolo: 'Programma', file: 'programma.exe', autore: '' },
+        null,
+        { titolo: '', file: 'Senza Titolo.ogg' },
+        { titolo: 'Manca', file: 'Non Esiste.mp3', autore: 'Nessuno' }
+      ] } });
+      esigiUguale(JSON.stringify(esito), JSON.stringify({ canzoni: [{ titolo: 'Senza Titolo', autore: '', file: 'mp3/Senza%20Titolo.ogg' }], modo: 'fissa', fissa: 0 }), 'esito');
+    });
+
+    await prova('il sito: data-canzoni nelle pagine, protetto; la manutenzione ha canvas e audio sulla prima canzone disponibile', () => {
+      for (const nome of ['index', 'clip', 'giochi', 'sponsor']) {
+        const testo = fs.readFileSync(path.join(RADICE_VERA, 'modelli', nome + '.html'), 'utf8');
+        esigiDentro(testo, 'data-frasi="{{sito.pollorun.frasi}}" data-canzoni="{{sito.pollorun.canzoni}}" defer>', 'modelli/' + nome + '.html');
+      }
+      const modelloMnt = fs.readFileSync(path.join(RADICE_VERA, 'modelli', 'manutenzione.html'), 'utf8');
+      esigiDentro(modelloMnt, 'data-canzoni="{{manutenzione.canzoniPollo}}"', 'canvas della manutenzione');
+      esigiDentro(modelloMnt, '<audio id="mnt-audio-gioco" src="{{manutenzione.canzoneGioco}}"', 'audio della manutenzione');
+
+      metti('mp3/Pericolo.mp3');
+      const d = conPollorun((r, doc) => {
+        r.canzoni = [{ titolo: '<b>"Titolo" & \'altro\'</b>', file: 'Pericolo.mp3', autore: '<i>' }].concat(r.canzoni);
+        r.modo = 'caso';
+        const clip = { id: 'c1', titolo: 'Una clip', url: 'https://clips.twitch.tv/c1',
+          anteprima: 'https://clips-media-assets2.twitch.tv/c1-preview-480x272.jpg',
+          durataSec: 30, visualizzazioni: 10, creataIl: '2026-09-01T20:00:00Z', autore: 'Qualcuno' };
+        doc.config.clip = Object.assign({}, doc.config.clip, { attivo: true, voci: [clip], archivio: [clip] });
+      });
+      const pagine = costruisci.rendi(d);
+      const cerca = (html) => { const m = /data-canzoni="([^"]*)"/.exec(html || ''); return m ? m[1] : null; };
+      const grezzo = cerca(pagine.html);
+      esigi(grezzo, 'la home non ha data-canzoni');
+      esigi(grezzo.indexOf('<') === -1 && grezzo.indexOf('\'') === -1, 'data-canzoni non protetto');
+      esigiDentro(grezzo, '&lt;b&gt;\\&quot;Titolo\\&quot; &amp; &#39;altro&#39;&lt;/b&gt;', 'escape del titolo');
+      const letto = JSON.parse(disfa(grezzo));
+      esigiUguale(letto.modo, 'caso', 'modo nella pagina');
+      esigiUguale(letto.canzoni[0].titolo, '<b>"Titolo" & \'altro\'</b>', 'titolo riletto');
+      esigiUguale(letto.canzoni.map((c) => c.file).join(','), 'mp3/Pericolo.mp3,' + RIPIEGO + ',mp3/DJVI%20-%20Can\'t%20Let%20Go.mp3,mp3/DJVI%20-%20Cycles.mp3', 'file nella pagina');
+      esigiUguale(letto.fissa, 0, 'la numero 2 ora e Stereo Madness, senza file: si ripiega sulla prima');
+      for (const nome of ['clip', 'giochi', 'sponsor']) {
+        if (typeof pagine[nome] === 'string') { esigiUguale(cerca(pagine[nome]), grezzo, nome + '.html'); }
+      }
+      esigi(typeof pagine.clip === 'string', 'la pagina delle clip di prova non si e resa');
+
+      const spento = conPollorun((r) => { r.attivo = false; });
+      esigi(costruisci.rendi(spento).html.indexOf('data-canzoni') === -1, 'spento: data-canzoni resta nella home');
+
+      const mnt = conPollorun((r, doc) => { doc.config.manutenzione = Object.assign({}, doc.config.manutenzione, { attiva: true, fine: '' }); });
+      const pagina = costruisci.rendi(mnt, { adesso: Date.UTC(2026, 8, 23, 9, 0, 0) }).manutenzione;
+      esigi(pagina, 'la pagina di manutenzione non si e resa');
+      const tela = /<canvas[^>]*id="mnt-gioco"[^>]*data-canzoni="([^"]*)"/.exec(pagina);
+      esigi(tela, 'il canvas non ha data-canzoni');
+      esigiUguale(JSON.parse(disfa(tela[1])).canzoni[0].file, RIPIEGO, 'prima canzone disponibile sul canvas');
+      esigiDentro(pagina, '<audio id="mnt-audio-gioco" src="' + RIPIEGO + '" loop', 'audio del gioco');
+      pulisci();
+      const vuota = costruisci.rendi(mnt, { adesso: Date.UTC(2026, 8, 23, 9, 0, 0) }).manutenzione;
+      esigiDentro(vuota, '<audio id="mnt-audio-gioco" src="' + RIPIEGO + '" loop', 'audio di ripiego senza file');
+    });
+  } finally {
+    pulisci();
+  }
+
+  const jsSito = fs.readFileSync(path.join(RADICE_VERA, 'js', 'pollorun.js'), 'utf8');
+  const sito = (attributo, volume) => {
+    const r = { crea: [], audio: [], play: 0, pause: 0, cambi: 0 };
+    const ascolta = {};
+    const appesi = [];
+    const memoria = volume === undefined ? {} : { 'sb-manutenzione-volumi': JSON.stringify({ attesa: 10, gioco: volume }) };
+    function Audio() {
+      let src = '';
+      const a = { loop: false, volume: 1, currentTime: 0, preload: '', paused: true,
+        play() { r.play++; a.paused = false; return Promise.reject(new Error('bloccato')); },
+        pause() { r.pause++; a.paused = true; } };
+      Object.defineProperty(a, 'src', { get: () => src, set: (v) => { r.cambi++; src = v; } });
+      r.audio.push(a);
+      return a;
+    }
+    const nodo = (tag) => ({ tag: tag, children: [], attrs: {}, parentNode: null,
+      setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
+      appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
+      removeChild(c) { this.children = this.children.filter((x) => x !== c); c.parentNode = null; },
+      addEventListener() {}, focus() {} });
+    const script = nodo('script');
+    if (attributo !== null) { script.setAttribute('data-canzoni', attributo); }
+    const finestra = { addEventListener: () => {}, PolloRun: { crea: (op) => { r.crea.push(op); return { avvia() {}, ferma() {} }; } } };
+    const classi = new Set();
+    vm.runInNewContext(jsSito, {
+      window: finestra,
+      document: {
+        currentScript: script, body: nodo('body'), head: { appendChild: (n) => { appesi.push(n); return n; } },
+        activeElement: null, addEventListener: (tipo, fn) => { ascolta[tipo] = fn; },
+        documentElement: { classList: { add: (c) => classi.add(c), remove: (c) => classi.delete(c) } },
+        createElement: nodo, querySelector: () => null
+      },
+      Audio: Audio,
+      localStorage: { getItem: (k) => (k in memoria ? memoria[k] : null) },
+      Date: { now: () => 1000 },
+      JSON: JSON
+    });
+    for (const c of 'pollorun') { ascolta.keydown({ key: c, target: { tagName: 'BODY', nodeType: 1 } }); }
+    for (const n of appesi) { if (n.onload) { n.onload(); } }
+    return { r: r, op: r.crea[0], sito: finestra.PolloRunSito };
+  };
+  const pacchetto = JSON.stringify({ canzoni: [
+    { titolo: 'Uno', autore: 'A', file: 'mp3/Uno.mp3' },
+    { titolo: 'Cattivo', autore: '', file: 'javascript:alert(1)' },
+    { titolo: 'Due', autore: '', file: 'mp3/Due.mp3' }
+  ], modo: 'fissa', fissa: 2 });
+
+  await prova('pollorun.js: legge data-canzoni e passa al motore canzoni, modo, fissa e suCanzone', () => {
+    const p = sito(pacchetto, 70);
+    esigi(p.op, 'il gioco non si e aperto');
+    esigiUguale(JSON.stringify(p.op.canzoni), JSON.stringify([{ titolo: 'Uno', autore: 'A', file: 'mp3/Uno.mp3' }, { titolo: 'Due', autore: '', file: 'mp3/Due.mp3' }]), 'canzoni senza la voce cattiva');
+    esigiUguale(p.op.modo, 'fissa', 'modo');
+    esigiUguale(p.op.fissa, 1, 'la fissa segue la voce dopo il filtro');
+    esigiUguale(typeof p.op.suCanzone, 'function', 'suCanzone');
+    esigiUguale(p.r.play, 0, 'suona prima che il motore scelga');
+    for (const rotto of ['', 'non json', '{"a":1}', 'null', '[1,2]', '{"canzoni":"x","modo":"boh"}']) {
+      const q = sito(rotto);
+      esigiUguale(JSON.stringify([q.op.canzoni, q.op.modo, q.op.fissa]), '[[],"ordine",0]', 'con ' + JSON.stringify(rotto));
+    }
+    esigiUguale(JSON.stringify(sito(null).op.canzoni), '[]', 'senza attributo');
+    esigiUguale(sito(JSON.stringify([{ titolo: 'X', file: 'mp3/X.mp3' }])).op.canzoni.length, 1, 'anche un elenco secco');
+  });
+
+  await prova('pollorun.js: suCanzone suona la voce scelta dall inizio, cambia src solo se serve, con null mette in pausa', () => {
+    const p = sito(pacchetto, 70);
+    p.op.suPartita(true);
+    esigiUguale(p.r.play, 0, 'suPartita fa ancora suonare');
+    p.op.suCanzone({ titolo: 'Uno', autore: 'A', file: 'mp3/Uno.mp3', indice: 0 });
+    esigiUguale(p.r.audio.length, 1, 'un solo audio');
+    const a = p.r.audio[0];
+    esigiUguale(a.src, 'mp3/Uno.mp3', 'src');
+    esigiUguale(a.loop, true, 'loop');
+    esigiUguale(a.volume, 0.7, 'volume salvato');
+    esigiUguale(p.r.play, 1, 'non suona');
+    a.currentTime = 42;
+    p.op.suCanzone({ titolo: 'Uno', autore: 'A', file: 'mp3/Uno.mp3', indice: 0 });
+    esigiUguale(a.currentTime, 0, 'non riparte da capo');
+    esigiUguale(p.r.cambi, 1, 'stesso file: src riassegnato');
+    esigiUguale(p.r.play, 2, 'la seconda volta non suona');
+    p.op.suCanzone(null);
+    esigiUguale(p.r.pause, 1, 'con null non si ferma');
+    esigiUguale(a.paused, true, 'in pausa');
+    p.op.suCanzone({ titolo: 'Due', autore: '', file: 'mp3/Due.mp3', indice: 1 });
+    esigiUguale(a.src, 'mp3/Due.mp3', 'cambio canzone');
+    esigiUguale(p.r.cambi, 2, 'cambi di src');
+    esigiUguale(p.r.audio.length, 1, 'l audio si riusa');
+    const primaDi = p.r.play;
+    p.op.suCanzone({ file: 'javascript:alert(1)' });
+    esigiUguale(p.r.play, primaDi, 'un file cattivo suona');
+    esigiUguale(a.src, 'mp3/Due.mp3', 'un file cattivo cambia src');
+    p.op.suPartita(false);
+    p.sito.chiudi();
+    esigi(a.paused, 'alla chiusura resta accesa');
+    const dopo = p.r.play;
+    p.op.suCanzone({ titolo: 'Uno', file: 'mp3/Uno.mp3', indice: 0 });
+    esigiUguale(p.r.play, dopo, 'a gioco chiuso suona ancora');
+    const base = sito(pacchetto);
+    base.op.suCanzone({ titolo: 'Uno', file: 'mp3/Uno.mp3', indice: 0 });
+    esigiUguale(base.r.audio[0].volume, 0.3, 'volume di partenza');
+  });
+
+  const jsMnt = fs.readFileSync(path.join(RADICE_VERA, 'modelli', 'manutenzione-conto.js'), 'utf8');
+  const manutenzione = (opzioni) => {
+    const o = Object.assign({ spenta: false, canzoni: pacchetto }, opzioni || {});
+    const ascolta = {};
+    const crea = [];
+    const elemento = (nome, attributi) => {
+      const e = { nome: nome, paused: true, currentTime: 0, volume: 1, error: null, suoni: 0, ascolta: {}, attrs: attributi || {}, hidden: false,
+        getAttribute(k) { return k in e.attrs ? e.attrs[k] : null; },
+        setAttribute(k, v) { e.attrs[k] = v; },
+        addEventListener(tipo, fn) { e.ascolta[tipo] = fn; },
+        contains: () => false,
+        classList: { toggle() {}, contains: () => false },
+        play() { e.paused = false; e.suoni++; if (e.ascolta.play) { e.ascolta.play(); } return Promise.resolve(); },
+        pause() { e.paused = true; if (e.ascolta.pause) { e.ascolta.pause(); } },
+        spara(tipo) { if (e.ascolta[tipo]) { e.ascolta[tipo](); } } };
+      e.src = e.attrs.src || '';
+      return e;
+    };
+    const el = {
+      'mnt-gioco': elemento('tela', { 'data-canzoni': o.canzoni, 'data-frasi': '[]', 'data-pollo': '' }),
+      'mnt-audio': elemento('attesa', { src: 'mp3/ElevatorMaintenance.mp3' }),
+      'mnt-audio-gioco': elemento('brano', { src: 'mp3/Uno.mp3' }),
+      'mnt-musica': elemento('tasto')
+    };
+    const documento = {
+      body: { classList: { toggle() {} } },
+      hidden: false,
+      getElementById: (id) => el[id] || null,
+      addEventListener: (tipo, fn) => { (ascolta[tipo] = ascolta[tipo] || []).push(fn); },
+      removeEventListener: () => {},
+      dispatchEvent: (evento) => { for (const fn of ascolta[evento.type] || []) { fn(evento); } return true; }
+    };
+    const Evento = function (tipo, op) { this.type = tipo; this.detail = op && op.detail; };
+    const finestra = { addEventListener: () => {}, PolloRun: { crea: (op) => { crea.push(op); return { avvia() {} }; } } };
+    const memoria = o.spenta ? { 'sb-manutenzione-musica': 'no' } : {};
+    new Function('window', 'document', 'location', 'sessionStorage', 'localStorage', 'CustomEvent', 'fetch', 'setInterval', jsMnt)(
+      finestra, documento, { pathname: '/' },
+      { getItem: (k) => (k in memoria ? memoria[k] : null), setItem: (k, v) => { memoria[k] = v; } },
+      { getItem: () => null, setItem: () => {} }, Evento, undefined, () => 1);
+    return { op: crea[0], attesa: el['mnt-audio'], brano: el['mnt-audio-gioco'] };
+  };
+
+  await prova('manutenzione: il gioco riceve le canzoni del canvas e un suCanzone', () => {
+    const m = manutenzione();
+    esigi(m.op, 'il gioco non nasce');
+    esigiUguale(m.op.canzoni.map((c) => c.file).join(','), 'mp3/Uno.mp3,mp3/Due.mp3', 'canzoni');
+    esigiUguale(m.op.modo + ':' + m.op.fissa, 'fissa:1', 'modo e fissa');
+    esigiUguale(typeof m.op.suCanzone, 'function', 'suCanzone');
+    const rotta = manutenzione({ canzoni: '{rotto' });
+    esigiUguale(JSON.stringify([rotta.op.canzoni, rotta.op.modo, rotta.op.fissa]), '[[],"ordine",0]', 'data-canzoni rotto');
+  });
+
+  await prova('manutenzione: una sola traccia del gioco che segue suCanzone; null la ferma senza musica d attesa; il ritorno la riaccende', () => {
+    const m = manutenzione();
+    esigiUguale(m.attesa.paused, false, 'la musica d attesa parte all apertura');
+    m.op.suPartita(true);
+    esigiUguale(m.attesa.paused, true, 'la musica d attesa non si ferma in partita');
+    esigiUguale(m.brano.paused, true, 'il brano parte prima che il motore scelga');
+    m.op.suCanzone({ titolo: 'Due', file: 'mp3/Due.mp3', indice: 1 });
+    esigiUguale(m.brano.src, 'mp3/Due.mp3', 'src del brano');
+    esigiUguale(m.brano.paused, false, 'il brano non suona');
+    m.brano.currentTime = 30;
+    m.op.suCanzone({ titolo: 'Due', file: 'mp3/Due.mp3', indice: 1 });
+    esigiUguale(m.brano.currentTime, 0, 'stessa canzone: non riparte da capo');
+    esigiUguale(m.brano.paused, false, 'stessa canzone: non suona');
+    m.op.suCanzone(null);
+    esigiUguale(m.brano.paused, true, 'null non ferma il brano');
+    esigiUguale(m.attesa.paused, true, 'null fa ripartire la musica d attesa');
+    m.op.suCanzone({ titolo: 'Uno', file: 'mp3/Uno.mp3', indice: 0 });
+    esigiUguale(m.brano.src + ':' + m.brano.paused, 'mp3/Uno.mp3:false', 'cambio di canzone');
+    m.op.suPartita(false);
+    esigiUguale(m.brano.paused, true, 'uscendo il brano resta acceso');
+    esigiUguale(m.attesa.paused, false, 'uscendo non torna la musica d attesa');
+    m.op.suCanzone(null);
+    esigiUguale(m.attesa.paused, false, 'un null dopo l uscita spegne la musica d attesa');
+
+    const prima = manutenzione();
+    prima.op.suCanzone({ titolo: 'Due', file: 'mp3/Due.mp3', indice: 1 });
+    esigiUguale(prima.brano.paused, true, 'fuori partita il brano non deve suonare');
+    prima.op.suPartita(true);
+    esigiUguale(prima.brano.src + ':' + prima.brano.paused, 'mp3/Due.mp3:false', 'canzone scelta prima di suPartita');
+
+    const zitta = manutenzione({ spenta: true });
+    zitta.op.suPartita(true);
+    zitta.op.suCanzone({ titolo: 'Uno', file: 'mp3/Uno.mp3', indice: 0 });
+    esigiUguale(zitta.brano.paused + ':' + zitta.attesa.paused, 'true:true', 'con la musica spenta dall utente non suona niente');
+  });
+
+  await prova('manutenzione: una canzone che non si carica ripiega sulla musica d attesa solo finche quel brano e in errore', () => {
+    const m = manutenzione();
+    m.op.suPartita(true);
+    m.op.suCanzone({ titolo: 'Due', file: 'mp3/Due.mp3', indice: 1 });
+    m.brano.spara('error');
+    esigiUguale(m.attesa.paused, true, 'un errore senza media error non deve valere come brano rotto');
+    m.brano.error = { code: 4 };
+    m.brano.spara('error');
+    esigiUguale(m.attesa.paused + ':' + m.brano.paused, 'false:true', 'il ripiego sulla musica d attesa');
+    m.op.suCanzone(null);
+    esigiUguale(m.attesa.paused, true, 'fra un tentativo e l altro il ripiego si ferma');
+    m.op.suCanzone({ titolo: 'Due', file: 'mp3/Due.mp3', indice: 1 });
+    esigiUguale(m.attesa.paused + ':' + m.brano.paused, 'false:true', 'lo stesso brano rotto resta sul ripiego');
+    m.brano.error = null;
+    m.op.suCanzone({ titolo: 'Uno', file: 'mp3/Uno.mp3', indice: 0 });
+    esigiUguale(m.attesa.paused + ':' + m.brano.paused + ':' + m.brano.src, 'true:false:mp3/Uno.mp3', 'un brano nuovo torna a suonare');
   });
 }
 
@@ -6313,6 +6810,7 @@ async function esegui() {
     await provePaginaGiochi(contenutiVeri, costruisci, archivio);
     await proveSorpresaSlayer(costruisci, archivio);
     await proveGiocoPollo(costruisci, archivio);
+    await proveCanzoniPollo(costruisci, archivio);
     await proveManutenzione(contenutiVeri, costruisci, archivio);
     await proveGiochiDati();
 

@@ -3,7 +3,7 @@
 
   var PAROLA = 'pollorun';
   var PAUSA_MAX_MS = 2000;
-  var CANZONE = 'mp3/' + encodeURIComponent('DJVI - Back On Track.mp3');
+  var MODI = ['fissa', 'ordine', 'caso'];
   var VOLUME_BASE = 30;
   var CHIAVE_VOLUMI = 'sb-manutenzione-volumi';
   var CLASSE = 'is-pollorun';
@@ -18,14 +18,41 @@
     }
   }
 
+  function leggiCanzoni(testo) {
+    var letto = null;
+    try { letto = JSON.parse(testo || 'null'); } catch (errore) { letto = null; }
+    var intero = !!letto && typeof letto === 'object' && !Array.isArray(letto);
+    var elenco = Array.isArray(letto) ? letto : (intero && Array.isArray(letto.canzoni) ? letto.canzoni : []);
+    var scelta = intero ? Number(letto.fissa) : 0;
+    var canzoni = [];
+    var fissa = 0;
+    for (var i = 0; i < elenco.length; i++) {
+      var voce = elenco[i];
+      if (!voce || typeof voce.file !== 'string' || voce.file.indexOf('mp3/') !== 0) { continue; }
+      if (i === scelta) { fissa = canzoni.length; }
+      canzoni.push({
+        titolo: typeof voce.titolo === 'string' ? voce.titolo : '',
+        autore: typeof voce.autore === 'string' ? voce.autore : '',
+        file: voce.file
+      });
+    }
+    return {
+      canzoni: canzoni,
+      modo: intero && MODI.indexOf(letto.modo) !== -1 ? letto.modo : 'ordine',
+      fissa: fissa
+    };
+  }
+
   var POLLO = ORIGINE ? (ORIGINE.getAttribute('data-pollo') || '') : '';
   var FRASI = leggiFrasi(ORIGINE ? ORIGINE.getAttribute('data-frasi') : '');
+  var MUSICA = leggiCanzoni(ORIGINE ? ORIGINE.getAttribute('data-canzoni') : '');
 
   var memoria = '';
   var ultimoTasto = 0;
   var aperto = null;
   var caricando = false;
   var pista = null;
+  var branoPista = '';
 
   function eCampoDiTesto(nodo) {
     if (!nodo || nodo.nodeType === 9) { return false; }
@@ -46,7 +73,7 @@
   function preparaPista() {
     if (pista) { return pista; }
     try {
-      pista = new Audio(CANZONE);
+      pista = new Audio();
       pista.loop = true;
       pista.preload = 'none';
     } catch (errore) {
@@ -55,9 +82,19 @@
     return pista;
   }
 
-  function suonaPista() {
+  function suCanzone(voce) {
+    if (!aperto || !voce || typeof voce.file !== 'string' || voce.file.indexOf('mp3/') !== 0) {
+      fermaPista();
+      return;
+    }
     var p = preparaPista();
     if (!p) { return; }
+    try {
+      if (branoPista !== voce.file) {
+        branoPista = voce.file;
+        p.src = voce.file;
+      }
+    } catch (errore) { return; }
     try { p.currentTime = 0; } catch (errore) { }
     p.volume = volumeSalvato();
     try {
@@ -167,8 +204,12 @@
       tela: tela,
       pollo: POLLO,
       frasi: FRASI,
+      canzoni: MUSICA.canzoni.slice(),
+      modo: MUSICA.modo,
+      fissa: MUSICA.fissa,
       sipario: true,
-      suPartita: function (attiva) { if (attiva) { suonaPista(); } else { fermaPista(); } },
+      suCanzone: suCanzone,
+      suPartita: function () { },
       suChiudi: chiudi
     });
     stato.gioco.avvia();
@@ -220,7 +261,7 @@
 
   window.PolloRunSito = {
     parola: PAROLA,
-    canzone: CANZONE,
+    canzoni: MUSICA.canzoni,
     apri: apri,
     chiudi: chiudi,
     aperto: function () { return !!aperto; }
