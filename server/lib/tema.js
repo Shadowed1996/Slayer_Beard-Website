@@ -276,7 +276,6 @@ function css(tema) {
   const righe = [
     ...facce.map((faccia) => faccia + '\n'),
     ':root {',
-    '',
     riga('--viola', esadecimale(c.viola)),
     riga('--viola-cupo', esadecimale(c.violaCupo)),
     riga('--viola-chiaro', esadecimale(c.violaChiaro)),

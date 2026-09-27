@@ -304,7 +304,7 @@
   border-radius: inherit;
   background: linear-gradient(90deg, var(--viola), var(--magenta), var(--ciano));
   box-shadow: 0 0 12px color-mix(in srgb, var(--ciano) 50%, transparent);
-  transition: width 200ms linear;
+  transition: width 90ms linear;
 }
 
 .pollorun-carica__percento {

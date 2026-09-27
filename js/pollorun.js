@@ -59,6 +59,8 @@
 
   var PESI = { stile: 5, pollo: 5, motore: 20, musica: 70 };
   var ATTESA_BRANO_MS = 90000;
+  var DURATA_MINIMA_MS = 3000;
+  var PAUSA_AL_CENTO_MS = 500;
 
   var memoria = '';
   var ultimoTasto = 0;
@@ -293,11 +295,50 @@
     }
     var valore = Math.floor(totale * 100 / pesi);
     if (valore >= 100 && !stato.tutto) { valore = 99; }
-    if (valore < stato.vista.valore) { return; }
+    stato.obiettivo = Math.max(stato.obiettivo || 0, valore);
+    if (typeof setInterval !== 'function') {
+      mostra(stato, stato.obiettivo);
+      return;
+    }
+    scorri(stato);
+  }
+
+  function mostra(stato, quanto) {
+    var valore = Math.floor(quanto);
+    if (valore <= stato.vista.valore) { return; }
     stato.vista.valore = valore;
     stato.vista.percento.textContent = valore + '%';
     stato.vista.barra.setAttribute('aria-valuenow', String(valore));
     if (stato.vista.riempi.style) { stato.vista.riempi.style.width = valore + '%'; }
+  }
+
+  function scorri(stato) {
+    if (stato.orologio) { return; }
+    var ultimo = Date.now();
+    stato.mostrato = stato.mostrato || 0;
+    stato.orologio = setInterval(function () {
+      if (stato !== carico || stato.annullato) {
+        clearInterval(stato.orologio);
+        stato.orologio = null;
+        return;
+      }
+      var adesso = Date.now();
+      stato.mostrato = Math.min(stato.obiettivo, stato.mostrato + (adesso - ultimo) * 100 / DURATA_MINIMA_MS);
+      ultimo = adesso;
+      mostra(stato, stato.mostrato);
+      if (stato.tutto && stato.mostrato >= 100) {
+        clearInterval(stato.orologio);
+        stato.orologio = null;
+        dopo(function () { entra(stato); }, PAUSA_AL_CENTO_MS);
+      }
+    }, 40);
+  }
+
+  function entra(stato) {
+    if (stato !== carico || stato.annullato) { return; }
+    carico = null;
+    togliCarico(stato);
+    monta(stato.primo);
   }
 
   function togliCarico(stato) {
@@ -310,6 +351,7 @@
     var stato = carico;
     carico = null;
     stato.annullato = true;
+    if (stato.orologio) { clearInterval(stato.orologio); stato.orologio = null; }
     if (stato.richiesta) { try { stato.richiesta.abort(); } catch (errore) { } }
     togliCarico(stato);
     return true;
@@ -328,16 +370,12 @@
     stato.tutto = true;
     segna(stato);
     if (!stato.motoreOk) {
+      if (stato.orologio) { clearInterval(stato.orologio); stato.orologio = null; }
       carico = null;
       togliCarico(stato);
       return;
     }
-    dopo(function () {
-      if (stato !== carico || stato.annullato) { return; }
-      carico = null;
-      togliCarico(stato);
-      monta(stato.primo);
-    }, 350);
+    if (typeof setInterval !== 'function') { entra(stato); }
   }
 
   function chiudi() {
