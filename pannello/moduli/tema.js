@@ -1,45 +1,5 @@
-/* =====================================================================
-   tema.js — la matematica dell'aspetto e la barra delle combinazioni.
-
-   Qui dentro non c'e' una sola chiamata di rete: il catalogo dei font e
-   le combinazioni pronte arrivano gia' pronti (li chiede pannello.js a
-   GET /api/contenuti), e quello che si fa qui e' disegnarli e calcolarci
-   sopra. La divisione e' voluta: questo file si puo' leggere, capire e
-   correggere senza sapere niente delle API.
-
-   Il calcolo del contrasto e' la parte che rende onesto il gruppo
-   «Aspetto». Senza, si sceglie un grigio chiaro su fondo chiaro e ci si
-   accorge del guaio solo dopo aver pubblicato, dal telefono, al sole.
-
-   Esporta:
-     creaBarraTema(ctx, { preset, onApplica })  -> nodo con le combinazioni
-     contrasto(a, b)                            -> rapporto WCAG (numero)
-     etichettaContrasto(rapporto)               -> { livello, testo, grave }
-     precaricaFont(nomi)                        -> Promise, carica le anteprime
-
-   e, per i font caricati da chi amministra (CONTRATTO-4 §4.4):
-     impostaFontCaricati(elenco)   -> registra l'elenco e ne mette i @font-face nel pannello
-     fontCaricati()                -> copia dell'elenco, oppure null se non e' ancora noto
-     suFontCaricati(fn)            -> iscrizione ai cambi dell'elenco; torna chi la toglie
-     famigliaCaricato(id)          -> "'sb-<id>'", il nome della famiglia nel CSS
-     urlFontCaricato(voce)         -> l'indirizzo del file visto dal pannello
-     formatoCss(voce)              -> il valore giusto per format() in @font-face
-   L'elenco lo chiede al server editor/impostazioni.js; qui lo si tiene e
-   basta, cosi' anche campi.js lo trova senza fare richieste.
-   ===================================================================== */
-
 import { el, bottone } from './dom.js';
 
-/* ---------------------------------------------------------------------
-   1. Colori: da testo a numeri
-   --------------------------------------------------------------------- */
-
-/**
- * Da qualunque scrittura ragionevole a [r, g, b] con 0..255, oppure null.
- * L'alfa viene ignorata di proposito: un colore semitrasparente ha un
- * contrasto che dipende da cosa gli sta sotto, e qui sotto non lo
- * sappiamo. Meglio calcolare sul colore pieno che dare un numero finto.
- */
 function componenti(colore) {
   const testo = String(colore || '').trim().toLowerCase();
   if (!testo) return null;
@@ -52,7 +12,6 @@ function componenti(colore) {
     return [0, 2, 4].map((i) => parseInt(esa.slice(i, i + 2), 16));
   }
 
-  // rgb() / rgba(): capita di incollarlo da un altro strumento.
   const rgb = testo.match(/^rgba?\(([^)]+)\)$/);
   if (rgb) {
     const pezzi = rgb[1].split(/[\s,/]+/).filter(Boolean).slice(0, 3).map(Number);
@@ -63,31 +22,18 @@ function componenti(colore) {
   return null;
 }
 
-/** Correzione di gamma della singola componente, come da formula WCAG. */
 function canale(valore) {
   const s = valore / 255;
   return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
 }
 
-/** Luminanza relativa: quanta luce manda quel colore, da 0 (nero) a 1 (bianco). */
 function luminanza(rgb) {
   return 0.2126 * canale(rgb[0]) + 0.7152 * canale(rgb[1]) + 0.0722 * canale(rgb[2]);
 }
 
-/**
- * Rapporto di contrasto WCAG fra due colori, da 1 (identici) a 21
- * (nero su bianco).
- *
- * Il risultato e' arrotondato a due decimali *prima* di uscire, e le
- * soglie si applicano al numero arrotondato: cosi' il verdetto e il
- * numero mostrato dicono la stessa cosa, invece di leggere «4,50:1» con
- * scritto accanto che e' sotto la soglia di 4,5.
- */
 export function contrasto(coloreA, coloreB) {
   const a = componenti(coloreA);
   const b = componenti(coloreB);
-  // Se uno dei due non si capisce, 1 e' il verdetto piu' prudente:
-  // nessun contrasto, quindi avviso acceso.
   if (!a || !b) return 1;
 
   const la = luminanza(a);
@@ -97,16 +43,10 @@ export function contrasto(coloreA, coloreB) {
   return Math.round(((chiaro + 0.05) / (scuro + 0.05)) * 100) / 100;
 }
 
-/** Numero con la virgola, come si scrive in italiano. */
 function conVirgola(n) {
   return n.toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
 }
 
-/**
- * Verdetto leggibile su un rapporto di contrasto.
- * `grave` e' vero sotto 4,5:1, cioe' la soglia del testo normale: e' il
- * punto in cui il pannello deve smettere di essere gentile.
- */
 export function etichettaContrasto(rapporto) {
   const n = Number(rapporto);
   if (!Number.isFinite(n) || n <= 0) {
@@ -129,15 +69,6 @@ export function etichettaContrasto(rapporto) {
   return { livello: 'insufficiente', testo: 'Contrasto ' + misura + ' — sotto 3:1 non si legge più niente, nemmeno in grande.', grave: true };
 }
 
-/* ---------------------------------------------------------------------
-   2. Anteprime dei font
-
-   Google Fonts e' l'unico CDN ammesso dal contratto, ed e' anche l'unico
-   modo per far vedere un font che non e' installato sul computer di chi
-   amministra. Si carica solo il peso normale: serve a leggere il nome
-   scritto nel font vero, non a comporre una pagina.
-   --------------------------------------------------------------------- */
-
 const GENERICI = new Set([
   'sans-serif', 'serif', 'monospace', 'cursive', 'fantasy',
   'system-ui', 'ui-monospace', 'ui-sans-serif', 'ui-serif', 'inherit', 'initial'
@@ -145,16 +76,14 @@ const GENERICI = new Set([
 
 const famiglieCaricate = new Set();
 
-/** Il nome della famiglia, sia che arrivi come stringa sia come voce di catalogo. */
 function nomeFamiglia(voce) {
   if (voce && typeof voce === 'object') return String(voce.nome || voce.famiglia || voce.valore || '').trim();
   return String(voce || '').trim();
 }
 
-/** Le famiglie di sistema non stanno su Google Fonts: chiederle sarebbe un 404. */
 function daGoogle(voce) {
   const nome = nomeFamiglia(voce);
-  if (!nome || nome.includes(',')) return false;                 // e' uno stack, non una famiglia
+  if (!nome || nome.includes(',')) return false;
   if (GENERICI.has(nome.toLowerCase())) return false;
   if (voce && typeof voce === 'object') {
     if (voce.google === false || voce.sistema === true) return false;
@@ -163,14 +92,6 @@ function daGoogle(voce) {
   return true;
 }
 
-/**
- * Carica da Google Fonts le famiglie indicate, una volta sola.
- * Non lancia mai: se la rete non c'e', le anteprime restano nel font di
- * ripiego e il pannello continua a funzionare.
- *
- * @param {Array<string|object>} nomi  nomi o voci del catalogo
- * @returns {Promise<boolean>} vero se il foglio e' arrivato
- */
 export function precaricaFont(nomi) {
   const famiglie = [].concat(nomi || [])
     .filter(daGoogle)
@@ -180,7 +101,6 @@ export function precaricaFont(nomi) {
   if (!famiglie.length) return Promise.resolve(true);
   for (const nome of famiglie) famiglieCaricate.add(nome);
 
-  // css2 vuole i nomi con il «+» al posto degli spazi.
   const query = famiglie.map((nome) => 'family=' + encodeURIComponent(nome).replace(/%20/g, '+')).join('&');
   const collegamento = el('link', {
     rel: 'stylesheet',
@@ -192,58 +112,32 @@ export function precaricaFont(nomi) {
     collegamento.addEventListener('load', () => risolvi(true), { once: true });
     collegamento.addEventListener('error', () => risolvi(false), { once: true });
     document.head.append(collegamento);
-    // Rete lenta o bloccata: dopo cinque secondi si va avanti lo stesso,
-    // nessuno deve restare a guardare un menu vuoto.
     setTimeout(() => risolvi(false), 5000);
   });
 }
 
-/* ---------------------------------------------------------------------
-   2b. Font caricati da chi amministra
-
-   Stanno sul server in contenuti/font/ e il server li serve come serve le
-   immagini. Nel pannello ogni font diventa una famiglia 'sb-<id>', lo
-   stesso nome che usa il sito: chi legge un'anteprima e poi il CSS
-   generato trova la stessa parola.
-
-   Il registro vive qui, e non dentro editor/impostazioni.js, per una
-   ragione di dipendenze: il campo «font» di campi.js deve elencare i
-   caricati, e campi.js non puo' importare un modulo dell'editor (che si
-   carica a richiesta e puo' mancare). Questo file invece c'e' sempre.
-   --------------------------------------------------------------------- */
-
 const RE_ID_CARICATO = /^[0-9a-f]{16}$/;
-// Solo nomi di file semplici: il valore finisce dentro url('…') in un
-// foglio di stile, e un apice o una parentesi lo farebbero uscire.
 const RE_FILE_CARICATO = /^[A-Za-z0-9][A-Za-z0-9._-]{0,120}\.(woff2|woff|ttf|otf)$/i;
 const ID_FOGLIO_CARICATI = 'sb-font-caricati';
 
-let elencoCaricati = null;          // null = nessuno l'ha ancora letto dal server
+let elencoCaricati = null;
 const iscrittiCaricati = new Set();
 
-/** Nome della famiglia CSS di un font caricato, virgolette comprese. */
 export function famigliaCaricato(id) {
   return "'sb-" + String(id || '').replace(/[^0-9a-f]/g, '') + "'";
 }
 
-/** Il nome del file senza cartelle: il server puo' mandarlo con o senza «contenuti/font/». */
 function nomeFileCaricato(voce) {
   const grezzo = String((voce && voce.file) || '').replace(/\\/g, '/');
   const nome = grezzo.split('/').pop();
   return RE_FILE_CARICATO.test(nome) && !nome.includes('..') ? nome : '';
 }
 
-/** Indirizzo del file visto dal pannello, che vive sotto /pannello/. */
 export function urlFontCaricato(voce) {
   const nome = nomeFileCaricato(voce);
   return nome ? '/contenuti/font/' + encodeURIComponent(nome) : '';
 }
 
-/**
- * Il valore per format() in @font-face. Non e' l'estensione: per un TTF
- * il browser vuole «truetype» e per un OTF «opentype», e una sorgente con
- * un format() che non conosce la scarta senza dire niente.
- */
 export function formatoCss(voce) {
   const dichiarato = String((voce && voce.formato) || '').toLowerCase();
   const estensione = (nomeFileCaricato(voce).match(/\.([a-z0-9]+)$/i) || [])[1] || '';
@@ -251,7 +145,6 @@ export function formatoCss(voce) {
   return { woff2: 'woff2', woff: 'woff', ttf: 'truetype', truetype: 'truetype', otf: 'opentype', opentype: 'opentype' }[grezzo] || '';
 }
 
-/** Tiene solo le voci con un id e un file utilizzabili; le altre non si possono mostrare. */
 function pulisciCaricati(elenco) {
   const visti = new Set();
   const fuori = [];
@@ -274,11 +167,6 @@ function copiaCaricati() {
   return elencoCaricati ? elencoCaricati.map((voce) => ({ ...voce, usatoIn: voce.usatoIn.slice() })) : null;
 }
 
-/**
- * I @font-face di tutti i caricati in un solo <style> del pannello.
- * Riscritto per intero a ogni cambio: sono poche righe, e un font tolto
- * deve sparire anche dal foglio.
- */
 function scriviFoglioCaricati() {
   let foglio = document.getElementById(ID_FOGLIO_CARICATI);
   if (!foglio) {
@@ -294,38 +182,23 @@ function scriviFoglioCaricati() {
   if (foglio.textContent !== testo) foglio.textContent = testo;
 }
 
-/**
- * Registra l'elenco dei font caricati (quello di GET /api/font) e avvisa
- * chi e' iscritto. Le voci storte si scartano: un id o un file che non
- * rispettano la forma del server non si possono ne' mostrare ne' usare.
- */
 export function impostaFontCaricati(elenco) {
   elencoCaricati = pulisciCaricati(elenco);
   scriviFoglioCaricati();
   for (const fn of Array.from(iscrittiCaricati)) {
-    try { fn(copiaCaricati()); } catch { /* un iscritto rotto non ferma gli altri */ }
+    try { fn(copiaCaricati()); } catch {}
   }
 }
 
-/** L'elenco registrato (copia), oppure null se non e' ancora arrivato. */
 export function fontCaricati() {
   return copiaCaricati();
 }
 
-/** Chiama `fn(elenco)` a ogni cambio; restituisce la funzione che toglie l'iscrizione. */
 export function suFontCaricati(fn) {
   if (typeof fn !== 'function') return () => {};
   iscrittiCaricati.add(fn);
   return () => iscrittiCaricati.delete(fn);
 }
-
-/* ---------------------------------------------------------------------
-   3. La barra delle combinazioni pronte
-
-   Un preset cambia tutto il gruppo «Aspetto» in un colpo solo. Non e' una
-   scorciatoia per pigri: e' l'unico modo per cambiare tema senza dover
-   ragionare su dodici colori e sperare che stiano insieme.
-   --------------------------------------------------------------------- */
 
 const ORDINE_CAMPIONI = ['viola', 'ciano', 'magenta', 'fondo', 'testo'];
 
@@ -334,23 +207,8 @@ function clonaTema(tema) {
   return JSON.parse(JSON.stringify(tema));
 }
 
-/* ------------------------------------------------- la fotografia iniziale
-
-   «Ripristina i colori di partenza» ha bisogno di sapere quali erano.
-   Chi monta la barra puo' dirlo (opzione `predefinito`, oppure
-   `onRipristina`); se non lo dice, i colori di partenza onesti sono
-   quelli che c'erano nel gruppo quando il pannello e' stato aperto, e si
-   leggono dai campi stessi: ogni `.campo` porta la sua chiave in
-   `data-chiave`, che e' l'unico contratto che serve.
-
-   La fotografia si scatta una volta sola per sessione: dopo aver provato
-   un preset il gruppo si ridisegna, e rifarla vorrebbe dire promettere di
-   riportare indietro fino al preset, cioe' non riportare indietro niente. */
-
 let fotografiaIniziale = null;
 
-/* Campi che non sono roba da tema: dentro hanno altri campi, e leggerli
-   con una querySelector prenderebbe il primo input che capita. */
 const CAMPI_COMPLESSI = '.elenco, .righe, .orari, .ricco, .immagine';
 
 function valoreDalCampo(nodo) {
@@ -372,7 +230,6 @@ function valoreDalCampo(nodo) {
   return semplice ? semplice.value : undefined;
 }
 
-/** Il ramo comune di un gruppo di chiavi: «config.tema.colori.viola» + … -> «config.tema». */
 function prefissoComune(chiavi) {
   if (!chiavi.length) return '';
   let comune = chiavi[0].split('.');
@@ -382,16 +239,10 @@ function prefissoComune(chiavi) {
     while (quanti < comune.length && quanti < pezzi.length && comune[quanti] === pezzi[quanti]) quanti += 1;
     comune = comune.slice(0, quanti);
   }
-  // Con una chiave sola il «prefisso» sarebbe la chiave stessa: l'ultimo
-  // pezzo e' il campo, non il ramo che lo contiene.
   if (comune.join('.') === chiavi[0]) comune.pop();
   return comune.join('.');
 }
 
-/**
- * Da { 'config.tema.colori.viola': '#8b2fff', … } a { colori: { viola: … } }:
- * la stessa forma che hanno i preset, cosi' chi applica non distingue.
- */
 function annida(mappa) {
   const chiavi = Object.keys(mappa);
   const prefisso = prefissoComune(chiavi);
@@ -409,7 +260,6 @@ function annida(mappa) {
   return radice;
 }
 
-/** Legge i campi che stanno insieme alla barra, e ne fa un tema. */
 function scattaFotografia(barra) {
   const contenitore = barra.parentElement;
   if (!contenitore) return null;
@@ -424,7 +274,6 @@ function scattaFotografia(barra) {
   return Object.keys(mappa).length ? annida(mappa) : null;
 }
 
-/** I cinque pallini colorati che fanno capire il preset prima di provarlo. */
 function campioni(tema) {
   const colori = (tema && tema.colori) || {};
   const scelti = [];
@@ -445,25 +294,6 @@ function campioni(tema) {
   return riga;
 }
 
-/**
- * Barra dei preset con il bottone di ripristino.
- *
- * @param {object} ctx      il contesto dei campi (usa solo `conferma`, se c'e')
- * @param {object} opzioni
- *   - preset: [ { id, nome, descrizione?, tema } ]   dalle API
- *   - onApplica(tema, info): chiamata con il tema scelto, gia' clonato.
- *     `info` = { id, nome, ripristino }, per chi vuole distinguere il caso.
- *   - predefinito / temaIniziale: il tema di partenza per il ripristino.
- *   - onRipristina(): se c'e', il ripristino chiama questa invece di
- *     `onApplica` (serve a chi il tema di partenza ce l'ha nei dati).
- *
- * Le ultime due sono facoltative: senza, il ripristino si appoggia alla
- * fotografia dei campi del gruppo, scattata la prima volta che la barra
- * finisce in pagina. Il bottone quindi funziona anche se chi monta la
- * barra passa solo `preset` e `onApplica`, come dice il contratto §10.1.
- *
- * @returns {HTMLElement} il nodo, gia' pronto da appendere
- */
 export function creaBarraTema(ctx, { preset, onApplica, predefinito, temaIniziale, onRipristina } = {}) {
   const elenco = Array.isArray(preset) ? preset.filter((p) => p && p.tema) : [];
   const applica = typeof onApplica === 'function' ? onApplica : () => {};
@@ -487,8 +317,6 @@ export function creaBarraTema(ctx, { preset, onApplica, predefinito, temaInizial
       el('span', { classe: 'preset__nome', testo: nome })
     ]);
 
-    // Il bottone si veste del preset che rappresenta: fondo e testo veri,
-    // cosi' si vede subito se quella combinazione e' leggibile o no.
     if (componenti(colori.fondo)) bottoneVoce.style.background = colori.fondo;
     if (componenti(colori.testo)) bottoneVoce.style.color = colori.testo;
     if (componenti(colori.viola)) bottoneVoce.style.borderColor = colori.viola;
@@ -500,18 +328,12 @@ export function creaBarraTema(ctx, { preset, onApplica, predefinito, temaInizial
     griglia.append(el('p', { classe: 'preset__vuoto', testo: 'Il server non ha mandato combinazioni pronte: i colori si scelgono uno per uno qui sotto.' }));
   }
 
-  /* --- ripristino ---
-     Il tema di partenza puo' arrivare dichiarato (`predefinito`, un preset
-     marcato, `ctx.tema.predefinito`) oppure, in mancanza d'altro, dalla
-     fotografia dei campi scattata quando il gruppo si e' aperto. */
   const dichiarato = predefinito || temaIniziale ||
     (ctx && ctx.tema && ctx.tema.predefinito) ||
     (elenco.find((p) => p.predefinito === true || p.id === 'predefinito' || p.id === 'partenza') || {}).tema || null;
 
   const daRipristinare = () => dichiarato || fotografiaIniziale;
 
-  // Le parole cambiano con la fonte: il tema di partenza del sito non e'
-  // «com'era quando hai aperto il pannello», e dirlo sarebbe un inganno.
   const verso = dichiarato
     ? 'Colori, font e forma tornano quelli di partenza del sito.'
     : 'Tutte le modifiche fatte all\'aspetto tornano com\'erano quando hai aperto il pannello.';
@@ -520,13 +342,11 @@ export function creaBarraTema(ctx, { preset, onApplica, predefinito, temaInizial
     testo: 'Ripristina i colori di partenza',
     ico: 'ricarica',
     classe: 'btn btn--fantasma',
-    disabilitato: true,   // si accende quando si sa a cosa tornare
+    disabilitato: true,
     titolo: dichiarato ? 'Rimette colori, font e forma di partenza del sito.' : 'Rimette i colori e i font com\'erano prima delle tue prove.',
     su: async () => {
       const partenza = daRipristinare();
       if (typeof onRipristina !== 'function' && !partenza) return;
-      // Il ripristino butta via le prove fatte: qui la conferma ci vuole,
-      // mentre sui preset no (provarli in fretta e' il loro senso).
       if (typeof ctx?.conferma === 'function') {
         const ok = await ctx.conferma({
           titolo: 'Rimetto i colori di partenza?',
@@ -555,11 +375,6 @@ export function creaBarraTema(ctx, { preset, onApplica, predefinito, temaInizial
     el('div', { classe: 'tema-barra__azioni' }, [btnRipristina])
   ]);
 
-  /* La fotografia si puo' scattare solo quando la barra e' gia' appesa
-     accanto ai campi, cioe' subito dopo che chi ci chiama l'ha messa in
-     pagina: da qui dentro, il momento buono e' il microtask successivo.
-     Se la barra non viene appesa, non si scatta niente e il bottone resta
-     spento con il suo perche' scritto sopra. */
   queueMicrotask(() => {
     if (!fotografiaIniziale && !dichiarato) fotografiaIniziale = scattaFotografia(nodo);
     const partenza = daRipristinare();

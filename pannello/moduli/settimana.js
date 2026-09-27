@@ -1,48 +1,9 @@
-/* =====================================================================
-   settimana.js — l'editor della schedule (CONTRATTO-5 §8).
-
-   Un campo solo, `config.orari`, e dentro tutta la settimana: giorni e
-   ora di serie, le sette schede con la loro immagine, gli eventi speciali
-   e il fondale della sezione. Resta un campo come gli altri (stessa firma,
-   stesso oggetto di ritorno di moduli/campi.js) perché così lo disegnano
-   le parti, la ricerca e il riepilogo degli errori senza sapere com'è
-   fatto dentro.
-
-   Tre scelte che spiegano metà del codice:
-
-   1. LE REGOLE NON STANNO QUI. Limiti, valori vuoti, ore effettive e
-      problemi arrivano da condivisi/orari.js (window.SBOrari), lo stesso
-      file che usa il server: il pannello non può dire «va bene» a una
-      durata che il salvataggio rifiuta.
-
-   2. SI SCRIVE QUELLO CHE SI È SCRITTO. Una casella con «25:00» finisce
-      nei dati così com'è, e l'errore compare accanto alla casella. Pulire
-      in silenzio (normalizza) vorrebbe dire correggere alle spalle di chi
-      scrive: normalizza serve solo a leggere, per i riassunti.
-
-   3. IL DOM NON SI RIFÀ MENTRE SI SCRIVE. Righe, caselle e immagini
-      nascono una volta; a ogni modifica si riscrivono solo i testi che
-      riassumono (nastro in miniatura, riga del giorno, contatori). Un
-      editor ridisegnato a ogni tasto perderebbe il fuoco a metà parola.
-
-   Con l'anteprima parla attraverso il motore (import dinamico: se il
-   motore manca l'editor funziona lo stesso): un clic su un giorno o su un
-   evento nell'anteprima apre il posto giusto, quello aperto qui si
-   contorna di ciano là, e fuoco, velo e intensità si vedono subito
-   impostando le variabili CSS sull'elemento, prima della ricarica.
-   ===================================================================== */
-
 import '../condivisi/orari.js';
 import { el, bottone, svuota, idUnico, urlRisorsa, menoMovimento, icona } from './dom.js';
 import { guscio } from './campi.js';
 import * as media from './media.js';
 import { avviso, conferma } from './avvisi.js';
 
-/* ------------------------------------------------------------ strumenti */
-
-/** Le regole condivise. Il modulo le importa, ma si rileggono ogni volta
-    invece di fissarle in una costante: un file arrivato rotto deve dare
-    un messaggio, non un'eccezione a metà disegno. */
 function regole() {
   return typeof window !== 'undefined' && window.SBOrari ? window.SBOrari : null;
 }
@@ -85,7 +46,6 @@ function stringi(n, min, max) {
   return Math.min(max, Math.max(min, n));
 }
 
-/** 4 -> «4 h», 0.5 -> «30 min», 2.5 -> «2 h 30». */
 function testoDurata(ore) {
   const n = Number(ore);
   if (!Number.isFinite(n) || n <= 0) return '';
@@ -95,9 +55,6 @@ function testoDurata(ore) {
   return intere + ' h' + (minuti ? ' ' + due(minuti) : '');
 }
 
-/* Chi scrive un'ora a mano scrive «2130», «9», «21.30»: all'uscita dalla
-   casella la si mette nella forma che il server vuole. Quello che non si
-   capisce resta com'è, e l'errore lo dice. */
 function oraDaTesto(testo) {
   const pulito = String(testo || '').trim();
   if (!pulito) return '';
@@ -109,9 +66,6 @@ function oraDaTesto(testo) {
   return due(ore) + ':' + due(minuti);
 }
 
-/* Una casella numerica vuota vale null («di serie» per un giorno, «manca»
-   per un evento); un numero si scrive come numero; il resto resta testo,
-   così problemi() lo segnala invece di vederlo sparire. */
 function durataDaTesto(testo) {
   const pulito = String(testo || '').trim().replace(',', '.');
   if (!pulito) return null;
@@ -119,7 +73,6 @@ function durataDaTesto(testo) {
   return Number.isFinite(n) ? n : pulito;
 }
 
-/** «AAAA-MM-GG» di oggi sull'orologio del canale. */
 function oggiNelFuso(fuso) {
   const adesso = new Date();
   try {
@@ -132,7 +85,6 @@ function oggiNelFuso(fuso) {
   }
 }
 
-/** Numero, mese e giorno della settimana di una data, o null. */
 function pezziData(data) {
   const R = regole();
   const g = R.giornoDellaSettimana(data);
@@ -146,7 +98,6 @@ function pezziData(data) {
   };
 }
 
-/** «sabato 27 settembre» sull'orologio di `fuso` all'istante `ms`. */
 function dataNelFuso(ms, fuso) {
   try {
     return new Intl.DateTimeFormat('it-IT', { timeZone: fuso, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(ms));
@@ -155,8 +106,6 @@ function dataNelFuso(ms, fuso) {
   }
 }
 
-/* La miniatura di una riga: si rifà solo se cambia il file, così chi
-   scrive un titolo non fa ricaricare sette immagini a ogni tasto. */
 function miniatura(contenitore, voce) {
   contenitore.dataset.pieno = voce.immagine ? '1' : '0';
   const posizione = voce.fuoco.x + '% ' + voce.fuoco.y + '%';
@@ -174,11 +123,6 @@ function miniatura(contenitore, voce) {
   if (img.style.objectPosition !== posizione) img.style.objectPosition = posizione;
 }
 
-/* ------------------------------------------------------- l'anteprima */
-
-/* Il motore è un modulo dell'editor: può mancare (pannello senza guscio)
-   o non essersi ancora caricato. Si chiede una volta sola, e ogni suo uso
-   passa da un try: un guasto là non deve fermare chi scrive qui. */
 let motore = null;
 let motoreChiesto = false;
 
@@ -190,8 +134,6 @@ function chiediMotore() {
       motore = modulo && modulo.motore ? modulo.motore : null;
       if (!motore) return;
       if (typeof motore.suSelezione === 'function') {
-        // Selezione cambiata: l'editor può essere appena uscito dal
-        // pannello, e il contorno nell'anteprima con lui.
         motore.suSelezione(() => setTimeout(aggiornaEvidenza, 0));
       }
       agganciaAnteprima();
@@ -211,7 +153,6 @@ function documentoAnteprima() {
   }
 }
 
-/* I selettori che SITO garantisce (CONTRATTO-5 §6.1). */
 function selettoreDi(base) {
   const pezzi = String(base).split('.');
   if (pezzi[0] === 'schede') return 'li.nastro__giorno[data-giorno="' + Number(pezzi[1]) + '"]';
@@ -231,17 +172,12 @@ function elementoInAnteprima(base) {
   }
 }
 
-/** Variabili CSS sull'elemento dell'anteprima: si vede subito, la ricarica arriva dopo. */
 function dalVivo(base, variabili) {
   const nodo = elementoInAnteprima(base);
   if (!nodo) return;
   for (const [nome, valore] of Object.entries(variabili)) nodo.style.setProperty(nome, valore);
 }
 
-/* Il contorno di ciò che è aperto qui. Un foglio iniettato e non una
-   classe sull'elemento: la ricarica riscrive la pagina, e il foglio si
-   rimette a ogni sb:anteprima-pronta con un solo punto che lo sa fare. Le
-   variabili --sbm-* le mette già il motore nell'iframe. */
 const ID_EVIDENZA = 'sb-palinsesto-evidenza';
 
 function aggiornaEvidenza() {
@@ -262,7 +198,6 @@ function aggiornaEvidenza() {
   if (stile.textContent !== testo) stile.textContent = testo;
 }
 
-/** Porta in vista nell'anteprima l'elemento di `base`, solo se è fuori schermo. */
 function scorriAnteprimaA(base) {
   const nodo = elementoInAnteprima(base);
   const finestra = nodo && nodo.ownerDocument ? nodo.ownerDocument.defaultView : null;
@@ -279,10 +214,6 @@ function scorriAnteprimaA(base) {
   }
 }
 
-/* Il motore seleziona la parte (nastro o eventi) con il suo ascoltatore in
-   cattura sulla finestra dell'iframe, quindi prima di questo: quando il
-   clic arriva qui il guscio ha già messo a video l'editor della parte, e
-   basta aprirci il giorno o l'evento da cui il clic è partito. */
 function suClicAnteprima(evento) {
   const bersaglio = evento.target && evento.target.nodeType === 1 ? evento.target : (evento.target ? evento.target.parentElement : null);
   if (!bersaglio || typeof bersaglio.closest !== 'function') return;
@@ -296,8 +227,6 @@ function suClicAnteprima(evento) {
   else istanza.apriEvento(Number(speciale.getAttribute('data-evento')), { dallAnteprima: true });
 }
 
-/* document.open() del motore toglie gli ascoltatori dal documento ma lascia
-   lo stesso oggetto: si riconosce una pagina nuova dal suo <html>. */
 const pagineAgganciate = new WeakSet();
 
 function agganciaAnteprima() {
@@ -317,12 +246,6 @@ if (typeof document !== 'undefined') {
   });
 }
 
-/* -------------------------------------------------- editor a video */
-
-/* Lo stesso campo può esistere più volte (la parte del nastro, quella
-   degli eventi, la vista del gruppo): chi riceve un clic dall'anteprima è
-   quello che si vede. Un'istanza appena creata non è ancora appesa a
-   niente, e si butta solo dopo esserci stata. */
 const istanze = new Set();
 
 function istanzeVive() {
@@ -340,8 +263,6 @@ function istanzaAVideo() {
   return null;
 }
 
-/* Dove si era rimasti, condiviso fra le istanze: dopo Annulla il campo si
-   ridisegna da capo, e deve riaprire la stessa vista e lo stesso giorno. */
 const ricordo = { vista: 'settimana', giorno: null, evento: null };
 
 const VISTE = [
@@ -351,25 +272,12 @@ const VISTE = [
   { id: 'fondale', nome: 'Fondale' }
 ];
 
-/* Rapporti (larghezza / altezza) dei ritagli del blocco immagine: come esce
-   la locandina di un giorno, la scheda di un evento e il fondale nella pagina
-   di SITO, misurati a 1400 px (Computer) e a 390 px (Telefono). Servono
-   solo a far vedere cosa resta in vista con quel fuoco: se il sito cambia
-   misure, si cambiano qui. */
 const RITAGLI = {
   giorno: [{ nome: 'Computer', rapporto: '2 / 3' }, { nome: 'Telefono', rapporto: '16 / 9' }],
   evento: [{ nome: 'Computer', rapporto: '3 / 4' }, { nome: 'Telefono', rapporto: '5 / 4' }],
   sfondo: [{ nome: 'Computer', rapporto: '4 / 3' }, { nome: 'Telefono', rapporto: '2 / 3' }]
 };
 
-/* Due di quei rapporti al computer dipendono dai dati, e con un numero fisso
-   il ritaglio mostrerebbe un'altra immagine da quella del sito:
-   - la locandina di un giorno divide la riga con le altre dirette: con una
-     sola è quasi quadrata, con sette è una striscia (misurate a 1400 px, da
-     una a sette dirette);
-   - il fondale è alto quanto la sezione fino a un tetto: senza eventi la
-     sezione è bassa e il fondale largo (16:9), con gli eventi arriva al tetto
-     (4:3). */
 const LOCANDINA_COMPUTER = [0.59, 1.09, 0.85, 0.70, 0.59, 0.52, 0.46, 0.42];
 
 function ritagliPer(uso, orari) {
@@ -386,8 +294,6 @@ function ritagliPer(uso, orari) {
   return RITAGLI[uso];
 }
 
-/* ---------------------------------------------------------- riepilogo */
-
 const riepiloghi = new Set();
 
 function riepiloghiVivi() {
@@ -398,17 +304,6 @@ function riepiloghiVivi() {
   return Array.from(riepiloghi);
 }
 
-/**
- * Il riepilogo della schedule: quattro strumenti (dirette, di serie, fuso,
- * eventi), il nastro dei sette giorni in miniatura e il prossimo evento.
- * Lo usa l'editor in testa, e la parte «stato» della copertina da sola.
- * Si aggiorna da sé a ogni modifica della schedule.
- *
- * @param {object} opzioni
- *   - leggi(): il valore grezzo di config.orari
- *   - suGiorno(n): se c'è, i giorni del nastro in miniatura sono bottoni
- * @returns {{ nodo: HTMLElement, aggiorna: Function }}
- */
 export function creaRiepilogoOrari({ leggi, suGiorno = null } = {}) {
   const R = regole();
   const nodo = el('div', { classe: 'palinsesto-riepilogo' });
@@ -437,8 +332,6 @@ export function creaRiepilogoOrari({ leggi, suGiorno = null } = {}) {
   for (const n of R.ORDINE) {
     const abbr = el('span', { classe: 'palinsesto-riepilogo__abbr', testo: R.GIORNI[n].abbr });
     const ora = el('span', { classe: 'palinsesto-riepilogo__ora' });
-    // La locandina del giorno, in trasparenza sotto il nome: il nastro in
-    // miniatura somiglia a quello vero.
     const foto = el('span', { classe: 'palinsesto-riepilogo__foto', 'aria-hidden': 'true' });
     const cella = suGiorno
       ? el('button', { type: 'button', classe: 'palinsesto-riepilogo__cella', su: { click: () => suGiorno(n) } }, [foto, abbr, ora])
@@ -499,9 +392,6 @@ export function creaRiepilogoOrari({ leggi, suGiorno = null } = {}) {
   return { nodo, aggiorna };
 }
 
-/* Ogni scrittura della schedule, da qualunque parte arrivi, riallinea i
-   riepiloghi a video. Una volta per fotogramma: un trascinamento del
-   fuoco scrive a ogni movimento. */
 let riepiloghiProgrammati = 0;
 function programmaRiepiloghi() {
   if (riepiloghiProgrammati) return;
@@ -521,12 +411,6 @@ if (typeof document !== 'undefined') {
   document.addEventListener('sb:sostituito', programmaRiepiloghi);
 }
 
-/* ------------------------------------------------------------- campi */
-
-/**
- * Una casella piccola dell'editor: etichetta in monospazio, input, riga
- * dell'errore e, se c'è un tetto, il contatore.
- */
 function casella({ etichetta, tipo = 'text', max = null, segnaposto = '', aiuto = '', attributi = {} }) {
   const id = idUnico('pal');
   const idAiuto = aiuto ? id + '-aiuto' : null;
@@ -565,26 +449,10 @@ function casella({ etichetta, tipo = 'text', max = null, segnaposto = '', aiuto 
   };
 }
 
-/* =====================================================================
-   IL BLOCCO IMMAGINE (CONTRATTO-5 §8.2)
-
-   Uguale per i giorni, gli eventi e il fondale, ed esportato perché è un
-   pezzo a sé, riusabile da qualunque editor: un'immagine con il suo punto di
-   fuoco, i ritagli che mostrano cosa resta in vista, libreria, caricamento
-   dal computer e trascinamento di un file, e un cursore (velo o intensità).
-   Non sa niente dei dati: riceve un valore e dice a chi l'ha creato quello
-   nuovo, così chi lo usa decide come scriverlo.
-   ===================================================================== */
-
 const MODI_IMMAGINE = ['velo', 'intensita', 'nessuno'];
 
-/* I ritagli hanno tutti la stessa altezza: ognuno cresce in proporzione al
-   suo rapporto (larghezza / altezza), e con una base di 0 le altezze
-   tornano uguali. Il tetto evita che un solo ritaglio verticale diventi
-   più alto del pannello. */
 const ALTEZZA_RITAGLI = 170;
 
-/** «3 / 5», «16/9», 0.6 -> numero larghezza / altezza; 1 se non si capisce. */
 function rapportoNumerico(rapporto) {
   if (typeof rapporto === 'number') return Number.isFinite(rapporto) && rapporto > 0 ? rapporto : 1;
   const pezzi = /^\s*(\d+(?:\.\d+)?)\s*(?:\/\s*(\d+(?:\.\d+)?))?\s*$/.exec(String(rapporto || ''));
@@ -593,25 +461,6 @@ function rapportoNumerico(rapporto) {
   return Number.isFinite(n) && n > 0 ? n : 1;
 }
 
-/**
- * Il blocco immagine.
- *
- * @param {object} opzioni
- *   - etichetta: il nome del blocco («Immagine di sfondo»)
- *   - valore: { immagine, fuoco: { x, y }, velo } oppure { …, intensita }
- *   - modo: 'velo' (30–90, velatura dal basso come sotto un testo),
- *           'intensita' (0–100, opacità di un fondale), 'nessuno' (solo immagine e fuoco)
- *   - ritagli: [{ nome: 'Computer', rapporto: '3 / 5' }, …] le miniature di ritaglio
- *   - alCambio(nuovoValore, { dalVivo }): a ogni cambio; `dalVivo` è vero durante un
- *     gesto che continua (trascinamento del fuoco, cursore tenuto premuto) e falso
- *     quando il valore è quello definitivo
- *   - scegliImmagine(valoreCorrente) -> Promise<percorso | null>: la libreria da aprire
- *     (di serie quella di moduli/media.js)
- *   - descrizione: di chi è l'immagine, per i lettori di schermo («di lunedì»)
- *   - vuoto: la frase da mostrare quando l'immagine non c'è
- *   - aiutoLivello: la frase sotto il cursore, se quella di serie non va bene
- * @returns {{ nodo, imposta(valore), valore(), ritagli(elenco), mostraErrori(messaggi), fuoco() }}
- */
 export function creaBloccoImmagine({
   etichetta = 'Immagine di sfondo',
   valore = {},
@@ -656,7 +505,6 @@ export function creaBloccoImmagine({
     testo: 'Clicca o trascina sull\'immagine per scegliere il punto che resta sempre in vista. Con la tastiera: frecce, Maiusc + frecce per passi di 10, Inizio per il centro.'
   });
 
-  /* --- ritagli ---------------------------------------------------- */
   const cornici = [];
   const telai = [];
   const ritagliNodo = el('div', { classe: 'palinsesto-img__ritagli' });
@@ -676,8 +524,6 @@ export function creaBloccoImmagine({
     telai.push({ cornice, figura });
   }
 
-  /* I rapporti si riscrivono sugli stessi nodi quando cambiano (quante
-     dirette ci sono, se ci sono eventi): le immagini non si ricaricano. */
   function applicaRapporti(elenco) {
     let somma = 0;
     telai.forEach(({ cornice, figura }, i) => {
@@ -694,10 +540,6 @@ export function creaBloccoImmagine({
   const centra = bottone({ testo: 'Centra', classe: 'btn btn--minimo', su: () => spostaFuoco(50, 50, false) });
   const rigaFuoco = el('div', { classe: 'palinsesto-img__riga' }, [lettura, centra]);
 
-  /* --- azioni ----------------------------------------------------- */
-  // Gli stessi formati della libreria (moduli/media.js): l'AVIF si può usare
-  // se è già nel sito, ma caricarlo lo rifiutano sia il pannello sia il server,
-  // e proporlo qui vorrebbe dire farlo scegliere per poi dire di no.
   const file = el('input', { type: 'file', hidden: true, accept: '.png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml' });
   const libreria = bottone({ testo: 'Scegli dalla libreria', ico: 'immagine', classe: 'btn', su: () => scegliDallaLibreria() });
   const carica = bottone({ testo: 'Carica dal computer', ico: 'piu', classe: 'btn', su: () => file.click() });
@@ -713,7 +555,6 @@ export function creaBloccoImmagine({
   });
   const azioni = el('div', { classe: 'palinsesto-img__azioni' }, [libreria, carica, togli, file]);
 
-  /* --- velo o intensità ------------------------------------------- */
   const idCursore = idUnico('pal-cursore');
   const cursore = tipo === 'nessuno' ? null : el('input', {
     id: idCursore, type: 'range', classe: 'palinsesto-img__cursore-input', min: minimo, max: massimo, step: 1
@@ -750,7 +591,6 @@ export function creaBloccoImmagine({
     setTimeout(() => { annuncio.textContent = testo; }, 40);
   }
 
-  /* --- stato ------------------------------------------------------ */
   function numero(grezzo, min, max, ripiego) {
     const n = typeof grezzo === 'number' ? grezzo : (typeof grezzo === 'string' && grezzo.trim() !== '' ? Number(grezzo) : NaN);
     return Number.isFinite(n) ? stringi(Math.round(n), min, max) : ripiego;
@@ -826,7 +666,6 @@ export function creaBloccoImmagine({
     aiuto.hidden = true;
   });
 
-  /* --- fuoco: clic, trascinamento, frecce -------------------------- */
   function spostaFuoco(x, y, continuo) {
     stato.fuoco = { x: stringi(Math.round(x), L.fuocoMin, L.fuocoMax), y: stringi(Math.round(y), L.fuocoMin, L.fuocoMax) };
     mostraFuoco();
@@ -844,7 +683,7 @@ export function creaBloccoImmagine({
     evento.preventDefault();
     trascinando = true;
     nodo.dataset.trascina = '1';
-    try { foto.setPointerCapture(evento.pointerId); } catch { /* senza cattura vale finché il puntatore resta sopra */ }
+    try { foto.setPointerCapture(evento.pointerId); } catch {}
     foto.focus({ preventScroll: true });
     daPuntatore(evento, true);
   });
@@ -855,7 +694,7 @@ export function creaBloccoImmagine({
     if (!trascinando) return;
     trascinando = false;
     delete nodo.dataset.trascina;
-    try { foto.releasePointerCapture(evento.pointerId); } catch { /* già rilasciato */ }
+    try { foto.releasePointerCapture(evento.pointerId); } catch {}
     alCambio(comeValore(), { dalVivo: false });
     annuncia('Fuoco a ' + stato.fuoco.x + '% da sinistra e ' + stato.fuoco.y + '% dall\'alto.');
   };
@@ -884,7 +723,6 @@ export function creaBloccoImmagine({
     cursore.addEventListener('change', () => alCambio(comeValore(), { dalVivo: false }));
   }
 
-  /* --- scegliere e caricare --------------------------------------- */
   function applicaImmagine(scelto) {
     const percorso = String(scelto || '').trim().replace(/^\/+/, '');
     if (!percorso) return;
@@ -895,8 +733,6 @@ export function creaBloccoImmagine({
       return;
     }
     if (percorso === stato.immagine) return;
-    // Un'immagine nuova ha il suo soggetto altrove: il fuoco dell'altra
-    // non vuol dire niente, si riparte dal centro.
     stato.immagine = percorso;
     stato.fuoco = { x: 50, y: 50 };
     disegna();
@@ -923,8 +759,6 @@ export function creaBloccoImmagine({
     nodo.setAttribute('aria-busy', 'true');
     for (const b of [libreria, carica, togli]) b.disabled = true;
     try {
-      // caricaImmagine prepara (WebP leggero), carica e dice da sola com'è
-      // andata; senza di lei resta la libreria, che carica anche lei.
       const percorso = typeof media.caricaImmagine === 'function' ? await media.caricaImmagine(scelto) : await apriLibreria();
       if (percorso) applicaImmagine(percorso);
     } catch (guasto) {
@@ -942,7 +776,6 @@ export function creaBloccoImmagine({
     caricaFile(scelto);
   });
 
-  // Senza preventDefault su dragover il browser apre il file al posto nostro.
   const conFile = (evento) => Boolean(evento.dataTransfer && Array.from(evento.dataTransfer.types || []).includes('Files'));
   for (const nomeEvento of ['dragenter', 'dragover']) {
     palco.addEventListener(nomeEvento, (evento) => {
@@ -966,18 +799,14 @@ export function creaBloccoImmagine({
 
   return {
     nodo,
-    /** Rimette a video un valore arrivato da fuori (Annulla, un altro campo). */
     imposta(nuovo) {
       const letti = letto(nuovo);
       stato.immagine = letti.immagine;
-      // Chi sta trascinando o tiene il cursore non si vede tornare indietro
-      // il punto sotto il dito per un valore scritto un fotogramma prima.
       if (!trascinando) stato.fuoco = letti.fuoco;
       if (!cursore || document.activeElement !== cursore) stato.livello = letti.livello;
       disegna();
     },
     valore: () => comeValore(),
-    /** Nuovi rapporti per i ritagli, stesso ordine e stessi nomi di quelli di partenza. */
     ritagli(elenco) {
       applicaRapporti(Array.isArray(elenco) ? elenco : []);
     },
@@ -993,17 +822,6 @@ export function creaBloccoImmagine({
   };
 }
 
-/* =====================================================================
-   L'EDITOR
-   ===================================================================== */
-
-/**
- * @param {object} campo    { chiave: 'config.orari', etichetta, aiuto, tipo: 'orari' }
- * @param {object} accesso  { leggi(), scrivi(valore) }
- * @param {object} ctx      il contesto dei campi di pannello.js
- * @returns {object} { chiave, campo, nodo, valida, mostraErrore, pulisci, fuoco,
- *                     apriVista(id), apriGiorno(n), apriEvento(i) }
- */
 export function creaCampoOrari(campo, accesso, ctx = {}) {
   const R = regole();
   const parti = guscio(campo, { ...(ctx.opzioni || {}), perInput: false });
@@ -1033,16 +851,14 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     vista: ricordo.vista,
     giorno: ricordo.giorno,
     evento: ricordo.evento,
-    campi: new Map(),          // percorso -> { mostra(messaggi), fuoco(), input } oppure { alias: percorso }
-    toccati: new Set(),        // percorsi toccati: i loro errori si mostrano
-    tutti: false,              // dopo valida() o un rifiuto del server: tutti gli errori
-    mostrati: [],              // [{ percorso, messaggio }] mostrati adesso
-    aVideo: new Set(),         // percorsi con l'errore a video: chi scrive ne vede solo sparire
-    server: null,              // { messaggi: Set, firma } dall'ultimo rifiuto del server
+    campi: new Map(),
+    toccati: new Set(),
+    tutti: false,
+    mostrati: [],
+    aVideo: new Set(),
+    server: null,
     ui: null
   };
-
-  /* --- lettura e scrittura ------------------------------------------ */
 
   const grezzo = () => {
     const valore = accesso.leggi();
@@ -1050,15 +866,11 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
   };
   const pulito = () => R.normalizza(grezzo());
 
-  /** Il valore scritto, e se manca quello pulito: le caselle mostrano quello che c'è. */
   function valoreDi(percorso) {
     const scritto = leggiIn(grezzo(), percorso);
     return scritto === undefined ? leggiIn(pulito(), percorso) : scritto;
   }
 
-  /* Prima di scrivere dentro schede, eventi o sfondo ci si assicura che
-     esistano: un contenuti.json di prima della schedule nuova non li ha. I
-     valori che ci sono, giusti o sbagliati, non si toccano. */
   function struttura(valore) {
     const orari = oggetto(valore) ? valore : {};
     if (!Array.isArray(orari.schede)) orari.schede = [];
@@ -1071,12 +883,10 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     return orari;
   }
 
-  /** Scrive una o più modifiche [[percorso, valore], …] in un colpo solo. */
   function scrivi(modifiche, { tocca = true } = {}) {
     const nuovo = struttura(clona(grezzo()));
     for (const [percorso, valore] of modifiche) {
       const pezzi = percorso.split('.');
-      // Un evento rotto (non un oggetto) si rimette in piedi prima di scriverci.
       if (pezzi[0] === 'eventi' && pezzi.length > 2 && !oggetto(nuovo.eventi[Number(pezzi[1])])) {
         nuovo.eventi[Number(pezzi[1])] = R.eventoVuoto();
       }
@@ -1091,7 +901,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     programmaAggiornamento();
   }
 
-  /* Durante un trascinamento si scrive al massimo una volta per fotogramma. */
   let inSospeso = null;
   let fotogramma = 0;
   function scriviPresto(modifiche) {
@@ -1107,8 +916,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     inSospeso = null;
     scrivi(modifiche);
   }
-
-  /* --- aggiornamento dei riassunti ----------------------------------- */
 
   let aggiornamento = 0;
   function programmaAggiornamento() {
@@ -1131,8 +938,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     calcolaErrori();
   }
 
-  /* --- errori --------------------------------------------------------- */
-
   function toccato(percorso) {
     if (ed.tutti) return true;
     for (const t of ed.toccati) {
@@ -1141,10 +946,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     return false;
   }
 
-  /* La casella che mostra l'errore di un percorso: quella esatta, o la più
-     vicina salendo (schede.1.fuoco sta nel blocco immagine di lunedì). Si
-     sale al massimo fino al giorno o all'evento: l'errore di un evento
-     chiuso non deve finire sulla riga generale degli eventi. */
   function casellaPer(percorso) {
     const minimo = /^(schede|eventi)\.\d+/.test(percorso) ? 2 : 1;
     let pezzi = percorso.split('.');
@@ -1156,7 +957,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     return '';
   }
 
-  /** Il percorso della casella in cui si sta scrivendo, o ''. */
   function percorsoAttivo() {
     const attivo = document.activeElement;
     if (!attivo) return '';
@@ -1169,8 +969,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
   function calcolaErrori() {
     const grezzi = grezzo();
     const tutti = R.problemi(grezzi);
-    // Mentre si scrive in una casella il suo errore può solo sparire: un
-    // «va scritta come 21:00» che compare a metà di «21:3» non aiuta.
     const attivo = percorsoAttivo();
     ed.mostrati = tutti.filter((p) => toccato(p.percorso) && !(p.percorso === attivo && !ed.aVideo.has(p.percorso)));
 
@@ -1178,8 +976,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     const senzaCasella = [];
     for (const problema of ed.mostrati) {
       const dove = casellaPer(problema.percorso);
-      // Un errore di un giorno o di un evento chiuso non ha casella a video:
-      // lo segna la sua riga, e compare accanto alla casella quando si apre.
       if (dove) {
         if (!perCasella.has(dove)) perCasella.set(dove, []);
         perCasella.get(dove).push(problema.messaggio);
@@ -1192,9 +988,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
       if (!voce.alias) voce.mostra(perCasella.get(percorso) || []);
     }
 
-    // Un messaggio del server che nessuna regola di qui riconosce resta a
-    // video finché la schedule è quella rifiutata: cambiata, il server va
-    // interrogato di nuovo, e il vecchio messaggio non dice più il vero.
     if (ed.server && ed.server.firma === JSON.stringify(grezzi)) {
       for (const messaggio of ed.server.messaggi) {
         if (!tutti.some((p) => p.messaggio === messaggio)) senzaCasella.push(messaggio);
@@ -1228,7 +1021,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     return 'settimana';
   }
 
-  /** Apre il posto del primo errore mostrato; con `fuoco` ci porta anche la tastiera. */
   function vaiAlPrimoErrore({ fuoco = false } = {}) {
     const primo = ed.mostrati[0];
     if (!primo) return false;
@@ -1243,8 +1035,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     if (voce && voce.fuoco) voce.fuoco();
     return true;
   }
-
-  /* --- viste ---------------------------------------------------------- */
 
   function impostaVista(id, { fuoco = false } = {}) {
     if (!VISTE.some((v) => v.id === id)) return;
@@ -1274,8 +1064,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     conta.eventi.dataset.acceso = R.eventiFuturi(grezzo(), Date.now()).length ? '1' : '0';
   }
 
-  /* --- scorrimento del pannello --------------------------------------- */
-
   function scorriNelPannello(nodo, { inCima = false } = {}) {
     const scorri = nodo.closest('[data-scorri]') || contenitoreCheScorre(nodo);
     if (!scorri) return;
@@ -1294,8 +1082,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     return null;
   }
 
-  /* Un segno breve sulla riga raggiunta da un clic nell'anteprima: dopo un
-     salto dice dove si è arrivati, anche a chi non guarda il fuoco. */
   function segnala(nodo) {
     nodo.classList.remove('is-trovato');
     void nodo.offsetWidth;
@@ -1303,15 +1089,10 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     setTimeout(() => nodo.classList.remove('is-trovato'), 1600);
   }
 
-  /* =================================================================
-     VISTA SETTIMANA
-     ================================================================= */
-
   function costruisciSettimana() {
     const orari = pulito();
     const pannello = el('div', { classe: 'palinsesto__vista palinsesto__vista--settimana' });
 
-    /* Di serie: valgono per ogni giorno che non ha un'ora o una durata sua. */
     const ora = casella({ etichetta: 'Ora di serie', segnaposto: '21:00', aiuto: 'Scritta come 21:00.', attributi: { inputmode: 'numeric', maxlength: 5, spellcheck: 'false' } });
     ora.input.value = String(valoreDi('ora') ?? '');
     ora.input.addEventListener('input', () => scrivi([['ora', ora.input.value.trim()]]));
@@ -1336,10 +1117,8 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     registraCasella('fuso', fuso);
     const elencoFusi = el('datalist', { id: idFusi });
     let fusi = ['Europe/Rome', 'Europe/London', 'UTC', 'America/New_York', 'America/Los_Angeles'];
-    // supportedValuesOf manca nei browser vecchi: restano i fusi comuni,
-    // che coprono il caso vero (il canale è in Italia).
     if (typeof Intl.supportedValuesOf === 'function') {
-      try { fusi = Intl.supportedValuesOf('timeZone'); } catch { /* restano quelli comuni */ }
+      try { fusi = Intl.supportedValuesOf('timeZone'); } catch {}
     }
     for (const nome of fusi) elencoFusi.append(el('option', { value: nome }));
 
@@ -1417,8 +1196,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     leva.addEventListener('click', () => {
       const giorni = Array.isArray(grezzo().giorni) ? grezzo().giorni.slice() : pulito().giorni.slice();
       const posto = giorni.indexOf(n);
-      // Chi c'era resta dov'era: un giorno tolto e rimesso non riordina
-      // l'elenco, e la pubblicazione resta identica a sé.
       if (posto >= 0) giorni.splice(posto, 1); else giorni.push(n);
       scrivi([['giorni', giorni]]);
       const acceso = posto < 0;
@@ -1467,14 +1244,10 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
       riga.segni.append(el('span', { classe: 'palinsesto__segno', title: 'Ora o durata diverse da quelle di serie', testo: 'Orario suo' }));
     }
 
-    // Sul sito un giorno di riposo non stampa la sua immagine: nemmeno qui.
     miniatura(riga.mini, { immagine: acceso ? scheda.immagine : '', fuoco: scheda.fuoco });
     if (riga.costruito) aggiornaCorpoGiorno(n);
   }
 
-  /* Con una data, un'ora o una durata sbagliate le regole ripiegano su un
-     valore stretto al bordo: dire «finisce alle…» con quello sarebbe una
-     bugia, e i riassunti lo dicono invece di fare il conto. */
   function orarioDaCorreggere(base, grezzi) {
     return R.problemi(grezzi).some((p) => p.percorso === base + '.data' || p.percorso === base + '.ora' || p.percorso === base + '.durataOre');
   }
@@ -1488,8 +1261,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     const acceso = pulito().giorni.includes(n);
 
     if (!acceso && !forza) {
-      // Un giorno di riposo non ha una scheda da aprire: si porta lì chi
-      // l'ha cliccato, con il fuoco sull'interruttore che lo accende.
       if (ed.giorno !== null && ed.giorno !== n) chiudiGiorno(ed.giorno);
       scorriNelPannello(riga.nodo, { inCima: dallAnteprima });
       segnala(riga.nodo);
@@ -1609,8 +1380,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
   function aggiornaSerie() {
     if (!ed.ui.serie) return;
     const { ora, durata, fuso } = ed.ui.serie;
-    // Chi sta scrivendo in una casella la vede com'è: si riallineano solo
-    // quelle che non hanno il fuoco (dopo Annulla, per esempio).
     if (document.activeElement !== ora.input) ora.input.value = String(valoreDi('ora') ?? '');
     if (document.activeElement !== durata.input) {
       const d = valoreDi('durataOre');
@@ -1619,13 +1388,11 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     if (document.activeElement !== fuso.input) fuso.input.value = String(valoreDi('fuso') ?? '');
   }
 
-  /** Titolo, gioco o nota: casella di una riga con il contatore. */
   function casellaTesto(percorso, etichetta, max, aiuto = '') {
     const voce = casella({ etichetta, max, aiuto, attributi: { spellcheck: 'true' } });
     voce.input.value = String(valoreDi(percorso) ?? '');
     voce.conta();
     voce.input.addEventListener('input', () => {
-      // Su una riga sola, come vuole il sito: un a capo incollato diventa spazio.
       const pulito = voce.input.value.replace(/[\r\n]+/g, ' ');
       if (pulito !== voce.input.value) voce.input.value = pulito;
       voce.conta();
@@ -1635,8 +1402,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     return voce;
   }
 
-  /* All'uscita dalla casella il suo errore compare anche se è nato mentre
-     si scriveva (calcolaErrori lo tiene nascosto finché c'è il fuoco). */
   function registraCasella(percorso, voce) {
     ed.campi.set(percorso, { mostra: voce.mostra, fuoco: () => voce.input.focus(), input: voce.input });
     voce.input.addEventListener('blur', () => {
@@ -1645,14 +1410,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     });
   }
 
-  /* =================================================================
-     BLOCCO IMMAGINE (giorni, eventi, fondale)
-     ================================================================= */
-
-  /* Il blocco vero è creaBloccoImmagine (qui sopra, esportato). Qui gli si
-     passa il valore della scheda e si scrive solo quello che il blocco ha
-     davvero cambiato: un velo sbagliato nei dati resta sbagliato (e segnato)
-     anche se si sposta il fuoco, invece di essere corretto di nascosto. */
   function bloccoImmagine({ base, uso, nome }) {
     const modo = uso === 'sfondo' ? 'intensita' : 'velo';
     const livello = modo === 'velo' ? 'velo' : 'intensita';
@@ -1699,8 +1456,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
       }
     });
 
-    /* Immagine, fuoco e velo hanno una riga d'errore sola, quella del
-       blocco: gli altri due percorsi rimandano al primo. */
     ed.campi.set(base + '.immagine', { mostra: blocco.mostraErrori, fuoco: blocco.fuoco });
     ed.campi.set(base + '.fuoco', { alias: base + '.immagine' });
     ed.campi.set(base + '.' + livello, { alias: base + '.immagine' });
@@ -1714,10 +1469,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
       }
     };
   }
-
-  /* =================================================================
-     VISTA EVENTI SPECIALI
-     ================================================================= */
 
   function costruisciEventi() {
     const pannello = el('div', { classe: 'palinsesto__vista palinsesto__vista--eventi' });
@@ -1757,8 +1508,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     return { inizio, termine: Number.isFinite(durata) ? inizio + Math.round(durata * 3600000) : NaN };
   }
 
-  /* In arrivo per data, poi quelli senza una data leggibile, poi i passati
-     dal più recente: chi apre la vista vuole vedere per primo cosa viene. */
   function ordineEventi() {
     const orari = pulito();
     const adesso = Date.now();
@@ -1941,8 +1690,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     registraCasella(base + '.ora', ora);
     registraCasella(base + '.durataOre', durata);
 
-    // Facoltativa, come la durata: solo un avviso sopra l'evento
-    // («massimo entro il...»), non spegne niente da sé — vedi orari.js.
     const ultimoGiorno = casella({
       etichetta: 'Data limite (facoltativa)', tipo: 'date',
       aiuto: 'Solo un avviso sul sito, tipo «massimo entro il...»: non spegne l\'evento da solo — per quello serve la durata, o toglierlo a mano.'
@@ -2006,8 +1753,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
       avviso('Gli eventi speciali sono al massimo ' + L.eventi + ': elimina quelli passati per farne posto.', { tipo: 'info' });
       return;
     }
-    // Data di oggi, ora e durata di serie: si parte da valori veri, da
-    // cambiare, invece che da caselle vuote che il salvataggio rifiuta.
     const nuovo = Object.assign(R.eventoVuoto(), {
       data: oggiNelFuso(orari.fuso),
       ora: orari.ora,
@@ -2040,8 +1785,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     const attuali = Array.isArray(grezzo().eventi) ? grezzo().eventi.slice() : [];
     if (i < 0 || i >= attuali.length) return;
     attuali.splice(i, 1);
-    // Gli indici dopo quello tolto scalano: i segni «toccato» degli eventi
-    // non valgono più per la casella giusta, e si ripartono da zero.
     for (const t of Array.from(ed.toccati)) if (t.startsWith('eventi.')) ed.toccati.delete(t);
     ed.evento = null;
     ricordo.evento = null;
@@ -2052,16 +1795,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     ed.ui.eventiUi.aggiungi.focus();
     annuncia('Evento eliminato.');
   }
-
-  /* =================================================================
-     VISTA GIORNI SALTATI
-
-     Una data precisa spenta per un motivo personale: vince sia sulla
-     settimana di serie sia su un evento speciale che cade lo stesso
-     giorno (vedi orari.js e costruisci.js — «saltata» non convive mai con
-     «sostituito»). Solo due campi, niente da espandere: una riga per
-     ognuno basta.
-     ================================================================= */
 
   function ordinePause() {
     const orari = pulito();
@@ -2168,8 +1901,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
       avviso('I giorni saltati sono al massimo ' + L.pause + ': elimina quelli che non ti servono più per farne posto.', { tipo: 'info' });
       return;
     }
-    // Data di oggi di serie, da cambiare: si parte da un valore vero invece
-    // che da una casella vuota che il salvataggio rifiuta.
     const nuovo = Object.assign(R.pausaVuota(), { data: oggiNelFuso(orari.fuso) });
     const indice = attuali.length;
     scrivi([['pause', attuali.concat([nuovo])]], { tocca: false });
@@ -2183,8 +1914,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     const attuali = Array.isArray(grezzo().pause) ? grezzo().pause.slice() : [];
     if (i < 0 || i >= attuali.length) return;
     attuali.splice(i, 1);
-    // Gli indici dopo quello tolto scalano: i segni «toccato» di quelli
-    // saltati non valgono più per la casella giusta.
     for (const t of Array.from(ed.toccati)) if (t.startsWith('pause.')) ed.toccati.delete(t);
     scrivi([['pause', attuali]], { tocca: false });
     disegnaPause();
@@ -2193,10 +1922,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     ed.ui.pauseUi.aggiungi.focus();
     annuncia('Giorno saltato eliminato.');
   }
-
-  /* =================================================================
-     VISTA FONDALE
-     ================================================================= */
 
   function costruisciFondale() {
     const immagine = bloccoImmagine({ base: 'sfondo', uso: 'sfondo', nome: 'fondale' });
@@ -2210,10 +1935,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
   function aggiornaFondale() {
     if (ed.ui.fondale) ed.ui.fondale.aggiorna();
   }
-
-  /* =================================================================
-     MONTAGGIO
-     ================================================================= */
 
   const annuncio = el('p', { classe: 'sr-only', role: 'status', 'aria-live': 'polite' });
   function annuncia(testo) {
@@ -2268,16 +1989,12 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
 
     radice.append(riepilogo.nodo, lista, ...ed.ui.pannelli.values(), annuncio);
 
-    // Il giorno ricordato si riapre senza cambiare la vista ricordata (l'evento
-    // aperto lo riapre già disegnaEventi).
     const vistaRicordata = ed.vista;
     if (ed.giorno !== null && pulito().giorni.includes(ed.giorno)) apriGiorno(ed.giorno);
     else ed.giorno = null;
     impostaVista(vistaRicordata);
     aggiornaTutto();
   }
-
-  /* --- quando i dati cambiano da fuori ------------------------------ */
 
   const istanza = {
     nodo: parti.nodo,
@@ -2297,8 +2014,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
   istanze.add(istanza);
 
   const suSostituito = () => {
-    // Un giro dopo: chi disegna le parti butta i nodi vecchi nello stesso
-    // evento, e ridisegnare un editor che sta per sparire è lavoro perso.
     setTimeout(() => {
       if (!parti.nodo.isConnected) {
         if (istanza.appesa) document.removeEventListener('sb:sostituito', suSostituito);
@@ -2315,9 +2030,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
   };
   document.addEventListener('sb:sostituito', suSostituito);
 
-
-  /* --- il contratto dei campi --------------------------------------- */
-
   controllo.valida = () => {
     svuotaSospeso();
     ed.tutti = true;
@@ -2325,10 +2037,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
     return ed.mostrati.length === 0;
   };
 
-  /* Il pannello riappoggia gli errori del server a ogni ridisegno del
-     guscio, con lo stesso messaggio: il posto dell'errore si apre solo la
-     prima volta che arriva, e il fuoco non si sposta mai da qui (lo porta
-     `fuoco()`, quando chi amministra clicca il riepilogo degli errori). */
   controllo.mostraErrore = (testo) => {
     if (!testo) {
       ed.server = null;
@@ -2362,8 +2070,6 @@ export function creaCampoOrari(campo, accesso, ctx = {}) {
   controllo.apriEvento = (i, opzioni) => apriEvento(i, opzioni);
 
   disegnaTutto();
-  // Appena il campo è in pagina il contorno nell'anteprima torna sul
-  // giorno o sull'evento che era aperto.
   setTimeout(aggiornaEvidenza, 0);
   return controllo;
 }

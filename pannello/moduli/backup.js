@@ -1,15 +1,3 @@
-/* =====================================================================
-   backup.js — elenco delle copie di sicurezza e ripristino.
-
-   Ogni pubblicazione lascia dietro di sé una copia dei tre file generati
-   (index.html, js/dati.js, css/tema.css) più i contenuti da cui sono nati
-   (contratto §6.4, CONTRATTO-2 §9). Da qui si torna indietro.
-
-   Il ripristino chiede conferma due volte, e la seconda con una casella
-   da spuntare: è l'unica azione del pannello che riscrive il sito senza
-   passare da una modifica, e un clic distratto costerebbe caro.
-   ===================================================================== */
-
 import { api, ErroreApi } from './api.js';
 import { el, bottone, svuota, formattaData, formattaPeso, tempoFa } from './dom.js';
 import { avviso, avvisoAttesa, conferma } from './avvisi.js';

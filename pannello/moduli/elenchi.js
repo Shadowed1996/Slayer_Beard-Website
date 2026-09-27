@@ -1,28 +1,6 @@
-/* =====================================================================
-   elenchi.js — i due tipi che contengono altri campi.
-
-     elencoTesti : un elenco di stringhe (una riga per voce)
-     elenco      : un elenco di oggetti, ognuno con i suoi sottocampi
-
-   Le voci di `elenco` sono pieghevoli: un elenco di cinque social con tre
-   campi ciascuno, tutto aperto, sarebbe un muro. Il titolo della voce
-   chiusa viene dalla proprieta' indicata da `etichettaVoce` nello schema,
-   e si aggiorna mentre si scrive.
-
-   Lo stato aperto / chiuso si legge dal DOM prima di ridisegnare, invece
-   di tenerlo in una variabile: cosi' resta giusto anche quando qualcun
-   altro apre una voce da fuori (per esempio apriVoci(), che serve a far
-   vedere un errore di convalida finito dentro una voce chiusa).
-   ===================================================================== */
-
 import { el, icona, bottone, svuota, idUnico } from './dom.js';
 import { guscio, attaccaErrore, creaCampo, valoreVuoto, chiaveRelativa, clona } from './campi.js';
 
-/**
- * Apre tutte le voci pieghevoli che contengono questo nodo.
- * Serve quando bisogna portare la vista su un campo che sta dentro una
- * voce chiusa: mostrare l'errore su un campo invisibile non aiuta nessuno.
- */
 export function apriVoci(nodo) {
   let corrente = nodo instanceof Element ? nodo.parentElement : null;
   while (corrente) {
@@ -37,10 +15,6 @@ export function apriVoci(nodo) {
     corrente = voce.parentElement;
   }
 }
-
-/* ---------------------------------------------------------------------
-   elencoTesti — righe di testo semplice
-   --------------------------------------------------------------------- */
 
 export function creaCampoElencoTesti(campo, accesso, ctx) {
   const parti = guscio(campo, { ...ctx.opzioni, perInput: false });
@@ -152,10 +126,6 @@ export function creaCampoElencoTesti(campo, accesso, ctx) {
   return controllo;
 }
 
-/* ---------------------------------------------------------------------
-   elenco — voci pieghevoli con sottocampi
-   --------------------------------------------------------------------- */
-
 export function creaCampoElenco(campo, accesso, ctx) {
   const parti = guscio(campo, { ...ctx.opzioni, perInput: false });
   const contenitore = el('ul', { classe: 'elenco', role: 'group', 'aria-labelledby': parti.idEtichetta });
@@ -172,11 +142,6 @@ export function creaCampoElenco(campo, accesso, ctx) {
     ctx.modificato();
   };
 
-  /**
-   * Titolo della voce chiusa. Prima si prova la proprieta' indicata dallo
-   * schema; poi il primo sottocampo di testo con qualcosa dentro; in
-   * ultima istanza il numero, che almeno non e' vuoto.
-   */
   const nomeVoce = (voce, indice) => {
     const preferita = campo.etichettaVoce;
     if (preferita) {
@@ -192,7 +157,6 @@ export function creaCampoElenco(campo, accesso, ctx) {
     return 'Voce ' + (indice + 1);
   };
 
-  /** Voce nuova: tutti i sottocampi al loro valore vuoto sensato. */
   const voceNuova = () => {
     if (campo.voceVuota && typeof campo.voceVuota === 'object') return clona(campo.voceVuota);
     const nuova = {};
@@ -200,7 +164,6 @@ export function creaCampoElenco(campo, accesso, ctx) {
     return nuova;
   };
 
-  /** Stato aperto/chiuso preso dal DOM, cosi' non va mai fuori sincrono. */
   const statoAperture = () => Array.from(contenitore.querySelectorAll(':scope > .voce'))
     .map((voce) => {
       const corpo = voce.querySelector(':scope > .voce__corpo');
@@ -279,8 +242,6 @@ export function creaCampoElenco(campo, accesso, ctx) {
       for (const sotto of sottocampi) {
         const proprieta = chiaveRelativa(campo.chiave, sotto.chiave);
         const controlloInterno = creaCampo(
-          // La chiave completa serve per far combaciare gli errori che il
-          // server manda su una voce precisa: "config.social.1.url".
           { ...sotto, chiave: campo.chiave + '.' + indice + '.' + proprieta },
           {
             leggi: () => {
@@ -333,7 +294,7 @@ export function creaCampoElenco(campo, accesso, ctx) {
       const aperture = statoAperture();
       const elenco = voci().slice();
       elenco.push(voceNuova());
-      aperture.push(true);   // la voce appena creata si apre: va riempita subito
+      aperture.push(true);
       salva(elenco);
       disegna(aperture);
       const ultima = contenitore.querySelector('[data-voce="' + (elenco.length - 1) + '"] input, [data-voce="' + (elenco.length - 1) + '"] textarea, [data-voce="' + (elenco.length - 1) + '"] select');
@@ -359,7 +320,6 @@ export function creaCampoElenco(campo, accesso, ctx) {
     (primo || aggiungi).focus();
   };
 
-  // Alla prima apertura tutto e' chiuso: si vede l'elenco, non il muro.
   disegna(voci().map(() => false));
   parti.nodo.append(contenitore, el('div', { classe: 'immagine__azioni' }, [aggiungi]), parti.pie);
   return controllo;
