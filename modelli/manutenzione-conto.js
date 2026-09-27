@@ -18,6 +18,12 @@
     canzoni.push({ titolo: typeof voce.titolo === 'string' ? voce.titolo : '', autore: typeof voce.autore === 'string' ? voce.autore : '', file: voce.file });
   }
   var modo = intero && (musica.modo === 'fissa' || musica.modo === 'ordine' || musica.modo === 'caso') ? musica.modo : 'ordine';
+  if (!canzoni.length) {
+    canzoni = [{ titolo: 'Back On Track', autore: 'DJVI', file: 'mp3/DJVI%20-%20Back%20On%20Track.mp3' }];
+    modo = 'ordine';
+    fissa = 0;
+  }
+  var stile = tela.getAttribute('data-stile') === 'geometrydash' ? 'geometrydash' : 'synthwave';
   window.PolloRun.crea({
     tela: tela,
     pollo: tela.getAttribute('data-pollo') || '',
@@ -25,6 +31,7 @@
     canzoni: canzoni,
     modo: modo,
     fissa: fissa,
+    stile: stile,
     suCanzone: function (voce) {
       var file = voce && typeof voce.file === 'string' && voce.file.indexOf('mp3/') === 0 ? voce.file : '';
       try { document.dispatchEvent(new CustomEvent('sb:canzone', { detail: { file: file } })); } catch (e) { }

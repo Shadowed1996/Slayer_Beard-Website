@@ -1080,19 +1080,26 @@ Non hanno una voce loro, ma è bene sapere come si comportano.
   clic o tasto. Il gioco è a **livelli veri**: ogni livello è un percorso fisso con il
   traguardo, una barra di avanzamento in alto e la scritta «LIVELLO N
   COMPLETATO»; a fine livello compare una frase di scherno e **SPAZIO** porta al
-  livello dopo. Lo stile è quello di Geometry Dash: il pollo corre dentro un cubo che ruota
-  in aria, lo sfondo cambia colore da un livello all'altro (e scivola verso il
-  colore del livello dopo mentre si avanza), blocchi e punte sono neri col
-  bordo bianco, i rombi sono seghe rotanti, in alto c'è la barra con la
-  percentuale e nel percorso scorre la scritta «TENTATIVO N». Chi sbatte vede il cubo
-  rompersi e **dopo un secondo si riparte da soli** dall'inizio dello stesso
-  livello (sempre uguale, così si impara; SPAZIO fa ripartire subito). A fine
-  livello, oltre alla frase, compaiono tentativi, salti e tempo. **INVIO** dalla
-  schermata iniziale riprende dal livello più alto raggiunto. I livelli sono infiniti e ogni volta più difficili: più veloci, con
-  ostacoli più fitti e più complessi (blocchi e piattaforme su cui atterrare,
-  buche, scale, isolotti sopra le buche, valli di punte, rombi da non toccare,
-  catene ravvicinate) e uno sfondo di colori diversi. Ogni livello è controllato
-  dal programma: se ne esistesse uno impossibile non uscirebbe. Le
+  livello dopo. I livelli sono **lunghi**, così c'è spazio per la canzone: circa
+  60 secondi il livello 1, 4 secondi in più per ogni livello, fino a un massimo
+  di 150 secondi (durata = min(150, 60 + 4 × (livello − 1)) secondi). In alto
+  c'è la barra di avanzamento con la percentuale e nel percorso scorre la
+  scritta «TENTATIVO N». Chi sbatte vede il pollo esplodere e il gioco si
+  **ferma** sulla scritta **GAME OVER** con «SPAZIO per riprovare il livello N ·
+  ESC per uscire»: non si riparte da soli. **SPAZIO** (dopo un attimo) riprova
+  lo stesso livello dall'inizio (sempre uguale, così si impara); se non si tocca
+  niente per 12 secondi si torna alla schermata iniziale. A fine livello, oltre
+  alla frase, compaiono tentativi, salti e tempo. **INVIO** dalla schermata
+  iniziale riprende dal livello più alto raggiunto. Durante la partita la scheda
+  della pagina di manutenzione sparisce del tutto. I livelli sono infiniti e la
+  difficoltà cresce un po' alla volta, sia da un livello all'altro (più veloci,
+  margini più stretti, ostacoli più fitti e più complessi: blocchi e
+  piattaforme su cui atterrare, buche, scale, isolotti sopra le buche, valli di
+  punte, rombi o seghe da non toccare, catene ravvicinate) sia **dentro** il
+  livello: l'inizio è più semplice, la fine è come l'inizio del livello dopo.
+  Ogni livello è controllato dal programma: se ne esistesse uno impossibile non
+  uscirebbe. Lo **stile grafico** si sceglie in **Manutenzione → Pollo Run —
+  stile grafico** (vedi sotto). Le
   frasi si scrivono in **Manutenzione → Pollo Run — frasi di scherno** (una per
   riga, corte); lasciato vuoto usa quelle predefinite. Ricordati **Salva** e
   **Pubblica**.
@@ -1121,17 +1128,32 @@ Non hanno una voce loro, ma è bene sapere come si comportano.
     Le voci il cui file **non c'è** nella cartella `mp3` al momento della
     Pubblica vengono **ignorate** senza errori (se hai caricato il file dopo,
     ripubblica); se non ne resta nessuna suona `DJVI - Back On Track.mp3`.
+    C'è anche un ripiego nel browser: se la pagina non porta l'elenco (per
+    esempio non è ancora stata ripubblicata dopo l'aggiornamento) suona
+    comunque «Back On Track».
     L'ordine dell'elenco conta: si cambia con le frecce su e giù di ogni voce.
   - **Pollo Run — quale canzone suona**: *Sempre la stessa canzone*; *Una
     diversa a ogni livello, nell'ordine dell'elenco* (il livello 1 suona la
     prima canzone disponibile, il 2 la seconda e così via, finite si ricomincia:
     è la scelta di partenza); *Una a caso a ogni livello* (mai la stessa due
-    livelli di fila). Dopo una morte il livello riparte con la stessa canzone,
-    dall'inizio; il titolo della canzone compare sullo schermo del gioco.
+    livelli di fila). Dopo una morte la canzone si ferma sul GAME OVER e, quando
+    si riprova il livello con SPAZIO, riparte la stessa dall'inizio; il titolo della canzone compare sullo schermo del gioco.
   - **Pollo Run — numero della canzone «sempre la stessa»**: conta solo con
     *Sempre la stessa canzone*. È la posizione nell'elenco completo, contando da
     1 (di partenza 2 = «Back On Track»). Se quella canzone non ha il file, suona
     la prima disponibile.
+
+- **Lo stile grafico di Pollo Run** si sceglie in **Manutenzione → Pollo Run —
+  stile grafico**, subito dopo le canzoni, e vale sia nella pagina di
+  manutenzione sia nel gioco che si apre scrivendo «pollorun»:
+  - **Synthwave** (la scelta di partenza): sole a righe, montagne al neon,
+    pavimento a griglia in prospettiva e il pollo com'è.
+  - **Geometry Dash**: il pollo corre dentro un cubo che ruota in aria, lo
+    sfondo è a colori e cambia da un livello all'altro, blocchi e punte sono
+    neri col bordo bianco e al posto dei rombi ci sono seghe rotanti.
+
+  Livelli, difficoltà, canzoni, barra di avanzamento, «TENTATIVO N» e GAME OVER
+  sono gli stessi nei due stili. Ricordati **Salva** e **Pubblica**.
 
 ### Google e social
 

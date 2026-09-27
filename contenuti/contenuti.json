@@ -297,7 +297,8 @@
         }
       ],
       "modo": "ordine",
-      "canzoneFissa": 2
+      "canzoneFissa": 2,
+      "stile": "synthwave"
     },
     "twitch": {
       "canale": "slayer_beard",

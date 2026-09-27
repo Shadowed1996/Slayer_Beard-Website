@@ -865,7 +865,7 @@ const gruppi = [
           { titolo: 'Clutterfunk', file: 'Waterflame - Clutterfunk.mp3', autore: 'Waterflame' },
           { titolo: 'Theory of Everything', file: 'DJVI - Theory of Everything.mp3', autore: 'DJVI' }
         ],
-        aiuto: 'Le canzoni che possono suonare durante Pollo Run, sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. Per aggiungerne una: carica il file da Plesk nella cartella «mp3» del sito, scrivi qui lo stesso identico nome del file, poi Salva e Pubblica. Le voci il cui file non c\'è nella cartella «mp3» al momento della Pubblica vengono ignorate; se non ne resta nessuna suona «DJVI - Back On Track.mp3». L\'ordine dell\'elenco è l\'ordine dei livelli.',
+        aiuto: 'Le canzoni che possono suonare durante Pollo Run, sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. Per aggiungerne una: carica il file da Plesk nella cartella «mp3» del sito, scrivi qui lo stesso identico nome del file, poi Salva e Pubblica. Le voci il cui file non c\'è nella cartella «mp3» al momento della Pubblica vengono ignorate; se non ne resta nessuna, o se la pagina non è ancora stata ripubblicata, suona «DJVI - Back On Track.mp3». L\'ordine dell\'elenco è l\'ordine dei livelli.',
         campi: [
           { chiave: 'titolo', etichetta: 'Titolo', tipo: 'testo', max: 60, predefinito: 'Titolo della canzone',
             aiuto: 'Compare sullo schermo del gioco mentre la canzone suona.' },
@@ -880,9 +880,15 @@ const gruppi = [
           { valore: 'ordine', etichetta: 'Una diversa a ogni livello, nell\'ordine dell\'elenco' },
           { valore: 'caso', etichetta: 'Una a caso a ogni livello' }
         ],
-        aiuto: 'Vale sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. «Nell\'ordine dell\'elenco»: il livello 1 suona la prima canzone disponibile, il 2 la seconda, e finite si ricomincia. «A caso»: a ogni livello una canzone diversa da quella di prima. Dopo una morte il livello riparte con la stessa canzone, dall\'inizio.' },
+        aiuto: 'Vale sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. «Nell\'ordine dell\'elenco»: il livello 1 suona la prima canzone disponibile, il 2 la seconda, e finite si ricomincia. «A caso»: a ogni livello una canzone diversa da quella di prima. Dopo una morte, quando si riprova il livello con SPAZIO, riparte la stessa canzone dall\'inizio. I livelli durano da circa un minuto (livello 1) fino a due minuti e mezzo.' },
       { chiave: 'config.pollorun.canzoneFissa', etichetta: 'Pollo Run — numero della canzone «sempre la stessa»', tipo: 'numero', min: 1, max: 50, predefinito: 2,
-        aiuto: 'Conta solo con «Sempre la stessa canzone», nella pagina di manutenzione e nel gioco che si apre scrivendo «pollorun» sul sito. È la posizione nell\'elenco qui sopra: 1 = la prima, 2 = la seconda (di serie «Back On Track»). Se quella canzone non ha il file nella cartella «mp3», suona la prima disponibile.' }
+        aiuto: 'Conta solo con «Sempre la stessa canzone», nella pagina di manutenzione e nel gioco che si apre scrivendo «pollorun» sul sito. È la posizione nell\'elenco qui sopra: 1 = la prima, 2 = la seconda (di serie «Back On Track»). Se quella canzone non ha il file nella cartella «mp3», suona la prima disponibile.' },
+      { chiave: 'config.pollorun.stile', etichetta: 'Pollo Run — stile grafico', tipo: 'scelta', predefinito: 'synthwave',
+        opzioni: [
+          { valore: 'synthwave', etichetta: 'Synthwave: sole, montagne e griglia al neon' },
+          { valore: 'geometrydash', etichetta: 'Geometry Dash: cubo, sfondo colorato, blocchi neri' }
+        ],
+        aiuto: 'Vale sia nella pagina di manutenzione sia nel gioco che si apre scrivendo «pollorun» sul sito. «Synthwave» (di serie): sole a righe, montagne al neon, pavimento a griglia in prospettiva e il pollo com\'è. «Geometry Dash»: il pollo dentro un cubo, uno sfondo a colori che cambia a ogni livello, blocchi e punte neri col bordo bianco e seghe al posto dei rombi. I livelli, la difficoltà e le canzoni sono gli stessi. Ricordati Salva e Pubblica.' }
     ]
   },
 

@@ -812,7 +812,8 @@ function costruisciContesto(contenuti, opzioni) {
     attivo: !(config.pollorun && config.pollorun.attivo === false),
     pollo: String((config.immagini && config.immagini.mascotte) || ''),
     frasi: frasiPolloRun(config),
-    canzoni: JSON.stringify(canzoniPolloRun(config))
+    canzoni: JSON.stringify(canzoniPolloRun(config)),
+    stile: stilePolloRun(config)
   };
   contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
 
@@ -1377,6 +1378,13 @@ function frasiPolloRun(config) {
 const MODI_POLLORUN = ['fissa', 'ordine', 'caso'];
 const CANZONE_RIPIEGO = { titolo: 'Back On Track', autore: 'DJVI', file: 'mp3/DJVI%20-%20Back%20On%20Track.mp3' };
 
+const STILI_POLLORUN = ['synthwave', 'geometrydash'];
+
+function stilePolloRun(config) {
+  const ramo = (config && config.pollorun && typeof config.pollorun === 'object') ? config.pollorun : {};
+  return STILI_POLLORUN.indexOf(ramo.stile) !== -1 ? ramo.stile : 'synthwave';
+}
+
 function canzoniPolloRun(config) {
   const ramo = (config && config.pollorun && typeof config.pollorun === 'object') ? config.pollorun : {};
   const elenco = Array.isArray(ramo.canzoni) ? ramo.canzoni : schema.campo('config.pollorun.canzoni').predefinito;
@@ -1453,6 +1461,7 @@ function contestoManutenzione(contenuti, adesso, cache) {
     frasiPollo: frasiPolloRun(config),
     canzoniPollo: JSON.stringify(canzoni),
     canzoneGioco: canzoni.canzoni[0].file,
+    stilePollo: stilePolloRun(config),
     og: String(immagini.og || ''),
     favicon: String(immagini.favicon || ''),
     fontUrl: tema.urlGoogleFonts(config.tema, []),
@@ -1856,7 +1865,7 @@ module.exports = {
   fineManutenzione, istanteItaliano, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, sponsorDi, giochiDi, jsonSicuro, chiaviRicche,
-  orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta, canzoniPolloRun,
+  orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta, canzoniPolloRun, stilePolloRun,
 
   togliCommenti
 };

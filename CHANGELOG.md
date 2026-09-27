@@ -31,23 +31,36 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   `suCanzone`: una sola traccia che riparte da capo a ogni tentativo e si ferma
   alla morte e all'uscita; in manutenzione una canzone che non si carica
   ripiega sulla musica d'attesa solo finché quel brano è in errore. I file
-  audio non stanno nel repository: si caricano da Plesk.
-
-- **Pollo Run in stile Geometry Dash.** Il giocatore è un cubo con il pollo
-  dentro che ruota di 90° alla volta in aria e si raddrizza all'atterraggio;
-  sfondo a gradiente con quadrati che scorrono, di un colore diverso a ogni
-  livello e che scivola verso il colore del livello dopo man mano che si
-  avanza; pavimento a piastrelle con la linea luminosa; blocchi e punte neri con
-  il bordo bianco e un alone colorato; i rombi diventano seghe rotanti. In alto
-  c'è la barra di avanzamento con la percentuale, nel percorso scorre «TENTATIVO
-  N». Chi sbatte vede il cubo rompersi in quadratini con un'onda e un lampo, e
-  **dopo un secondo si ricomincia da soli** lo stesso livello (SPAZIO fa
-  ripartire subito); il «GAME OVER» non c'è più. La schermata di fine livello è
-  un riquadro con «LIVELLO N COMPLETATO!», la frase di scherno, tentativi,
-  salti e tempo, e la canzone. La fisica non cambia, ma l'area di contatto del
-  giocatore ora segue il cubo (quadrato di 0,66 caselle): i livelli sono stati
-  ricontrollati uno per uno. Durante la partita la scheda della manutenzione
-  sparisce del tutto (prima restava un fantasma al 10%).
+  audio non stanno nel repository: si caricano da Plesk. **Ripiego nel
+  browser**: se la pagina non porta l'elenco (`data-canzoni` assente perché la
+  pagina non è ancora stata ripubblicata, JSON rotto, elenco vuoto o voci senza
+  `mp3/`), `js/pollorun.js` e lo script della manutenzione suonano comunque
+  «Back On Track» (`mp3/DJVI%20-%20Back%20On%20Track.mp3`, modo `ordine`):
+  prima in quel caso il gioco della home restava muto.
+- **Pollo Run, stile grafico a scelta.** Nuovo campo `config.pollorun.stile`
+  (*Pollo Run — stile grafico*, gruppo *Modalità manutenzione*, dopo le
+  canzoni), che vale per la pagina di manutenzione e per il gioco «pollorun».
+  Di partenza `synthwave`: sole a righe, montagne al neon, pavimento a griglia
+  in prospettiva e il pollo com'è. L'altro è `geometrydash`: il pollo dentro un
+  cubo che ruota di 90° alla volta in aria e si raddrizza all'atterraggio,
+  sfondo a colori che cambia a ogni livello, blocchi e punte neri con il bordo
+  bianco, seghe rotanti al posto dei rombi. `stilePolloRun` lo convalida (un
+  valore sconosciuto diventa `synthwave`) e lo stampa come `data-stile` sul
+  canvas della manutenzione e sullo script di `js/pollorun.js`; i due ospiti lo
+  passano al motore come opzione `stile`. In entrambi gli stili: barra di
+  avanzamento con la percentuale, «TENTATIVO N» che scorre nel percorso, fine
+  livello con «LIVELLO N COMPLETATO!», la frase di scherno, tentativi, salti e
+  tempo; durante la partita la scheda della manutenzione sparisce del tutto.
+- **Pollo Run: livelli lunghi e GAME OVER.** Un livello dura
+  min(150, 60 + 4 × (livello − 1)) secondi: circa un minuto al livello 1, fino a
+  due minuti e mezzo, così c'è spazio per la canzone. La difficoltà cresce da un
+  livello all'altro (velocità, margini, ostacoli più fitti e più complessi) e
+  anche **dentro** il livello: l'inizio è più semplice, la fine è come l'inizio
+  del livello dopo. Chi sbatte vede il pollo (o il cubo) esplodere e il gioco
+  si **ferma** su «GAME OVER» con «SPAZIO per riprovare il livello N · ESC per
+  uscire»: non si riparte più da soli. SPAZIO, dopo un attimo, riprova lo
+  stesso livello dall'inizio; senza toccare niente per 12 secondi si torna alla
+  schermata iniziale.
 - **Pollo Run a livelli veri.** Al posto della corsa infinita a punteggio ogni
   livello è un percorso fisso con traguardo, barra di avanzamento e «LIVELLO N
   COMPLETATO»: compare una frase di scherno (`config.manutenzione.scherno`) e

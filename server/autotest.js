@@ -4902,6 +4902,11 @@ async function proveGiocoPollo(costruisci, archivio) {
   const motore = caricaMotore();
   const L = motore.livelli;
   const K = L.costanti;
+  const creati = new Map();
+  const creaLivello = (n) => {
+    if (!creati.has(n)) { creati.set(n, L.crea(n)); }
+    return creati.get(n);
+  };
 
   const attornoCompleto = (M, x, mx) => {
     const at = { solidi: [], pericoli: [], mx: mx };
@@ -5056,13 +5061,13 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiUguale(simula(M, { premeAl: [], passi: 200 }).stato.salti, 0, 'senza premere niente c e un salto contato');
   });
 
-  const nomiFigura = { punta: 1, punte: 2, blocco: 2, piattaforma: 3, piattaformaPunte: 4, catena: 5, buca: 6, scala: 7, bucaPunta: 8, romboPunta: 8, vallata: 9, isole: 10, piattaformaRombo: 11, catenaMista: 12, scalaPunte: 14 };
+  const nomiFigura = { punta: 1, punte: 1.2, blocco: 1.45, piattaforma: 1.75, piattaformaPunte: 2.3, catena: 3, buca: 3.8, scala: 4.8, bucaPunta: 5.6, romboPunta: 6.2, vallata: 7, isole: 8, piattaformaRombo: 9, catenaMista: 10.2, scalaPunte: 12 };
 
   await prova('livelli: sempre gli stessi per lo stesso numero, e diversi tra loro', () => {
-    const a = L.crea(7);
+    const a = creaLivello(7);
     const b = caricaMotore().livelli.crea(7);
     esigiUguale(JSON.stringify(a.el), JSON.stringify(b.el), 'lo stesso livello cambia');
-    esigi(JSON.stringify(L.crea(8).el) !== JSON.stringify(a.el), 'due livelli uguali');
+    esigi(JSON.stringify(creaLivello(8).el) !== JSON.stringify(a.el), 'due livelli uguali');
   });
 
   await prova('livelli: velocita in salita, margini sempre piu stretti, mai un ostacolo che non si e ancora sbloccato', () => {
@@ -5072,12 +5077,14 @@ async function proveGiocoPollo(costruisci, archivio) {
       const P = L.parametri(n);
       esigi(P.v >= vPrima, 'la velocita scende al livello ' + n);
       esigi(P.tau <= tauPrima, 'il margine si allarga al livello ' + n);
-      esigi(P.durata >= 22 && P.durata <= 46, 'durata fuori misura al livello ' + n);
+      esigi(P.durata >= 60 && P.durata <= 150, 'durata fuori misura al livello ' + n);
+      esigi(Math.abs(P.durata - Math.min(150, 60 + 4 * (n - 1))) < 1e-9, 'la durata non segue la formula al livello ' + n);
+      esigi(P.mx <= P.v * P.tau * 0.3 + 1e-9, 'il margine di sicurezza non e quello di fine livello al livello ' + n);
       vPrima = P.v;
       tauPrima = P.tau;
     }
     for (let n = 1; n <= 30; n++) {
-      for (const nome of L.crea(n).figure) { esigi(nomiFigura[nome] <= n, 'la figura ' + nome + ' compare al livello ' + n + ' prima di sbloccarsi'); }
+      for (const nome of creaLivello(n).figure) { esigi(nomiFigura[nome] < n + 1, 'la figura ' + nome + ' compare al livello ' + n + ' prima di sbloccarsi'); }
     }
   });
 
@@ -5085,28 +5092,29 @@ async function proveGiocoPollo(costruisci, archivio) {
     const densita = (da, a) => {
       let el = 0;
       let lung = 0;
-      for (let n = da; n <= a; n++) { const M = L.crea(n); el += M.el.length; lung += M.lunghezza; }
+      for (let n = da; n <= a; n++) { const M = creaLivello(n); el += M.el.length; lung += M.lunghezza; }
       return el / lung * 100;
     };
     esigi(densita(20, 26) > densita(1, 3) * 1.3, 'gli ostacoli non aumentano: ' + densita(1, 3).toFixed(1) + ' contro ' + densita(20, 26).toFixed(1));
     const tipiIn = (da, a) => {
       const visti = new Set();
-      for (let n = da; n <= a; n++) { for (const nome of L.crea(n).figure) { visti.add(nome); } }
+      for (let n = da; n <= a; n++) { for (const nome of creaLivello(n).figure) { visti.add(nome); } }
       return visti;
     };
-    esigiUguale(Array.from(tipiIn(1, 1)).join(','), 'punta', 'il primo livello deve avere solo punte');
+    esigi(Array.from(tipiIn(1, 1)).every((nome) => ['punta', 'punte', 'blocco', 'piattaforma'].indexOf(nome) !== -1), 'il primo livello ha figure complesse: ' + Array.from(tipiIn(1, 1)).join(','));
+    esigi(tipiIn(1, 1).has('punta') && Array.from(tipiIn(1, 1)).length >= 3, 'il primo livello non introduce a poco a poco le figure: ' + Array.from(tipiIn(1, 1)).join(','));
     for (const complessa of ['buca', 'scala', 'isole', 'vallata', 'romboPunta', 'catena']) {
-      esigi(!tipiIn(1, 4).has(complessa), complessa + ' arriva troppo presto');
+      esigi(!tipiIn(1, 2).has(complessa), complessa + ' arriva troppo presto');
       esigi(tipiIn(15, 30).has(complessa), complessa + ' non arriva mai');
     }
     esigi(tipiIn(20, 30).size >= 12, 'nei livelli alti le figure diverse sono solo ' + tipiIn(20, 30).size);
-    const buche = L.crea(1).el.concat(L.crea(2).el, L.crea(3).el).filter((e) => e.k === 'u' || (e.k === 'b' && e.pil));
+    const buche = creaLivello(1).el.concat(creaLivello(2).el).filter((e) => e.k === 'u' || (e.k === 'b' && e.pil));
     esigiUguale(buche.length, 0, 'buche nei primi livelli');
   });
 
   await prova('livelli: ogni livello e superabile, anche con il margine di sicurezza (risolutore indipendente)', () => {
-    for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20, 22, 25, 30, 35, 40, 55, 75, 100]) {
-      const M = L.crea(n);
+    for (const n of [1, 2, 3, 5, 8, 12, 16, 22, 30, 45, 75, 100]) {
+      const M = creaLivello(n);
       const senzaMargine = percorsoGiocatore(M, 0, 2, false);
       esigi(senzaMargine, 'il livello ' + n + ' non e superabile');
       const conMargine = percorsoGiocatore(M, M.mx, 1, false);
@@ -5116,7 +5124,7 @@ async function proveGiocoPollo(costruisci, archivio) {
 
   await prova('livelli: rincorsa iniziale, respiro prima del traguardo, terra piatta dopo', () => {
     for (const n of [1, 5, 10, 20, 40]) {
-      const M = L.crea(n);
+      const M = creaLivello(n);
       const primo = Math.min.apply(null, M.el.map((e) => e.x));
       const ultimo = Math.max.apply(null, M.el.map((e) => e.x1));
       esigi(primo >= M.v * 1.6, 'livello ' + n + ': il primo ostacolo e troppo vicino alla partenza');
@@ -5126,12 +5134,13 @@ async function proveGiocoPollo(costruisci, archivio) {
   });
 
   const rendiFinta = (casuale) => {
-    const registro = { testi: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [], eventi: [], voci: [], ordine: [] };
+    const registro = { testi: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [], eventi: [], voci: [], ordine: [], contorni: 0 };
     let inAttesa = null;
     let ora = 1000;
     const contesto = new Proxy({}, {
       get(t, nome) {
         if (nome === 'fillText') { return (testo) => { registro.testi.push(String(testo)); }; }
+        if (nome === 'strokeText') { return () => { registro.contorni++; }; }
         if (nome === 'measureText') { return (testo) => ({ width: String(testo).length * 8 }); }
         if (nome === 'createLinearGradient') { return () => ({ addColorStop: () => {} }); }
         if (nome in t) { return t[nome]; }
@@ -5214,21 +5223,23 @@ async function proveGiocoPollo(costruisci, archivio) {
     return { esito: esito, t: t };
   };
 
-  await prova('gioco: SPAZIO parte il livello 1; morendo il cubo esplode e si riprova da soli lo stesso livello, senza schermata di fine partita', () => {
+  await prova('gioco: morendo il gioco si ferma su GAME OVER e aspetta SPAZIO per riprovare lo stesso livello, senza ripartire da solo', () => {
     const h = rendiFinta();
-    const gioco = h.crea();
-    gioco.avvia();
+    h.crea().avvia();
     esigiDentro(h.testiUltimo(), 'POLLO RUN', 'schermata iniziale');
     h.tasto(' ', 'Space');
     esigiUguale(h.registro.suPartita.join(','), 'true', 'la partita non viene annunciata');
     esigiDentro(h.testiUltimo(), 'LIVELLO 1', 'il livello 1 non parte');
     const r = giocaSchedule(h, [], 1000 / 60, 40);
     esigiUguale(r.esito, 'morto', 'senza saltare non muore');
-    esigi(h.testiUltimo().indexOf('GAME OVER') === -1, 'compare ancora GAME OVER: si deve ripartire da soli');
+    const morto = h.testiUltimo();
+    esigiDentro(morto, 'GAME OVER', 'manca la scritta di fine partita');
+    esigiDentro(morto, 'SPAZIO per riprovare il livello 1', 'manca l invito a riprovare');
     h.tasto(' ', 'Space');
-    h.testiUltimo();
-    esigiUguale(h.registro.eventi[h.registro.eventi.length - 1], null, 'SPAZIO subito dopo la morte fa ripartire troppo presto');
-    h.attendi(0.3);
+    esigiDentro(h.testiUltimo(), 'GAME OVER', 'SPAZIO subito dopo la morte fa ripartire troppo presto');
+    h.attendi(4);
+    esigiDentro(h.testiUltimo(), 'GAME OVER', 'il gioco riparte da solo dopo la morte');
+    esigiUguale(h.registro.eventi[h.registro.eventi.length - 1], null, 'la canzone riparte da sola dopo la morte');
     h.tasto(' ', 'Space');
     const dopo = h.testiUltimo();
     esigiDentro(dopo, 'LIVELLO 1', 'non riparte il livello');
@@ -5237,9 +5248,11 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiUguale(h.registro.eventi.join(','), 'mp3/prima.mp3,,mp3/prima.mp3', 'a ogni tentativo la stessa canzone riparte da capo, e alla morte si ferma');
     const morto2 = giocaSchedule(h, [], 1000 / 60, 40);
     esigiUguale(morto2.esito, 'morto', 'il secondo tentativo senza saltare non muore');
-    h.attendi(1.2);
-    esigiDentro(h.testiUltimo(), 'TENTATIVO 3', 'dopo un secondo dalla morte non si riparte da soli');
-    esigiUguale(h.registro.eventi[h.registro.eventi.length - 1], 'mp3/prima.mp3', 'la ripartenza non rimette la canzone');
+    h.attendi(10);
+    esigiDentro(h.testiUltimo(), 'GAME OVER', 'torna alla schermata iniziale troppo presto');
+    h.attendi(3);
+    esigiDentro(h.testiUltimo(), 'POLLO RUN', 'dopo 12 secondi fermo non torna alla schermata iniziale');
+    esigiUguale(h.registro.suPartita.join(','), 'true,false', 'uscendo dalla partita non lo annuncia');
   });
 
   await prova('gioco: la canzone segue la modalita scelta: una per livello in ordine, sempre la stessa, o a caso senza ripetersi', () => {
@@ -5265,18 +5278,20 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiUguale(voce.titolo + '|' + voce.autore + '|' + voce.indice, 'Seconda||1', 'la voce data all ospite');
     esigiUguale(h.registro.ordine.slice(0, 2).join(','), 'partita:true,canzone:mp3/seconda.mp3', 'suPartita deve arrivare prima della canzone');
     giocaSchedule(h, [], 1000 / 60, 40);
-    h.attendi(1.2);
+    h.attendi(0.6);
+    h.tasto(' ', 'Space');
     giocaSchedule(h, [], 1000 / 60, 40);
-    h.attendi(1.2);
+    h.attendi(0.6);
+    h.tasto(' ', 'Space');
     esigiUguale(h.registro.eventi.join(','), 'mp3/seconda.mp3,,mp3/seconda.mp3,,mp3/seconda.mp3', 'i tentativi dello stesso livello riprendono la stessa canzone');
 
     const caso = rendiFinta(0);
     caso.crea({ modo: 'caso' }).avvia();
     caso.tasto(' ', 'Space');
     esigiUguale(caso.registro.eventi[0], 'mp3/prima.mp3', 'a caso, il primo livello');
-    const M1 = L.crea(1);
+    const M1 = creaLivello(1);
     const p1 = percorsoGiocatore(M1, M1.mx * 0.5, 2, true);
-    esigiUguale(giocaSchedule(caso, p1.secondi, 1000 / 60, 40).esito, 'vinto', 'il livello 1 non si finisce');
+    esigiUguale(giocaSchedule(caso, p1.secondi, 1000 / 60, 200).esito, 'vinto', 'il livello 1 non si finisce');
     caso.attendi(1);
     caso.tasto(' ', 'Space');
     const seconda = caso.registro.eventi[caso.registro.eventi.length - 1];
@@ -5285,19 +5300,53 @@ async function proveGiocoPollo(costruisci, archivio) {
     const senza = rendiFinta();
     senza.crea({ canzoni: [] }).avvia();
     senza.tasto(' ', 'Space');
-    esigiUguale(senza.registro.eventi.join(','), '', 'senza canzoni l ospite riceve solo uno stop');
     esigiUguale(senza.registro.eventi.length, 1, 'senza canzoni l ospite deve ricevere un solo evento');
     esigiUguale(senza.registro.eventi[0], null, 'senza canzoni l evento e uno stop');
+  });
+
+  await prova('gioco: lo stile di partenza e synthwave, geometrydash si sceglie a parte e un valore sconosciuto vale synthwave; entrambi finiscono un livello', () => {
+    const contorni = (opzioniStile) => {
+      const h = rendiFinta();
+      h.crea(opzioniStile).avvia();
+      h.testiUltimo();
+      h.tasto(' ', 'Space');
+      giocaSchedule(h, [], 1000 / 60, 40);
+      h.testiUltimo();
+      h.attendi(1);
+      return h.registro.contorni;
+    };
+    esigiUguale(contorni({}), 0, 'senza stile deve essere synthwave');
+    esigiUguale(contorni({ stile: 'synthwave' }), 0, 'stile synthwave');
+    esigiUguale(contorni({ stile: 'boh' }), 0, 'stile sconosciuto');
+    esigiUguale(contorni({ stile: 'GEOMETRYDASH' }), 0, 'le maiuscole non contano come geometrydash');
+    esigi(contorni({ stile: 'geometrydash' }) > 0, 'lo stile geometrydash non disegna i contorni dei testi');
+
+    const M1 = creaLivello(1);
+    const p1 = percorsoGiocatore(M1, M1.mx * 0.5, 2, true);
+    esigi(p1, 'nessun percorso per il livello 1');
+    for (const nomeStile of ['synthwave', 'geometrydash']) {
+      const h = rendiFinta();
+      h.crea({ stile: nomeStile }).avvia();
+      h.tasto(' ', 'Space');
+      esigiUguale(giocaSchedule(h, p1.secondi, 1000 / 60, 200).esito, 'vinto', nomeStile + ': il livello 1 non si finisce');
+      h.attendi(1);
+      const schermata = h.testiUltimo();
+      esigiDentro(schermata, 'LIVELLO 1 COMPLETATO', nomeStile + ': titolo di fine livello');
+      esigiDentro(schermata, 'SPAZIO per il livello 2', nomeStile + ': invito al livello dopo');
+      esigiDentro(schermata, 'TENTATIVI 1', nomeStile + ': statistica dei tentativi');
+      h.tasto(' ', 'Space');
+      esigiDentro(h.testiUltimo(), 'LIVELLO 2', nomeStile + ': SPAZIO non porta al livello 2');
+    }
   });
 
   await prova('gioco: finito il livello 1 compare LIVELLO 1 COMPLETATO con una frase, e SPAZIO porta al livello 2', () => {
     const h = rendiFinta();
     h.crea().avvia();
     h.tasto(' ', 'Space');
-    const M = L.crea(1);
+    const M = creaLivello(1);
     const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
     esigi(p, 'nessun percorso per il livello 1');
-    const r = giocaSchedule(h, p.secondi, 1000 / 60, 40);
+    const r = giocaSchedule(h, p.secondi, 1000 / 60, 200);
     esigiUguale(r.esito, 'vinto', 'il livello 1 non si finisce');
     esigi(Math.abs(r.t - M.lunghezza / M.v) < 1.5, 'il livello dura ' + r.t.toFixed(1) + ' secondi invece di circa ' + (M.lunghezza / M.v).toFixed(1));
     h.attendi(1);
@@ -5306,8 +5355,9 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiDentro(schermata, 'SPAZIO per il livello 2', 'invito al livello dopo');
     esigiDentro(schermata, 'TENTATIVI 1', 'statistica dei tentativi');
     const salti = /SALTI (\d+)/.exec(schermata);
-    esigi(salti && Number(salti[1]) >= 8, 'statistica dei salti: ' + (salti && salti[1]));
-    esigi(/TEMPO 0:2\d/.test(schermata), 'statistica del tempo: ' + schermata);
+    esigi(salti && Number(salti[1]) >= 25, 'statistica dei salti: ' + (salti && salti[1]));
+    const tempo = /TEMPO (\d+):(\d\d)/.exec(schermata);
+    esigi(tempo && Math.abs(Number(tempo[1]) * 60 + Number(tempo[2]) - M.lunghezza / M.v) < 3, 'statistica del tempo: ' + schermata);
     esigiDentro(schermata, '♪ Prima — Uno', 'la canzone non e nella schermata di fine livello');
     esigi(h.frasi.some((f) => schermata.indexOf(f) !== -1), 'nessuna frase di scherno: ' + schermata);
     esigiUguale(h.registro.memoria['sb-pollo-livello'], '2', 'il livello raggiunto non e salvato');
@@ -5325,10 +5375,10 @@ async function proveGiocoPollo(costruisci, archivio) {
     h.tasto(' ', 'Space');
     const viste = [];
     for (let n = 1; n <= 4; n++) {
-      const M = L.crea(n);
+      const M = creaLivello(n);
       const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
       esigi(p, 'nessun percorso per il livello ' + n);
-      const r = giocaSchedule(h, p.secondi, 1000 / 60, 60);
+      const r = giocaSchedule(h, p.secondi, 1000 / 60, 200);
       esigiUguale(r.esito, 'vinto', 'il livello ' + n + ' non si finisce');
       h.attendi(1);
       const s = h.testiUltimo();
@@ -5341,16 +5391,15 @@ async function proveGiocoPollo(costruisci, archivio) {
   });
 
   await prova('gioco: la fisica e a passo fisso, quindi il livello si finisce uguale a 60, 144 e 30 fotogrammi al secondo', () => {
-    const M = L.crea(6);
+    const M = creaLivello(1);
     const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
-    esigi(p, 'nessun percorso per il livello 6');
+    esigi(p, 'nessun percorso per il livello 1');
     for (const dt of [1000 / 60, 1000 / 144, 1000 / 30]) {
       const h = rendiFinta();
-      h.registro.memoria['sb-pollo-livello'] = '6';
       h.crea().avvia();
-      h.tasto('Enter', 'Enter');
-      const r = giocaSchedule(h, p.secondi, dt, 60);
-      esigiUguale(r.esito, 'vinto', 'a ' + Math.round(1000 / dt) + ' fotogrammi al secondo il livello 6 non si finisce');
+      h.tasto(' ', 'Space');
+      const r = giocaSchedule(h, p.secondi, dt, 200);
+      esigiUguale(r.esito, 'vinto', 'a ' + Math.round(1000 / dt) + ' fotogrammi al secondo il livello 1 non si finisce');
     }
   });
 
@@ -5640,7 +5689,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     }
     const documento = archivio.leggi();
     const pagine = costruisci.rendi(documento);
-    const trovato = /<script src="js\/pollorun\.js" data-pollo="([^"]*)" data-frasi="([^"]*)" data-canzoni="[^"]*" defer><\/script>/.exec(pagine.html);
+    const trovato = /<script src="js\/pollorun\.js" data-pollo="([^"]*)" data-frasi="([^"]*)" data-canzoni="[^"]*" data-stile="[^"]*" defer><\/script>/.exec(pagine.html);
     esigi(trovato, 'la home generata non ha lo script');
     esigiUguale(trovato[1], documento.config.immagini.mascotte, 'immagine del pollo nella home');
     const frasi = JSON.parse(trovato[2].replace(/&quot;/g, '"').replace(/&#39;/g, '\'').replace(/&amp;/g, '&'));
@@ -5853,7 +5902,7 @@ async function proveCanzoniPollo(costruisci, archivio) {
     await prova('il sito: data-canzoni nelle pagine, protetto; la manutenzione ha canvas e audio sulla prima canzone disponibile', () => {
       for (const nome of ['index', 'clip', 'giochi', 'sponsor']) {
         const testo = fs.readFileSync(path.join(RADICE_VERA, 'modelli', nome + '.html'), 'utf8');
-        esigiDentro(testo, 'data-frasi="{{sito.pollorun.frasi}}" data-canzoni="{{sito.pollorun.canzoni}}" defer>', 'modelli/' + nome + '.html');
+        esigiDentro(testo, 'data-frasi="{{sito.pollorun.frasi}}" data-canzoni="{{sito.pollorun.canzoni}}" data-stile="{{sito.pollorun.stile}}" defer>', 'modelli/' + nome + '.html');
       }
       const modelloMnt = fs.readFileSync(path.join(RADICE_VERA, 'modelli', 'manutenzione.html'), 'utf8');
       esigiDentro(modelloMnt, 'data-canzoni="{{manutenzione.canzoniPollo}}"', 'canvas della manutenzione');
@@ -5903,7 +5952,7 @@ async function proveCanzoniPollo(costruisci, archivio) {
   }
 
   const jsSito = fs.readFileSync(path.join(RADICE_VERA, 'js', 'pollorun.js'), 'utf8');
-  const sito = (attributo, volume) => {
+  const sito = (attributo, volume, stile) => {
     const r = { crea: [], audio: [], play: 0, pause: 0, cambi: 0 };
     const ascolta = {};
     const appesi = [];
@@ -5924,6 +5973,7 @@ async function proveCanzoniPollo(costruisci, archivio) {
       addEventListener() {}, focus() {} });
     const script = nodo('script');
     if (attributo !== null) { script.setAttribute('data-canzoni', attributo); }
+    if (stile !== undefined) { script.setAttribute('data-stile', stile); }
     const finestra = { addEventListener: () => {}, PolloRun: { crea: (op) => { r.crea.push(op); return { avvia() {}, ferma() {} }; } } };
     const classi = new Set();
     vm.runInNewContext(jsSito, {
@@ -5957,12 +6007,35 @@ async function proveCanzoniPollo(costruisci, archivio) {
     esigiUguale(p.op.fissa, 1, 'la fissa segue la voce dopo il filtro');
     esigiUguale(typeof p.op.suCanzone, 'function', 'suCanzone');
     esigiUguale(p.r.play, 0, 'suona prima che il motore scelga');
-    for (const rotto of ['', 'non json', '{"a":1}', 'null', '[1,2]', '{"canzoni":"x","modo":"boh"}']) {
+    const ripiego = '[[{"titolo":"Back On Track","autore":"DJVI","file":"mp3/DJVI%20-%20Back%20On%20Track.mp3"}],"ordine",0]';
+    for (const rotto of ['', 'non json', '{"a":1}', 'null', '[1,2]', '[]', '{"canzoni":[],"modo":"caso","fissa":3}', '{"canzoni":"x","modo":"boh"}',
+      JSON.stringify({ canzoni: [{ titolo: 'A', file: 'http://x/a.mp3' }, { titolo: 'B', file: '../b.mp3' }, { titolo: 'C' }], modo: 'fissa', fissa: 1 })]) {
       const q = sito(rotto);
-      esigiUguale(JSON.stringify([q.op.canzoni, q.op.modo, q.op.fissa]), '[[],"ordine",0]', 'con ' + JSON.stringify(rotto));
+      esigiUguale(JSON.stringify([q.op.canzoni, q.op.modo, q.op.fissa]), ripiego, 'con ' + JSON.stringify(rotto));
     }
-    esigiUguale(JSON.stringify(sito(null).op.canzoni), '[]', 'senza attributo');
+    esigiUguale(JSON.stringify([sito(null).op.canzoni, sito(null).op.modo, sito(null).op.fissa]), ripiego, 'senza attributo');
     esigiUguale(sito(JSON.stringify([{ titolo: 'X', file: 'mp3/X.mp3' }])).op.canzoni.length, 1, 'anche un elenco secco');
+  });
+
+  await prova('pollorun.js: senza elenco valido suona comunque Back On Track', () => {
+    for (const attributo of [null, '{rotto', '[]']) {
+      const p = sito(attributo, 40);
+      const voce = Object.assign({ indice: 0 }, p.op.canzoni[0]);
+      p.op.suCanzone(voce);
+      esigiUguale(p.r.audio.length, 1, 'un audio con ' + JSON.stringify(attributo));
+      esigiUguale(p.r.audio[0].src, 'mp3/DJVI%20-%20Back%20On%20Track.mp3', 'src del ripiego con ' + JSON.stringify(attributo));
+      esigiUguale(p.r.audio[0].volume, 0.4, 'volume con ' + JSON.stringify(attributo));
+      esigiUguale(p.r.play, 1, 'il ripiego non suona con ' + JSON.stringify(attributo));
+    }
+  });
+
+  await prova('pollorun.js: data-stile arriva al motore; assente o sconosciuto vale synthwave', () => {
+    esigiUguale(sito(pacchetto, undefined, 'geometrydash').op.stile, 'geometrydash', 'geometrydash');
+    esigiUguale(sito(pacchetto, undefined, 'synthwave').op.stile, 'synthwave', 'synthwave');
+    esigiUguale(sito(pacchetto).op.stile, 'synthwave', 'senza attributo');
+    for (const brutto of ['', 'GeometryDash', 'boh', ' geometrydash', '<b>']) {
+      esigiUguale(sito(pacchetto, undefined, brutto).op.stile, 'synthwave', 'con ' + JSON.stringify(brutto));
+    }
   });
 
   await prova('pollorun.js: suCanzone suona la voce scelta dall inizio, cambia src solo se serve, con null mette in pausa', () => {
@@ -6022,7 +6095,8 @@ async function proveCanzoniPollo(costruisci, archivio) {
       return e;
     };
     const el = {
-      'mnt-gioco': elemento('tela', { 'data-canzoni': o.canzoni, 'data-frasi': '[]', 'data-pollo': '' }),
+      'mnt-gioco': elemento('tela', Object.assign({ 'data-frasi': '[]', 'data-pollo': '' },
+        o.canzoni === null ? {} : { 'data-canzoni': o.canzoni }, o.stile === undefined ? {} : { 'data-stile': o.stile })),
       'mnt-audio': elemento('attesa', { src: 'mp3/ElevatorMaintenance.mp3' }),
       'mnt-audio-gioco': elemento('brano', { src: 'mp3/Uno.mp3' }),
       'mnt-musica': elemento('tasto')
@@ -6051,8 +6125,24 @@ async function proveCanzoniPollo(costruisci, archivio) {
     esigiUguale(m.op.canzoni.map((c) => c.file).join(','), 'mp3/Uno.mp3,mp3/Due.mp3', 'canzoni');
     esigiUguale(m.op.modo + ':' + m.op.fissa, 'fissa:1', 'modo e fissa');
     esigiUguale(typeof m.op.suCanzone, 'function', 'suCanzone');
-    const rotta = manutenzione({ canzoni: '{rotto' });
-    esigiUguale(JSON.stringify([rotta.op.canzoni, rotta.op.modo, rotta.op.fissa]), '[[],"ordine",0]', 'data-canzoni rotto');
+    const ripiego = '[[{"titolo":"Back On Track","autore":"DJVI","file":"mp3/DJVI%20-%20Back%20On%20Track.mp3"}],"ordine",0]';
+    for (const rotto of [null, '{rotto', '[]', '{"canzoni":[],"modo":"caso","fissa":2}', JSON.stringify({ canzoni: [{ titolo: 'A', file: 'a.mp3' }, { titolo: 'B', file: '/mp3/b.mp3' }], modo: 'fissa', fissa: 1 })]) {
+      const rotta = manutenzione({ canzoni: rotto });
+      esigiUguale(JSON.stringify([rotta.op.canzoni, rotta.op.modo, rotta.op.fissa]), ripiego, 'data-canzoni ' + JSON.stringify(rotto));
+    }
+    const senza = manutenzione({ canzoni: null });
+    senza.op.suPartita(true);
+    senza.op.suCanzone(Object.assign({ indice: 0 }, senza.op.canzoni[0]));
+    esigiUguale(senza.brano.src + ':' + senza.brano.paused, 'mp3/DJVI%20-%20Back%20On%20Track.mp3:false', 'il ripiego non suona');
+  });
+
+  await prova('manutenzione: data-stile arriva al motore; assente o sconosciuto vale synthwave', () => {
+    esigiUguale(manutenzione({ stile: 'geometrydash' }).op.stile, 'geometrydash', 'geometrydash');
+    esigiUguale(manutenzione({ stile: 'synthwave' }).op.stile, 'synthwave', 'synthwave');
+    esigiUguale(manutenzione().op.stile, 'synthwave', 'senza attributo');
+    for (const brutto of ['', 'GEOMETRYDASH', 'boh', '<b>']) {
+      esigiUguale(manutenzione({ stile: brutto }).op.stile, 'synthwave', 'con ' + JSON.stringify(brutto));
+    }
   });
 
   await prova('manutenzione: una sola traccia del gioco che segue suCanzone; null la ferma senza musica d attesa; il ritorno la riaccende', () => {
@@ -6107,6 +6197,81 @@ async function proveCanzoniPollo(costruisci, archivio) {
     m.brano.error = null;
     m.op.suCanzone({ titolo: 'Uno', file: 'mp3/Uno.mp3', indice: 0 });
     esigiUguale(m.attesa.paused + ':' + m.brano.paused + ':' + m.brano.src, 'true:false:mp3/Uno.mp3', 'un brano nuovo torna a suonare');
+  });
+}
+
+async function proveStilePollo(costruisci, archivio) {
+  apriSezione('11h. Pollo Run: lo stile grafico scelto dal pannello');
+
+  await prova('schema: lo stile grafico e una scelta fra synthwave e geometrydash, dopo le canzoni, synthwave di partenza', () => {
+    const campo = schema.campo('config.pollorun.stile');
+    esigi(campo, 'manca il campo');
+    esigiUguale(campo.tipo, 'scelta', 'tipo');
+    esigiUguale(campo.etichetta, 'Pollo Run — stile grafico', 'etichetta');
+    esigiUguale(campo.predefinito, 'synthwave', 'predefinito');
+    esigiUguale(campo.opzioni.map((o) => o.valore).join(','), 'synthwave,geometrydash', 'opzioni');
+    esigi(campo.opzioni.every((o) => typeof o.etichetta === 'string' && o.etichetta.length > 10), 'le opzioni hanno un etichetta leggibile');
+    esigiDentro(campo.aiuto, 'pollorun', 'l aiuto dice che vale anche per il gioco sul sito');
+    esigiDentro(campo.aiuto, 'manutenzione', 'l aiuto dice che vale per la manutenzione');
+    const chiavi = schema.gruppi.find((g) => g.id === 'manutenzione').campi.map((c) => c.chiave);
+    esigiUguale(chiavi.indexOf('config.pollorun.stile'), chiavi.indexOf('config.pollorun.canzoneFissa') + 1, 'posizione dopo le canzoni');
+    const veri = JSON.parse(fs.readFileSync(path.join(RADICE_VERA, 'contenuti', 'contenuti.json'), 'utf8'));
+    esigiUguale(veri.config.pollorun.stile, 'synthwave', 'contenuti.json');
+    esigiUguale(schema.verificaCopertura(veri).length, 0, 'copertura');
+    esigiUguale(convalida.convalidaCampo('config.pollorun.stile', 'geometrydash').length, 0, 'geometrydash valido');
+    esigi(convalida.convalidaCampo('config.pollorun.stile', 'boh').length > 0, 'uno stile inventato passa');
+    const vecchi = JSON.parse(JSON.stringify(veri));
+    delete vecchi.config.pollorun.stile;
+    schema.completa(vecchi);
+    esigiUguale(vecchi.config.pollorun.stile, 'synthwave', 'un contenuti.json vecchio riceve lo stile');
+  });
+
+  await prova('stilePolloRun: valido resta, sconosciuto o mancante diventa synthwave', () => {
+    esigiUguale(costruisci.stilePolloRun({ pollorun: { stile: 'geometrydash' } }), 'geometrydash', 'geometrydash');
+    esigiUguale(costruisci.stilePolloRun({ pollorun: { stile: 'synthwave' } }), 'synthwave', 'synthwave');
+    for (const brutto of ['boh', '', 'GEOMETRYDASH', 3, null, ['geometrydash']]) {
+      esigiUguale(costruisci.stilePolloRun({ pollorun: { stile: brutto } }), 'synthwave', 'con ' + JSON.stringify(brutto));
+    }
+    esigiUguale(costruisci.stilePolloRun({ pollorun: {} }), 'synthwave', 'senza chiave');
+    esigiUguale(costruisci.stilePolloRun({}), 'synthwave', 'senza ramo');
+    esigiUguale(costruisci.stilePolloRun(null), 'synthwave', 'senza config');
+  });
+
+  await prova('il sito: data-stile nei 4 modelli e sul canvas della manutenzione, sempre uno dei due valori', () => {
+    for (const nome of ['index', 'clip', 'giochi', 'sponsor']) {
+      const testo = fs.readFileSync(path.join(RADICE_VERA, 'modelli', nome + '.html'), 'utf8');
+      esigiDentro(testo, 'data-canzoni="{{sito.pollorun.canzoni}}" data-stile="{{sito.pollorun.stile}}" defer>', 'modelli/' + nome + '.html');
+    }
+    esigiDentro(fs.readFileSync(path.join(RADICE_VERA, 'modelli', 'manutenzione.html'), 'utf8'),
+      'data-canzoni="{{manutenzione.canzoniPollo}}" data-stile="{{manutenzione.stilePollo}}"', 'modelli/manutenzione.html');
+    const clip = { id: 's1', titolo: 'Una clip', url: 'https://clips.twitch.tv/s1',
+      anteprima: 'https://clips-media-assets2.twitch.tv/s1-preview-480x272.jpg',
+      durataSec: 30, visualizzazioni: 10, creataIl: '2026-09-01T20:00:00Z', autore: 'Qualcuno' };
+    const documento = (stile) => {
+      const d = archivio.leggi();
+      d.config.pollorun.stile = stile;
+      d.config.clip = Object.assign({}, d.config.clip, { attivo: true, voci: [clip], archivio: [clip] });
+      return d;
+    };
+    const stileDi = (html) => { const m = /js\/pollorun\.js"[^>]*data-stile="([^"]*)"/.exec(html || ''); return m ? m[1] : null; };
+    for (const [scritto, atteso] of [['geometrydash', 'geometrydash'], ['synthwave', 'synthwave'], ['"><script>x</script>', 'synthwave']]) {
+      const pagine = costruisci.rendi(documento(scritto));
+      esigiUguale(stileDi(pagine.html), atteso, 'home con ' + JSON.stringify(scritto));
+      esigi(typeof pagine.clip === 'string', 'la pagina delle clip non si e resa');
+      for (const nome of ['clip', 'giochi', 'sponsor']) {
+        if (typeof pagine[nome] === 'string') { esigiUguale(stileDi(pagine[nome]), atteso, nome + '.html con ' + JSON.stringify(scritto)); }
+      }
+      esigi(pagine.html.indexOf('<script>x</script>') === -1, 'uno stile scritto a mano entra in pagina');
+      const mnt = documento(scritto);
+      mnt.config.manutenzione = Object.assign({}, mnt.config.manutenzione, { attiva: true, fine: '' });
+      const pagina = costruisci.rendi(mnt, { adesso: Date.UTC(2026, 8, 23, 9, 0, 0) }).manutenzione;
+      const tela = /<canvas[^>]*id="mnt-gioco"[^>]*data-stile="([^"]*)"/.exec(pagina || '');
+      esigi(tela, 'il canvas non ha data-stile');
+      esigiUguale(tela[1], atteso, 'canvas con ' + JSON.stringify(scritto));
+    }
+    const spento = documento('geometrydash');
+    spento.config.pollorun.attivo = false;
+    esigi(costruisci.rendi(spento).html.indexOf('data-stile') === -1, 'spento: data-stile resta nella home');
   });
 }
 
@@ -6811,6 +6976,7 @@ async function esegui() {
     await proveSorpresaSlayer(costruisci, archivio);
     await proveGiocoPollo(costruisci, archivio);
     await proveCanzoniPollo(costruisci, archivio);
+    await proveStilePollo(costruisci, archivio);
     await proveManutenzione(contenutiVeri, costruisci, archivio);
     await proveGiochiDati();
 

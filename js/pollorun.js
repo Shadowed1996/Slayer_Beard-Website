@@ -4,6 +4,8 @@
   var PAROLA = 'pollorun';
   var PAUSA_MAX_MS = 2000;
   var MODI = ['fissa', 'ordine', 'caso'];
+  var STILI = ['synthwave', 'geometrydash'];
+  var RIPIEGO = { titolo: 'Back On Track', autore: 'DJVI', file: 'mp3/DJVI%20-%20Back%20On%20Track.mp3' };
   var VOLUME_BASE = 30;
   var CHIAVE_VOLUMI = 'sb-manutenzione-volumi';
   var CLASSE = 'is-pollorun';
@@ -36,6 +38,9 @@
         file: voce.file
       });
     }
+    if (!canzoni.length) {
+      return { canzoni: [{ titolo: RIPIEGO.titolo, autore: RIPIEGO.autore, file: RIPIEGO.file }], modo: 'ordine', fissa: 0 };
+    }
     return {
       canzoni: canzoni,
       modo: intero && MODI.indexOf(letto.modo) !== -1 ? letto.modo : 'ordine',
@@ -43,9 +48,14 @@
     };
   }
 
+  function leggiStile(testo) {
+    return STILI.indexOf(testo) !== -1 ? testo : STILI[0];
+  }
+
   var POLLO = ORIGINE ? (ORIGINE.getAttribute('data-pollo') || '') : '';
   var FRASI = leggiFrasi(ORIGINE ? ORIGINE.getAttribute('data-frasi') : '');
   var MUSICA = leggiCanzoni(ORIGINE ? ORIGINE.getAttribute('data-canzoni') : '');
+  var STILE = leggiStile(ORIGINE ? ORIGINE.getAttribute('data-stile') : '');
 
   var memoria = '';
   var ultimoTasto = 0;
@@ -207,6 +217,7 @@
       canzoni: MUSICA.canzoni.slice(),
       modo: MUSICA.modo,
       fissa: MUSICA.fissa,
+      stile: STILE,
       sipario: true,
       suCanzone: suCanzone,
       suPartita: function () { },

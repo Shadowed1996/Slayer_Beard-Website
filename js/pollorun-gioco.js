@@ -31,21 +31,32 @@
     };
   }
 
+  function curva(nl) {
+    var k = Math.max(0, nl - 1);
+    return {
+      tau: Math.max(0.12, 0.5 - 0.025 * k),
+      quieteMin: Math.max(0.1, 0.6 - 0.035 * k),
+      quieteMax: Math.max(0.42, 1.5 - 0.08 * k)
+    };
+  }
+
   function parametri(n) {
     var k = Math.max(0, n - 1);
     var v = k < 12.8 ? 8.6 + 0.5 * k : Math.min(17, 15 + 0.12 * (k - 12.8));
-    var tau = Math.max(0.12, 0.5 - 0.025 * k);
-    var durata = Math.min(46, 22 + k);
+    var inizio = curva(n);
+    var fine = curva(n + 1);
+    var durata = Math.min(150, 60 + 4 * k);
     return {
       n: n,
       v: v,
       J: ARIA * v,
-      tau: tau,
-      mx: v * tau * 0.3,
+      tau: inizio.tau,
+      tauFine: fine.tau,
+      mx: v * fine.tau * 0.3,
       durata: durata,
       lunghezza: Math.round(v * durata),
-      quieteMin: Math.max(0.1, 0.6 - 0.035 * k),
-      quieteMax: Math.max(0.42, 1.5 - 0.08 * k),
+      quieteMin: inizio.quieteMin,
+      quieteMax: inizio.quieteMax,
       tema: k % TEMI
     };
   }
@@ -420,32 +431,32 @@
 
   var FIGURE = [
     { nome: 'punta', semplice: true, da: 1, peso: 5, crea: figPunta },
-    { nome: 'punte', semplice: true, da: 2, peso: 4, crea: figPunte },
-    { nome: 'blocco', semplice: true, da: 2, peso: 3, crea: figBlocco },
-    { nome: 'piattaforma', semplice: true, da: 3, peso: 3, crea: figPiattaforma },
-    { nome: 'piattaformaPunte', da: 4, peso: 3, crea: figPiattaformaPunte },
-    { nome: 'catena', da: 5, peso: 3, crea: figCatena },
-    { nome: 'buca', da: 6, peso: 3, crea: figBuca },
-    { nome: 'scala', da: 7, peso: 2, crea: figScala },
-    { nome: 'bucaPunta', da: 8, peso: 2, crea: figBucaPunta },
-    { nome: 'romboPunta', da: 8, peso: 2, crea: figRomboPunta },
-    { nome: 'vallata', da: 9, peso: 2, crea: figVallata },
-    { nome: 'isole', da: 10, peso: 2, crea: figIsole },
-    { nome: 'piattaformaRombo', da: 11, peso: 2, crea: figPiattaformaRombo },
-    { nome: 'catenaMista', da: 12, peso: 2, crea: figCatenaMista },
-    { nome: 'scalaPunte', da: 14, peso: 2, crea: figScalaPunte }
+    { nome: 'punte', semplice: true, da: 1.2, peso: 4, crea: figPunte },
+    { nome: 'blocco', semplice: true, da: 1.45, peso: 3, crea: figBlocco },
+    { nome: 'piattaforma', semplice: true, da: 1.75, peso: 3, crea: figPiattaforma },
+    { nome: 'piattaformaPunte', da: 2.3, peso: 3, crea: figPiattaformaPunte },
+    { nome: 'catena', da: 3, peso: 3, crea: figCatena },
+    { nome: 'buca', da: 3.8, peso: 3, crea: figBuca },
+    { nome: 'scala', da: 4.8, peso: 2, crea: figScala },
+    { nome: 'bucaPunta', da: 5.6, peso: 2, crea: figBucaPunta },
+    { nome: 'romboPunta', da: 6.2, peso: 2, crea: figRomboPunta },
+    { nome: 'vallata', da: 7, peso: 2, crea: figVallata },
+    { nome: 'isole', da: 8, peso: 2, crea: figIsole },
+    { nome: 'piattaformaRombo', da: 9, peso: 2, crea: figPiattaformaRombo },
+    { nome: 'catenaMista', da: 10.2, peso: 2, crea: figCatenaMista },
+    { nome: 'scalaPunte', da: 12, peso: 2, crea: figScalaPunte }
   ];
 
-  function scegli(P, r, moltiplicatori, ultima) {
+  function scegli(nl, avanzamento, r, moltiplicatori, ultima) {
     var pesi = [];
     var totale = 0;
     for (var i = 0; i < FIGURE.length; i++) {
       var f = FIGURE[i];
       var peso = 0;
-      if (P.n >= f.da) {
-        var salita = P.n - f.da;
+      if (nl >= f.da) {
+        var salita = nl - f.da;
         var equilibrio = f.semplice ? Math.max(0.15, 1 - 0.07 * salita) : 1 + Math.min(1.2, 0.1 * salita);
-        peso = f.peso * moltiplicatori[i] * equilibrio * (P.n === f.da ? 3 : 1) * (f.nome === ultima ? 0.35 : 1);
+        peso = f.peso * moltiplicatori[i] * equilibrio * (f.semplice ? 1.35 - 0.7 * avanzamento : 0.65 + 0.7 * avanzamento) * (Math.floor(nl) === Math.floor(f.da) ? 3 : 1) * (f.nome === ultima ? 0.35 : 1);
       }
       pesi.push(peso);
       totale += peso;
@@ -478,23 +489,24 @@
     var ultimaSeme = 0;
     while (fine < limite) {
       var avanzamento = Math.max(0, Math.min(1, (fine - P.v * 1.7) / (limite - P.v * 1.7)));
-      var salita = Math.max(0, Math.min(1, (avanzamento - 0.08) / 0.62));
-      var intensita = 1.25 - 0.65 * salita * salita * (3 - 2 * salita) + (avanzamento > 0.88 ? 0.3 : 0);
+      var nl = n + avanzamento;
+      var locale = curva(nl);
+      var mxLocale = P.v * locale.tau * 0.3;
       var accettata = false;
       for (var scelta = 0; scelta < 6 && !accettata; scelta++) {
         var ripeti = scelta === 0 && ultima && r() < 0.22;
-        var f = ripeti ? ultima : scegli(P, r, moltiplicatori, ultima && ultima.nome);
+        var f = ripeti ? ultima : scegli(nl, avanzamento, r, moltiplicatori, ultima && ultima.nome);
         var seme = ripeti ? ultimaSeme : 1 + Math.floor(rSeme() * 2000000000);
-        var quiete = (P.quieteMin + Math.pow(r(), 1 + n / 8) * (P.quieteMax - P.quieteMin)) * intensita;
+        var quiete = (locale.quieteMin + Math.pow(r(), 1 + nl / 8) * (locale.quieteMax - locale.quieteMin)) * (1.35 - 0.75 * avanzamento);
         for (var t = 0; t < TENTATIVI && !accettata; t++) {
           var s = 1 + 0.25 * t;
-          var c = { x: Math.max(fine + (0.36 + P.v * quiete) * s, fronte[0].x + 2 * P.mx + MEZZO + 0.3, P.v * 1.7), v: P.v, J: P.J, tau: P.tau, n: n, s: s, r: casuale(seme) };
+          var c = { x: Math.max(fine + (0.36 + P.v * quiete) * s, fronte[0].x + 2 * mxLocale + MEZZO + 0.3, P.v * 1.7), v: P.v, J: P.J, tau: locale.tau, n: nl, s: s, r: casuale(seme) };
           var els = f.crea(c);
           if (!els) { continue; }
           var fineFigura = fineDi(els);
           if (fineFigura > limite) { break; }
           var salvato = proponi(M, els);
-          var dopo = avanza(M, fronte, fineFigura + P.mx + 2 * MEZZO + 0.3, P.mx);
+          var dopo = avanza(M, fronte, fineFigura + mxLocale + 2 * MEZZO + 0.3, mxLocale);
           if (dopo.length) {
             fronte = dopo;
             fine = fineFigura;
@@ -544,11 +556,12 @@
   var LATO_CUBO = 0.66;
   var DURATA_FRENATA = 1.5;
   var ATTESA_ARRIVO = 0.7;
-  var ATTESA_RIPROVA = 0.25;
-  var RIPARTENZA = 1;
+  var ATTESA_RIPROVA = 0.4;
+  var RITORNO_FINE = 12;
   var NERO = '#04061a';
   var BIANCO = '#ffffff';
   var GIALLO = '#ffe14a';
+  var PERMUTAZIONI = [[0, 1, 2], [1, 2, 0], [2, 0, 1], [0, 2, 1], [1, 0, 2], [2, 1, 0]];
   var TAVOLOZZE = [
     { cielo: ['#3a7bff', '#0e3aa8'], terra: '#0a2a80', accento: '#35e6ff', cubo: ['#ffe45c', '#ffa11f'] },
     { cielo: ['#a04dff', '#4b1a94'], terra: '#331070', accento: '#ff7af0', cubo: ['#b8ff5c', '#2fd14f'] },
@@ -600,11 +613,19 @@
     return m + ':' + (r < 10 ? '0' : '') + r;
   }
 
+  function casuale(seme) {
+    return function () {
+      seme = (seme * 16807) % 2147483647;
+      return (seme - 1) / 2147483646;
+    };
+  }
+
   function crea(opzioni) {
     var tela = opzioni.tela;
     var ctx = tela && tela.getContext ? tela.getContext('2d') : null;
     if (!ctx) { return { avvia: function () { }, ferma: function () { }, distruggi: function () { } }; }
     var sipario = !!opzioni.sipario;
+    var gd = opzioni.stile === 'geometrydash';
     var ridotto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     var tocco = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
@@ -613,8 +634,26 @@
       var valore = stile.getPropertyValue(nome).trim();
       return valore || ripiego;
     }
+    var C = {
+      viola: tinta('--viola', '#8b2fff'),
+      violaChiaro: tinta('--viola-chiaro', '#c5a4ff'),
+      ciano: tinta('--ciano', '#22e0ff'),
+      magenta: tinta('--magenta', '#ff2fa0'),
+      allerta: tinta('--allerta', '#ffc65c'),
+      fondo: tinta('--fondo', '#07070c'),
+      testo: tinta('--testo', '#f4f1ff')
+    };
     var MONO = tinta('--font-mono', 'monospace');
     var TITOLO = tinta('--font-titolo', 'sans-serif');
+
+    function creaTema(indice) {
+      var base = [C.viola, C.ciano, C.magenta];
+      var p = PERMUTAZIONI[indice % PERMUTAZIONI.length];
+      var a = base[p[0]];
+      var b = base[p[1]];
+      var c = base[p[2]];
+      return { cielo: a, sole: [C.allerta, c, a], lontani: a, reteLontani: C.violaChiaro, vicini: b, reteVicini: c, griglia: c, orizzonte: b };
+    }
 
     var pollo = new Image();
     var polloPronto = false;
@@ -645,17 +684,31 @@
     var raggiunto = 1;
     try { raggiunto = Math.max(1, parseInt(localStorage.getItem(CHIAVE_LIVELLO), 10) || 1); } catch (e) { raggiunto = 1; }
 
-    var W = 0, H = 0, dpr = 1, U = 40, suolo = 0, polloX = 0;
+    var W = 0, H = 0, dpr = 1, U = 40, orizzonte = 0, suolo = 0, polloX = 0;
     var stato = 'fermo';
-    var t = 0, tStato = 0, tArrivo = 0, deriva = 0, fondo = 0;
+    var t = 0, tStato = 0, tArrivo = 0, tInizioTentativo = 0, deriva = 0, fondo = gd ? 0 : 1;
     var livello = 1, tentativo = 1, durataLivello = 0;
     var M = null, S = null, prossimoM = null;
+    var tema = creaTema(0);
     var colori = coloriDi(1, 0);
     var attorno = Livelli.nuovoAttorno();
-    var resto = 0, angolo = 0, scia = 0;
+    var resto = 0, angolo = 0, giro = 0, scia = 0;
     var scintille = [], onde = [], lampo = 0, scossa = 0, frase = '', frasePagina = null;
     var ultimo = 0, acceso = false, attivo = false, idFrame = 0;
     var timerPrecalcolo = 0;
+
+    function creaMonti(picchi, seme) {
+      var r = casuale(seme);
+      var punti = [];
+      for (var i = 0; i < picchi; i++) {
+        punti.push({ x: (i + 0.15 * r()) / picchi, h: 0.04 + 0.14 * r() });
+        punti.push({ x: (i + 0.5 + 0.25 * (r() - 0.5)) / picchi, h: 0.45 + 0.55 * r() });
+      }
+      return punti;
+    }
+
+    var montiLontani = creaMonti(9, 7919);
+    var montiVicini = creaMonti(5, 104729);
 
     function misura() {
       var r = tela.getBoundingClientRect();
@@ -664,13 +717,22 @@
       H = r.height;
       tela.width = Math.max(1, Math.round(W * dpr));
       tela.height = Math.max(1, Math.round(H * dpr));
-      U = Math.max(34, Math.min(96, H * 0.21));
-      suolo = H * 0.8;
-      polloX = Math.max(24, Math.min(W * 0.1, 150));
+      if (gd) {
+        U = Math.max(34, Math.min(96, H * 0.21));
+        suolo = H * 0.8;
+        orizzonte = suolo * 0.7;
+        polloX = Math.max(24, Math.min(W * 0.1, 150));
+      } else {
+        U = Math.max(34, Math.min(96, H * 0.229));
+        orizzonte = H * 0.58;
+        suolo = orizzonte + (H - orizzonte) * 0.66;
+        polloX = Math.max(14, Math.min(W * 0.07, 110));
+      }
     }
 
     function latoCubo() { return U * LATO_CUBO; }
-    function centroPollo() { return polloX + latoCubo() / 2; }
+    function larghezzaGiocatore() { return gd ? latoCubo() : U * PROPORZIONE; }
+    function centroPollo() { return polloX + larghezzaGiocatore() / 2; }
     function sx(x) { return centroPollo() + (x - (S ? S.x : 0)) * U; }
     function sy(alt) { return suolo - alt * U; }
 
@@ -686,6 +748,149 @@
       ctx.lineTo(x, y + r);
       ctx.arcTo(x, y, x + r, y, r);
       ctx.closePath();
+    }
+
+    function sole() {
+      var r = Math.min(H * 0.5, W * 0.22);
+      var cx = W * 0.72;
+      var cy = orizzonte;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, Math.PI, 0);
+      ctx.closePath();
+      var g = ctx.createLinearGradient(0, cy - r, 0, cy);
+      g.addColorStop(0, tema.sole[0]);
+      g.addColorStop(0.55, tema.sole[1]);
+      g.addColorStop(1, tema.sole[2]);
+      ctx.fillStyle = g;
+      ctx.shadowColor = tema.sole[1];
+      ctx.shadowBlur = r * 0.45;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalCompositeOperation = 'destination-out';
+      for (var i = 0; i < 6; i++) {
+        ctx.fillRect(cx - r - 2, cy - r * (0.52 - i * 0.09), r * 2 + 4, r * (0.018 + i * 0.013));
+      }
+      ctx.globalCompositeOperation = 'destination-over';
+      var cielo = ctx.createLinearGradient(0, 0, 0, orizzonte);
+      cielo.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      cielo.addColorStop(1, tema.cielo);
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = cielo;
+      ctx.fillRect(0, 0, W, orizzonte);
+      ctx.restore();
+    }
+
+    function disegnaMonti(punti, largo, alto, passoX, linea, rete) {
+      var vertici = [];
+      var partenza = -(passoX % largo) - largo;
+      for (var base = partenza; base < W + largo; base += largo) {
+        for (var i = 0; i < punti.length; i++) {
+          vertici.push({ x: base + punti[i].x * largo, y: orizzonte - punti[i].h * alto, cima: i % 2 === 1 });
+        }
+      }
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(vertici[0].x, orizzonte);
+      for (var v = 0; v < vertici.length; v++) { ctx.lineTo(vertici[v].x, vertici[v].y); }
+      ctx.lineTo(vertici[vertici.length - 1].x, orizzonte);
+      ctx.closePath();
+      ctx.fillStyle = C.fondo;
+      ctx.fill();
+      ctx.save();
+      ctx.clip();
+      var velo = ctx.createLinearGradient(0, orizzonte - alto, 0, orizzonte);
+      velo.addColorStop(0, rete);
+      velo.addColorStop(1, C.fondo);
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = velo;
+      ctx.fillRect(0, orizzonte - alto, W, alto);
+      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = rete;
+      for (var riga = orizzonte - alto; riga < orizzonte; riga += 5) { ctx.fillRect(0, riga, W, 1); }
+      ctx.globalAlpha = 0.4;
+      ctx.strokeStyle = rete;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var k = 1; k < vertici.length - 1; k++) {
+        if (!vertici[k].cima) { continue; }
+        var cima = vertici[k];
+        var sinistra = vertici[k - 1];
+        var destra = vertici[k + 1];
+        for (var f = 0; f <= 4; f++) {
+          var destinazione = sinistra.x + (destra.x - sinistra.x) * (f / 4);
+          ctx.moveTo(cima.x, cima.y);
+          ctx.lineTo(destinazione, orizzonte);
+        }
+        ctx.moveTo(sinistra.x, sinistra.y);
+        ctx.lineTo((cima.x + destra.x) / 2, orizzonte);
+      }
+      ctx.stroke();
+      ctx.restore();
+      ctx.beginPath();
+      ctx.moveTo(vertici[0].x, vertici[0].y);
+      for (var n = 1; n < vertici.length; n++) { ctx.lineTo(vertici[n].x, vertici[n].y); }
+      ctx.strokeStyle = linea;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.shadowColor = linea;
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function terreno() {
+      ctx.save();
+      ctx.fillStyle = C.fondo;
+      ctx.fillRect(0, orizzonte, W, H - orizzonte);
+      var velo = ctx.createLinearGradient(0, orizzonte, 0, H);
+      velo.addColorStop(0, tema.cielo);
+      velo.addColorStop(1, C.fondo);
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = velo;
+      ctx.fillRect(0, orizzonte, W, H - orizzonte);
+      ctx.globalAlpha = 0.4;
+      ctx.strokeStyle = tema.griglia;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      var fondoY = H - orizzonte;
+      for (var j = 1; j <= 8; j++) {
+        var riga = orizzonte + Math.pow(j / 8, 1.7) * fondoY;
+        ctx.moveTo(0, riga);
+        ctx.lineTo(W, riga);
+      }
+      var s2 = U * 2.2;
+      var s1 = s2 * 0.12;
+      var fPollo = (suolo - orizzonte) / fondoY;
+      var sPollo = s1 + (s2 - s1) * fPollo;
+      var spost = (deriva * s2 / sPollo) % s2;
+      var quanti = Math.ceil(W / (2 * s1)) + 2;
+      var soglia = 0.18;
+      var sSoglia = (s1 + (s2 - s1) * soglia) / s2;
+      for (var i = -quanti; i <= quanti; i++) {
+        var lontano = i * s2 - spost;
+        ctx.moveTo(W / 2 + lontano * sSoglia, orizzonte + soglia * fondoY);
+        ctx.lineTo(W / 2 + lontano, H);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 0.12;
+      ctx.beginPath();
+      for (var m = -quanti; m <= quanti; m++) {
+        var via = m * s2 - spost;
+        ctx.moveTo(W / 2 + via * s1 / s2, orizzonte);
+        ctx.lineTo(W / 2 + via * sSoglia, orizzonte + soglia * fondoY);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, orizzonte);
+      ctx.lineTo(W, orizzonte);
+      ctx.strokeStyle = tema.orizzonte;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = tema.orizzonte;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.restore();
     }
 
     function quadrati(lato, sposta, alfa, seme) {
@@ -704,7 +909,7 @@
       }
     }
 
-    function sfondo() {
+    function sfondoGD() {
       if (fondo <= 0.01) { return; }
       var gradiente = ctx.createLinearGradient(0, 0, 0, H);
       gradiente.addColorStop(0, colori.cieloAlto);
@@ -725,59 +930,102 @@
       ctx.restore();
     }
 
+    function sfondo() {
+      if (gd) { sfondoGD(); return; }
+      sole();
+      disegnaMonti(montiLontani, Math.max(W * 1.1, 600), orizzonte * 0.62, deriva * 0.06, tema.lontani, tema.reteLontani);
+      disegnaMonti(montiVicini, Math.max(W * 0.8, 480), orizzonte * 0.4, deriva * 0.16, tema.vicini, tema.reteVicini);
+      terreno();
+    }
+
     function disegnaSuolo() {
       var segmenti = M ? M.suoli : [{ x0: -1000, x1: 1000 }];
       var buche = M ? M.buche : [];
       var altezza = H - suolo;
       var origine = centroPollo() - deriva;
       var tessera = K.TESSERA * U * 2;
+      var passoTacche = K.TESSERA * U * 4;
+      var colLinea = gd ? BIANCO : tema.orizzonte;
+      var colBagliore = gd ? colori.accento : tema.orizzonte;
+      var colMuro = gd ? 'rgba(255,255,255,0.75)' : tema.griglia;
       ctx.save();
       for (var b = 0; b < buche.length; b++) {
         var bx0 = Math.max(-4, sx(buche[b].x0));
         var bx1 = Math.min(W + 4, sx(buche[b].x1));
         if (bx1 <= bx0) { continue; }
         var abisso = ctx.createLinearGradient(0, suolo, 0, H);
-        abisso.addColorStop(0, 'rgba(0,0,0,0)');
-        abisso.addColorStop(1, 'rgba(0,0,0,0.62)');
+        if (gd) {
+          abisso.addColorStop(0, 'rgba(0,0,0,0)');
+          abisso.addColorStop(1, 'rgba(0,0,0,0.62)');
+          ctx.globalAlpha = 1;
+        } else {
+          abisso.addColorStop(0, C.fondo);
+          abisso.addColorStop(1, tema.griglia);
+          ctx.globalAlpha = 0.95;
+        }
         ctx.fillStyle = abisso;
         ctx.fillRect(bx0, suolo, bx1 - bx0, altezza + 2);
       }
+      ctx.globalAlpha = 1;
       for (var i = 0; i < segmenti.length; i++) {
         var x0 = M ? sx(segmenti[i].x0) : 0;
         var x1 = M ? sx(segmenti[i].x1) : W;
         if (x1 < -4 || x0 > W + 4) { continue; }
         x0 = Math.max(-4, x0);
         x1 = Math.min(W + 4, x1);
-        ctx.fillStyle = colori.terra;
-        ctx.fillRect(x0, suolo, x1 - x0, altezza + 2);
-        var luce = ctx.createLinearGradient(0, suolo, 0, H);
-        luce.addColorStop(0, 'rgba(255,255,255,0.3)');
-        luce.addColorStop(0.4, 'rgba(255,255,255,0)');
-        luce.addColorStop(1, 'rgba(0,0,0,0.25)');
-        ctx.fillStyle = luce;
-        ctx.fillRect(x0, suolo, x1 - x0, altezza + 2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (var tx = origine + Math.ceil((x0 - origine) / tessera) * tessera; tx < x1; tx += tessera) {
-          ctx.moveTo(tx, suolo + 2);
-          ctx.lineTo(tx, H);
+        if (gd) {
+          ctx.fillStyle = colori.terra;
+          ctx.fillRect(x0, suolo, x1 - x0, altezza + 2);
+          var luceGd = ctx.createLinearGradient(0, suolo, 0, H);
+          luceGd.addColorStop(0, 'rgba(255,255,255,0.3)');
+          luceGd.addColorStop(0.4, 'rgba(255,255,255,0)');
+          luceGd.addColorStop(1, 'rgba(0,0,0,0.25)');
+          ctx.fillStyle = luceGd;
+          ctx.fillRect(x0, suolo, x1 - x0, altezza + 2);
+          ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (var tx = origine + Math.ceil((x0 - origine) / tessera) * tessera; tx < x1; tx += tessera) {
+            ctx.moveTo(tx, suolo + 2);
+            ctx.lineTo(tx, H);
+          }
+          ctx.moveTo(x0, suolo + altezza * 0.55);
+          ctx.lineTo(x1, suolo + altezza * 0.55);
+          ctx.stroke();
+        } else {
+          ctx.globalAlpha = 0.97;
+          ctx.fillStyle = C.fondo;
+          ctx.fillRect(x0, suolo, x1 - x0, altezza + 2);
+          var luce = ctx.createLinearGradient(0, suolo, 0, H);
+          luce.addColorStop(0, tema.orizzonte);
+          luce.addColorStop(1, C.fondo);
+          ctx.globalAlpha = 0.2;
+          ctx.fillStyle = luce;
+          ctx.fillRect(x0, suolo, x1 - x0, altezza + 2);
+          ctx.globalAlpha = 0.28;
+          ctx.strokeStyle = tema.griglia;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          for (var ty = origine + Math.ceil((x0 - origine) / passoTacche) * passoTacche; ty < x1; ty += passoTacche) {
+            ctx.moveTo(ty, suolo + 2);
+            ctx.lineTo(ty, H);
+          }
+          ctx.stroke();
+          ctx.globalAlpha = 1;
         }
-        ctx.moveTo(x0, suolo + altezza * 0.55);
-        ctx.lineTo(x1, suolo + altezza * 0.55);
-        ctx.stroke();
-        ctx.strokeStyle = BIANCO;
-        ctx.lineWidth = 3;
-        ctx.shadowColor = colori.accento;
-        ctx.shadowBlur = 12;
+        ctx.strokeStyle = colLinea;
+        ctx.lineWidth = gd ? 3 : 2;
+        ctx.shadowColor = colBagliore;
+        ctx.shadowBlur = gd ? 12 : 10;
         ctx.beginPath();
         ctx.moveTo(x0, suolo);
         ctx.lineTo(x1, suolo);
         ctx.stroke();
         ctx.shadowBlur = 0;
         if (M) {
-          ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+          ctx.strokeStyle = colMuro;
           ctx.lineWidth = 3;
+          if (!gd) { ctx.shadowColor = tema.griglia; ctx.shadowBlur = 8; }
           ctx.beginPath();
           if (i > 0 && sx(segmenti[i].x0) >= -4 && sx(segmenti[i].x0) <= W + 4) {
             ctx.moveTo(sx(segmenti[i].x0), suolo);
@@ -788,55 +1036,62 @@
             ctx.lineTo(sx(segmenti[i].x1), H);
           }
           ctx.stroke();
+          ctx.shadowBlur = 0;
         }
       }
       ctx.restore();
     }
 
     function punta(x, base, largo, alto) {
+      var bordo = gd ? BIANCO : C.ciano;
+      var alone = gd ? colori.accento : C.ciano;
       ctx.beginPath();
       ctx.moveTo(x, base);
       ctx.lineTo(x + largo / 2, base - alto);
       ctx.lineTo(x + largo, base);
       ctx.closePath();
-      ctx.fillStyle = NERO;
+      ctx.fillStyle = gd ? NERO : C.fondo;
       ctx.fill();
-      ctx.strokeStyle = BIANCO;
+      ctx.strokeStyle = bordo;
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
-      ctx.shadowColor = colori.accento;
-      ctx.shadowBlur = 10;
+      ctx.shadowColor = alone;
+      ctx.shadowBlur = gd ? 10 : 12;
       ctx.stroke();
       ctx.shadowBlur = 0;
-      ctx.globalAlpha = 0.55;
-      ctx.strokeStyle = colori.accento;
+      ctx.globalAlpha = gd ? 0.55 : 0.5;
+      ctx.strokeStyle = gd ? colori.accento : bordo;
       ctx.beginPath();
-      ctx.moveTo(x + largo * 0.28, base - 3);
-      ctx.lineTo(x + largo / 2, base - alto * 0.56);
-      ctx.lineTo(x + largo * 0.72, base - 3);
+      ctx.moveTo(x + largo * (gd ? 0.28 : 0.3), base - (gd ? 3 : 2));
+      ctx.lineTo(x + largo / 2, base - alto * (gd ? 0.56 : 0.55));
+      ctx.lineTo(x + largo * (gd ? 0.72 : 0.7), base - (gd ? 3 : 2));
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
 
     function blocco(x, cimaY, largo, alto) {
-      ctx.fillStyle = 'rgba(4,6,26,0.92)';
+      var bordo = gd ? BIANCO : C.allerta;
+      var alone = gd ? colori.accento : C.allerta;
+      ctx.fillStyle = gd ? 'rgba(4,6,26,0.92)' : C.fondo;
       ctx.fillRect(x, cimaY, largo, alto);
-      ctx.fillStyle = 'rgba(255,255,255,0.1)';
-      ctx.fillRect(x + 2, cimaY + 2, largo - 4, Math.min(alto * 0.16, 8));
-      ctx.strokeStyle = BIANCO;
+      if (gd) {
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(x + 2, cimaY + 2, largo - 4, Math.min(alto * 0.16, 8));
+      }
+      ctx.strokeStyle = bordo;
       ctx.lineWidth = 2;
-      ctx.shadowColor = colori.accento;
-      ctx.shadowBlur = 10;
+      ctx.shadowColor = alone;
+      ctx.shadowBlur = gd ? 10 : 12;
       ctx.strokeRect(x + 1, cimaY + 1, largo - 2, alto - 2);
       ctx.shadowBlur = 0;
-      ctx.strokeStyle = colori.accento;
-      ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = gd ? colori.accento : bordo;
+      ctx.globalAlpha = gd ? 0.6 : 0.45;
       var lato = K.TESSERA * U;
       var colonne = Math.max(1, Math.round(largo / lato));
       var righe = Math.max(1, Math.round(alto / lato));
       var cw = largo / colonne;
       var rh = alto / righe;
-      var dentro = Math.min(cw, rh) * 0.2;
+      var dentro = Math.min(cw, rh) * (gd ? 0.2 : 0.22);
       for (var r = 0; r < righe; r++) {
         for (var col = 0; col < colonne; col++) {
           ctx.strokeRect(x + col * cw + dentro, cimaY + r * rh + dentro, cw - dentro * 2, rh - dentro * 2);
@@ -847,10 +1102,10 @@
 
     function sega(cx, cy, raggio) {
       var denti = 8;
-      var giro = ridotto ? 0 : t * 7;
+      var rotazione = ridotto ? 0 : t * 7;
       ctx.beginPath();
       for (var i = 0; i < denti * 2; i++) {
-        var a = giro + i * Math.PI / denti;
+        var a = rotazione + i * Math.PI / denti;
         var r = i % 2 === 0 ? raggio : raggio * 0.72;
         var px = cx + Math.cos(a) * r;
         var py = cy + Math.sin(a) * r;
@@ -872,6 +1127,34 @@
       ctx.fill();
     }
 
+    function rombo(cx, cy, largo, alto, colore) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - alto / 2);
+      ctx.lineTo(cx + largo / 2, cy);
+      ctx.lineTo(cx, cy + alto / 2);
+      ctx.lineTo(cx - largo / 2, cy);
+      ctx.closePath();
+      ctx.fillStyle = C.fondo;
+      ctx.fill();
+      ctx.strokeStyle = colore;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = colore;
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      var battito = ridotto ? 0.5 : 0.5 + 0.5 * Math.sin(t * 10);
+      ctx.globalAlpha = 0.35 + 0.4 * battito;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - alto * 0.24);
+      ctx.lineTo(cx + largo * 0.24, cy);
+      ctx.lineTo(cx, cy + alto * 0.24);
+      ctx.lineTo(cx - largo * 0.24, cy);
+      ctx.closePath();
+      ctx.fillStyle = colore;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
     function disegnaMondo() {
       if (!M) { return; }
       var da = S.x - (centroPollo() + 60) / U;
@@ -887,7 +1170,17 @@
           var cima = sy(e.t);
           blocco(x, cima, e.w * U, (e.pil ? H + 4 : suolo) - cima);
         } else if (e.k === 'r') {
-          sega(x + K.ROMBO_L * U / 2, sy(e.base) - K.ROMBO_A * U / 2, K.ROMBO_L * U * 0.52);
+          if (gd) {
+            sega(x + K.ROMBO_L * U / 2, sy(e.base) - K.ROMBO_A * U / 2, K.ROMBO_L * U * 0.52);
+          } else {
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.ellipse(x + K.ROMBO_L * U / 2, suolo, K.ROMBO_L * U * 0.3, U * 0.04, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            rombo(x + K.ROMBO_L * U / 2, sy(e.base) - K.ROMBO_A * U / 2, K.ROMBO_L * U, K.ROMBO_A * U, C.magenta);
+          }
         }
       }
       ctx.restore();
@@ -898,30 +1191,44 @@
       var x = sx(M.lunghezza);
       var larg = U * 1.7;
       if (x < -larg || x > W + larg) { return; }
-      var alto = Math.min(U * 2.6, suolo - 8);
+      var alto = Math.min(U * (gd ? 2.6 : 2.4), suolo - 8);
+      var colore = gd ? BIANCO : C.allerta;
       ctx.save();
       var tenda = ctx.createLinearGradient(0, suolo - alto, 0, suolo);
-      tenda.addColorStop(0, 'rgba(255,255,255,0.05)');
-      tenda.addColorStop(1, 'rgba(255,255,255,0.55)');
+      if (gd) {
+        tenda.addColorStop(0, 'rgba(255,255,255,0.05)');
+        tenda.addColorStop(1, 'rgba(255,255,255,0.55)');
+        ctx.globalAlpha = 1;
+      } else {
+        tenda.addColorStop(0, C.allerta);
+        tenda.addColorStop(1, C.fondo);
+        ctx.globalAlpha = 0.2;
+      }
       ctx.fillStyle = tenda;
       ctx.fillRect(x - larg / 2, suolo - alto, larg, alto);
-      ctx.strokeStyle = BIANCO;
-      ctx.lineWidth = 4;
-      ctx.shadowColor = colori.accento;
-      ctx.shadowBlur = 16;
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = colore;
+      ctx.lineWidth = gd ? 4 : 3;
+      ctx.shadowColor = gd ? colori.accento : C.allerta;
+      ctx.shadowBlur = gd ? 16 : 14;
       ctx.beginPath();
       ctx.moveTo(x - larg / 2, suolo);
       ctx.lineTo(x - larg / 2, suolo - alto);
-      ctx.moveTo(x + larg / 2, suolo);
-      ctx.lineTo(x + larg / 2, suolo - alto);
+      if (!gd) { ctx.lineTo(x + larg / 2, suolo - alto); ctx.lineTo(x + larg / 2, suolo); }
+      if (gd) { ctx.moveTo(x + larg / 2, suolo); ctx.lineTo(x + larg / 2, suolo - alto); }
       ctx.stroke();
       ctx.shadowBlur = 0;
       var quadro = larg / 8;
       for (var col = 0; col < 8; col++) {
         for (var r = 0; r < 2; r++) {
-          ctx.fillStyle = (col + r) % 2 === 0 ? BIANCO : NERO;
-          ctx.fillRect(x - larg / 2 + col * quadro, suolo - alto - quadro * (r + 1), quadro, quadro);
+          ctx.fillStyle = (col + r) % 2 === 0 ? colore : (gd ? NERO : C.fondo);
+          ctx.fillRect(x - larg / 2 + col * quadro, suolo - alto - quadro * (r + 1) + (gd ? 0 : 1), quadro, quadro);
         }
+      }
+      if (!gd) {
+        ctx.strokeStyle = colore;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - larg / 2, suolo - alto - quadro * 2 + 1, larg, quadro * 2);
       }
       ctx.restore();
     }
@@ -992,6 +1299,52 @@
       ctx.restore();
     }
 
+    function disegnaPollo() {
+      var w = larghezzaGiocatore();
+      var h = U;
+      var cx = centroPollo();
+      var alt = S ? S.alt : 0;
+      var piedi = suolo - alt * U;
+      var sobbalzo = 0;
+      var rotazione = 0;
+      var aTerra = !S || S.aTerra;
+      if (stato === 'corsa' && aTerra) {
+        sobbalzo = -Math.abs(Math.sin(t * 16)) * U * 0.07;
+        rotazione = Math.sin(t * 16) * 0.07;
+      } else if (stato === 'corsa') {
+        rotazione = S.salto ? giro : Math.min(0.5, -S.va * 0.03);
+      } else if (stato === 'fine') {
+        rotazione = -0.35;
+      } else if (stato === 'vinto') {
+        rotazione = aTerra ? 0 : Math.sin(t * 8) * 0.1;
+        if (aTerra && !ridotto) { sobbalzo = -Math.abs(Math.sin(t * 5)) * U * 0.05; }
+      } else if (!ridotto) {
+        sobbalzo = -Math.abs(Math.sin(t * 3)) * U * 0.03;
+      }
+      ctx.save();
+      var altezzaSalto = Math.min(1, Math.max(0, alt) / 1.5);
+      var sopraBuca = M && S && stato !== 'fine' && S.alt < -0.05;
+      if (!sopraBuca) {
+        ctx.globalAlpha = 0.45 * (1 - altezzaSalto * 0.6);
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(cx, suolo, w * 0.42 * (1 - altezzaSalto * 0.4), U * 0.06, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.translate(cx, piedi - h / 2 + sobbalzo);
+      ctx.rotate(rotazione);
+      ctx.shadowColor = stato === 'fine' ? C.magenta : C.ciano;
+      ctx.shadowBlur = 10;
+      if (polloPronto) {
+        ctx.drawImage(pollo, -w / 2, -h / 2, w, h);
+      } else {
+        ctx.fillStyle = C.allerta;
+        ctx.fillRect(-w / 2, -h / 2, w, h);
+      }
+      ctx.restore();
+    }
+
     function scritta(testo, x, yy, dimensione, peso, famiglia, colore, allinea, contorno) {
       ctx.font = peso + ' ' + Math.round(dimensione) + 'px ' + famiglia;
       ctx.textAlign = allinea;
@@ -1021,12 +1374,18 @@
       return { righe: righe, dimensione: Math.max(10, massimo * Math.min(1, largo / piuLarga)) };
     }
 
+    function glitch(testo, x, yy, dim, scarto) {
+      scritta(testo, x - scarto, yy, dim, '700', TITOLO, C.magenta, 'center', false);
+      scritta(testo, x + scarto, yy, dim, '700', TITOLO, C.ciano, 'center', false);
+      scritta(testo, x, yy, dim, '700', TITOLO, C.testo, 'center', false);
+    }
+
     function testoCanzone() {
       if (!canzone || !canzone.titolo) { return ''; }
       return '♪ ' + canzone.titolo + (canzone.autore ? ' — ' + canzone.autore : '');
     }
 
-    function hud() {
+    function hudGD() {
       var fs = Math.max(12, Math.min(22, U * 0.27));
       ctx.save();
       ctx.textBaseline = 'top';
@@ -1059,16 +1418,64 @@
       scritta('LIVELLO ' + livello, 16, 12, fs, '800', TITOLO, BIANCO, 'left', true);
       if (raggiunto > livello) { scritta('MIGLIORE LIVELLO ' + raggiunto, 16, 12 + fs * 1.3, fs * 0.8, '700', MONO, BIANCO, 'left', true); }
       var nota = testoCanzone();
-      if (nota && t - tStato < 6) {
-        ctx.globalAlpha = Math.max(0, Math.min(1, (6 - (t - tStato)) / 1.2));
+      if (nota && t - tInizioTentativo < 6) {
+        ctx.globalAlpha = Math.max(0, Math.min(1, (6 - (t - tInizioTentativo)) / 1.2));
         scritta(nota, W - 16, 12, fs * 0.9, '700', TITOLO, BIANCO, 'right', true);
         ctx.globalAlpha = 1;
       }
       ctx.restore();
     }
 
+    function hudSynth() {
+      var fs = Math.max(12, U * 0.3);
+      ctx.save();
+      ctx.textBaseline = 'top';
+      if (stato === 'fermo') {
+        if (raggiunto > 1) {
+          scritta('MIGLIORE LIVELLO ' + raggiunto, W - 16, 10, fs, '600', MONO, C.violaChiaro, 'right', false);
+        }
+        ctx.restore();
+        return;
+      }
+      ctx.shadowColor = C.ciano;
+      ctx.shadowBlur = 8;
+      scritta('LIVELLO ' + livello, 16, 10, fs, '600', MONO, C.ciano, 'left', false);
+      ctx.shadowBlur = 0;
+      var avanzamento = M ? Math.max(0, Math.min(1, S.x / M.lunghezza)) : 0;
+      var largo = Math.min(W * 0.32, 240);
+      var alto = Math.max(5, U * 0.07);
+      var by = 10 + fs * 1.45;
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = C.violaChiaro;
+      ctx.fillRect(16, by, largo, alto);
+      ctx.globalAlpha = 1;
+      var riempi = ctx.createLinearGradient(16, 0, 16 + largo, 0);
+      riempi.addColorStop(0, C.ciano);
+      riempi.addColorStop(1, C.magenta);
+      ctx.fillStyle = riempi;
+      ctx.fillRect(16, by, largo * avanzamento, alto);
+      scritta(Math.floor(avanzamento * 100) + '%', 16 + largo + 8, by - fs * 0.15, fs * 0.85, '600', MONO, C.violaChiaro, 'left', false);
+      scritta('TENTATIVO ' + tentativo, W - 16, 10, fs * 0.85, '600', MONO, C.violaChiaro, 'right', false);
+      var riga = 10 + fs * 1.2;
+      if (raggiunto > livello) {
+        scritta('MIGLIORE LIVELLO ' + raggiunto, W - 16, riga, fs * 0.85, '500', MONO, C.violaChiaro, 'right', false);
+        riga += fs * 1.1;
+      }
+      var nota = testoCanzone();
+      if (nota && t - tInizioTentativo < 6) {
+        ctx.globalAlpha = Math.max(0, Math.min(1, (6 - (t - tInizioTentativo)) / 1.2));
+        scritta(nota, W - 16, riga, fs * 0.85, '500', MONO, C.testo, 'right', false);
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+    }
+
+    function hud() {
+      if (gd) { hudGD(); } else { hudSynth(); }
+    }
+
     function disegnaTesteMondo() {
-      if (!M || stato === 'vinto') { return; }
+      if (!M || stato !== 'corsa') { return; }
       var x = sx(4.6);
       if (x < -W || x > W + 200) { return; }
       var grande = Math.max(18, U * 0.62);
@@ -1078,7 +1485,23 @@
       ctx.restore();
     }
 
-    function disegnaVittoria() {
+    function disegnaIntro(fs) {
+      var eta = t - tInizioTentativo;
+      var durata = 2.4;
+      if (eta > durata) { return; }
+      ctx.save();
+      ctx.textBaseline = 'alphabetic';
+      ctx.globalAlpha = Math.max(0, Math.min(1, eta / 0.2, (durata - eta) / 0.6));
+      ctx.shadowColor = C.allerta;
+      ctx.shadowBlur = 12;
+      var y = Math.max(fs * 2.4, orizzonte * 0.42);
+      scritta('LIVELLO ' + livello, W / 2, y, fs * 2, '700', MONO, C.allerta, 'center', false);
+      ctx.shadowBlur = 0;
+      if (tentativo > 1) { scritta('TENTATIVO ' + tentativo, W / 2, y + fs * 1.5, fs, '500', MONO, C.violaChiaro, 'center', false); }
+      ctx.restore();
+    }
+
+    function disegnaVittoriaGD() {
       var eta = t - tArrivo - 0.25;
       if (eta <= 0) { return; }
       var fs = Math.max(11, Math.min(20, U * 0.24));
@@ -1136,31 +1559,109 @@
       ctx.restore();
     }
 
+    function disegnaVittoriaSynth(fs) {
+      var eta = t - tArrivo - ATTESA_ARRIVO * 0.3;
+      if (eta <= 0) { return; }
+      var fsTitolo = fs * 1.1;
+      var nota = testoCanzone();
+      var riservato = fsTitolo * 1.6 + fs * (nota ? 4.4 : 3);
+      if (!frasePagina || frasePagina.W !== W || frasePagina.U !== U) {
+        var larghezzaFrase = Math.max(60, W - 32);
+        var massimo = Math.max(18, U * 0.45);
+        frasePagina = adatta(frase, larghezzaFrase, massimo, TITOLO, '700');
+        var spazio = orizzonte - 14 - riservato;
+        if (frasePagina.righe.length) { frasePagina.dimensione = Math.max(11, Math.min(frasePagina.dimensione, spazio / (frasePagina.righe.length * 1.1))); }
+        frasePagina.W = W;
+        frasePagina.U = U;
+      }
+      var righe = frasePagina.righe;
+      var dim = frasePagina.dimensione;
+      var alto = fsTitolo * 1.6 + righe.length * dim * 1.1 + fs * (nota ? 4.4 : 3);
+      var cima = Math.max(8, (orizzonte - alto) / 2);
+      var zoom = ridotto ? 1 : 1 + 0.25 * Math.max(0, 1 - eta / 0.25);
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, eta / 0.2) * 0.55;
+      ctx.fillStyle = C.fondo;
+      ctx.fillRect(0, cima - 8, W, alto + 16);
+      ctx.globalAlpha = Math.min(1, eta / 0.2);
+      ctx.translate(W / 2, cima + alto / 2);
+      ctx.scale(zoom, zoom);
+      ctx.translate(0, -alto / 2);
+      ctx.textBaseline = 'top';
+      ctx.shadowColor = C.allerta;
+      ctx.shadowBlur = 10;
+      scritta('LIVELLO ' + livello + ' COMPLETATO', 0, 0, fsTitolo, '700', MONO, C.allerta, 'center', false);
+      ctx.shadowBlur = 0;
+      var scarto = ridotto ? 2 : 2 + (Math.random() < 0.12 ? U * 0.05 : 0);
+      var y = fsTitolo * 1.6;
+      for (var r = 0; r < righe.length; r++) { glitch(righe[r], 0, y + r * dim * 1.1, dim, scarto); }
+      y += righe.length * dim * 1.1 + fs * 0.4;
+      scritta('TENTATIVI ' + tentativo + '   SALTI ' + S.salti + '   TEMPO ' + tempoTesto(durataLivello), 0, y, fs * 0.9, '500', MONO, C.violaChiaro, 'center', false);
+      y += fs * 1.3;
+      if (nota) {
+        scritta(nota, 0, y, fs * 0.9, '500', MONO, C.violaChiaro, 'center', false);
+        y += fs * 1.3;
+      }
+      if (t - tArrivo > ATTESA_ARRIVO) {
+        ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
+        scritta('SPAZIO per il livello ' + (livello + 1), 0, y + fs * 0.3, fs, '500', MONO, C.testo, 'center', false);
+      }
+      ctx.restore();
+    }
+
+    function disegnaFine(fs) {
+      var gx = W / 2;
+      var gy = gd ? suolo * 0.42 : orizzonte * 0.62;
+      var grande = Math.max(24, U * 0.7);
+      if (gd) {
+        scritta('GAME OVER', gx, gy, grande, '900', TITOLO, BIANCO, 'center', true);
+        ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
+        scritta('SPAZIO per riprovare il livello ' + livello + ' · ESC per uscire', gx, gy + fs * 1.7, fs, '700', MONO, BIANCO, 'center', true);
+      } else {
+        glitch('GAME OVER', gx, gy, grande, 2);
+        ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
+        scritta('SPAZIO per riprovare il livello ' + livello + ' · ESC per uscire', gx, gy + fs * 1.6, fs, '500', MONO, C.testo, 'center', false);
+      }
+      ctx.globalAlpha = 1;
+    }
+
     function messaggi() {
       var fs = Math.max(11, Math.min(22, U * 0.26));
       ctx.save();
       ctx.textBaseline = 'alphabetic';
       if (stato === 'fermo') {
-        var x = Math.min(polloX, 20);
-        ctx.shadowColor = '#35e6ff';
-        ctx.shadowBlur = 12;
-        scritta('POLLO RUN', x, suolo - U * 2.35, fs * 1.9, '900', TITOLO, BIANCO, 'left', true);
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
-        scritta((tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', x, suolo - U * 1.75, fs, '700', MONO, BIANCO, 'left', true);
-        ctx.globalAlpha = 1;
-        if (raggiunto > 1) { scritta('INVIO: riprendi dal livello ' + raggiunto, x, suolo - U * 1.3, fs * 0.9, '600', MONO, GIALLO, 'left', true); }
+        if (gd) {
+          var xg = Math.min(polloX, 20);
+          ctx.shadowColor = '#35e6ff';
+          ctx.shadowBlur = 12;
+          scritta('POLLO RUN', xg, suolo - U * 2.35, fs * 1.9, '900', TITOLO, BIANCO, 'left', true);
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
+          scritta((tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', xg, suolo - U * 1.75, fs, '700', MONO, BIANCO, 'left', true);
+          ctx.globalAlpha = 1;
+          if (raggiunto > 1) { scritta('INVIO: riprendi dal livello ' + raggiunto, xg, suolo - U * 1.3, fs * 0.9, '600', MONO, GIALLO, 'left', true); }
+        } else {
+          var x = polloX + larghezzaGiocatore() + U * 0.35;
+          ctx.shadowColor = C.magenta;
+          ctx.shadowBlur = 10;
+          scritta('POLLO RUN', x, suolo - U * 0.95, fs * 1.15, '700', MONO, C.magenta, 'left', false);
+          ctx.shadowBlur = 0;
+          ctx.globalAlpha = ridotto ? 1 : 0.55 + 0.45 * Math.sin(t * 4);
+          scritta((tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', x, suolo - U * 0.55, fs, '500', MONO, C.testo, 'left', false);
+          ctx.globalAlpha = 1;
+          if (raggiunto > 1) { scritta('INVIO: riprendi dal livello ' + raggiunto, x, suolo - U * 0.2, fs * 0.9, '500', MONO, C.violaChiaro, 'left', false); }
+        }
       }
       if (stato === 'corsa') {
-        disegnaTesteMondo();
-        if (livello === 1 && tentativo === 1 && t - tStato > 1.2 && t - tStato < 7) {
-          ctx.globalAlpha = Math.min(1, (7 - (t - tStato)) / 1);
-          scritta('SPAZIO / ↑ per saltare', W / 2, suolo * 0.4, fs * 1.1, '700', MONO, BIANCO, 'center', true);
+        if (gd) { disegnaTesteMondo(); } else { disegnaIntro(fs); }
+        if (livello === 1 && tentativo === 1 && t - tInizioTentativo > 2.4 && t - tInizioTentativo < 7) {
+          ctx.globalAlpha = Math.min(1, (7 - (t - tInizioTentativo)) / 1);
+          scritta('SPAZIO / ↑ per saltare', W / 2, (gd ? suolo * 0.4 : orizzonte * 0.5), fs, '500', MONO, gd ? BIANCO : C.testo, 'center', gd);
           ctx.globalAlpha = 1;
         }
       }
-      if (stato === 'fine') { disegnaTesteMondo(); }
-      if (stato === 'vinto') { disegnaVittoria(); }
+      if (stato === 'vinto') { if (gd) { disegnaVittoriaGD(); } else { disegnaVittoriaSynth(fs); } }
+      if (stato === 'fine') { disegnaFine(fs); }
       ctx.restore();
     }
 
@@ -1178,14 +1679,14 @@
       disegnaMondo();
       disegnaTraguardo();
       disegnaScintille();
-      disegnaCubo();
+      if (gd) { disegnaCubo(); } else { disegnaPollo(); }
       ctx.restore();
       hud();
       messaggi();
       if (lampo > 0) {
         ctx.save();
-        ctx.globalAlpha = lampo * 0.5;
-        ctx.fillStyle = BIANCO;
+        ctx.globalAlpha = lampo * (gd ? 0.5 : 0.45);
+        ctx.fillStyle = gd ? BIANCO : C.testo;
         ctx.fillRect(0, 0, W, H);
         ctx.restore();
       }
@@ -1195,8 +1696,8 @@
       scintille.push({ x: x, y: yy, vx: vx, vy: vyy, colore: colore, vita: durata, durata: durata, lato: lato });
     }
 
-    function suonaCanzone(voce) {
-      if (typeof opzioni.suCanzone === 'function') { opzioni.suCanzone(voce); }
+    function suonaCanzone(voceScelta) {
+      if (typeof opzioni.suCanzone === 'function') { opzioni.suCanzone(voceScelta); }
     }
 
     function scegliCanzone(n) {
@@ -1224,14 +1725,14 @@
       lampo = 1;
       scossa = ridotto ? 0 : 0.35;
       var cx = centroPollo();
-      var cy = sy(Math.max(S.alt, -0.4)) - latoCubo() / 2;
-      var pezzi = [colori.cubo0, colori.cubo1, BIANCO, colori.accento];
-      for (var i = 0; i < 24; i++) {
+      var cy = sy(Math.max(S.alt, -0.4)) - (gd ? latoCubo() : U) / 2;
+      var pezzi = gd ? [colori.cubo0, colori.cubo1, BIANCO, colori.accento] : [C.allerta, C.ciano, C.magenta];
+      for (var i = 0; i < 26; i++) {
         var a = Math.random() * Math.PI * 2;
-        var forza = U * (2 + Math.random() * 6);
-        scintilla(cx, cy, Math.cos(a) * forza, Math.sin(a) * forza - U * 2, pezzi[i % pezzi.length], 0.55 + Math.random() * 0.6, U * (0.08 + Math.random() * 0.1));
+        var forza = U * (2 + Math.random() * 5);
+        scintilla(cx, cy, Math.cos(a) * forza, Math.sin(a) * forza - U * 2, pezzi[i % pezzi.length], 0.5 + Math.random() * 0.6, U * (0.06 + Math.random() * 0.1));
       }
-      onde.push({ x: cx, y: cy, raggio: U * 0.3, vita: 0.55, durata: 0.55, crescita: U * 5 });
+      if (gd) { onde.push({ x: cx, y: cy, raggio: U * 0.3, vita: 0.55, durata: 0.55, crescita: U * 5 }); }
       suonaCanzone(null);
     }
 
@@ -1272,16 +1773,14 @@
       ricorda();
       S.richiesta = true;
       var cx = sx(M.lunghezza);
-      var tinte = [colori.accento, BIANCO, colori.cubo0, colori.cubo1];
+      var tinte = gd ? [colori.accento, BIANCO, colori.cubo0, colori.cubo1] : [C.allerta, C.ciano, C.magenta, C.violaChiaro];
       for (var i = 0; i < 70; i++) {
         var a = -Math.PI * (0.1 + 0.8 * Math.random());
         var forza = U * (3 + Math.random() * 7);
-        scintilla(cx, suolo - U * 1.2, Math.cos(a) * forza, Math.sin(a) * forza, tinte[i % tinte.length], 0.9 + Math.random() * 0.9, U * (0.07 + Math.random() * 0.1));
+        scintilla(cx, suolo - U * 1.2, Math.cos(a) * forza, Math.sin(a) * forza, tinte[i % tinte.length], 0.9 + Math.random() * 0.9, U * (0.05 + Math.random() * 0.08));
       }
       if (!timerPrecalcolo) { timerPrecalcolo = setTimeout(function () { precalcola(livello + 1); }, 60); }
     }
-
-    var tInizioTentativo = 0;
 
     function avviaLivello(n) {
       if (n === livello && M && M.n === n && stato !== 'fermo') { tentativo++; } else { tentativo = 1; }
@@ -1289,8 +1788,10 @@
       if (!M || M.n !== n) { M = prossimoM && prossimoM.n === n ? prossimoM : Livelli.crea(n); }
       if (prossimoM && prossimoM.n === n) { prossimoM = null; }
       S = Livelli.nuovoStato(M.v);
+      tema = creaTema(M.tema);
       resto = 0;
       angolo = 0;
+      giro = 0;
       scintille = [];
       onde = [];
       frasePagina = null;
@@ -1318,6 +1819,7 @@
       stato = 'fermo';
       M = null;
       S = null;
+      tema = creaTema(0);
       colori = coloriDi(1, 0);
       scintille = [];
       onde = [];
@@ -1360,9 +1862,11 @@
       t += dt;
       lampo = Math.max(0, lampo - dt * 3);
       scossa = Math.max(0, scossa - dt);
-      var bersaglio = stato === 'fermo' ? 0 : 1;
-      fondo += (bersaglio - fondo) * Math.min(1, dt * 6);
-      if (Math.abs(bersaglio - fondo) < 0.01) { fondo = bersaglio; }
+      if (gd) {
+        var bersaglio = stato === 'fermo' ? 0 : 1;
+        fondo += (bersaglio - fondo) * Math.min(1, dt * 6);
+        if (Math.abs(bersaglio - fondo) < 0.01) { fondo = bersaglio; }
+      }
       if (stato === 'fermo' && !ridotto) { deriva += U * 0.6 * dt; }
       if (stato === 'corsa' || stato === 'vinto') {
         aggiornaFisica(dt);
@@ -1370,21 +1874,28 @@
           deriva = S.x * U;
           if (!S.aTerra) {
             angolo += dt * Math.PI / K.ARIA;
+            if (S.salto) { giro += dt * Math.PI * 2 / K.ARIA; }
           } else {
             var verso = Math.round(angolo / (Math.PI / 2)) * (Math.PI / 2);
             angolo += (verso - angolo) * Math.min(1, dt * 20);
+            giro = 0;
           }
           if (stato === 'corsa' && S.aTerra) {
             scia -= dt;
             if (scia <= 0) {
-              scia = 0.035;
-              scintilla(centroPollo() - latoCubo() * 0.4, suolo - 3, -U * 3 - Math.random() * U * 2, -Math.random() * U * 1.4, Math.random() < 0.5 ? colori.accento : BIANCO, 0.35, U * 0.08);
+              if (gd) {
+                scia = 0.035;
+                scintilla(centroPollo() - latoCubo() * 0.4, suolo - 3, -U * 3 - Math.random() * U * 2, -Math.random() * U * 1.4, Math.random() < 0.5 ? colori.accento : BIANCO, 0.35, U * 0.08);
+              } else {
+                scia = 0.04;
+                scintilla(polloX + larghezzaGiocatore() * 0.25, suolo - 3, -U * 4 - Math.random() * U, -Math.random() * U * 1.5, Math.random() < 0.5 ? C.ciano : C.magenta, 0.4, U * 0.07);
+              }
             }
           }
         }
-        colori = coloriDi(livello, M && S ? Math.max(0, Math.min(1, S.x / M.lunghezza)) : 0);
+        if (gd) { colori = coloriDi(livello, M && S ? Math.max(0, Math.min(1, S.x / M.lunghezza)) : 0); }
       }
-      if (stato === 'fine' && t - tStato > RIPARTENZA) { avviaLivello(livello); }
+      if (stato === 'fine' && t - tStato > RITORNO_FINE) { torna(); }
       for (var k = scintille.length - 1; k >= 0; k--) {
         var s = scintille[k];
         s.vita -= dt;
@@ -1402,7 +1913,7 @@
     }
 
     function serveMoto() {
-      return !ridotto || stato !== 'fermo' || lampo > 0 || scintille.length > 0 || onde.length > 0 || fondo > 0.01;
+      return !ridotto || stato !== 'fermo' || lampo > 0 || scintille.length > 0 || onde.length > 0 || (gd && fondo > 0.01);
     }
 
     function ciclo(ora) {
@@ -1467,6 +1978,7 @@
       misura();
       disegna();
       chiedi();
+      if (!timerPrecalcolo) { timerPrecalcolo = setTimeout(function () { precalcola(1); }, 400); }
     }
 
     function ferma() {
