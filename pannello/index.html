@@ -9,20 +9,12 @@
   <meta name="color-scheme" content="dark">
   <link rel="icon" type="image/png" href="../img/favicon.png">
 
-  <!-- Un solo font caricato: il pannello e' uno strumento, non una vetrina.
-       Il resto del testo usa i font di sistema, che sono gia' li' e non costano niente. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
 
   <link rel="stylesheet" href="pannello.css">
-  <!-- campi.css arriva DOPO: contiene solo i widget nuovi (testo ricco,
-       colore, font, interruttore) e deve poter correggere pannello.css. -->
   <link rel="stylesheet" href="campi.css">
-  <!-- La struttura dell'editor, poi i fogli dei moduli che ci si montano
-       dentro. Quelli dei moduli li aggiungono anche i moduli stessi se non
-       li trovano: stanno qui per non far lampeggiare i controlli senza stile
-       al primo disegno. -->
   <link rel="stylesheet" href="editor/guscio.css">
   <link rel="stylesheet" href="editor/motore.css">
   <link rel="stylesheet" href="editor/contenuti.css">
@@ -32,10 +24,6 @@
 </head>
 <body data-vista="avvio">
 
-  <!-- =====================================================================
-       ICONE — sprite inline: nessuna richiesta in piu', nessuna libreria.
-       Ogni <use> eredita currentColor.
-       ===================================================================== -->
   <svg class="sprite" aria-hidden="true" focusable="false" width="0" height="0">
     <symbol id="i-salva" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4 4h11l5 5v11H4V4Z"/><path fill="none" stroke="currentColor" stroke-width="1.8" d="M8 4v5h7M8 20v-6h8v6"/></symbol>
     <symbol id="i-pubblica" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="m12 3 3.4 3.4a9 9 0 0 1 2.6 6.4V21H6v-8.2a9 9 0 0 1 2.6-6.4L12 3Z"/><circle cx="12" cy="11" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
@@ -59,7 +47,6 @@
     <symbol id="i-freccia" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 5.5 7 6.5-7 6.5"/></symbol>
     <symbol id="i-cerca" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="m15.4 15.4 4.6 4.6"/></symbol>
     <symbol id="i-etichetta" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3.5 11.2V4h7.2l9.3 9.3-7.2 7.2-9.3-9.3Z"/><circle cx="7.6" cy="7.6" r="1.5" fill="currentColor"/></symbol>
-    <!-- icone dell'editor -->
     <symbol id="i-telefono" viewBox="0 0 24 24"><rect x="7" y="2.8" width="10" height="18.4" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M11 17.6h2"/></symbol>
     <symbol id="i-tablet" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M11 17.5h2"/></symbol>
     <symbol id="i-computer" viewBox="0 0 24 24"><rect x="2.8" y="4" width="18.4" height="12.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M8.5 20.5h7M12 16.5v4"/></symbol>
@@ -76,9 +63,6 @@
     <symbol id="i-chiave" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m11 12 8.5-8.5M16 7l2.5 2.5M18.5 4.5l1.8 1.8"/></symbol>
   </svg>
 
-  <!-- =====================================================================
-       AVVIO — resta finche' non si sa se la sessione e' aperta.
-       ===================================================================== -->
   <div id="avvio" class="avvio">
     <div class="avvio__barra" aria-hidden="true"><span></span></div>
     <p class="avvio__testo" id="avvio-testo" role="status">Sto contattando il server&hellip;</p>
@@ -87,10 +71,6 @@
     </div>
   </div>
 
-  <!-- =====================================================================
-       ACCESSO — due modi nello stesso form: entrare e creare la password.
-       Li distingue data-modo sulla sezione, non due pezzi di HTML gemelli.
-       ===================================================================== -->
   <main id="accesso" class="accesso" data-modo="entra" hidden>
     <div class="accesso__scheda">
       <div class="accesso__marchio">
@@ -143,11 +123,6 @@
     </div>
   </main>
 
-  <!-- =====================================================================
-       EDITOR — barra alta, pannello laterale, anteprima (CONTRATTO-4 §9.1).
-       Il contenuto del pannello lo disegna editor/guscio.js; l'anteprima la
-       monta editor/motore.js dentro #anteprima.
-       ===================================================================== -->
   <div id="app" class="app" hidden>
     <a class="salta" href="#pannello">Vai al pannello dei controlli</a>
 
@@ -255,13 +230,8 @@
     </div>
   </div>
 
-  <!-- I dialoghi nascono e muoiono in avvisi.js: cosi' se ne possono
-       impilare due (scelta immagine -> conferma di cancellazione). -->
   <div id="avvisi" class="avvisi" role="region" aria-label="Avvisi" aria-live="polite"></div>
 
-  <!-- Il generatore degli stili e' uno script classico (UMD): lo stesso file
-       lo usa il server per il sito pubblicato, e i moduli lo trovano in
-       window.SBStili. Deve arrivare prima del modulo del pannello. -->
   <script src="condivisi/stili.js"></script>
   <script type="module" src="pannello.js"></script>
 </body>
