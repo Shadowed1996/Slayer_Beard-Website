@@ -6773,6 +6773,450 @@ async function proveStilePollo(costruisci, archivio) {
   });
 }
 
+async function proveClassifica(costruisci, archivio) {
+  apriSezione('11i. Classifica di Pollo Run: accesso Twitch, gettoni e overlay per OBS');
+
+  const vm = require('node:vm');
+  const classifica = require('./lib/classifica');
+  const sondaggi = require('./lib/sondaggi');
+  const auth = require('./lib/autenticazione');
+  const statico = require('./lib/statico');
+  const { creaServer } = require('./server.js');
+  const server = creaServer();
+  await new Promise((risolvi) => server.listen(0, '127.0.0.1', risolvi));
+  const porta = server.address().port;
+
+  const originale = fs.readFileSync(percorsi.P.contenutiJson, 'utf8');
+  const clientId = archivio.leggi().config.account.clientId;
+  const UTENTI = {
+    tokenanna0000001: { user_id: '101', login: 'anna', client_id: clientId },
+    tokenbruno000002: { user_id: '202', login: 'bruno', client_id: clientId },
+    tokenaltraapp003: { user_id: '303', login: 'carlo', client_id: 'unaltraapp' },
+    tokendario000004: { user_id: '404', login: 'dario', client_id: clientId }
+  };
+  const PROFILI = {
+    101: { id: '101', display_name: 'Anna <b>la Pazza</b>', profile_image_url: 'https://static-cdn.jtvnw.net/jtv_user_pictures/anna-300x300.png' },
+    202: { id: '202', display_name: 'Bruno', profile_image_url: 'https://static-cdn.jtvnw.net/jtv_user_pictures/bruno-300x300.png' },
+    404: { id: '404', display_name: 'Dario', profile_image_url: 'https://cattivo.example/x.png' }
+  };
+  let ora = Date.UTC(2026, 8, 27, 18, 0, 0);
+  sondaggi.sostituisciVerifica(async (token) => UTENTI[token] || null);
+  classifica.sostituisciProfilo(async (token, utente) => PROFILI[utente.id] || null);
+  classifica.sostituisciOrologio(() => ora);
+  classifica.dimentica();
+  fs.rmSync(classifica.percorsoDati(), { force: true });
+  fs.rmSync(classifica.percorsoChiave(), { force: true });
+  auth.azzeraTutto();
+
+  const accendi = (attiva, altro) => {
+    const d = archivio.leggi();
+    d.config.classifica = Object.assign({}, d.config.classifica, { attiva: attiva }, altro || {});
+    archivio.salva(d);
+  };
+  const conToken = (token) => (token ? { Authorization: 'Bearer ' + token } : {});
+  const partita = (token, corpo) => chiama(porta, 'POST', '/api/classifica/partita', { intestazioni: conToken(token), json: corpo });
+  const livello = (token, corpo) => chiama(porta, 'POST', '/api/classifica/livello', { intestazioni: conToken(token), json: corpo });
+  const attesa = (n, difficolta) => Math.ceil(classifica.durataLivello(n, difficolta) * 1000 * 0.86);
+  const completa = async (token, n, difficolta, tentativi) => {
+    const p = await partita(token, { livello: n, difficolta: difficolta });
+    esigiUguale(p.stato, 200, 'partita del livello ' + n + ' (' + JSON.stringify(p.dati) + ')');
+    ora += attesa(n, difficolta);
+    const l = await livello(token, { partita: p.dati.partita, tentativi: tentativi || 1 });
+    esigiUguale(l.stato, 200, 'livello ' + n + ' (' + JSON.stringify(l.dati) + ')');
+    return l.dati;
+  };
+  const pubblica = async (difficolta) => (await chiama(porta, 'GET', '/api/classifica?difficolta=' + difficolta)).dati;
+
+  try {
+    const entra = await chiama(porta, 'POST', '/api/entra', { json: { password: PASSWORD_COLLAUDO } });
+    const biscotto = biscottoDa(entra);
+    esigi(biscotto, 'niente sessione per le prove della classifica');
+    const gestisci = (percorso, corpo) => chiama(porta, 'POST', percorso, { biscotto, json: corpo });
+
+    await prova('schema: sei campi della classifica accanto a Pollo Run, predefiniti e limiti del contratto', () => {
+      const attesi = { attiva: ['interruttore', false], titolo: ['testo', 'Classifica di Pollo Run'], righe: ['numero', 10],
+        difficoltaObs: ['scelta', 'medio'], avatar: ['interruttore', true], aggiornaSecondi: ['numero', 15] };
+      const gruppo = schema.gruppi.find((g) => g.campi.some((c) => c.chiave === 'config.pollorun.attivo'));
+      const chiavi = gruppo.campi.map((c) => c.chiave);
+      for (const nome of Object.keys(attesi)) {
+        const campo = schema.campo('config.classifica.' + nome);
+        esigi(campo, 'manca config.classifica.' + nome);
+        esigiUguale(campo.tipo, attesi[nome][0], nome + ' tipo');
+        esigiUguale(campo.predefinito, attesi[nome][1], nome + ' predefinito');
+        esigi(chiavi.indexOf(campo.chiave) > chiavi.indexOf('config.pollorun.attivo'), nome + ' non sta vicino a Pollo Run');
+      }
+      esigiUguale(schema.campo('config.classifica.difficoltaObs').opzioni.map((o) => o.valore).join(), 'facile,medio,difficile,estremo,tutte', 'opzioni');
+      esigiUguale(convalida.convalidaCampo('config.classifica.righe', 2).length > 0, true, 'righe 2');
+      esigiUguale(convalida.convalidaCampo('config.classifica.righe', 26).length > 0, true, 'righe 26');
+      esigiUguale(convalida.convalidaCampo('config.classifica.righe', 25).length, 0, 'righe 25');
+      esigiUguale(convalida.convalidaCampo('config.classifica.aggiornaSecondi', 4).length > 0, true, 'secondi 4');
+      esigiUguale(convalida.convalidaCampo('config.classifica.aggiornaSecondi', 61).length > 0, true, 'secondi 61');
+      esigiUguale(convalida.convalidaCampo('config.classifica.difficoltaObs', 'tutte').length, 0, 'tutte');
+      esigi(convalida.convalidaCampo('config.classifica.difficoltaObs', 'boh').length > 0, 'difficolta inventata');
+      esigi(convalida.convalidaCampo('config.classifica.titolo', '').length > 0, 'titolo vuoto');
+      const veri = JSON.parse(fs.readFileSync(path.join(RADICE_VERA, 'contenuti', 'contenuti.json'), 'utf8'));
+      esigiUguale(veri.config.classifica.attiva, false, 'spenta di serie in contenuti.json');
+      esigiUguale(schema.verificaCopertura(veri).length, 0, 'copertura');
+      esigiUguale(convalida.convalida(veri).length, 0, 'convalida');
+      const vecchi = JSON.parse(JSON.stringify(veri));
+      delete vecchi.config.classifica;
+      schema.completa(vecchi);
+      esigiUguale(JSON.stringify(vecchi.config.classifica), JSON.stringify(veri.config.classifica), 'un contenuti.json vecchio riceve i predefiniti');
+    });
+
+    await prova('la durata del livello viene dal motore vero di pollorun-gioco.js, caricato in un vm', () => {
+      const finestra = {};
+      vm.runInNewContext(fs.readFileSync(path.join(RADICE_VERA, 'js', 'pollorun-gioco.js'), 'utf8'), { window: finestra });
+      for (const d of classifica.DIFFICOLTA) {
+        for (const n of [1, 2, 7, 30, 200]) {
+          esigiUguale(classifica.durataLivello(n, d), finestra.PolloRun.livelli.parametri(n, d).durata, d + ' livello ' + n);
+        }
+      }
+      esigi(classifica.durataLivello(1, 'medio') >= 30, 'il livello 1 dura troppo poco');
+    });
+
+    await prova('spenta: niente partite (404), la lettura pubblica dice attiva false', async () => {
+      accendi(false);
+      const p = await partita('tokenanna0000001', { livello: 1, difficolta: 'medio' });
+      esigiUguale(p.stato, 404, 'partita a classifica spenta');
+      esigiUguale(p.dati.codice, 'SPENTA', 'codice');
+      esigiUguale((await livello('tokenanna0000001', { partita: 'x.y' })).stato, 404, 'livello a classifica spenta');
+      const r = await chiama(porta, 'GET', '/api/classifica?difficolta=medio');
+      esigiUguale(r.stato, 200, 'lettura');
+      esigiUguale(r.dati.attiva, false, 'attiva');
+      esigiUguale(r.dati.righe.length, 0, 'righe');
+      accendi(true);
+    });
+
+    await prova('senza Twitch, con un token finto o di un altra app: 401, e /io risponde collegato false', async () => {
+      esigiUguale((await partita('', { livello: 1, difficolta: 'medio' })).stato, 401, 'senza token');
+      esigiUguale((await partita('tokeninventato99', { livello: 1, difficolta: 'medio' })).stato, 401, 'token finto');
+      esigiUguale((await partita('tokenaltraapp003', { livello: 1, difficolta: 'medio' })).stato, 401, 'altra app');
+      esigiUguale((await partita('corto', { livello: 1, difficolta: 'medio' })).stato, 401, 'token storto');
+      esigiUguale((await livello('', { partita: 'x.y' })).stato, 401, 'livello senza token');
+      for (const token of ['', 'tokeninventato99']) {
+        const io = await chiama(porta, 'GET', '/api/classifica/io', { intestazioni: conToken(token) });
+        esigiUguale(io.stato, 200, 'io ' + token);
+        esigiUguale(JSON.stringify(io.dati), '{"collegato":false}', 'io ' + token);
+      }
+    });
+
+    await prova('partita: livello e difficolta controllati, il livello 2 senza l 1 e un 409 con serve', async () => {
+      for (const corpo of [{ livello: 0, difficolta: 'medio' }, { livello: '1', difficolta: 'medio' }, { livello: 1.5, difficolta: 'medio' },
+        { livello: 1, difficolta: 'boh' }, { livello: 1 }, { difficolta: 'medio' }]) {
+        esigiUguale((await partita('tokenanna0000001', corpo)).stato, 400, JSON.stringify(corpo));
+      }
+      const r = await partita('tokenanna0000001', { livello: 2, difficolta: 'medio' });
+      esigiUguale(r.stato, 409, 'livello 2 senza il primo');
+      esigiUguale(r.dati.serve, 1, 'serve');
+      esigiUguale(r.dati.codice, 'SERVE_PRECEDENTE', 'codice');
+      const p = await partita('tokenanna0000001', { livello: 1, difficolta: 'medio' });
+      esigiUguale(p.stato, 200, 'livello 1 sempre ammesso');
+      esigi(typeof p.dati.partita === 'string' && p.dati.partita.split('.').length === 2, 'gettone');
+      esigiUguale(Date.parse(p.dati.scade) - ora, 2 * 60 * 60 * 1000, 'il gettone dura 2 ore');
+    });
+
+    await prova('livello: gettone manomesso, di un altro, troppo veloce, tentativi storti vengono rifiutati', async () => {
+      const p = await partita('tokenanna0000001', { livello: 1, difficolta: 'medio' });
+      const gettone = p.dati.partita;
+      esigiUguale((await livello('tokenanna0000001', {})).stato, 400, 'senza partita');
+      const [corpo, firma] = gettone.split('.');
+      const falso = Buffer.from(JSON.stringify(Object.assign(JSON.parse(Buffer.from(corpo, 'base64').toString('utf8')), { n: 9 }))).toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+      for (const storto of [falso + '.' + firma, gettone + 'x', 'nonunaregola', corpo + '.' + firma.slice(0, -2)]) {
+        const r = await livello('tokenanna0000001', { partita: storto });
+        esigiUguale(r.stato, 422, 'gettone ' + storto.slice(0, 20));
+        esigiUguale(r.dati.codice, 'GETTONE_NON_VALIDO', 'codice');
+      }
+      ora += attesa(1, 'medio');
+      esigiUguale((await livello('tokenbruno000002', { partita: gettone })).dati.codice, 'GETTONE_NON_VALIDO', 'gettone di un altro');
+      for (const t of [0, -1, 1.5, '3', 100001]) {
+        esigiUguale((await livello('tokenanna0000001', { partita: gettone, tentativi: t })).stato, 400, 'tentativi ' + JSON.stringify(t));
+      }
+      const veloce = await partita('tokenanna0000001', { livello: 1, difficolta: 'medio' });
+      ora += Math.floor(classifica.durataLivello(1, 'medio') * 1000 * 0.84);
+      const r = await livello('tokenanna0000001', { partita: veloce.dati.partita });
+      esigiUguale(r.stato, 422, 'troppo veloce');
+      esigiUguale(r.dati.codice, 'TROPPO_VELOCE', 'codice');
+      esigiUguale((await pubblica('medio')).righe.length, 0, 'niente in classifica');
+    });
+
+    await prova('livello accettato dopo l 85% della durata, e lo stesso gettone non si riusa (409)', async () => {
+      const p = await partita('tokenanna0000001', { livello: 1, difficolta: 'medio' });
+      ora += Math.ceil(classifica.durataLivello(1, 'medio') * 1000 * 0.85);
+      const r = await livello('tokenanna0000001', { partita: p.dati.partita, tentativi: 4 });
+      esigiUguale(r.stato, 200, 'accettato');
+      esigiUguale(JSON.stringify(r.dati), JSON.stringify({ difficolta: 'medio', livello: 1, migliore: true, record: 1, posizione: 1, totale: 1 }), 'risposta');
+      const ancora = await livello('tokenanna0000001', { partita: p.dati.partita, tentativi: 4 });
+      esigiUguale(ancora.stato, 409, 'riuso');
+      esigiUguale(ancora.dati.codice, 'GETTONE_USATO', 'codice');
+      classifica.dimentica();
+      esigiUguale((await livello('tokenanna0000001', { partita: p.dati.partita })).stato, 409, 'il riuso resta vietato anche dopo un riavvio');
+    });
+
+    await prova('gettone scaduto dopo 2 ore: 422', async () => {
+      const p = await partita('tokenanna0000001', { livello: 2, difficolta: 'medio' });
+      esigiUguale(p.stato, 200, 'livello 2 dopo l 1');
+      ora += 2 * 60 * 60 * 1000 + 1;
+      const r = await livello('tokenanna0000001', { partita: p.dati.partita });
+      esigiUguale(r.stato, 422, 'scaduto');
+      esigiUguale(r.dati.codice, 'GETTONE_SCADUTO', 'codice');
+    });
+
+    await prova('sequenza: ogni difficolta ha la sua, e un livello saltato non entra', async () => {
+      await completa('tokenanna0000001', 2, 'medio', 2);
+      const salto = await partita('tokenanna0000001', { livello: 4, difficolta: 'medio' });
+      esigiUguale(salto.stato, 409, 'salto al 4');
+      esigiUguale(salto.dati.serve, 3, 'serve 3');
+      esigiUguale((await partita('tokenanna0000001', { livello: 2, difficolta: 'facile' })).dati.serve, 1, 'facile parte da capo');
+      const p = await partita('tokenbruno000002', { livello: 1, difficolta: 'medio' });
+      ora += attesa(1, 'medio');
+      const tolto = await chiama(porta, 'POST', '/api/classifica/livello', { intestazioni: conToken('tokenbruno000002'), json: { partita: p.dati.partita } });
+      esigiUguale(tolto.stato, 200, 'bruno livello 1');
+      const p2 = await partita('tokenbruno000002', { livello: 2, difficolta: 'medio' });
+      esigiUguale((await gestisci('/api/classifica/togli', { difficolta: 'medio', id: '202' })).stato, 200, 'tolto dal pannello');
+      ora += attesa(2, 'medio');
+      const r = await livello('tokenbruno000002', { partita: p2.dati.partita });
+      esigiUguale(r.stato, 409, 'il livello 1 non c e piu');
+      esigiUguale(r.dati.serve, 1, 'serve');
+    });
+
+    await prova('ordinamento: livello piu alto, a parita chi ci e arrivato prima; rigiocare un livello basso non peggiora', async () => {
+      await completa('tokenanna0000001', 3, 'medio');
+      for (const n of [1, 2, 3]) { await completa('tokenbruno000002', n, 'medio'); }
+      await completa('tokendario000004', 1, 'medio');
+      let d = await pubblica('medio');
+      esigiUguale(d.righe.map((r) => r.login).join(), 'anna,bruno,dario', 'ordine a parita');
+      esigiUguale(d.righe.map((r) => r.pos).join(), '1,2,3', 'posizioni');
+      esigiUguale(Object.keys(d.righe[0]).join(), 'pos,nome,login,avatar,livello,quando', 'campi della riga');
+      esigiUguale(d.righe[0].nome, 'Anna <b>la Pazza</b>', 'il nome arriva da Twitch, come testo');
+      esigiUguale(d.righe[2].avatar, '', 'un avatar che non viene da static-cdn.jtvnw.net sparisce');
+      esigiUguale(d.totale, 3, 'totale');
+      const b = await completa('tokenbruno000002', 4, 'medio', 9);
+      esigiUguale(b.posizione, 1, 'bruno sale in testa');
+      esigiUguale(b.migliore, true, 'migliore');
+      const a = await completa('tokenanna0000001', 2, 'medio');
+      esigiUguale(a.migliore, false, 'rigiocare il 2 non e un record');
+      esigiUguale(a.record, 3, 'il record resta 3');
+      d = await pubblica('medio');
+      esigiUguale(d.righe.map((r) => r.login + r.livello).join(), 'bruno4,anna3,dario1', 'ordine finale');
+      esigiUguale((await chiama(porta, 'GET', '/api/classifica?difficolta=medio&n=2')).dati.righe.length, 2, 'n=2');
+      esigiUguale((await chiama(porta, 'GET', '/api/classifica?difficolta=boh')).stato, 400, 'difficolta inventata');
+    });
+
+    await prova('/io: chi e collegato vede nome, avatar e il migliore per difficolta', async () => {
+      const io = await chiama(porta, 'GET', '/api/classifica/io', { intestazioni: conToken('tokenanna0000001') });
+      esigiUguale(io.stato, 200, 'stato');
+      esigiUguale(io.dati.collegato, true, 'collegato');
+      esigiUguale(io.dati.login, 'anna', 'login');
+      esigiUguale(io.dati.avatar, PROFILI[101].profile_image_url, 'avatar');
+      esigiUguale(JSON.stringify(io.dati.migliori), '{"facile":0,"medio":3,"difficile":0,"estremo":0}', 'migliori');
+    });
+
+    await prova('ETag e 304 sulla lettura pubblica, e «tutte» da le quattro colonne', async () => {
+      const primo = await chiama(porta, 'GET', '/api/classifica?difficolta=medio');
+      const etag = primo.testa.etag;
+      esigi(etag, 'manca l ETag');
+      esigiUguale(primo.testa['cache-control'], 'no-cache', 'cache');
+      const secondo = await chiama(porta, 'GET', '/api/classifica?difficolta=medio', { intestazioni: { 'If-None-Match': etag } });
+      esigiUguale(secondo.stato, 304, 'non cambiata');
+      esigiUguale(secondo.testo, '', 'un 304 non ha corpo');
+      await completa('tokendario000004', 1, 'facile');
+      const terzo = await chiama(porta, 'GET', '/api/classifica?difficolta=medio', { intestazioni: { 'If-None-Match': etag } });
+      esigiUguale(terzo.stato, 200, 'dopo un livello nuovo cambia');
+      esigi(terzo.testa.etag !== etag, 'ETag uguale');
+      const tutte = await chiama(porta, 'GET', '/api/classifica?difficolta=tutte&n=5');
+      esigiUguale(tutte.dati.difficolta, 'tutte', 'difficolta');
+      esigiUguale(Object.keys(tutte.dati.gruppi).join(), 'facile,medio,difficile,estremo', 'gruppi');
+      esigiUguale(tutte.dati.gruppi.facile[0].login, 'dario', 'facile');
+      esigiUguale(tutte.dati.gruppi.medio.length, 3, 'medio');
+      esigiUguale(tutte.dati.gruppi.estremo.length, 0, 'estremo');
+      esigi(tutte.testa.etag && tutte.testa.etag !== terzo.testa.etag, 'ETag diverso per tutte');
+    });
+
+    await prova('overlay OBS: HTML escapato, trasparente, no-store, senza X-Frame-Options, CSP solo self e avatar Twitch', async () => {
+      const r = await chiama(porta, 'GET', '/api/classifica/obs?difficolta=medio');
+      esigiUguale(r.stato, 200, 'stato');
+      esigiDentro(r.testa['content-type'], 'text/html', 'tipo');
+      esigiUguale(r.testa['cache-control'], 'no-store', 'cache');
+      esigiUguale(r.testa['x-frame-options'], undefined, 'X-Frame-Options');
+      const csp = r.testa['content-security-policy'] || '';
+      esigiDentro(csp, 'script-src \'self\'', 'csp script');
+      esigiDentro(csp, 'style-src \'self\'', 'csp stili');
+      esigiDentro(csp, 'img-src \'self\' https://static-cdn.jtvnw.net', 'csp avatar');
+      esigi(csp.indexOf('unsafe-inline') === -1 && csp.indexOf('unsafe-eval') === -1, 'csp con unsafe');
+      esigi(r.testo.indexOf('<b>la Pazza') === -1, 'il nome entra in pagina come HTML');
+      esigiDentro(r.testo, 'Anna &lt;b&gt;la Pazza&lt;/b&gt;', 'nome escapato');
+      esigi(!/<script>|<style|style="|\son[a-z]+=/i.test(r.testo), 'script o stili in linea');
+      esigiDentro(r.testo, '<script src="/js/classifica-obs.js" defer></script>', 'script');
+      esigiDentro(r.testo, 'href="/css/classifica-obs.css"', 'foglio');
+      esigiUguale((r.testo.match(/<li class="obs__riga/g) || []).length, 3, 'tre righe');
+      esigiDentro(r.testo, 'obs__riga obs__riga--1" data-login="bruno"', 'primo con accento');
+      esigiDentro(r.testo, 'obs__riga--3', 'terzo con accento');
+      esigiDentro(r.testo, 'src="' + PROFILI[202].profile_image_url + '"', 'avatar');
+      esigiDentro(r.testo, 'data-api="/api/classifica?difficolta=medio&amp;n=10"', 'api');
+      esigiDentro(r.testo, '<h1 class="obs__titolo" id="obs-titolo">Classifica di Pollo Run</h1>', 'titolo');
+      esigi(r.testo.indexOf('<!--') === -1, 'commenti in pagina');
+      const senza = await chiama(porta, 'GET', '/api/classifica/obs?difficolta=medio&titolo=0&avatar=0&righe=1');
+      esigi(senza.testo.indexOf('obs__titolo') === -1, 'titolo=0');
+      esigi(senza.testo.indexOf('<img') === -1 && senza.testo.indexOf('obs__avatar') === -1, 'avatar=0');
+      esigiUguale((senza.testo.match(/<li class="obs__riga/g) || []).length, 1, 'righe=1');
+      const tutte = await chiama(porta, 'GET', '/api/classifica/obs?difficolta=tutte');
+      esigiUguale((tutte.testo.match(/<section class="obs__colonna"/g) || []).length, 4, 'quattro colonne');
+      esigiDentro(tutte.testo, 'class="obs obs--tutte"', 'classe tutte');
+      esigiUguale((await chiama(porta, 'GET', '/api/classifica/obs?difficolta=boh')).stato, 400, 'difficolta inventata');
+      accendi(true, { difficoltaObs: 'tutte', titolo: 'Top <polli>', aggiornaSecondi: 30 });
+      const dalPannello = await chiama(porta, 'GET', '/api/classifica/obs');
+      esigiUguale((dalPannello.testo.match(/<section class="obs__colonna"/g) || []).length, 4, 'difficolta dal pannello');
+      esigiDentro(dalPannello.testo, 'Top &lt;polli&gt;', 'titolo dal pannello escapato');
+      esigiDentro(dalPannello.testo, 'data-aggiorna="30"', 'secondi dal pannello');
+      accendi(true, { difficoltaObs: 'medio', titolo: 'Classifica di Pollo Run', aggiornaSecondi: 15 });
+    });
+
+    await prova('overlay OBS: dati scritti a mano nel file non possono iniettare niente', async () => {
+      const dati = JSON.parse(fs.readFileSync(classifica.percorsoDati(), 'utf8'));
+      dati.voci.estremo.push({ id: '999', login: 'x"><script>', nome: '"><script>alert(1)</script>', avatar: 'javascript:alert(1)', livello: 5, quando: new Date(ora).toISOString() });
+      dati.voci.estremo.push({ id: '998', login: 'img', nome: 'img', avatar: 'https://static-cdn.jtvnw.net/a" onerror="alert(1).png', livello: 4, quando: new Date(ora).toISOString() });
+      fs.writeFileSync(classifica.percorsoDati(), JSON.stringify(dati));
+      const r = await chiama(porta, 'GET', '/api/classifica/obs?difficolta=estremo');
+      esigiUguale(r.stato, 200, 'stato');
+      esigi(r.testo.indexOf('<script>alert') === -1 && r.testo.indexOf('javascript:') === -1 && r.testo.indexOf('onerror') === -1, 'iniezione passata');
+      esigiDentro(r.testo, '&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;', 'nome escapato');
+      const js = fs.readFileSync(path.join(RADICE_VERA, 'js', 'classifica-obs.js'), 'utf8');
+      esigi(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(js), 'lo script dell overlay scrive HTML');
+      esigiDentro(js, 'textContent', 'textContent');
+      esigiDentro(js, 'If-None-Match', 'ETag nel polling');
+      esigiDentro(js, 'static-cdn.jtvnw.net', 'controllo sugli avatar');
+      for (const nome of ['js/classifica-obs.js', 'css/classifica-obs.css', 'server/lib/classifica.js', 'modelli/classifica-obs.html']) {
+        const testo = fs.readFileSync(path.join(RADICE_VERA, nome), 'utf8');
+        esigi(!/(^|[^:'"])\/\/ /m.test(testo) && testo.indexOf('/*') === -1 && testo.indexOf('<!--') === -1, nome + ' contiene commenti');
+      }
+      new vm.Script(js);
+      const css = fs.readFileSync(path.join(RADICE_VERA, 'css', 'classifica-obs.css'), 'utf8');
+      esigiDentro(css, 'background: transparent', 'sfondo trasparente');
+      dati.voci.estremo = [];
+      fs.writeFileSync(classifica.percorsoDati(), JSON.stringify(dati));
+    });
+
+    await prova('bloccati: spariscono dalla classifica, non giocano (403) e tornano se sbloccati', async () => {
+      const r = await gestisci('/api/classifica/blocca', { id: '202', blocca: true });
+      esigiUguale(r.stato, 200, 'blocca');
+      esigiUguale(r.dati.bloccati.map((b) => b.id + ':' + b.login).join(), '202:bruno', 'elenco bloccati');
+      esigiUguale((await pubblica('medio')).righe.map((x) => x.login).join(), 'anna,dario', 'bruno sparito');
+      const p = await partita('tokenbruno000002', { livello: 1, difficolta: 'medio' });
+      esigiUguale(p.stato, 403, 'partita bloccata');
+      esigiUguale(p.dati.codice, 'BLOCCATO', 'codice');
+      esigiUguale((await livello('tokenbruno000002', { partita: 'x.y' })).stato, 403, 'livello bloccato');
+      const io = await chiama(porta, 'GET', '/api/classifica/io', { intestazioni: conToken('tokenbruno000002') });
+      esigiUguale(io.dati.bloccato, true, 'io bloccato');
+      esigiUguale((await gestisci('/api/classifica/blocca', { id: '202' })).stato, 400, 'senza blocca');
+      esigiUguale((await gestisci('/api/classifica/blocca', { id: 'bruno', blocca: true })).stato, 400, 'id non numerico');
+      esigiUguale((await gestisci('/api/classifica/blocca', { id: '202', blocca: false })).stato, 200, 'sblocca');
+      esigiUguale((await pubblica('medio')).righe.map((x) => x.login).join(), 'bruno,anna,dario', 'bruno torna col suo livello');
+    });
+
+    await prova('la gestione vuole la sessione del pannello; con la sessione vede tutto', async () => {
+      esigiUguale((await chiama(porta, 'GET', '/api/classifica/gestione')).stato, 401, 'gestione');
+      for (const rotta of ['/api/classifica/togli', '/api/classifica/blocca', '/api/classifica/stagione']) {
+        esigiUguale((await chiama(porta, 'POST', rotta, { json: { difficolta: 'medio', id: '101', blocca: true } })).stato, 401, rotta);
+        esigiUguale((await chiama(porta, 'POST', rotta, { intestazioni: conToken('tokenanna0000001'), json: { id: '101', blocca: true } })).stato, 401, rotta + ' col token Twitch');
+      }
+      const g = await chiama(porta, 'GET', '/api/classifica/gestione', { biscotto });
+      esigiUguale(g.stato, 200, 'con sessione');
+      esigiUguale(g.dati.voci.medio.map((v) => v.id).join(), '202,101,404', 'voci con id');
+      esigi(g.dati.stagione && g.dati.stagione.id === 's1', 'stagione');
+      esigi(Array.isArray(g.dati.stagioni) && Array.isArray(g.dati.bloccati), 'stagioni e bloccati');
+      esigiUguale((await gestisci('/api/classifica/togli', { difficolta: 'boh', id: '101' })).stato, 400, 'togli difficolta');
+      esigiUguale((await gestisci('/api/classifica/togli', { difficolta: 'estremo', id: '101' })).stato, 404, 'togli chi non c e');
+      esigiUguale((await chiama(porta, 'GET', '/api/classifica/partita')).stato, 405, 'GET partita');
+      esigiUguale((await chiama(porta, 'POST', '/api/classifica', { json: {} })).stato, 405, 'POST lettura');
+      esigiUguale((await chiama(porta, 'GET', '/api/classifica/inventata', { biscotto })).stato, 404, 'rotta inventata');
+    });
+
+    await prova('stagioni: la nuova archivia la vecchia senza cancellarla e si riparte dal livello 1', async () => {
+      const r = await gestisci('/api/classifica/stagione', { nome: '  Autunno   2026 ' });
+      esigiUguale(r.stato, 200, 'stagione');
+      esigiUguale(r.dati.stagione.id, 's2', 'id');
+      esigiUguale(r.dati.stagione.nome, 'Autunno 2026', 'nome');
+      esigiUguale(r.dati.stagioni[0].id, 's1', 'archiviata');
+      esigiUguale(r.dati.stagioni[0].voci.medio.length, 3, 'le voci vecchie restano');
+      esigi(r.dati.stagioni[0].fine, 'fine della stagione');
+      esigiUguale((await pubblica('medio')).righe.length, 0, 'classifica nuova vuota');
+      esigiUguale((await partita('tokenanna0000001', { livello: 2, difficolta: 'medio' })).dati.serve, 1, 'si riparte dal livello 1');
+      await completa('tokenanna0000001', 1, 'medio');
+      esigiUguale((await pubblica('medio')).righe[0].livello, 1, 'nuova stagione');
+      const dopo = await gestisci('/api/classifica/stagione', {});
+      esigiUguale(dopo.dati.stagione.nome, 'Stagione 3', 'nome predefinito');
+      esigiUguale(dopo.dati.stagioni.map((s) => s.id).join(), 's2,s1', 'archivio dal piu recente');
+    });
+
+    await prova('limite di frequenza per utente: oltre il massimo 429', async () => {
+      const prima = classifica.LIMITI.partitaUtente.max;
+      classifica.LIMITI.partitaUtente.max = 2;
+      try {
+        classifica.dimentica();
+        esigiUguale((await partita('tokendario000004', { livello: 1, difficolta: 'estremo' })).stato, 200, 'prima');
+        esigiUguale((await partita('tokendario000004', { livello: 1, difficolta: 'estremo' })).stato, 200, 'seconda');
+        const r = await partita('tokendario000004', { livello: 1, difficolta: 'estremo' });
+        esigiUguale(r.stato, 429, 'terza');
+        esigiUguale(r.dati.codice, 'TROPPE_RICHIESTE', 'codice');
+        esigiUguale((await partita('tokenanna0000001', { livello: 1, difficolta: 'estremo' })).stato, 200, 'un altro utente gioca');
+        ora += 11 * 60 * 1000;
+        esigiUguale((await partita('tokendario000004', { livello: 1, difficolta: 'estremo' })).stato, 200, 'passata la finestra');
+      } finally {
+        classifica.LIMITI.partitaUtente.max = prima;
+        classifica.dimentica();
+      }
+    });
+
+    await prova('i dati stanno nella cartella privata: classifica.json e la chiave col punto, mai dal browser', async () => {
+      const dati = classifica.percorsoDati();
+      const chiave = classifica.percorsoChiave();
+      esigiUguale(path.dirname(dati), percorsi.P.dati, 'cartella dei dati');
+      esigiUguale(path.basename(chiave).charAt(0), '.', 'la chiave comincia col punto');
+      esigi(fs.existsSync(dati) && fs.existsSync(chiave), 'file assenti');
+      esigi(/^[0-9a-f]{64}\n$/.test(fs.readFileSync(chiave, 'utf8')), 'chiave');
+      esigi(statico.riservato(dati) && statico.riservato(chiave), 'raggiungibili dal browser');
+      const letto = JSON.parse(fs.readFileSync(dati, 'utf8'));
+      esigi(letto.versione > 0 && letto.stagione.id === 's3', 'contenuto');
+      esigi(!fs.readdirSync(percorsi.P.dati).some((n) => n.endsWith('.tmp')), 'restano file temporanei');
+    });
+
+    await prova('data-classifica nelle pagine generate: sul gioco del sito solo se accesa, sul canvas della manutenzione 1 o 0', () => {
+      const documento = (attiva) => {
+        const d = archivio.leggi();
+        d.config.classifica = Object.assign({}, d.config.classifica, { attiva: attiva });
+        return d;
+      };
+      const tagGioco = (html) => { const m = /<script src="js\/pollorun\.js"[^>]*>/.exec(html || ''); return m ? m[0] : ''; };
+      const acceso = costruisci.rendi(documento(true));
+      esigiDentro(tagGioco(acceso.html), 'data-classifica="1"', 'home accesa');
+      for (const nome of ['clip', 'giochi', 'sponsor']) {
+        if (typeof acceso[nome] === 'string' && tagGioco(acceso[nome])) { esigiDentro(tagGioco(acceso[nome]), 'data-classifica="1"', nome + ' accesa'); }
+      }
+      const spento = costruisci.rendi(documento(false));
+      esigi(tagGioco(spento.html), 'lo script del gioco sparisce');
+      esigiUguale(spento.html.indexOf('data-classifica'), -1, 'home spenta');
+      for (const [attiva, atteso] of [[true, '1'], [false, '0']]) {
+        const mnt = documento(attiva);
+        mnt.config.manutenzione = Object.assign({}, mnt.config.manutenzione, { attiva: true, fine: '' });
+        const pagina = costruisci.rendi(mnt, { adesso: Date.UTC(2026, 8, 27, 9, 0, 0) }).manutenzione;
+        const tela = /<canvas[^>]*id="mnt-gioco"[^>]*data-classifica="([^"]*)"/.exec(pagina || '');
+        esigi(tela, 'il canvas non ha data-classifica');
+        esigiUguale(tela[1], atteso, 'manutenzione ' + attiva);
+        esigiDentro(pagina, 'img-src \'self\' data: https://static-cdn.jtvnw.net', 'CSP della manutenzione con gli avatar');
+      }
+    });
+  } finally {
+    await new Promise((risolvi) => server.close(risolvi));
+    fs.writeFileSync(percorsi.P.contenutiJson, originale);
+    classifica.sostituisciOrologio(null);
+    classifica.sostituisciProfilo(null);
+    classifica.dimentica();
+    sondaggi.sostituisciVerifica(null);
+    auth.azzeraTutto();
+  }
+}
+
 async function proveManutenzione(contenutiVeri, costruisci, archivio) {
   apriSezione('11b. Modalita manutenzione');
 
@@ -7475,6 +7919,7 @@ async function esegui() {
     await proveGiocoPollo(costruisci, archivio);
     await proveCanzoniPollo(costruisci, archivio);
     await proveStilePollo(costruisci, archivio);
+    await proveClassifica(costruisci, archivio);
     await proveManutenzione(contenutiVeri, costruisci, archivio);
     await proveGiochiDati();
 

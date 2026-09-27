@@ -300,6 +300,14 @@
       "canzoneFissa": 2,
       "stile": "synthwave"
     },
+    "classifica": {
+      "attiva": false,
+      "titolo": "Classifica di Pollo Run",
+      "righe": 10,
+      "difficoltaObs": "medio",
+      "avatar": true,
+      "aggiornaSecondi": 15
+    },
     "twitch": {
       "canale": "slayer_beard",
       "idUtente": "47738247",

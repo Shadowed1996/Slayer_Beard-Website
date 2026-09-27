@@ -18,6 +18,7 @@ const twitch = require('./twitch');
 const youtube = require('./youtube');
 const giochi = require('./giochi');
 const sondaggi = require('./sondaggi');
+const classifica = require('./classifica');
 const meteora = require('./meteora');
 const spettatori = require('./spettatori');
 const schema = require('../../contenuti/schema.js');
@@ -27,7 +28,8 @@ const MAX_JSON = 1024 * 1024;
 const MAX_FILE = 4 * 1024 * 1024 + 64 * 1024;
 const MAX_FONT = font.MAX_BYTE + 64 * 1024;
 
-const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra', '/api/sondaggio', '/api/sondaggio/voto', '/api/meteora', '/api/spettatori']);
+const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra', '/api/sondaggio', '/api/sondaggio/voto', '/api/meteora', '/api/spettatori',
+  '/api/classifica', '/api/classifica/io', '/api/classifica/partita', '/api/classifica/livello', '/api/classifica/obs']);
 
 function leggiCorpo(req, massimo) {
   return new Promise((risolvi, rifiuta) => {
@@ -422,6 +424,52 @@ async function rottaCreaSondaggio(req, res) {
   json(res, 201, sondaggi.crea(corpo));
 }
 
+async function conCodice(res, lavoro) {
+  try {
+    await lavoro();
+  } catch (e) {
+    if (!e || !e.stato || e.stato >= 500 || res.headersSent) { throw e; }
+    const extra = {};
+    if (e.codice) { extra.codice = e.codice; }
+    if (e.serve !== undefined) { extra.serve = e.serve; }
+    errore(res, e.stato, e.message, extra);
+  }
+}
+
+async function rottaClassifica(req, res, percorso, metodo) {
+  const url = new URL(req.url, 'http://localhost');
+  if (percorso === '/api/classifica') {
+    if (metodo !== 'GET') { return metodoNonAmmesso(res, 'GET'); }
+    return conCodice(res, () => classifica.rottaElenco(req, res, url));
+  }
+  if (percorso === '/api/classifica/obs') {
+    if (metodo !== 'GET') { return metodoNonAmmesso(res, 'GET'); }
+    return conCodice(res, () => classifica.rottaObs(req, res, url));
+  }
+  if (percorso === '/api/classifica/io') {
+    if (metodo !== 'GET') { return metodoNonAmmesso(res, 'GET'); }
+    return conCodice(res, () => classifica.rottaIo(req, res));
+  }
+  if (percorso === '/api/classifica/partita') {
+    if (metodo !== 'POST') { return metodoNonAmmesso(res, 'POST'); }
+    return conCodice(res, async () => classifica.rottaPartita(req, res, await leggiJson(req)));
+  }
+  if (percorso === '/api/classifica/livello') {
+    if (metodo !== 'POST') { return metodoNonAmmesso(res, 'POST'); }
+    return conCodice(res, async () => classifica.rottaLivello(req, res, await leggiJson(req)));
+  }
+  if (percorso === '/api/classifica/gestione') {
+    if (metodo !== 'GET') { return metodoNonAmmesso(res, 'GET'); }
+    return json(res, 200, classifica.vistaGestione());
+  }
+  const azioni = { '/api/classifica/togli': classifica.togli, '/api/classifica/blocca': classifica.blocca, '/api/classifica/stagione': classifica.nuovaStagione };
+  if (Object.prototype.hasOwnProperty.call(azioni, percorso)) {
+    if (metodo !== 'POST') { return metodoNonAmmesso(res, 'POST'); }
+    return conCodice(res, async () => json(res, 200, azioni[percorso](await leggiJson(req))));
+  }
+  errore(res, 404, 'Questa rotta non esiste.');
+}
+
 function metodoNonAmmesso(res, ammessi) {
   errore(res, 405, 'Metodo non ammesso su questa rotta. Ammessi: ' + ammessi + '.');
 }
@@ -544,6 +592,9 @@ async function gestisci(req, res, percorso) {
   if (percorso.startsWith('/api/sondaggi/')) {
     if (metodo !== 'DELETE') { return metodoNonAmmesso(res, 'DELETE'); }
     return json(res, 200, sondaggi.elimina(decodifica(percorso.slice('/api/sondaggi/'.length))));
+  }
+  if (percorso === '/api/classifica' || percorso.startsWith('/api/classifica/')) {
+    return rottaClassifica(req, res, percorso, metodo);
   }
   if (percorso === '/api/backup') {
     return metodo === 'GET' ? rottaElencoBackup(req, res) : metodoNonAmmesso(res, 'GET');

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>{{obs.titolo}} · overlay</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/classifica-obs.css">
+</head>
+<body class="obs{{#se obs.tutte}} obs--tutte{{/se}}" data-difficolta="{{obs.difficolta}}" data-righe="{{obs.righe}}" data-aggiorna="{{obs.aggiorna}}" data-avatar="{{obs.avatar}}" data-api="{{obs.api}}">
+<main class="obs__scheda">
+{{#se obs.conTitolo}}  <h1 class="obs__titolo" id="obs-titolo">{{obs.titolo}}</h1>
+{{/se}}  <div class="obs__colonne">
+{{#ogni obs.colonne}}    <section class="obs__colonna" data-difficolta="{{chiave}}">
+      <h2 class="obs__difficolta obs__difficolta--{{chiave}}">{{etichetta}}</h2>
+      <ol class="obs__righe" aria-live="polite">
+{{#ogni righe}}        <li class="obs__riga{{classe}}" data-login="{{login}}" data-pos="{{pos}}"><span class="obs__pos">{{pos}}</span>{{#se conAvatar}}{{#se avatar}}<img class="obs__avatar" src="{{avatar}}" alt="" width="40" height="40" referrerpolicy="no-referrer">{{/se}}{{^se avatar}}<span class="obs__avatar obs__avatar--vuoto"></span>{{/se}}{{/se}}<span class="obs__nome">{{nome}}</span><span class="obs__livello"><small>LV</small>{{livello}}</span></li>
+{{/ogni}}      </ol>
+      <p class="obs__vuoto"{{^se vuota}} hidden{{/se}}>Ancora nessuno in classifica</p>
+    </section>
+{{/ogni}}  </div>
+</main>
+<script src="/js/classifica-obs.js" defer></script>
+</body>
+</html>

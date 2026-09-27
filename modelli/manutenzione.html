@@ -8,7 +8,7 @@
   script-src {{{manutenzione.scriptSrc}}};
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;
-  img-src 'self' data:;
+  img-src 'self' data: https://static-cdn.jtvnw.net;
   connect-src 'self';
   base-uri 'self';
   form-action 'none';
@@ -512,7 +512,7 @@
 <body>
 <div class="mnt__griglia" aria-hidden="true"></div>
 <div class="mnt__righe" aria-hidden="true"></div>
-<canvas class="mnt__gioco" id="mnt-gioco" data-pollo="{{manutenzione.mascotte}}" data-frasi="{{manutenzione.frasiPollo}}" data-canzoni="{{manutenzione.canzoniPollo}}" data-stile="{{manutenzione.stilePollo}}" aria-hidden="true"></canvas>
+<canvas class="mnt__gioco" id="mnt-gioco" data-classifica="{{manutenzione.classifica}}" data-pollo="{{manutenzione.mascotte}}" data-frasi="{{manutenzione.frasiPollo}}" data-canzoni="{{manutenzione.canzoniPollo}}" data-stile="{{manutenzione.stilePollo}}" aria-hidden="true"></canvas>
 
 <main class="mnt">
   <section class="mnt__monitor" aria-labelledby="mnt-titolo">

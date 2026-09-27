@@ -813,7 +813,8 @@ function costruisciContesto(contenuti, opzioni) {
     pollo: String((config.immagini && config.immagini.mascotte) || ''),
     frasi: frasiPolloRun(config),
     canzoni: JSON.stringify(canzoniPolloRun(config)),
-    stile: stilePolloRun(config)
+    stile: stilePolloRun(config),
+    classifica: classificaAttiva(config)
   };
   contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
 
@@ -1385,6 +1386,10 @@ function stilePolloRun(config) {
   return STILI_POLLORUN.indexOf(ramo.stile) !== -1 ? ramo.stile : 'synthwave';
 }
 
+function classificaAttiva(config) {
+  return !!(config && config.classifica && typeof config.classifica === 'object' && config.classifica.attiva === true);
+}
+
 function canzoniPolloRun(config) {
   const ramo = (config && config.pollorun && typeof config.pollorun === 'object') ? config.pollorun : {};
   const elenco = Array.isArray(ramo.canzoni) ? ramo.canzoni : schema.campo('config.pollorun.canzoni').predefinito;
@@ -1462,6 +1467,7 @@ function contestoManutenzione(contenuti, adesso, cache) {
     canzoniPollo: JSON.stringify(canzoni),
     canzoneGioco: canzoni.canzoni[0].file,
     stilePollo: stilePolloRun(config),
+    classifica: classificaAttiva(config) ? '1' : '0',
     og: String(immagini.og || ''),
     favicon: String(immagini.favicon || ''),
     fontUrl: tema.urlGoogleFonts(config.tema, []),
@@ -1865,7 +1871,7 @@ module.exports = {
   fineManutenzione, istanteItaliano, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, sponsorDi, giochiDi, jsonSicuro, chiaviRicche,
-  orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta, canzoniPolloRun, stilePolloRun,
+  orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta, canzoniPolloRun, stilePolloRun, classificaAttiva,
 
   togliCommenti
 };

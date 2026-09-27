@@ -822,6 +822,12 @@ npm run prova
 **«TUTTO A POSTO»**. Lavora in una cartella temporanea e non
 tocca i file del sito: si può lanciare quando si vuole, anche a sito acceso.
 
+### La classifica di Pollo Run in OBS
+
+In OBS: **Fonti → + → Browser**, URL `https://slayerbeard.com/api/classifica/obs?difficolta=medio&righe=10`
+(`difficolta` può essere `facile`, `medio`, `difficile`, `estremo` o `tutte`; `titolo=0` toglie il titolo, `avatar=0` le foto), misura consigliata **480 × 720** per una difficoltà e **1280 × 720** con `tutte`.
+Lo sfondo è già trasparente e la classifica si aggiorna da sola; si accende nel pannello con «Pollo Run — classifica con l'accesso Twitch», e i dati stanno in `classifica.json` dentro `SB_DATI` (da non cancellare: sono i record dei giocatori).
+
 ---
 
 ## 10. Cosa non si carica mai

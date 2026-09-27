@@ -257,7 +257,26 @@ const gruppi = [
       { chiave: 'config.slayer.attivo', etichetta: 'Sorpresa «slayer»: canzone e polletti', tipo: 'interruttore', predefinito: true,
         aiuto: 'Chi scrive «slayer» con la tastiera, in qualunque pagina del sito, fa partire per 21 secondi la pioggia di polletti con la canzone «J (mp3cut.net).mp3» della cartella mp3. Non parte scrivendo dentro una casella di testo e si ferma con Esc. Spenta, la sorpresa non esiste: lo script non viene nemmeno caricato. Vale dalla prossima Pubblica, ed è indipendente dal pollo qui sopra.' },
       { chiave: 'config.pollorun.attivo', etichetta: 'Pollo Run sul sito: scrivi «pollorun»', tipo: 'interruttore', predefinito: true,
-        aiuto: 'Chi scrive «pollorun» con la tastiera, in qualunque pagina del sito, apre a tutto schermo il gioco Pollo Run, lo stesso della pagina di manutenzione, anche a sito acceso. Il tasto Esc (o la x in alto) lo chiude. Non parte scrivendo dentro una casella di testo. Spento, il gioco non esiste: lo script non viene nemmeno caricato. Le frasi che compaiono a fine livello e le canzoni del gioco sono quelle del gruppo «Modalità manutenzione», le stesse della pagina di manutenzione. Vale dalla prossima Pubblica.' }
+        aiuto: 'Chi scrive «pollorun» con la tastiera, in qualunque pagina del sito, apre a tutto schermo il gioco Pollo Run, lo stesso della pagina di manutenzione, anche a sito acceso. Il tasto Esc (o la x in alto) lo chiude. Non parte scrivendo dentro una casella di testo. Spento, il gioco non esiste: lo script non viene nemmeno caricato. Le frasi che compaiono a fine livello e le canzoni del gioco sono quelle del gruppo «Modalità manutenzione», le stesse della pagina di manutenzione. Vale dalla prossima Pubblica.' },
+      { chiave: 'config.classifica.attiva', etichetta: 'Pollo Run — classifica con l\'accesso Twitch', tipo: 'interruttore', predefinito: false,
+        aiuto: 'Accesa, chi gioca a Pollo Run (sul sito scrivendo «pollorun» e nella pagina di manutenzione) ed è collegato con Twitch entra in classifica: conta il livello più alto completato, una classifica per ogni difficoltà, e a pari livello vince chi ci è arrivato prima. Un livello conta solo se è stato giocato davvero dall\'inizio alla fine. Spenta, il gioco resta com\'è e nessuno viene registrato. Vale dalla prossima Pubblica.' },
+      { chiave: 'config.classifica.titolo', etichetta: 'Pollo Run — titolo della classifica', tipo: 'testo', max: 60, predefinito: 'Classifica di Pollo Run',
+        aiuto: 'Compare in cima alla classifica, anche nell\'overlay per OBS.' },
+      { chiave: 'config.classifica.righe', etichetta: 'Pollo Run — quanti giocatori mostrare', tipo: 'numero', min: 3, max: 25, predefinito: 10,
+        aiuto: 'Quante righe ha la classifica, sul sito e nell\'overlay per OBS (nell\'indirizzo dell\'overlay si può cambiare con «righe=»).' },
+      { chiave: 'config.classifica.difficoltaObs', etichetta: 'Pollo Run — difficoltà mostrata nell\'overlay per OBS', tipo: 'scelta', predefinito: 'medio',
+        opzioni: [
+          { valore: 'facile', etichetta: 'Facile' },
+          { valore: 'medio', etichetta: 'Medio' },
+          { valore: 'difficile', etichetta: 'Difficile' },
+          { valore: 'estremo', etichetta: 'Estremo' },
+          { valore: 'tutte', etichetta: 'Tutte e quattro, affiancate' }
+        ],
+        aiuto: 'L\'overlay si aggiunge in OBS come «Browser» con l\'indirizzo del sito seguito da /api/classifica/obs. Questa è la difficoltà che mostra se nell\'indirizzo non c\'è «difficolta=».' },
+      { chiave: 'config.classifica.avatar', etichetta: 'Pollo Run — mostra le foto profilo di Twitch', tipo: 'interruttore', predefinito: true,
+        aiuto: 'Accesa, accanto a ogni nome c\'è la foto profilo di Twitch. Spenta, solo posizione, nome e livello.' },
+      { chiave: 'config.classifica.aggiornaSecondi', etichetta: 'Pollo Run — ogni quanti secondi si aggiorna l\'overlay', tipo: 'numero', min: 5, max: 60, predefinito: 15,
+        aiuto: 'L\'overlay per OBS richiede la classifica ogni tanti secondi e si ridisegna solo se è cambiata.' }
     ]
   },
 
