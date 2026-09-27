@@ -5126,24 +5126,98 @@ async function proveGiocoPollo(costruisci, archivio) {
     }
   });
 
-  const rendiFinta = (casuale) => {
-    const registro = { testi: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [], eventi: [], voci: [], ordine: [], contorni: 0 };
+  const DIFFICOLTA = ['facile', 'medio', 'difficile', 'estremo'];
+  const creatiPer = new Map();
+  const tempiPer = new Map();
+  const creaDi = (n, d) => {
+    const k = d + ':' + n;
+    if (!creatiPer.has(k)) {
+      const inizio = process.hrtime.bigint();
+      creatiPer.set(k, d === 'medio' ? creaLivello(n) : L.crea(n, d));
+      tempiPer.set(k, Number(process.hrtime.bigint() - inizio) / 1e6);
+    }
+    return creatiPer.get(k);
+  };
+  const ostacoliAlSecondo = (d, da, a) => {
+    let el = 0;
+    let secondi = 0;
+    for (let n = da; n <= a; n++) { const M = creaDi(n, d); el += M.el.length; secondi += M.lunghezza / M.v; }
+    return el / secondi;
+  };
+
+  await prova('difficolta: MEDIO e la partita di sempre, identica al livello senza difficolta; un nome sconosciuto vale MEDIO', () => {
+    esigiUguale(L.difficolta.join(','), DIFFICOLTA.join(','), 'elenco delle difficolta');
+    for (let n = 1; n <= 12; n++) {
+      esigiUguale(JSON.stringify(L.crea(n, 'medio').el), JSON.stringify(creaLivello(n).el), 'il livello ' + n + ' a MEDIO cambia');
+      esigiUguale(JSON.stringify(L.parametri(n, 'medio')), JSON.stringify(L.parametri(n)), 'i parametri del livello ' + n + ' a MEDIO cambiano');
+    }
+    esigiUguale(L.parametri(3).v, 9.6, 'la velocita del livello 3 di sempre');
+    esigiUguale(JSON.stringify(L.crea(4, 'boh').el), JSON.stringify(creaLivello(4).el), 'una difficolta sconosciuta non vale MEDIO');
+    esigiUguale(L.crea(4, 'boh').difficolta, 'medio', 'il livello non dice la sua difficolta');
+    esigiUguale(creaDi(4, 'estremo').difficolta, 'estremo', 'il livello estremo non dice la sua difficolta');
+  });
+
+  await prova('difficolta: per ciascuna delle 4 i livelli 1-12, 20 e 30 si generano in fretta e si finiscono (risolutore indipendente)', () => {
+    for (const d of DIFFICOLTA) {
+      for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 30]) {
+        const M = creaDi(n, d);
+        esigi(M.figure.length >= 10, d + ' livello ' + n + ': solo ' + M.figure.length + ' figure');
+        esigi(percorsoGiocatore(M, 0, 2, false), d + ': il livello ' + n + ' non e superabile');
+        if (n === 1 || n === 8 || n === 20) { esigi(percorsoGiocatore(M, M.mx, 1, false), d + ': il livello ' + n + ' non e superabile con il margine di sicurezza'); }
+        const primo = Math.min.apply(null, M.el.map((e) => e.x));
+        esigi(primo >= M.v * 1.6, d + ' livello ' + n + ': il primo ostacolo e troppo vicino alla partenza');
+        esigi(Math.max.apply(null, M.el.map((e) => e.x1)) <= M.lunghezza - M.v * 1.8, d + ' livello ' + n + ': ostacoli troppo vicini al traguardo');
+      }
+    }
+    const lenti = Array.from(tempiPer.entries()).filter((v) => v[1] > 4000);
+    esigiUguale(lenti.map((v) => v[0] + ' ' + Math.round(v[1]) + 'ms').join(', '), '', 'livelli troppo lenti da generare');
+  });
+
+  await prova('difficolta: da FACILE a ESTREMO il pollo corre piu veloce, gli ostacoli al secondo aumentano e le figure complesse arrivano prima', () => {
+    for (let n = 1; n <= 40; n++) {
+      const v = DIFFICOLTA.map((d) => L.parametri(n, d).v);
+      for (let i = 1; i < v.length; i++) { esigi(v[i] > v[i - 1], 'livello ' + n + ': la velocita non cresce da ' + DIFFICOLTA[i - 1] + ' a ' + DIFFICOLTA[i] + ' (' + v.join(', ') + ')'); }
+      const P = L.parametri(n, 'estremo');
+      esigi(P.mx <= P.v * P.tau * 0.3 + 1e-9, 'margine di sicurezza sbagliato a ESTREMO al livello ' + n);
+    }
+    for (const [da, a] of [[1, 3], [4, 8], [9, 12]]) {
+      const densita = DIFFICOLTA.map((d) => ostacoliAlSecondo(d, da, a));
+      for (let i = 1; i < densita.length; i++) {
+        esigi(densita[i] > densita[i - 1] * 1.03, 'livelli ' + da + '-' + a + ': gli ostacoli al secondo non crescono da ' + DIFFICOLTA[i - 1] + ' a ' + DIFFICOLTA[i] + ' (' + densita.map((x) => x.toFixed(2)).join(', ') + ')');
+      }
+    }
+    const semplici = ['punta', 'punte', 'blocco', 'piattaforma'];
+    esigi(creaDi(1, 'facile').figure.every((nome) => semplici.indexOf(nome) !== -1), 'FACILE livello 1 ha figure complesse');
+    esigi(creaDi(2, 'facile').figure.every((nome) => nomiFigura[nome] < 3), 'FACILE livello 2 ha figure da livello 3');
+    esigi(creaDi(4, 'facile').figure.every((nome) => nomiFigura[nome] < 4), 'FACILE livello 4 ha figure che a MEDIO arrivano dopo');
+    const estremo1 = new Set(creaDi(1, 'estremo').figure);
+    esigi(['catena', 'buca', 'scala', 'bucaPunta', 'romboPunta'].filter((nome) => estremo1.has(nome)).length >= 3, 'a ESTREMO le figure complesse non arrivano subito: ' + Array.from(estremo1).join(','));
+    const difficile1 = new Set(creaDi(1, 'difficile').figure);
+    esigi(difficile1.has('piattaformaPunte'), 'a DIFFICILE il livello 1 non anticipa nessuna figura: ' + Array.from(difficile1).join(','));
+  });
+
+  const rendiFinta = (casuale, forma) => {
+    const registro = { testi: [], scritte: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [], eventi: [], voci: [], ordine: [], contorni: 0 };
     let inAttesa = null;
     let ora = 1000;
+    const larghezzaDi = (t, testo) => {
+      const corpo = /(\d+)px/.exec(String(t.font || ''));
+      return String(testo).length * (forma && corpo ? Number(corpo[1]) * 0.6 : 8);
+    };
     const contesto = new Proxy({}, {
       get(t, nome) {
-        if (nome === 'fillText') { return (testo) => { registro.testi.push(String(testo)); }; }
+        if (nome === 'fillText') { return (testo, x, y) => { registro.testi.push(String(testo)); registro.scritte.push({ testo: String(testo), x: x, y: y, largo: larghezzaDi(t, testo) }); }; }
         if (nome === 'strokeText') { return () => { registro.contorni++; }; }
-        if (nome === 'measureText') { return (testo) => ({ width: String(testo).length * 8 }); }
+        if (nome === 'measureText') { return (testo) => ({ width: larghezzaDi(t, testo) }); }
         if (nome === 'createLinearGradient') { return () => ({ addColorStop: () => {} }); }
         if (nome in t) { return t[nome]; }
         return () => {};
       },
       set(t, nome, valore) { t[nome] = valore; return true; }
     });
-    const tela = { getContext: () => contesto, getBoundingClientRect: () => ({ width: 1200, height: 380 }), width: 0, height: 0 };
+    const tela = { getContext: () => contesto, getBoundingClientRect: () => ({ width: forma ? forma.largo : 1200, height: forma ? forma.alto : 380 }), width: 0, height: 0 };
     const finestra = {
-      matchMedia: () => ({ matches: false }),
+      matchMedia: (domanda) => ({ matches: !!(forma && forma.tocco && domanda.indexOf('coarse') !== -1) }),
       devicePixelRatio: 1,
       addEventListener: (tipo, fn) => { registro.ascoltatori['w:' + tipo] = fn; },
       removeEventListener: (tipo) => { delete registro.ascoltatori['w:' + tipo]; }
@@ -5193,9 +5267,14 @@ async function proveGiocoPollo(costruisci, archivio) {
       if (!fn) { return; }
       fn(Object.assign({ key: key, code: code || key, altKey: false, ctrlKey: false, metaKey: false, repeat: false, target: { closest: () => null }, preventDefault: () => {} }, extra || {}));
     };
-    const testiUltimo = (dtMs) => { registro.testi = []; frame(dtMs === undefined ? 1000 / 60 : dtMs); return registro.testi.join('|'); };
+    const testiUltimo = (dtMs) => { registro.testi = []; registro.scritte = []; frame(dtMs === undefined ? 1000 / 60 : dtMs); return registro.testi.join('|'); };
+    const tocca = (x, y, extra) => {
+      const fn = registro.ascoltatori.pointerdown;
+      if (!fn) { return; }
+      fn(Object.assign({ button: 0, clientX: x, clientY: y, target: tela, preventDefault: () => {} }, extra || {}));
+    };
     const attendi = (secondi) => { for (let t = 0; t < secondi; t += 1 / 60) { frame(1000 / 60); } };
-    return { registro: registro, crea: crea, frame: frame, tasto: tasto, testiUltimo: testiUltimo, attendi: attendi, finestra: finestra, frasi: frasi, canzoni: canzoni, ora: () => ora };
+    return { registro: registro, crea: crea, frame: frame, tasto: tasto, tocca: tocca, testiUltimo: testiUltimo, attendi: attendi, finestra: finestra, frasi: frasi, canzoni: canzoni, ora: () => ora };
   };
 
   const giocaSchedule = (h, secondi, dtMs, limiteSec) => {
@@ -5426,6 +5505,153 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiDentro(riprende.testiUltimo(), 'INVIO: riprendi dal livello 5', 'manca l invito a riprendere');
     riprende.tasto('Enter', 'Enter');
     esigiDentro(riprende.testiUltimo(), 'LIVELLO 5', 'INVIO non riprende dal livello 5');
+  });
+
+  await prova('gioco: nella schermata iniziale frecce e numeri scelgono la difficolta, che si ricorda; in partita non cambia', () => {
+    const h = rendiFinta();
+    h.crea().avvia();
+    const inizio = h.testiUltimo();
+    for (const nome of ['FACILE', 'MEDIO', 'DIFFICILE', 'ESTREMO']) { esigiDentro(inizio, nome, 'manca ' + nome + ' nella schermata iniziale'); }
+    esigiUguale(h.registro.memoria['sb-pollo-difficolta'], undefined, 'la difficolta di partenza non va salvata');
+    h.tasto('ArrowRight', 'ArrowRight');
+    esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'difficile', 'freccia destra da MEDIO');
+    h.tasto('ArrowRight', 'ArrowRight');
+    h.tasto('ArrowRight', 'ArrowRight');
+    esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'estremo', 'freccia destra oltre ESTREMO');
+    h.tasto('1', 'Digit1');
+    esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'facile', 'il tasto 1');
+    h.tasto('ArrowLeft', 'ArrowLeft');
+    esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'facile', 'freccia sinistra oltre FACILE');
+    h.tasto('3', 'Digit3');
+    esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'difficile', 'il tasto 3');
+    h.tasto('4', 'Digit4', { target: { closest: () => ({}) } });
+    esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'difficile', 'il tasto 4 scritto in un campo cambia la difficolta');
+    h.tasto('4', 'Digit4');
+    h.tasto('2', 'Digit2');
+    h.tasto('1', 'Digit1');
+    esigiUguale(h.registro.suPartita.length, 0, 'scegliere la difficolta fa partire il gioco');
+
+    const riletta = rendiFinta();
+    riletta.registro.memoria['sb-pollo-difficolta'] = 'facile';
+    riletta.crea().avvia();
+    riletta.tasto(' ', 'Space');
+    riletta.testiUltimo();
+    riletta.tasto('4', 'Digit4');
+    riletta.tasto('ArrowRight', 'ArrowRight');
+    esigiUguale(riletta.registro.memoria['sb-pollo-difficolta'], 'facile', 'in partita la difficolta cambia');
+    const inPartita = riletta.testiUltimo();
+    esigiDentro(inPartita, 'LIVELLO 1', 'in partita manca il livello');
+    esigiDentro(inPartita, 'FACILE', 'in partita non si vede la difficolta');
+    const M = creaDi(1, 'facile');
+    const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
+    esigi(p, 'nessun percorso per il livello 1 FACILE');
+    esigiUguale(giocaSchedule(riletta, p.secondi, 1000 / 60, 200).esito, 'vinto', 'il livello 1 FACILE non si finisce: il gioco non usa il livello della difficolta scelta');
+    riletta.attendi(1);
+    esigiDentro(riletta.testiUltimo(), 'FACILE   TENTATIVI 1', 'la schermata di fine livello non dice la difficolta');
+    esigiUguale(riletta.registro.memoria['sb-pollo-livello-facile'], '2', 'il livello raggiunto a FACILE non e salvato a parte');
+    esigiUguale(riletta.registro.memoria['sb-pollo-livello'], undefined, 'il livello raggiunto a FACILE finisce in quello di MEDIO');
+
+  });
+
+  await prova('gioco: il livello raggiunto e separato per difficolta, e INVIO riprende da quello della difficolta scelta', () => {
+    for (const stile of ['synthwave', 'geometrydash']) {
+      const h = rendiFinta();
+      h.registro.memoria['sb-pollo-livello'] = '5';
+      h.registro.memoria['sb-pollo-livello-facile'] = '3';
+      h.crea({ stile: stile }).avvia();
+      const medio = h.testiUltimo();
+      esigiDentro(medio, 'INVIO: riprendi dal livello 5', stile + ': MEDIO non usa la chiave di sempre');
+      h.tasto('1', 'Digit1');
+      const facile = h.testiUltimo();
+      esigiDentro(facile, 'INVIO: riprendi dal livello 3', stile + ': FACILE non ha il suo livello');
+      esigiDentro(facile, 'MIGLIORE LIVELLO 3', stile + ': il record di FACILE non si vede');
+      h.tasto('4', 'Digit4');
+      const estremo = h.testiUltimo();
+      esigi(estremo.indexOf('INVIO: riprendi') === -1, stile + ': ESTREMO eredita un livello non suo');
+      h.tasto('1', 'Digit1');
+      h.testiUltimo();
+      h.tasto('Enter', 'Enter');
+      const partito = h.testiUltimo();
+      esigiDentro(partito, 'LIVELLO 3', stile + ': INVIO non riprende dal livello 3 di FACILE');
+      esigiDentro(partito, 'FACILE', stile + ': in partita non si vede FACILE');
+      h.tasto('Escape', 'Escape');
+      h.testiUltimo();
+      h.tasto('2', 'Digit2');
+      h.testiUltimo();
+      h.tasto('Enter', 'Enter');
+      esigiDentro(h.testiUltimo(), 'LIVELLO 5', stile + ': tornando a MEDIO INVIO non riprende dal 5');
+      esigiUguale(h.registro.memoria['sb-pollo-livello-facile'], '3', stile + ': il livello di FACILE e cambiato');
+      esigiUguale(h.registro.memoria['sb-pollo-livello'], '5', stile + ': il livello di MEDIO e cambiato');
+    }
+  });
+
+  await prova('gioco: un clic o un tocco sulla parola sceglie la difficolta, fuori dalle parole no, e in partita il clic torna a far saltare', () => {
+    for (const stile of ['synthwave', 'geometrydash']) {
+      const h = rendiFinta();
+      h.crea({ stile: stile }).avvia();
+      h.testiUltimo();
+      const dove = (nome) => h.registro.scritte.filter((x) => x.testo === nome).pop();
+      const estremo = dove('ESTREMO');
+      esigi(estremo, stile + ': la parola ESTREMO non e disegnata');
+      h.tocca(estremo.x + 20, estremo.y - 6);
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'estremo', stile + ': il clic su ESTREMO non lo sceglie');
+      h.testiUltimo();
+      const facile = dove('FACILE');
+      h.tocca(facile.x + 4, facile.y + 4);
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'facile', stile + ': il clic su FACILE non lo sceglie');
+      h.testiUltimo();
+      h.tocca(facile.x + 4, facile.y - 200);
+      h.tocca(1190, 370);
+      h.tocca(facile.x + 4, facile.y + 4, { button: 2 });
+      h.tocca(dove('DIFFICILE').x + 4, dove('DIFFICILE').y - 4, { target: { closest: () => ({}) } });
+      h.tocca(dove('DIFFICILE').x + 4, dove('DIFFICILE').y - 4, { target: { closest: () => null } });
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'facile', stile + ': un clic fuori dalle parole, o su qualcosa sopra il canvas, cambia la difficolta');
+      esigiUguale(h.registro.suPartita.length, 0, stile + ': il clic sulla parola fa partire il gioco');
+      h.tocca(dove('DIFFICILE').x + 4, dove('DIFFICILE').y - 4, { target: { closest: () => null, getBoundingClientRect: () => ({ width: 1200, height: 380 }) } });
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'difficile', stile + ': un clic sulla parola attraverso un contenitore trasparente a tutto schermo (la pagina di manutenzione) non la sceglie');
+      h.testiUltimo();
+      h.tasto('1', 'Digit1');
+      h.testiUltimo();
+      h.tasto(' ', 'Space');
+      h.testiUltimo();
+      h.tocca(estremo.x + 20, estremo.y - 6);
+      h.testiUltimo();
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'facile', stile + ': in partita il clic sulla parola cambia la difficolta');
+    }
+  });
+
+  await prova('gioco: su un telefono stretto la schermata iniziale, selettore compreso, sta tutta dentro lo schermo', () => {
+    for (const stile of ['synthwave', 'geometrydash']) {
+      for (const [largo, alto] of [[390, 780], [320, 560], [1280, 800]]) {
+        const h = rendiFinta(undefined, { largo: largo, alto: alto, tocco: largo < 600 });
+        h.registro.memoria['sb-pollo-livello'] = '27';
+        h.crea({ stile: stile }).avvia();
+        const testi = h.testiUltimo();
+        esigiDentro(testi, largo < 600 ? 'Dal computer: SPAZIO per correre' : 'SPAZIO per correre', stile + ' ' + largo + ': manca l invito');
+        esigiDentro(testi, 'ESTREMO', stile + ' ' + largo + ': manca il selettore');
+        for (const scritta of h.registro.scritte) {
+          if (scritta.testo === 'MIGLIORE LIVELLO 27') { continue; }
+          esigi(scritta.x >= 0 && scritta.x + scritta.largo <= largo + 0.5, stile + ' ' + largo + ': «' + scritta.testo + '» esce dallo schermo (' + Math.round(scritta.x) + ' + ' + Math.round(scritta.largo) + ' > ' + largo + ')');
+        }
+      }
+    }
+  });
+
+  await prova('gioco: il selettore si stringe per non finire sotto i bottoni dell audio della pagina di manutenzione', () => {
+    for (const stile of ['synthwave', 'geometrydash']) {
+      const h = rendiFinta(undefined, { largo: 390, alto: 780, tocco: true });
+      h.crea({ stile: stile, ingombro: { getBoundingClientRect: () => ({ left: 290, width: 100, top: 700, bottom: 770 }) } }).avvia();
+      h.testiUltimo();
+      for (const nome of ['FACILE', 'MEDIO', 'DIFFICILE', 'ESTREMO']) {
+        const v = h.registro.scritte.filter((x) => x.testo === nome).pop();
+        esigi(v && v.x + v.largo <= 290, stile + ': ' + nome + ' finisce sotto i bottoni dell audio');
+      }
+      const libero = rendiFinta(undefined, { largo: 390, alto: 780, tocco: true });
+      libero.crea({ stile: stile, ingombro: { hidden: true, getBoundingClientRect: () => ({ left: 290, width: 100, top: 700, bottom: 770 }) } }).avvia();
+      libero.testiUltimo();
+      const estremo = libero.registro.scritte.filter((x) => x.testo === 'ESTREMO').pop();
+      esigi(estremo.x + estremo.largo > 290, stile + ': un ingombro nascosto stringe lo stesso il selettore');
+    }
   });
 
   await prova('gioco: fermarlo toglie tutti gli ascoltatori, e avviarlo due volte non li raddoppia', () => {
