@@ -27,10 +27,8 @@
       if (!fuori && !schede[i].closest('[data-sponsor-fila-copia]')) { rimaste++; }
     }
 
-    var gruppi = document.querySelectorAll('[data-sponsor-gruppo]');
-    for (var g = 0; g < gruppi.length; g++) {
-      gruppi[g].hidden = gruppi[g].querySelectorAll('[data-sponsor-scheda]:not([hidden])').length === 0;
-    }
+    var griglia = document.querySelector('[data-sponsor-griglia]');
+    if (griglia) { griglia.hidden = rimaste === 0; }
 
     var vuoto = document.querySelector('[data-sponsor-vuoto]');
     if (vuoto) { vuoto.hidden = rimaste > 0; }
@@ -50,9 +48,56 @@
     nastro.classList.toggle('is-ferma', ferma);
   }
 
+  function copiaVecchia(testo) {
+    var area = document.createElement('textarea');
+    area.value = testo;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    var fatto = false;
+    try { fatto = document.execCommand('copy'); } catch (e) { fatto = false; }
+    document.body.removeChild(area);
+    return fatto;
+  }
+
+  function copia(testo) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(testo).then(function () { return true; }, function () { return copiaVecchia(testo); });
+    }
+    return Promise.resolve(copiaVecchia(testo));
+  }
+
+  function preparaCopia() {
+    var bottoni = document.querySelectorAll('[data-sponsor-copia]');
+    if (!bottoni.length) { return; }
+    if (!(navigator.clipboard && window.isSecureContext) && !document.queryCommandSupported) { return; }
+
+    Array.prototype.forEach.call(bottoni, function (bottone) {
+      var scritta = bottone.textContent;
+      var timer = 0;
+      bottone.hidden = false;
+      bottone.setAttribute('aria-live', 'polite');
+      bottone.addEventListener('click', function () {
+        copia(bottone.getAttribute('data-sponsor-copia') || '').then(function (fatto) {
+          if (!fatto) { return; }
+          clearTimeout(timer);
+          bottone.textContent = bottone.getAttribute('data-copiato') || scritta;
+          bottone.classList.add('is-copiato');
+          timer = setTimeout(function () {
+            bottone.textContent = scritta;
+            bottone.classList.remove('is-copiato');
+          }, 2000);
+        });
+      });
+    });
+  }
+
   function avvia() {
     ripulisci();
     misuraNastro();
+    preparaCopia();
 
     window.addEventListener('resize', misuraNastro);
 

@@ -251,7 +251,9 @@ async function rottaAnteprimaDiProva(req, res) {
   const unito = costruisci.pulisciEditor(archivio.unisci(archivio.leggi(), arrivo));
   let html;
   try {
-    html = corpo.editor === true ? costruisci.anteprimaEditor(unito) : costruisci.anteprimaDi(unito);
+    const pagina = corpo.pagina === 'sponsor' ? 'sponsor' : '';
+    if (corpo.editor === true) { html = costruisci.anteprimaEditor(unito, pagina); }
+    else { html = pagina ? costruisci.anteprimaSponsor(unito) : costruisci.anteprimaDi(unito); }
   } catch (err) {
 
     const detto = (err && err.message) || 'errore sconosciuto';

@@ -16,6 +16,7 @@ function diEditor(chiave) {
 
 const ICONE_SOCIAL = ['twitch', 'youtube', 'instagram', 'tiktok', 'discord', 'telegram', 'amazon-wishlist', 'amazon'];
 const ICONE_SUPPORTO = ['star', 'crown', 'gem', 'heart', 'coffee', 'mail', 'amazon-wishlist'];
+const ICONE_FORMATI = ['microfono', 'controller', 'etichetta', 'schermo', 'regalo', 'chat', 'star', 'heart', 'gem', 'mail'];
 
 const GIF_RAFFICA = [
   { immagine: 'img/pollo-gif/raffica-ufficio.gif', scritta: 'VUOI ROMPERE IL MOUSE?' },
@@ -630,41 +631,126 @@ const gruppi = [
 
   {
     id: 'sponsor',
-    titolo: 'Gli sponsor',
-    descrizione: 'Chi sostiene il canale: una striscia in fondo alla home, sotto «Dove mi trovi», e la pagina «sponsor.html» con tutti quanti, raggruppati per categoria. Una collaborazione finita sparisce dal sito da sola quando arriva la data che le hai messo, e resta qui pronta a tornare.',
+    titolo: 'Sponsor e collaborazioni',
+    descrizione: 'La pagina «sponsor.html», pensata per i marchi che valutano una collaborazione: i numeri veri del canale, i formati possibili, chi collabora già (con logo, descrizione, link e codice sconto) e come scriverti. In home, sotto «Dove mi trovi», una striscia con i loghi. Una collaborazione finita sparisce dal sito da sola quando arriva la data che le hai messo, e resta qui pronta a tornare.',
     campi: [
-      { chiave: 'config.sponsor.attivo', etichetta: 'Mostra gli sponsor', tipo: 'interruttore', predefinito: false,
-        aiuto: 'Spento, la striscia non compare e la pagina «sponsor.html» viene tolta dal sito. Acceso, compaiono tutte e due — ma solo se c\'è almeno uno sponsor con il link scritto e dentro il suo periodo.' },
-      { chiave: 'sponsor.occhiello', etichetta: 'Occhiello', tipo: 'testo', max: 40, predefinito: 'Chi sostiene il canale' },
-      { chiave: 'sponsor.titolo', etichetta: 'Titolo della striscia', tipo: 'testo', max: 60, predefinito: 'Sponsor e partner' },
-      { chiave: 'sponsor.testo', etichetta: 'Riga di presentazione', tipo: 'ricco', max: 220, facoltativo: true,
+      { chiave: 'config.sponsor.attivo', etichetta: 'Pubblica la pagina degli sponsor', tipo: 'interruttore', predefinito: false,
+        aiuto: 'Acceso, «sponsor.html» va online a ogni Pubblica, anche quando non hai ancora nessuno sponsor: presenta il canale ai marchi. La striscia in home compare solo se c\'è almeno uno sponsor con il link scritto e dentro il suo periodo. Spento, la pagina viene tolta dal sito e la striscia sparisce.' },
+
+      { chiave: 'sponsor.occhiello', etichetta: 'Home — occhiello', tipo: 'testo', max: 40, predefinito: 'Chi sostiene il canale' },
+      { chiave: 'sponsor.titolo', etichetta: 'Home — titolo della striscia', tipo: 'testo', max: 60, predefinito: 'Sponsor e partner' },
+      { chiave: 'sponsor.testo', etichetta: 'Home — riga di presentazione', tipo: 'ricco', max: 220, facoltativo: true,
         predefinito: 'Chi mi dà una mano a portare avanti le dirette. Ogni logo porta al loro sito.',
         aiuto: 'Una riga sotto al titolo, in home. Può restare vuota.' },
       { chiave: 'sponsor.vaiBtn', etichetta: 'Home — scritta del bottone', tipo: 'testo', max: 30, predefinito: 'Tutti gli sponsor',
-        aiuto: 'Il bottone in fondo alla striscia, che porta alla pagina con tutti.' },
+        aiuto: 'Il bottone in fondo alla striscia, che porta alla pagina degli sponsor.' },
+      { chiave: 'config.sponsor.invitoHome', etichetta: 'Home — invito anche senza sponsor', tipo: 'interruttore', predefinito: false,
+        aiuto: 'Acceso, quando non c\'è nessuno sponsor attivo la home mostra al posto della striscia un invito con un bottone verso la pagina. Spento, senza sponsor in home non compare niente.' },
+      { chiave: 'sponsor.invitoTitolo', etichetta: 'Home — titolo dell\'invito', tipo: 'testo', max: 60, predefinito: 'Collabora con il canale',
+        aiuto: 'Si vede solo con l\'invito acceso e nessuno sponsor attivo.' },
+      { chiave: 'sponsor.invitoTesto', etichetta: 'Home — riga dell\'invito', tipo: 'ricco', max: 220, facoltativo: true,
+        predefinito: 'Hai un marchio che parla a chi gioca? Nella pagina dedicata trovi i numeri del canale e i modi per collaborare.' },
+      { chiave: 'sponsor.invitoBtn', etichetta: 'Home — bottone dell\'invito', tipo: 'testo', max: 30, predefinito: 'Scopri come collaborare' },
+
+      { chiave: 'sponsor.paginaTorna', etichetta: 'Pagina — link per tornare al sito', tipo: 'testo', max: 30, predefinito: 'Torna al sito',
+        aiuto: 'La pagina degli sponsor non ha il menu del sito: questo è il modo di tornare indietro, in alto a sinistra.' },
+      { chiave: 'sponsor.paginaOcchiello', etichetta: 'Pagina — occhiello', tipo: 'testo', max: 40, predefinito: 'Collaborazioni',
+        aiuto: 'La parola piccola sopra il titolo della pagina.' },
+      { chiave: 'sponsor.paginaTitolo', etichetta: 'Pagina — titolo', tipo: 'testo', max: 60, predefinito: 'Porta il tuo marchio in diretta',
+        aiuto: 'Il titolo grande della pagina «sponsor.html», e anche quello che si legge nella scheda del browser.' },
+      { chiave: 'sponsor.paginaTesto', etichetta: 'Pagina — presentazione', tipo: 'ricco', max: 320,
+        predefinito: 'Un canale Twitch italiano di gaming, con dirette fisse ogni settimana e una chat che partecipa davvero. Qui trovi i numeri del canale, i modi in cui possiamo collaborare e chi lo fa già.',
+        aiuto: 'Le righe sotto al titolo. È anche la descrizione che finisce su Google, ripulita dal grassetto.' },
+      { chiave: 'config.sponsor.copertina', etichetta: 'Pagina — immagine di apertura', tipo: 'immagine', facoltativo: true, predefinito: '',
+        aiuto: 'La foto grande accanto al titolo: meglio orizzontale, almeno 1200 pixel di larghezza. Vuota: usa il banner della copertina del sito.' },
+      { chiave: 'sponsor.ctaContatto', etichetta: 'Pagina — bottone verso i contatti', tipo: 'testo', max: 36, predefinito: 'Proponi una collaborazione',
+        aiuto: 'Il bottone principale in apertura: porta giù, ai contatti.' },
+      { chiave: 'sponsor.ctaCanale', etichetta: 'Pagina — bottone verso il canale', tipo: 'testo', max: 30, predefinito: 'Guarda il canale',
+        aiuto: 'Il secondo bottone in apertura: apre il canale Twitch in una scheda nuova.' },
+
+      { chiave: 'config.sponsor.mostraNumeri', etichetta: 'Pagina — mostra i numeri del canale', tipo: 'interruttore', predefinito: true },
+      { chiave: 'sponsor.numeriOcchiello', etichetta: 'Numeri — occhiello', tipo: 'testo', max: 40, predefinito: 'Il canale' },
+      { chiave: 'sponsor.numeriTitolo', etichetta: 'Numeri — titolo', tipo: 'testo', max: 60, predefinito: 'I numeri del canale' },
+      { chiave: 'sponsor.numeriTesto', etichetta: 'Numeri — presentazione', tipo: 'ricco', max: 240, facoltativo: true,
+        predefinito: 'Dati presi dal canale, non stime: chi guarda è una community piccola ma presente, che torna diretta dopo diretta.' },
+      { chiave: 'config.sponsor.numeri', etichetta: 'I numeri da mostrare', tipo: 'elenco', etichettaVoce: 'etichetta',
+        predefinito: [
+          { dato: 'follower', etichetta: 'Follower su Twitch', valore: '' },
+          { dato: 'spettatori', etichetta: 'Spettatori medi', valore: '' },
+          { dato: 'settimana', etichetta: 'Dirette a settimana', valore: '' },
+          { dato: 'ore', etichetta: 'Ore di diretta', valore: '' },
+          { dato: 'giochi', etichetta: 'Giochi portati in live', valore: '' },
+          { dato: 'dal', etichetta: 'Su Twitch dal', valore: '' }
+        ],
+        aiuto: 'I valori li prende il sito da solo: i follower da Twitch, spettatori medi e anno dal gruppo «Il canale», le dirette a settimana dalla schedule, ore e giochi dallo storico delle live. Un numero che il sito non conosce (o che vale zero) non compare: niente cifre inventate.',
+        campi: [
+          { chiave: 'dato', etichetta: 'Numero', tipo: 'scelta', predefinito: 'follower',
+            opzioni: [
+              { valore: 'follower', etichetta: 'Follower di Twitch (automatico)' },
+              { valore: 'spettatori', etichetta: 'Spettatori medi (dal gruppo «Il canale»)' },
+              { valore: 'abbonati', etichetta: 'Abbonati (dal gruppo «Il canale»)' },
+              { valore: 'settimana', etichetta: 'Dirette a settimana (dalla schedule)' },
+              { valore: 'ore', etichetta: 'Ore di diretta (dallo storico delle live)' },
+              { valore: 'giochi', etichetta: 'Giochi portati in live (dallo storico)' },
+              { valore: 'clip', etichetta: 'Clip create dalla chat (dallo storico)' },
+              { valore: 'dal', etichetta: 'Anno di arrivo su Twitch (dal gruppo «Il canale»)' },
+              { valore: 'lingua', etichetta: 'Lingue delle dirette (dal gruppo «Il canale»)' },
+              { valore: 'mano', etichetta: 'Scritto a mano' }
+            ] },
+          { chiave: 'etichetta', etichetta: 'Cosa c\'è scritto sotto', tipo: 'testo', max: 40, predefinito: 'Follower su Twitch' },
+          { chiave: 'valore', etichetta: 'Valore scritto a mano', tipo: 'testo', max: 16, facoltativo: true, predefinito: '',
+            aiuto: 'Serve solo con «Scritto a mano»: per esempio «18-34» o «70%». Scrivi solo cose vere e verificabili.' }
+        ] },
+      { chiave: 'sponsor.numeriNota', etichetta: 'Numeri — nota sotto le cifre', tipo: 'ricco', max: 200, facoltativo: true,
+        predefinito: 'I follower arrivano direttamente da Twitch; ore e giochi dallo storico delle dirette.' },
+      { chiave: 'sponsor.numeriData', etichetta: 'Numeri — parola prima della data', tipo: 'testo', max: 30, predefinito: 'Aggiornati al',
+        aiuto: 'Accanto alla nota: «Aggiornati al 27 settembre 2026». La data è quella dell\'ultima pubblicazione.' },
+
+      { chiave: 'config.sponsor.mostraFormati', etichetta: 'Pagina — mostra i formati di collaborazione', tipo: 'interruttore', predefinito: true },
+      { chiave: 'sponsor.formatiOcchiello', etichetta: 'Formati — occhiello', tipo: 'testo', max: 40, predefinito: 'Collaborare' },
+      { chiave: 'sponsor.formatiTitolo', etichetta: 'Formati — titolo', tipo: 'testo', max: 60, predefinito: 'Come possiamo lavorare insieme' },
+      { chiave: 'sponsor.formatiTesto', etichetta: 'Formati — presentazione', tipo: 'ricco', max: 240, facoltativo: true,
+        predefinito: 'Ogni collaborazione si costruisce insieme: questi sono i formati più richiesti, da combinare come serve al tuo marchio.' },
+      { chiave: 'config.sponsor.formati', etichetta: 'I formati', tipo: 'elenco', etichettaVoce: 'titolo',
+        predefinito: [
+          { titolo: 'Menzione in diretta', testo: 'Il tuo marchio presentato a voce durante le live, con il link fisso in chat e nel pannello del canale.', icona: 'microfono' },
+          { titolo: 'Prodotto in prova', testo: 'Periferiche, giochi o accessori usati davvero in diretta, con un parere sincero davanti alla chat.', icona: 'controller' },
+          { titolo: 'Codice sconto dedicato', testo: 'Un codice riservato alla community: fa risparmiare chi guarda e ti dice con precisione quanto rende la collaborazione.', icona: 'etichetta' },
+          { titolo: 'Logo sul canale e sul sito', testo: 'Il logo nel pannello di Twitch, nella striscia della home e in questa pagina, con il link al tuo sito.', icona: 'schermo' }
+        ],
+        aiuto: 'Le schede della sezione «Come possiamo lavorare insieme», nell\'ordine in cui stanno qui.',
+        campi: [
+          { chiave: 'titolo', etichetta: 'Titolo', tipo: 'testo', max: 50, predefinito: 'Nuovo formato' },
+          { chiave: 'testo', etichetta: 'Spiegazione', tipo: 'ricco', max: 240, facoltativo: true, predefinito: '' },
+          { chiave: 'icona', etichetta: 'Icona', tipo: 'scelta', opzioni: ICONE_FORMATI, predefinito: 'star' }
+        ] },
+
+      { chiave: 'config.sponsor.mostraPartner', etichetta: 'Pagina — mostra gli sponsor attuali', tipo: 'interruttore', predefinito: true,
+        aiuto: 'Spento, la pagina presenta solo il canale e i contatti: utile se preferisci non mostrare chi collabora già.' },
+      { chiave: 'sponsor.partnerOcchiello', etichetta: 'Sponsor attuali — occhiello', tipo: 'testo', max: 40, predefinito: 'Chi c\'è già' },
+      { chiave: 'sponsor.partnerTitolo', etichetta: 'Sponsor attuali — titolo', tipo: 'testo', max: 60, predefinito: 'Sponsor e partner' },
+      { chiave: 'sponsor.partnerTesto', etichetta: 'Sponsor attuali — presentazione', tipo: 'ricco', max: 240, facoltativo: true,
+        predefinito: 'I marchi che sostengono il canale oggi. Ogni scheda porta al loro sito; dove c\'è un codice, è riservato a chi segue le dirette.' },
+      { chiave: 'sponsor.partnerVuotoTitolo', etichetta: 'Sponsor attuali — titolo quando non c\'è nessuno', tipo: 'testo', max: 60, predefinito: 'Il primo posto è libero' },
+      { chiave: 'sponsor.partnerVuotoTesto', etichetta: 'Sponsor attuali — riga quando non c\'è nessuno', tipo: 'ricco', max: 220, facoltativo: true,
+        predefinito: 'In questo momento nessun marchio affianca il canale: il primo può essere il tuo.' },
+      { chiave: 'sponsor.paginaVuota', etichetta: 'Sponsor attuali — quando scadono tutti con la pagina online', tipo: 'testo', max: 120,
+        predefinito: 'Nessuno sponsor attivo in questo momento.',
+        aiuto: 'Si vede solo se l\'ultima collaborazione scade mentre la pagina è già online: lo dice, invece di lasciare un buco.' },
       { chiave: 'sponsor.visita', etichetta: 'Cosa fa il link, per chi non lo vede', tipo: 'testo', max: 40, predefinito: 'Vai al sito di',
         aiuto: 'Lo leggono i lettori di schermo, seguito dal nome dello sponsor: scrivi l\'azione, non «clicca qui».' },
+      { chiave: 'sponsor.vaiScheda', etichetta: 'Scritta del bottone sulla scheda', tipo: 'testo', max: 24, predefinito: 'Vai al sito',
+        aiuto: 'Il bottone in fondo a ogni scheda. Accanto, più piccolo, compare l\'indirizzo vero.' },
       { chiave: 'sponsor.evidenzaTag', etichetta: 'Etichetta di chi è in evidenza', tipo: 'testo', max: 20, predefinito: 'In evidenza',
-        aiuto: 'La scritta sulla scheda di chi è segnato «in evidenza». Vale in home e nella pagina.' },
-
+        aiuto: 'La scritta sulla scheda di chi è segnato «in evidenza».' },
       { chiave: 'sponsor.nuovoTag', etichetta: 'Etichetta di chi è appena arrivato', tipo: 'testo', max: 20, predefinito: 'Nuovo partner',
         aiuto: 'Compare da sola sulla scheda di chi ha la data di inizio negli ultimi trenta giorni, e sparisce da sola quando i trenta giorni passano.' },
       { chiave: 'sponsor.dalEtichetta', etichetta: 'Parola prima dell\'anno di inizio', tipo: 'testo', max: 20, predefinito: 'Partner dal',
         aiuto: 'Sulla scheda, sotto il nome: «Partner dal 2026». Si vede solo per chi ha la data di inizio scritta.' },
-      { chiave: 'sponsor.vaiScheda', etichetta: 'Scritta del bottone sulla scheda', tipo: 'testo', max: 24, predefinito: 'Vai al sito',
-        aiuto: 'Il bottone in fondo a ogni scheda. Sotto, più piccolo, compare l\'indirizzo vero.' },
-      { chiave: 'sponsor.paginaTitolo', etichetta: 'Pagina — titolo', tipo: 'testo', max: 60, predefinito: 'Gli sponsor',
-        aiuto: 'Il titolo della pagina «sponsor.html», e anche quello che si legge nella scheda del browser.' },
-      { chiave: 'sponsor.paginaTesto', etichetta: 'Pagina — riga di presentazione', tipo: 'ricco', max: 220,
-        predefinito: 'Le realtà che sostengono il canale, divise per categoria. Ogni scheda porta al loro sito.',
-        aiuto: 'Una riga sotto al titolo della pagina. È anche la descrizione che finisce su Google, ripulita dal grassetto.' },
-      { chiave: 'sponsor.paginaTorna', etichetta: 'Pagina — link per tornare al sito', tipo: 'testo', max: 30, predefinito: 'Torna al sito',
-        aiuto: 'La pagina degli sponsor non ha il menu del sito: questo è il modo di tornare indietro, in alto a sinistra.' },
-      { chiave: 'sponsor.altri', etichetta: 'Pagina — titolo per chi non ha categoria', tipo: 'testo', max: 30, predefinito: 'Altri',
-        aiuto: 'Gli sponsor a cui non hai scritto nessuna categoria finiscono insieme in fondo, sotto questo titolo.' },
-      { chiave: 'sponsor.paginaVuota', etichetta: 'Pagina — quando non resta nessuno', tipo: 'testo', max: 120,
-        predefinito: 'Nessuno sponsor attivo in questo momento.',
-        aiuto: 'Si vede solo se una collaborazione scade mentre la pagina è già online: lo dice, invece di restare bianca.' },
+      { chiave: 'sponsor.codiceEtichetta', etichetta: 'Parola sopra il codice sconto', tipo: 'testo', max: 30, predefinito: 'Codice sconto' },
+      { chiave: 'sponsor.copia', etichetta: 'Bottone che copia', tipo: 'testo', max: 20, predefinito: 'Copia',
+        aiuto: 'Accanto al codice sconto e all\'indirizzo email: lo copia con un tocco.' },
+      { chiave: 'sponsor.copiato', etichetta: 'Conferma della copia', tipo: 'testo', max: 20, predefinito: 'Copiato' },
 
       { chiave: 'config.sponsor.voci', etichetta: 'Gli sponsor', tipo: 'elenco', etichettaVoce: 'nome', predefinito: [],
         aiuto: 'Compaiono nell\'ordine in cui stanno qui, con quelli «in evidenza» davanti agli altri. Uno sponsor senza link non si vede sul sito.',
@@ -673,22 +759,41 @@ const gruppi = [
             aiuto: 'Non si vede sul sito: serve a distinguere le voci fra loro, e deve essere diverso da quello delle altre.' },
           { chiave: 'nome', etichetta: 'Nome', tipo: 'testo', max: 40, predefinito: 'Nuovo sponsor' },
           { chiave: 'logo', etichetta: 'Logo', tipo: 'immagine', facoltativo: true, predefinito: '',
-            aiuto: 'Meglio un PNG o un WebP con lo sfondo trasparente: il sito è scuro. Senza logo si vede il nome scritto, e la scheda funziona uguale.' },
+            aiuto: 'Caricalo dalla libreria delle immagini. Meglio un PNG, un WebP o un SVG con lo sfondo trasparente: sulla scheda sta su un fondo chiaro. Senza logo si vede il nome scritto.' },
           { chiave: 'testo', etichetta: 'Chi sono, in breve', tipo: 'ricco', max: 320, facoltativo: true, predefinito: '',
             aiuto: 'Si legge nella pagina «sponsor.html». In home la striscia mostra solo il logo e il nome.' },
           { chiave: 'categoria', etichetta: 'Categoria', tipo: 'testo', max: 24, facoltativo: true, predefinito: '',
-            aiuto: 'Per esempio Hardware, Energy drink, Abbigliamento. Nella pagina gli sponsor si raggruppano per categoria, nell\'ordine in cui le categorie compaiono in questo elenco. Vuota: finiscono in fondo, insieme.' },
+            aiuto: 'Per esempio Hardware, Energy drink, Abbigliamento: compare come etichetta sulla scheda.' },
+          { chiave: 'codice', etichetta: 'Codice sconto', tipo: 'testo', max: 30, facoltativo: true, predefinito: '',
+            aiuto: 'Vuoto = niente codice. Sulla scheda compare con il bottone per copiarlo.' },
+          { chiave: 'codiceNota', etichetta: 'Cosa dà il codice', tipo: 'testo', max: 80, facoltativo: true, predefinito: '',
+            aiuto: 'Per esempio «10% su tutto il negozio». Si vede sotto il codice.' },
           { chiave: 'colore', etichetta: 'Colore del marchio', tipo: 'colore', facoltativo: true, predefinito: '',
-            aiuto: 'Tinge il bordo, l\'alone e il bottone della sua scheda. Prendilo dal logo dello sponsor: è quello che fa sembrare la pagina fatta apposta per loro invece che un elenco. Vuoto: usa il viola del sito.' },
+            aiuto: 'Tinge il bordo e l\'alone della sua scheda. Prendilo dal logo dello sponsor. Vuoto: usa il viola del sito.' },
           { chiave: 'url', etichetta: 'Link al loro sito', tipo: 'url', facoltativo: true, predefinito: '',
-            aiuto: 'Vuoto = lo sponsor non compare sul sito. Il link esce con rel="sponsored", come Google chiede per le collaborazioni pagate.' },
+            aiuto: 'Vuoto = lo sponsor non compare sul sito. Vale solo un indirizzo http o https; il link esce con rel="sponsored", come Google chiede per le collaborazioni pagate.' },
           { chiave: 'da', etichetta: 'Attivo dal', tipo: 'dataora', facoltativo: true, predefinito: '',
             aiuto: 'Vuoto = da subito. Prima di questa data lo sponsor non si vede: puoi preparare la scheda in anticipo e pubblicarla senza pensieri.' },
           { chiave: 'a', etichetta: 'Attivo fino al', tipo: 'dataora', facoltativo: true, predefinito: '',
             aiuto: 'Vuoto = senza scadenza. Passata questa data lo sponsor sparisce dal sito da solo, anche senza una pubblicazione nuova: la voce resta qui, e per farlo tornare basta cambiare la data.' },
           { chiave: 'evidenza', etichetta: 'In evidenza', tipo: 'interruttore', predefinito: false,
-            aiuto: 'Passa davanti agli altri nella striscia e dentro la sua categoria, con la scheda più grande e la sua etichetta.' }
-        ] }
+            aiuto: 'Passa davanti agli altri, nella striscia e nella pagina, con la scheda più grande e la sua etichetta.' }
+        ] },
+
+      { chiave: 'sponsor.contattoOcchiello', etichetta: 'Contatti — occhiello', tipo: 'testo', max: 40, predefinito: 'Contatti' },
+      { chiave: 'sponsor.contattoTitolo', etichetta: 'Contatti — titolo', tipo: 'testo', max: 60, predefinito: 'Parliamone' },
+      { chiave: 'sponsor.contattoTesto', etichetta: 'Contatti — presentazione', tipo: 'ricco', max: 320, facoltativo: true,
+        predefinito: 'Scrivimi due righe su chi sei, cosa proponi e in che periodo: rispondo di persona a ogni proposta seria.' },
+      { chiave: 'config.sponsor.email', etichetta: 'Contatti — indirizzo email', tipo: 'email', facoltativo: true, predefinito: '',
+        aiuto: 'Vuoto: usa l\'indirizzo email pubblico del sito (gruppo «Il canale»).' },
+      { chiave: 'sponsor.contattoOggetto', etichetta: 'Contatti — oggetto della email', tipo: 'testo', max: 60, predefinito: 'Proposta di collaborazione',
+        aiuto: 'Il bottone apre il programma di posta con questo oggetto già scritto.' },
+      { chiave: 'sponsor.contattoBtn', etichetta: 'Contatti — bottone', tipo: 'testo', max: 30, predefinito: 'Scrivimi una email' },
+      { chiave: 'config.sponsor.mediaKit', etichetta: 'Contatti — link al media kit', tipo: 'url', facoltativo: true, predefinito: '',
+        aiuto: 'Facoltativo: l\'indirizzo di un PDF o di una pagina con il media kit. Vuoto, il bottone non compare.' },
+      { chiave: 'sponsor.mediaKitBtn', etichetta: 'Contatti — bottone del media kit', tipo: 'testo', max: 30, predefinito: 'Scarica il media kit' },
+      { chiave: 'config.sponsor.polletto', etichetta: 'Contatti — il polletto accanto', tipo: 'interruttore', predefinito: true,
+        aiuto: 'La mascotte del canale accanto ai contatti. È la stessa immagine della mascotte del sito.' }
     ]
   },
 
@@ -1001,8 +1106,27 @@ const SUPERATE = [
   'spotify.nascondi',
   'spotify.mostra',
   'config.spotify',
-  'diretta.testo'
+  'diretta.testo',
+  'sponsor.altri'
 ];
+
+const RINNOVATE = {
+  'sponsor.paginaTitolo': ['Gli sponsor'],
+  'sponsor.paginaTesto': ['Le realtà che sostengono il canale, divise per categoria. Ogni scheda porta al loro sito.']
+};
+
+function rinnova(contenuti) {
+  const rinnovate = [];
+  for (const chiave of Object.keys(RINNOVATE)) {
+    if (!haChiave(contenuti.testi, chiave)) { continue; }
+    if (RINNOVATE[chiave].indexOf(contenuti.testi[chiave]) === -1) { continue; }
+    const c = campo(chiave);
+    if (!c || !Object.prototype.hasOwnProperty.call(c, 'predefinito')) { continue; }
+    contenuti.testi[chiave] = c.predefinito;
+    rinnovate.push(chiave);
+  }
+  return rinnovate;
+}
 
 function cancella(contenuti, chiave) {
   if (!chiave.startsWith('config.')) {
@@ -1041,6 +1165,7 @@ function completa(contenuti) {
   if (!contenuti.config || typeof contenuti.config !== 'object') { return []; }
 
   dimentica(contenuti);
+  rinnova(contenuti);
 
   const aggiunte = [];
   for (const c of campi()) {
@@ -1157,4 +1282,4 @@ function verificaCopertura(contenuti) {
   return problemi;
 }
 
-module.exports = { gruppi, TIPI, SISTEMA, GENERATI, EDITOR, SUPERATE, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura, completa, dimentica };
+module.exports = { gruppi, TIPI, SISTEMA, GENERATI, EDITOR, SUPERATE, campi, campo, valoreDi, chiaviDeiContenuti, verificaCopertura, completa, dimentica, rinnova, RINNOVATE };

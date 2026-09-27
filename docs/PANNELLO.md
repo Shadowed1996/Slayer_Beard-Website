@@ -2014,67 +2014,79 @@ uno sfondo suo, si vedrà quello. Per tornare alle note basta svuotare il campo.
 
 ### Gli sponsor, e la pagina «sponsor.html»
 
-Gli sponsor stanno in due posti, e sono **due facce della stessa cosa**: una
-**striscia** in fondo alla home, sotto «Dove mi trovi», dove i loghi camminano
-da soli verso sinistra — e si fermano appena ci passi sopra col mouse — e una
-**pagina intera** — `sponsor.html` — dove ogni partner ha la sua scheda con il
-testo di presentazione. Ci si arriva dal bottone **«Tutti gli sponsor»** in
-fondo alla striscia. Come per le clip, gli sponsor **non hanno una voce nel menu
-laterale**: le voci restano al massimo sei.
+La pagina `sponsor.html` è pensata per **chi deve decidere se collaborare con il
+canale**: un marchio la apre, capisce chi sei, guarda i numeri, vede come si può
+lavorare insieme e chi lo fa già, e trova subito come scriverti. In ordine:
+
+1. **Apertura** — occhiello, titolo grande, presentazione, due bottoni
+   («Proponi una collaborazione» porta giù ai contatti, «Guarda il canale» apre
+   Twitch) e una foto. Senza una foto propria usa il banner della copertina.
+2. **I numeri del canale** — cifre vere, prese dal sito stesso: follower da
+   Twitch, spettatori medi, abbonati, anno e lingue dal gruppo «Il canale»,
+   dirette a settimana dalla schedule, ore e giochi dallo storico delle live.
+   Scegli tu quali mostrare, in che ordine e con che parole; un numero che il
+   sito non conosce, o che vale zero, **non compare**. «Scritto a mano» serve per
+   un dato che hai davvero e il sito non può sapere (per esempio l'età media).
+3. **Come possiamo lavorare insieme** — le schede dei formati (menzione in
+   diretta, prodotto in prova, codice sconto, logo sul canale e sul sito), con
+   titolo, spiegazione e icona. Si aggiungono, si tolgono e si riordinano.
+4. **Sponsor e partner** — le schede di chi collabora oggi: logo, nome,
+   categoria, testo, codice sconto con il bottone «Copia» e il link al loro
+   sito. **Senza nessuno sponsor** la sezione dice «Il primo posto è libero» e
+   invita a scrivere.
+5. **Contatti** — la presentazione, l'indirizzo email (vuoto: quello pubblico del
+   sito) con il bottone che apre la posta con l'oggetto già scritto, un link
+   facoltativo al media kit e il polletto accanto.
+
+Le sezioni 2, 3 e 4 si **accendono e spengono** una per una. In home, sotto
+«Dove mi trovi», resta la **striscia** dei loghi, che compare solo se c'è almeno
+uno sponsor attivo; con «Invito anche senza sponsor» acceso, quando non ce n'è
+nessuno la home mostra al suo posto un invito verso la pagina.
+
+**Si modifica come la home.** In alto nel pannello, accanto a Telefono / Tablet /
+Computer, c'è **Home / Sponsor**: premi *Sponsor* e l'anteprima diventa la
+pagina degli sponsor, anche se è ancora spenta. Clicchi un titolo e lo scrivi,
+clicchi un logo o la foto e *Cambia immagine* apre la libreria (dove puoi
+caricarne una nuova), clicchi una sezione e compaiono tutti i suoi controlli.
+Senza niente selezionato, la colonna a sinistra elenca le parti della pagina con
+i loro interruttori: una parte spenta si riaccende da lì. Tutto si ritrova anche
+nel gruppo **Sponsor e collaborazioni** del menu.
 
 > **Sul logo.** Il riquadro su cui sta è chiaro apposta: i loghi delle aziende
-> sono quasi sempre pensati per il bianco, e su un fondo nero come il nostro
-> sparirebbero. Carica un PNG o un WebP con lo sfondo **trasparente** e il
-> risultato è pulito. Se un logo non ce l'hai, non metterlo: la scheda usa il
-> nome scritto in grande e resta una scheda intera, non un buco.
+> sono quasi sempre pensati per il bianco. Carica un PNG, un WebP o un SVG con lo
+> sfondo **trasparente** dalla libreria delle immagini: vale solo un'immagine
+> caricata sul sito, non un indirizzo esterno. Se un logo non ce l'hai, la
+> scheda usa il nome scritto in grande.
 
-Si scrivono nella parte **Gli sponsor** del pannello. Ogni voce dell'elenco ha:
+Ogni voce dell'elenco degli sponsor ha:
 
 - **Nome interno** — non si vede sul sito, serve a distinguere le voci fra loro;
-- **Nome** — quello che si legge;
-- **Logo** — si carica come tutte le immagini. Meglio un PNG o un WebP con lo
-  sfondo trasparente, perché il sito è scuro. **Senza logo non si rompe niente**:
-  al suo posto compare il nome scritto in grande;
-- **Chi sono, in breve** — il testo della scheda, si legge solo nella pagina. In
-  home la striscia mostra soltanto logo e nome;
-- **Categoria** — per esempio *Publisher*, *Hardware*, *Abbigliamento*. Nella
-  pagina le schede si **raggruppano** per categoria, nell'ordine in cui le
-  categorie compaiono nell'elenco; chi non ne ha finisce in fondo, sotto
-  «Altri». Maiuscole e minuscole non contano: *Hardware* e *hardware* sono la
-  stessa categoria;
-- **Colore del marchio** — il colore preso dal loro logo. Tinge il filo in cima
-  alla scheda, il bordo, l'alone e il bottone: è quello che fa sembrare la
-  pagina fatta per loro invece che un elenco di riquadri tutti uguali. Vuoto:
-  usa il viola del sito, e non manca niente;
-- **Link al loro sito** — **vuoto vuol dire che lo sponsor non si vede**, come
-  per i social e per il listino. Il link esce con `rel="sponsored"`, che è
-  quello che Google chiede per le collaborazioni pagate;
+- **Nome**, **Logo** e **Chi sono, in breve** — quello che si legge sulla
+  scheda. In home la striscia mostra soltanto logo e nome;
+- **Categoria** — per esempio *Hardware*: compare come etichetta sulla scheda;
+- **Codice sconto** e **Cosa dà il codice** — vuoti, il riquadro del codice non
+  c'è;
+- **Colore del marchio** — tinge bordo e alone della scheda. Vuoto: il viola;
+- **Link al loro sito** — **vuoto vuol dire che lo sponsor non si vede**. Vale
+  solo un indirizzo `http` o `https`; il link esce con `rel="sponsored"`, come
+  Google chiede per le collaborazioni pagate;
 - **Attivo dal** e **Attivo fino al** — il periodo. Vuoti: da subito e per
   sempre;
-- **In evidenza** — passa davanti agli altri nella striscia e, nella pagina,
-  prende una scheda **larga il doppio** con il logo di fianco al testo.
+- **In evidenza** — passa davanti agli altri e prende una scheda larga il doppio.
 
-> **L'etichetta «nuovo partner» si mette e si toglie da sola.** Scrivi la data
-> di inizio del giorno in cui la collaborazione comincia, e per **trenta giorni**
-> la scheda porta l'etichetta, in home e nella pagina. Passati i trenta giorni
-> sparisce senza che tu debba ricordartene: un annuncio che resta acceso per
-> sempre smette di essere un annuncio. Sotto il nome compare anche «Partner dal
-> 2026», con l'anno della data di inizio.
+> **L'etichetta «nuovo partner» si mette e si toglie da sola**: per trenta
+> giorni dalla data di inizio. Sotto il nome compare anche «Partner dal 2026».
 
 > **Le date fanno il lavoro da sole.** Passata la data di fine, lo sponsor
 > sparisce dal sito **senza bisogno di pubblicare**: la pagina rifà il conto
-> ogni volta che qualcuno la apre. Vale anche al contrario — puoi preparare
-> oggi la scheda di una collaborazione che comincia il mese prossimo, metterle
-> la data di inizio e pubblicarla senza pensieri: si accenderà da sé. La voce
-> non si cancella mai da sola: resta nel pannello, e per farla tornare basta
-> cambiare la data.
+> ogni volta che qualcuno la apre. La voce resta nel pannello, e per farla
+> tornare basta cambiare la data.
 
-Il periodo si legge con l'**orologio italiano**: «fino al 30/09 alle 23:59»
-vuol dire la sera del 30 qui, non da qualche altra parte del mondo.
+Il periodo si legge con l'**orologio italiano**.
 
-Se spegni **Mostra gli sponsor**, o se non ne resta nemmeno uno dentro il suo
-periodo, la pagina **viene tolta** dal sito e la striscia sparisce dalla home —
-la stessa regola della pagina delle clip, per la stessa ragione.
+Se spegni **Pubblica la pagina degli sponsor**, la pagina **viene tolta** dal
+sito e la striscia sparisce dalla home. Accesa, la pagina resta online anche
+quando non c'è nessuno sponsor: è proprio quando serve di più.
 
 ### Quando qualcosa non va
 

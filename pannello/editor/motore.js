@@ -16,7 +16,8 @@ const SCHEDE = ['contenuto', 'stile', 'avanzate'];
 const TIPI_SUL_POSTO = ['testo', 'testolungo', 'ricco'];
 
 const RE_TESTO = /^[a-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
-const RE_IMMAGINE = /^config\.immagini\.[a-z][A-Za-z0-9]*$/;
+const RE_IMMAGINE = /^config\.(immagini\.[a-z][A-Za-z0-9]*|sponsor\.copertina|sponsor\.voci\.\d{1,3}\.logo)$/;
+const PAGINE = ['home', 'sponsor'];
 const RE_PARTE = /^[a-z][a-z0-9-]{0,40}$/;
 const RE_BLOCCO = /^[a-z][a-z0-9-]{0,40}\.[a-z][a-z0-9-]{0,40}$/;
 
@@ -56,6 +57,7 @@ const VARIABILI_REGIA = [
 const st = {
   ui: null,
   dispositivo: 'computer',
+  pagina: 'home',
   zoomModo: 'adatta',
   scala: 1,
   scalaAdatta: 1,
@@ -219,7 +221,7 @@ function etichettaChiave(chiave) {
     const e = ponte.etichetta(chiave);
     if (typeof e === 'string' && e.trim() && e !== chiave) return e.trim();
   } catch {}
-  return chiave.startsWith('config.immagini.') ? 'Immagine' : 'Testo';
+  return RE_IMMAGINE.test(chiave) ? 'Immagine' : 'Testo';
 }
 
 function leggi(chiave) {
@@ -1591,6 +1593,19 @@ function impostaDispositivo(d) {
   return true;
 }
 
+function impostaPagina(p) {
+  if (PAGINE.indexOf(p) === -1) return false;
+  if (st.pagina === p) return true;
+  if (st.trascina) fineTrascina(true);
+  st.pagina = p;
+  st.ricordo = null;
+  if (st.selezione) { st.selezione = null; avvisaIscritti(null); }
+  annuncia(p === 'sponsor' ? 'Stai lavorando sulla pagina degli sponsor.' : 'Stai lavorando sulla home.');
+  emetti('sb:pagina', { pagina: p });
+  if (montato()) ricarica({ tieniScorrimento: false });
+  return true;
+}
+
 function mostraVelo(tipo, titolo = '', testo = '') {
   const ui = st.ui;
   if (!ui) return;
@@ -1644,8 +1659,8 @@ function comeHtml(risposta) {
 
 async function chiediAnteprima(inviati) {
   const api = ponte.api;
-  if (api && typeof api.anteprima === 'function') return comeHtml(await api.anteprima({ contenuti: inviati, editor: true }));
-  if (api && typeof api.anteprimaViva === 'function') return comeHtml(await api.anteprimaViva(inviati));
+  if (api && typeof api.anteprima === 'function') return comeHtml(await api.anteprima({ contenuti: inviati, editor: true, pagina: st.pagina }));
+  if (st.pagina === 'home' && api && typeof api.anteprimaViva === 'function') return comeHtml(await api.anteprimaViva(inviati));
   throw Object.assign(new Error('Il pannello non sa chiedere l\'anteprima al server.'), { stato: 501 });
 }
 
@@ -1711,7 +1726,7 @@ async function ricarica({ tieniScorrimento = false } = {}) {
     html = await chiediAnteprima(inviati);
   } catch (e) {
     errore = e;
-    if (numero === st.richiesta && rottaAssente(e)) {
+    if (numero === st.richiesta && st.pagina === 'home' && rottaAssente(e)) {
       try { html = await chiediBozzaSalvata(); ripiego = true; errore = null; } catch (e2) { errore = e2; }
     }
   }
@@ -2125,6 +2140,8 @@ export const motore = {
 
   impostaDispositivo,
   dispositivo: () => st.dispositivo,
+  impostaPagina,
+  pagina: () => st.pagina,
   impostaZoom,
   zoom: () => ({ modo: st.zoomModo, scala: st.scala, adatta: st.scalaAdatta }),
 

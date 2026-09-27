@@ -210,9 +210,10 @@ export const api = {
     return testo;
   },
 
-  async anteprima({ contenuti, editor = false } = {}) {
+  async anteprima({ contenuti, editor = false, pagina = '' } = {}) {
     const corpo = { contenuti };
     if (editor) corpo.editor = true;
+    if (pagina === 'sponsor') corpo.pagina = 'sponsor';
     const { testo, dati } = await grezza('POST', '/api/anteprima', corpo, { accetta: 'text/html, application/json' });
     if (dati && typeof dati === 'object') {
       const html = dati.html ?? dati.anteprima ?? dati.pagina ?? dati.contenuto;
