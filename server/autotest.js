@@ -3445,8 +3445,6 @@ async function proveHosting(cartella) {
   const scriptPorte = path.join(cartella, 'figlio-porte.js');
   fs.writeFileSync(scriptPorte, [
     "'use strict';",
-    '/* PORTA e HOST sono costanti calcolate al caricamento: per provarne la',
-    '   precedenza il modulo va ricaricato a ogni caso. */',
     'const dove = process.argv[2];',
     'const casi = JSON.parse(process.argv[3]);',
     'const fuori = [];',
@@ -3464,9 +3462,6 @@ async function proveHosting(cartella) {
   const scriptAvvio = path.join(cartella, 'figlio-avvio.js');
   fs.writeFileSync(scriptAvvio, [
     "'use strict';",
-    '/* Carica app.js come lo caricherebbe Passenger e dice che fuso e che',
-    "   indirizzo ne sono usciti. L'ascolto e asincrono: si esce prima che",
-    '   cominci, quindi nessuna porta resta occupata. */',
     'require(process.argv[2]);',
     'const giugno = new Date(Date.UTC(2026, 5, 15, 12, 0, 0));',
     "console.log(JSON.stringify({ tz: process.env.TZ || '', ore: giugno.getHours(), host: process.env.SB_HOST || '' }));",

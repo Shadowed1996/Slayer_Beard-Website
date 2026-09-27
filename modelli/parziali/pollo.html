@@ -1,14 +1,3 @@
-<!-- Il pollo. Ultimo figlio di .diretta__scena (l'agente 1 lo include lì): la
-     scena è position: relative e gli riserva lo spazio con --pollo-larghezza.
-
-     Il fumetto nasce hidden e aria-hidden: i messaggi della chat NON vanno
-     annunciati dallo screen reader, sarebbe uno spam continuo. L'unica cosa
-     esposta è il bottone, con la sua etichetta.
-
-     L'immagine è decorativa due volte (alt vuoto + aria-hidden): il bottone che
-     la contiene ha già un nome accessibile, ripeterlo dentro sarebbe rumore.
-     mascotte.webp ha la trasparenza vera: css/pollo.css non la maschera più, e
-     width e height (le misure del file) tengono il posto prima che arrivi. -->
 <div id="pollo" class="pollo" data-stato="riposo" data-sb-parte="pollo">
   <div id="pollo-fumetto" class="pollo__fumetto" aria-hidden="true" hidden><span class="pollo__testo"></span></div>
 
@@ -16,7 +5,5 @@
     <img class="pollo__img" src="{{config.immagini.mascotte}}" alt="" aria-hidden="true" width="386" height="556" loading="lazy" decoding="async" data-sb-immagine="config.immagini.mascotte">
   </button>
 
-  <!-- La croce è disegnata dal CSS con due barrette: il DOM resta quello del
-       contratto e non serve un'icona in più da caricare. -->
   <button id="pollo-chiudi" class="pollo__chiudi" type="button" aria-label="{{pollo.nascondi}}"></button>
 </div>

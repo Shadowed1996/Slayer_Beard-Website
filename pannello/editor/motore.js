@@ -1038,7 +1038,6 @@ function variabiliRegia() {
 }
 
 const CSS_EDITOR = [
-  '/* Solo nell\'anteprima dell\'editor: il sito pubblicato non ha niente di questo. */',
   '[data-sb-testo], [data-sb-immagine] { cursor: pointer; }',
   'a[href], button, label, summary, select { cursor: default; }',
   '[contenteditable="true"], [contenteditable="true"] *, [contenteditable="plaintext-only"], [contenteditable="plaintext-only"] * { cursor: text; }',

@@ -1,31 +1,10 @@
 'use strict';
-/* =====================================================================
-   modello.js — il motore di template del contratto (§6.1).
-
-     {{chiave}}                   valore con escape di & < > " '
-     {{{chiave}}}                 valore grezzo (ammesso solo per le icone SVG)
-     {{#ogni elenco}}…{{/ogni}}   ripete il blocco per ogni voce
-     {{#se chiave}}…{{/se}}       se il valore non e vuoto
-     {{^se chiave}}…{{/se}}       il contrario
-     {{> parziali/nome}}          include modelli/parziali/nome.html
-   Dentro un ciclo: {{@indice}} {{@numero}} {{@primo}} {{@ultimo}}, e {{.}}
-   per la voce stessa quando e una stringa. Le chiavi sono percorsi col punto.
-
-   Tre scelte da spiegare:
-   - una chiave assente e un ERRORE con file e riga, non una stringa vuota:
-     un buco nel sito si nota dopo giorni, un errore di generazione subito;
-   - niente eval, niente new Function, niente regex sul file intero: un
-     tokenizzatore che scorre il testo una volta sola e un parser a pila;
-   - la ricerca di una chiave prova prima il nome letterale e poi lo spezza
-     sui punti, perche in "testi" le chiavi contengono davvero il punto
-     ("deck.titolo" e una chiave sola) mentre in "config" il punto scende.
-   ===================================================================== */
 
 const fs = require('node:fs');
 const path = require('node:path');
 
 const NON_TROVATO = { trovato: false, valore: undefined };
-const MAX_PROFONDITA = 12;   // ferma i parziali che si includono fra loro
+const MAX_PROFONDITA = 12;
 
 class ErroreModello extends Error {
   constructor(messaggio, file, riga) {
@@ -35,7 +14,6 @@ class ErroreModello extends Error {
   }
 }
 
-/** Escape per HTML: sicuro sia nel testo sia dentro un attributo. */
 function proteggi(testo) {
   return String(testo).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -43,9 +21,6 @@ function proteggi(testo) {
 
 const righeIn = (testo) => testo.split('\n').length - 1;
 
-/* --- TOKENIZZATORE ------------------------------------------------- */
-
-/** Trasforma il contenuto di una coppia di graffe nel token corrispondente. */
 function leggiTag(dentro, triplo, file, riga) {
   const testo = dentro.trim();
   const posa = (extra) => Object.assign({ file: file, riga: riga }, extra);
@@ -75,7 +50,6 @@ function leggiTag(dentro, triplo, file, riga) {
   return posa({ tipo: 'valore', chiave: testo, escape: true });
 }
 
-/** Scorre il sorgente una volta sola e produce l elenco piatto dei token. */
 function tokenizza(sorgente, file) {
   const token = [];
   let i = 0;
@@ -101,7 +75,6 @@ function tokenizza(sorgente, file) {
   return token;
 }
 
-/** Dai token piatti all albero: una pila, e i blocchi devono richiudersi. */
 function analizza(token, file) {
   const radice = { tipo: 'radice', figli: [] };
   const pila = [radice];
@@ -124,13 +97,10 @@ function analizza(token, file) {
   return radice;
 }
 
-/* --- RISOLUZIONE DELLE CHIAVI -------------------------------------- */
-
 function haChiave(oggetto, nome) {
   return oggetto !== null && typeof oggetto === 'object' && Object.prototype.hasOwnProperty.call(oggetto, nome);
 }
 
-/** Cerca il percorso dentro l oggetto: prima letterale, poi spezzando sui punti. */
 function cerca(oggetto, percorso) {
   if (oggetto === null || typeof oggetto !== 'object') { return NON_TROVATO; }
   if (haChiave(oggetto, percorso)) { return { trovato: true, valore: oggetto[percorso] }; }
@@ -142,7 +112,6 @@ function cerca(oggetto, percorso) {
   return NON_TROVATO;
 }
 
-/** Risale la catena degli ambiti: dentro un ciclo si vede anche il contesto esterno. */
 function risolvi(ambito, percorso) {
   if (percorso === '.') { return { trovato: true, valore: ambito.dati }; }
   for (let a = ambito; a; a = a.padre) {
@@ -156,7 +125,6 @@ function risolvi(ambito, percorso) {
   return NON_TROVATO;
 }
 
-/** Come risolvi, ma un buco e un errore: e la regola del contratto. */
 function pretendi(ambito, nodo, cosa) {
   const esito = risolvi(ambito, nodo.chiave);
   if (!esito.trovato) {
@@ -165,15 +133,12 @@ function pretendi(ambito, nodo, cosa) {
   return esito.valore;
 }
 
-/** Vuoto secondo il contratto: stringa vuota, 0, elenco vuoto, false, assente. */
 function pieno(valore) {
   if (valore === undefined || valore === null || valore === false || valore === 0) { return false; }
   if (typeof valore === 'string') { return valore.trim() !== ''; }
   if (Array.isArray(valore)) { return valore.length > 0; }
   return true;
 }
-
-/* --- RESA ---------------------------------------------------------- */
 
 function rendiFigli(figli, ambito, stato) {
   let fuori = '';
@@ -219,8 +184,6 @@ function rendiParziale(nodo, ambito, stato) {
     throw new ErroreModello('Inclusioni annidate oltre ' + MAX_PROFONDITA +
       ' livelli: probabile parziale che include se stesso', nodo.file, nodo.riga);
   }
-  // Il nome arriva dal modello, non dalla rete, ma un percorso che risale
-  // sopra modelli/ resta un errore da segnalare subito invece che da servire.
   if (/(^\/)|(\.\.)|[\\:]/.test(nodo.nome)) {
     throw new ErroreModello('Nome di parziale non ammesso: "' + nodo.nome + '"', nodo.file, nodo.riga);
   }
@@ -241,9 +204,6 @@ function rendiParziale(nodo, ambito, stato) {
   try { return rendiFigli(albero.figli, ambito, stato); } finally { stato.profondita--; }
 }
 
-/* --- API PUBBLICA -------------------------------------------------- */
-
-/** opzioni: { file: nome mostrato negli errori, cartella: radice dei parziali } */
 function rendi(sorgente, contesto, opzioni) {
   const scelte = opzioni || {};
   const file = scelte.file || 'modello';
@@ -252,7 +212,6 @@ function rendi(sorgente, contesto, opzioni) {
   return rendiFigli(albero.figli, { dati: contesto, padre: null, cicli: null }, stato);
 }
 
-/** Rende un file dal disco. La cartella dei parziali e quella del file stesso. */
 function rendiFile(percorso, contesto, opzioni) {
   const scelte = opzioni || {};
   return rendi(fs.readFileSync(percorso, 'utf8'), contesto, {

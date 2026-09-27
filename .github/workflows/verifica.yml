@@ -1,9 +1,3 @@
-# Verifica informativa del repository.
-#
-# Non blocca niente e non deve bloccare niente: ogni passo ha
-# continue-on-error, e il riepilogo finale racconta cosa ha trovato.
-# Serve ad accorgersi di un JSON rotto o di un file mancante prima di
-# pubblicare, non a fare da guardiano.
 name: Verifica
 
 on:

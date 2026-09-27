@@ -1,18 +1,12 @@
-# Normalizzazione delle fini riga: nel repository si conserva sempre LF.
-# Il progetto nasce su Windows ma i file sono già tutti a LF, e devono
-# restarci anche quando core.autocrlf è acceso sulla macchina di chi lavora.
 * text=auto eol=lf
 
-# I file batch di Windows fanno eccezione: vogliono CRLF nella copia locale.
 *.cmd text eol=crlf
 *.bat text eol=crlf
 
-# File di controllo: testo, sempre.
 .gitattributes text
 .gitignore     text
 .editorconfig  text
 
-# Testo esplicito, per non lasciarlo indovinare.
 *.md   text
 *.html text
 *.css  text
@@ -24,7 +18,6 @@
 *.tpl  text
 *.sh   text eol=lf
 
-# --- Binari: niente diff, niente normalizzazione delle fini riga ----------
 *.png  binary
 *.PNG  binary
 *.jpg  binary
@@ -48,8 +41,6 @@
 *.exe  binary
 *.dll  binary
 
-# --- Statistiche di GitHub (linguist) -------------------------------------
-# La documentazione lunga non deve contare come "linguaggio del progetto".
 docs/**            linguist-documentation
 CONTRATTO.md       linguist-documentation
 CONTRATTO-2.md     linguist-documentation
@@ -58,11 +49,8 @@ CONTRATTO-4.md     linguist-documentation
 CONTRATTO-5.md     linguist-documentation
 CONTRATTO-6.md     linguist-documentation
 
-# I file generati non sono lavoro scritto a mano: si escludono dalle
-# statistiche e si comprimono nei diff, dove sono solo rumore.
 index.html   linguist-generated
 js/dati.js   linguist-generated
 css/tema.css linguist-generated
 
-# Le copie di sicurezza scritte dal pannello: né statistiche né diff.
 server/backup/** linguist-generated

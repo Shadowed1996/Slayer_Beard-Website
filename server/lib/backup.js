@@ -1,18 +1,4 @@
 'use strict';
-/* =====================================================================
-   backup.js — copie di sicurezza in server/backup/<ISO>/.
-
-   Dentro ogni copia ci sono i tre file generati (index.html, dati.js e
-   tema.css) e il contenuti.json che li ha prodotti: senza quest'ultimo un
-   ripristino rimetterebbe in pagina un sito che il pannello non sa piu
-   descrivere. tema.css sta con gli altri perche e parte della pagina come
-   l'HTML: rimettere i testi di ieri lasciando i colori di oggi darebbe un
-   sito che non e mai esistito.
-
-   Ogni pubblicazione ne crea una prima di toccare qualcosa, e anche ogni
-   ripristino: annullare un ripristino sbagliato deve restare possibile.
-   Se ne tengono venti, le piu vecchie se ne vanno da sole.
-   ===================================================================== */
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -23,8 +9,6 @@ const { erroreHttp } = require('./risposte');
 
 const DA_CONSERVARE = 20;
 
-// Nome dentro la copia -> dove torna nel progetto. `chiave` serve al
-// pannello per dire in italiano che cosa contiene la copia.
 function mappa() {
   return [
     { nome: 'index.html', destinazione: P.indexHtml, etichetta: 'la pagina' },
@@ -34,21 +18,16 @@ function mappa() {
   ];
 }
 
-// L'identificativo e una ISO con i due punti sostituiti: resta leggibile,
-// resta ordinabile alfabeticamente ed e un nome di cartella valido su NTFS.
 const RE_ID = /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z(-\d+)?$/;
 
 function nuovoIdentificativo() {
   const base = new Date().toISOString().replace(/[:.]/g, '-');
   let id = base;
   let n = 1;
-  // Due copie nello stesso millisecondo sono improbabili ma non impossibili:
-  // pubblicazione e ripristino ne fanno una ciascuna, di fila.
   while (fs.existsSync(path.join(P.backup, id))) { id = base + '-' + n; n++; }
   return id;
 }
 
-/** Data di creazione ricavata dall'identificativo, con la cartella come riserva. */
 function dataDi(id, cartella) {
   if (RE_ID.test(id)) {
     const iso = id.slice(0, 13) + ':' + id.slice(14, 16) + ':' + id.slice(17, 19) + '.' + id.slice(20, 23) + 'Z';
@@ -58,7 +37,6 @@ function dataDi(id, cartella) {
   try { return fs.statSync(cartella).mtime.toISOString(); } catch (e) { return null; }
 }
 
-/** Copia lo stato corrente. Restituisce l'identificativo della copia. */
 function crea() {
   assicuraCartella(P.backup);
   const id = nuovoIdentificativo();
@@ -74,7 +52,6 @@ function crea() {
   return id;
 }
 
-/** Elenco delle copie, dalla piu recente. */
 function elenco() {
   if (!fs.existsSync(P.backup)) { return []; }
 
@@ -92,28 +69,22 @@ function elenco() {
         const s = fs.statSync(path.join(cartella, voce.nome));
         file.push(voce.nome);
         dimensione += s.size;
-      } catch (e) { /* file assente in questa copia: si salta */ }
+      } catch (e) {  }
     }
     voci.push({ id: nome, quando: dataDi(nome, cartella), file: file, byte: dimensione });
   }
 
-  // L'identificativo e cronologico: l'ordine alfabetico inverso basta.
   voci.sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
   return voci;
 }
 
-/** Elimina le copie oltre le venti piu recenti. */
 function pota() {
   for (const voce of elenco().slice(DA_CONSERVARE)) {
     try { fs.rmSync(path.join(P.backup, voce.id), { recursive: true, force: true }); }
-    catch (e) { /* se non si riesce a cancellare pazienza: non e un errore fatale */ }
+    catch (e) {  }
   }
 }
 
-/**
- * Rimette in piedi una copia. Prima ne fa una dello stato attuale, cosi
- * anche un ripristino sbagliato resta annullabile.
- */
 function ripristina(id) {
   if (!RE_ID.test(String(id))) {
     throw erroreHttp(400, 'Identificativo del backup non valido.');

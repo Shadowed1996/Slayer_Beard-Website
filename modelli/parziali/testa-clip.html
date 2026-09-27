@@ -1,16 +1,3 @@
-<!-- Il <head> della pagina di tutte le clip. Stessa struttura di parziali/testa.html:
-     la parte comune si include, e qui restano il titolo e l'indirizzo di questa
-     pagina.
-
-     Il titolo lo compone la generazione (sito.paginaClip.titolo: «Tutte le clip ·
-     nome del canale») invece di essere un campo da riempire: e` una riga in meno
-     da tenere d'accordo con il titolo scritto nel pannello, e nessuno si ritrova
-     due pagine che in una scheda del browser si chiamano uguale.
-
-     La descrizione e` la riga di presentazione della pagina senza il grassetto,
-     perche' qui dentro finisce in un attributo (server/lib/costruisci.js). Se e`
-     vuota si ripiega su quella del sito: meglio la descrizione del canale che
-     nessuna descrizione. -->
 {{> parziali/testa-comune}}
 
 <title>{{sito.paginaClip.titolo}}</title>

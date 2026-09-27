@@ -1,6 +1,3 @@
-<!-- Copertina. Il monitor non sta più qui: è la sezione #diretta (CONTRATTO-2 §2.1).
-     Gli id #titolo, #spia-grande, #stato-testo, #conto e #ultima sono contratto con
-     js/player.js e js/sito.js: non si rinominano e non si tolgono. -->
 <section id="regia" class="regia" aria-labelledby="titolo" data-sb-sezione="regia">
   <div class="regia__sfondo" aria-hidden="true">
     <img src="{{config.immagini.banner}}" alt="" decoding="async" data-sb-immagine="config.immagini.banner">
@@ -10,10 +7,6 @@
     <div class="quadro" data-sb-blocco="regia.quadro">
       <p class="quadro__occhiello" data-sb-testo="deck.occhiello">{{deck.occhiello}}</p>
       <h1 id="titolo" class="quadro__titolo" data-sb-testo="deck.titolo">{{deck.titolo}}</h1>
-      <!-- Tripla graffa: è un campo di tipo «ricco» (CONTRATTO-2 §7.1). La
-           sanificazione è già avvenuta in generazione, qui il valore arriva
-           sicuro; con la doppia graffa i <br> e i grassetti del pannello si
-           leggerebbero come testo. -->
       <p class="quadro__sottotitolo" data-sb-testo="deck.sottotitolo">{{{deck.sottotitolo}}}</p>
 
       <div class="quadro__stato" role="group" aria-label="{{deck.etichettaStato}}" data-sb-parte="stato">
@@ -22,7 +15,6 @@
         </p>
         <dl class="stato__dati">
           <dt data-sb-testo="deck.etichettaProssima">{{deck.etichettaProssima}}</dt>
-          <!-- Senza JS resta il testo degli orari; sito.js ci scrive il conto alla rovescia e il datetime esatto. -->
           <dd><time id="conto" class="conto" datetime="{{config.orari.ora}}">{{sito.orariTesto}}</time></dd>
           <dt data-sb-testo="deck.etichettaUltima">{{deck.etichettaUltima}}</dt>
           <dd id="ultima">{{config.ultimaDiretta}}</dd>
@@ -31,17 +23,11 @@
 
       <div class="quadro__azioni">
         <a class="btn btn--pieno" href="{{sito.urlCanale}}" target="_blank" rel="noopener" data-sb-testo="deck.ctaPrimaria">{{deck.ctaPrimaria}}</a>
-        <!-- Il secondo comando porta al player, che adesso ha una sezione sua. -->
         {{#se sito.attiva.diretta}}<a class="btn btn--vuoto" href="#diretta" data-sb-testo="deck.ctaSecondaria">{{deck.ctaSecondaria}}</a>{{/se}}
       </div>
     </div>
 
-    <!-- I quattro numeri sono fuori dal quadro: sono la fascia di strumenti che
-         chiude la copertina a tutta larghezza (CONTRATTO-2 §2.1). -->
     <ul class="quadro__dati" data-sb-blocco="regia.dati">
-      <!-- Il primo numero e quello dei follower, VERO: lo stampa la generazione da config.dati.follower
-           (aggiornato da Twitch a ogni pubblicazione) e js/canale.js lo rinfresca per chi e collegato.
-           Non si modifica nell'editor: si modifica solo l'etichetta. -->
       <li class="dato"><b class="dato__valore" data-follower>{{sito.follower}}</b><span class="dato__etichetta" data-sb-testo="deck.dato1Etichetta">{{deck.dato1Etichetta}}</span></li>
       <li class="dato"><b class="dato__valore" data-sb-testo="deck.dato2Valore">{{deck.dato2Valore}}</b><span class="dato__etichetta" data-sb-testo="deck.dato2Etichetta">{{deck.dato2Etichetta}}</span></li>
       <li class="dato"><b class="dato__valore" data-sb-testo="deck.dato3Valore">{{deck.dato3Valore}}</b><span class="dato__etichetta" data-sb-testo="deck.dato3Etichetta">{{deck.dato3Etichetta}}</span></li>

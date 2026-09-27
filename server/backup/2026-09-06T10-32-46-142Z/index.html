@@ -1,6 +1,4 @@
 <!doctype html>
-<!-- Generato il 2026-09-05T22:33:22.932Z da modelli/index.html + contenuti/contenuti.json.
-     Non si modifica a mano: si riscrive a ogni pubblicazione (CONTRATTO §6). -->
 <html lang="it">
 <head>
 <meta charset="utf-8">
@@ -9,8 +7,6 @@
 <title>slayer_beard — canale Twitch ufficiale</title>
 <meta name="description" content="Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.">
 <meta name="author" content="slayer_beard">
-<!-- Canonico: assoluto se il sito ha un indirizzo pubblico (campo «Indirizzo pubblico del sito»),
-     altrimenti "./", che si risolve sull'indirizzo da cui la pagina viene servita. -->
 <link rel="canonical" href="./">
 
 <link rel="icon" href="img/favicon.png" type="image/png">
@@ -37,8 +33,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;family=Manrope:wght@400;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
 
-<!-- sameAs: il primo elemento è fisso e le voci social entrano con la virgola davanti.
-     È l'unico modo di costruire un array JSON valido senza una condizione sull'ultimo giro. -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -53,8 +47,6 @@
 }
 </script>
 
-
-<!-- Ordine obbligatorio (CONTRATTO §3): tokens.css definisce le variabili, gli altri le consumano. -->
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/regia.css">
@@ -66,7 +58,6 @@
 
 <aside id="binario" class="binario">
   <a class="binario__marchio" href="#regia">
-    <!-- L'avatar è decorativo: il nome accanto dice già dove porta il link. -->
     <img class="binario__avatar" src="img/avatar.png" alt="" aria-hidden="true">
     <span class="binario__nome">slayer_beard</span>
   </a>
@@ -110,7 +101,6 @@
   </ul>
 </aside>
 
-
 <main id="contenuto">
 <section id="regia" class="regia" aria-labelledby="titolo">
   <div class="regia__sfondo" aria-hidden="true">
@@ -129,7 +119,6 @@
         </p>
         <dl class="stato__dati">
           <dt>Prossima diretta</dt>
-          <!-- Senza JS resta il testo degli orari; sito.js ci scrive il conto alla rovescia e il datetime esatto. -->
           <dd><time id="conto" class="conto" datetime="21:00">Lunedì, mercoledì, venerdì e domenica alle 21:00</time></dd>
           <dt>Ultima diretta</dt>
           <dd id="ultima">Little Nightmares 3 w/ @Mobscene93</dd>
@@ -162,12 +151,10 @@
         </div>
 
         <div class="monitor__schermo">
-          <!-- Vuoto per contratto: lo riempie js/player.js. -->
           <div id="twitch-embed" class="monitor__video"></div>
         </div>
 
         <div id="monitor-lato" class="monitor__lato" hidden>
-          <!-- Vuoto per contratto: lo riempie js/player.js. -->
           <div id="twitch-chat" class="monitor__chat"></div>
         </div>
 
@@ -201,7 +188,6 @@
     <p class="sezione__testo">Quattro sere a settimana, sempre alle 21:00. Le altre le passo a fare altro.</p>
   </div>
 
-  <!-- Sette voci sempre, anche i giorni di riposo: il nastro è una settimana intera, non un elenco di dirette. -->
   <ol id="nastro" class="nastro" aria-label="Lunedì, mercoledì, venerdì e domenica alle 21:00">
     
     <li class="nastro__giorno is-diretta" data-giorno="1">
@@ -312,7 +298,6 @@
     <p class="sezione__testo">Seguire è gratis ed è già tanto: il tasto Segui su Twitch non costa niente e mi aiuta davvero. Tutto quello che trovi qui sotto è facoltativo, guardare la diretta non richiede nessuna di queste cose.</p>
   </div>
 
-  <!-- Le voci senza URL sono già state tolte dalla generazione: qui non arriva niente di rotto. -->
   <ol id="listino" class="listino">
     
     <li class="listino__riga">
@@ -390,7 +375,6 @@
       <p><code id="email" class="contatti__email">slayerbeard@gmail.com</code></p>
 
       <div class="contatti__azioni">
-        <!-- aria-live sul bottone: sito.js ne cambia il testo in "copiato" e va annunciato. -->
         <button id="copia-email" class="btn btn--vuoto" type="button" aria-live="polite">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 5.5V4.5A1.5 1.5 0 0 0 13.5 3h-9A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15h1"/></svg>
           Copia l&#39;email
@@ -414,9 +398,6 @@
   <p class="piede__nota">Fatto in casa, senza framework.</p>
 </footer>
 
-
-<!-- dati.js per primo: player.js e sito.js leggono window.DATI. L'SDK di Twitch non è differito
-     perché player.js, differito, se lo aspetta già valutato. -->
 <script src="js/dati.js"></script>
 <script src="https://embed.twitch.tv/embed/v1.js"></script>
 <script src="js/player.js" defer></script>

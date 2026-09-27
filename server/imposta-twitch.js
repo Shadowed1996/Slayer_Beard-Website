@@ -1,35 +1,4 @@
 'use strict';
-/* =====================================================================
-   imposta-twitch.js — collega il server locale a Twitch.
-
-   Uso:  node server/imposta-twitch.js <clientId> <clientSecret>
-         node server/imposta-twitch.js --togli
-         node server/imposta-twitch.js --prova
-         node server/imposta-twitch.js --collega
-         node server/imposta-twitch.js --scollega
-
-   Scrive server/dati/chiavi.js, che e l'unico posto in cui stanno le
-   chiavi del sito. Da li le prendono tutti:
-
-     - il login «Collegati con Twitch» (serve il solo Client ID, che alla
-       pubblicazione viene copiato nel campo del pannello e quindi nella
-       pagina);
-     - follower e abbonati, che vogliono in piu l autorizzazione di
-       slayer_beard: --collega la chiede una volta sola, con un codice da
-       inserire su twitch.tv/activate, e la salva in
-       server/dati/twitch-accesso.json;
-     - «Ultima diretta» e la vetrina delle clip, che con la coppia
-       completa prendono un app token e chiedono a Twitch.
-
-   IL SECRET NON VA DA NESSUN'ALTRA PARTE. Non nello schema, non in
-   contenuti.json, non nel sito generato. Quel file sta accanto alla
-   password del pannello, in una cartella che non si carica online: e lo
-   stesso genere di segreto, e si tratta allo stesso modo.
-
-   Il file si puo anche scrivere a mano, copiando
-   server/modelli/chiavi.esempio.js: e un normale file JavaScript, con le
-   istruzioni dentro.
-   ===================================================================== */
 
 const fs = require('node:fs');
 
@@ -59,15 +28,11 @@ function aiuto() {
 
 function scrivi(clientId, clientSecret) {
   assicuraCartella(P.dati);
-  // La chiave di YouTube sta nello stesso file: riscrivendolo non va persa.
   let youtube = {};
   try { youtube = chiavi.leggi().youtube; } catch (e) { youtube = {}; }
   scriviAtomico(P.chiavi, chiavi.componi({ twitch: { clientId: clientId, clientSecret: clientSecret }, youtube: youtube }));
 
-  // Su Linux e macOS toglie il file dagli occhi degli altri utenti del
-  // computer. Su Windows i permessi POSIX non esistono e chmod non fa
-  // niente: non e un errore, e non deve fermare il comando.
-  try { fs.chmodSync(P.chiavi, 0o600); } catch (e) { /* Windows: nessun permesso POSIX */ }
+  try { fs.chmodSync(P.chiavi, 0o600); } catch (e) {  }
 }
 
 async function prova() {
@@ -85,8 +50,6 @@ async function prova() {
   const follower = await twitch.aggiornaFollower();
   console.log('  ' + twitch.raccontaFollower(follower));
   console.log('');
-  // Un fallimento qui e un fallimento del comando: chi lo lancia sta
-  // proprio verificando che funzioni.
   if (twitch.collegato()) {
     const numeri = await twitch.aggiornaNumeri();
     console.log('  ' + twitch.raccontaNumeri(numeri));
@@ -97,10 +60,6 @@ async function prova() {
   if (follower.stato === 'fallito' || follower.stato === 'senzaCanale') { process.exit(1); }
 }
 
-/**
- * L autorizzazione di slayer_beard, col codice di Twitch. Va fatta con
- * l account del CANALE: gli abbonati Twitch li mostra solo al proprietario.
- */
 async function collega() {
   if (!twitch.configurato()) {
     console.error('');
@@ -177,9 +136,6 @@ async function esegui() {
   const clientId = String(argomenti[0]).trim();
   const clientSecret = String(argomenti[1]).trim();
 
-  // Stessa forbice della convalida del campo nel pannello: il formato lo
-  // decide Twitch, quindi si rifiuta cio che e palesemente sbagliato e non
-  // cio che e diverso da trenta caratteri esatti.
   if (!/^[a-z0-9]{25,35}$/.test(clientId)) {
     console.error('');
     console.error('  Quello non sembra un Client ID: sono una trentina di caratteri,');
@@ -196,7 +152,6 @@ async function esegui() {
 
   const cambio = leggiSeEsiste(P.chiavi) !== null;
   scrivi(clientId, clientSecret);
-  // Le credenziali sono cambiate: il token in cache non vale piu niente.
   twitch.dimenticaToken();
 
   console.log('');
