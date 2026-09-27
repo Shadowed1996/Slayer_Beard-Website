@@ -1723,11 +1723,19 @@
       scritta(Math.floor(avanzamento * 100) + '%', bx + largo + 14, by - fs * 0.25, fs * 1.15, '800', TITOLO, BIANCO, 'left', true);
       scritta('LIVELLO ' + livello, 16, 12, fs, '800', TITOLO, BIANCO, 'left', true);
       dopoLivello('LIVELLO ' + livello, 16, 12, fs, true);
-      if (raggiunto > livello) { scritta('MIGLIORE LIVELLO ' + raggiunto, 16, 12 + fs * 1.3, fs * 0.8, '700', MONO, BIANCO, 'left', true); }
+      var sotto = 12 + fs * 1.3;
+      if (raggiunto > livello) {
+        scritta('MIGLIORE LIVELLO ' + raggiunto, 16, sotto, fs * 0.8, '700', MONO, BIANCO, 'left', true);
+        sotto += fs * 1.1;
+      }
       var nota = testoCanzone();
       if (nota && t - tInizioTentativo < 6) {
         ctx.globalAlpha = Math.max(0, Math.min(1, (6 - (t - tInizioTentativo)) / 1.2));
-        scritta(nota, W - 16, 12, fs * 0.9, '700', TITOLO, BIANCO, 'right', true);
+        if (W < 600) {
+          scritta(nota, 16, sotto, fs * 0.8, '700', TITOLO, BIANCO, 'left', true);
+        } else {
+          scritta(nota, W - 16, 12, fs * 0.9, '700', TITOLO, BIANCO, 'right', true);
+        }
         ctx.globalAlpha = 1;
       }
       ctx.restore();
@@ -1763,16 +1771,20 @@
       ctx.fillStyle = riempi;
       ctx.fillRect(16, by, largo * avanzamento, alto);
       scritta(Math.floor(avanzamento * 100) + '%', 16 + largo + 8, by - fs * 0.15, fs * 0.85, '600', MONO, C.violaChiaro, 'left', false);
-      scritta('TENTATIVO ' + tentativo, W - 16, 10, fs * 0.85, '600', MONO, C.violaChiaro, 'right', false);
-      var riga = 10 + fs * 1.2;
+      var stretto = W < 600;
+      var xDestra = stretto ? 16 : W - 16;
+      var allinea = stretto ? 'left' : 'right';
+      var riga = stretto ? by + alto + fs * 0.6 : 10;
+      scritta('TENTATIVO ' + tentativo, xDestra, riga, fs * 0.85, '600', MONO, C.violaChiaro, allinea, false);
+      riga += fs * 1.2;
       if (raggiunto > livello) {
-        scritta('MIGLIORE LIVELLO ' + raggiunto, W - 16, riga, fs * 0.85, '500', MONO, C.violaChiaro, 'right', false);
+        scritta('MIGLIORE LIVELLO ' + raggiunto, xDestra, riga, fs * 0.85, '500', MONO, C.violaChiaro, allinea, false);
         riga += fs * 1.1;
       }
       var nota = testoCanzone();
       if (nota && t - tInizioTentativo < 6) {
         ctx.globalAlpha = Math.max(0, Math.min(1, (6 - (t - tInizioTentativo)) / 1.2));
-        scritta(nota, W - 16, riga, fs * 0.85, '500', MONO, C.testo, 'right', false);
+        scritta(nota, xDestra, riga, fs * 0.85, '500', MONO, C.testo, allinea, false);
         ctx.globalAlpha = 1;
       }
       ctx.restore();
@@ -1802,7 +1814,7 @@
       ctx.globalAlpha = Math.max(0, Math.min(1, eta / 0.2, (durata - eta) / 0.6));
       ctx.shadowColor = C.allerta;
       ctx.shadowBlur = 12;
-      var y = Math.max(fs * 2.4, orizzonte * 0.42);
+      var y = W < 600 ? Math.max(fs * 7.2, orizzonte * 0.78) : Math.max(fs * 2.4, orizzonte * 0.42);
       scritta('LIVELLO ' + livello, W / 2, y, fs * 2, '700', MONO, C.allerta, 'center', false);
       ctx.shadowBlur = 0;
       if (tentativo > 1) { scritta('TENTATIVO ' + tentativo, W / 2, y + fs * 1.5, fs, '500', MONO, C.violaChiaro, 'center', false); }
