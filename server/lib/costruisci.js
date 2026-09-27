@@ -144,7 +144,7 @@ function settimanaDi(config, testi, adesso) {
 
       contenuto: !!(titolo || gioco || nota),
 
-      sostituito: (!pausa && sostituito.giorni[indice])
+      sostituito: sostituito.giorni[indice]
         ? (sostituito.evento.titolo || testi['settimana.etichettaEvento'] || '')
         : '',
       immagine: immagine,
@@ -1166,7 +1166,8 @@ function orariDati(config, adesso) {
       inizio: new Date(evento.inizio).toISOString(),
       termine: new Date(evento.termine).toISOString(),
       titolo: evento.titolo
-    }))
+    })),
+    pause: orari.pause.map((pausa) => pausa.data).filter((data, i, tutte) => data && tutte.indexOf(data) === i)
   };
 }
 

@@ -19,7 +19,7 @@
         <p class="nastro__segni"></p>
       </div>
       <div class="nastro__corpo">
-        {{#se saltata}}<p class="nastro__saltata"><span class="nastro__tag">{{settimana.etichettaSaltata}}</span>{{#se motivoSaltata}} <span class="nastro__motivo">{{motivoSaltata}}</span>{{/se}}</p>{{/se}}
+        {{#se saltata}}{{#se sostituito}}<p class="nastro__sostituito">{{sostituito}}</p>{{/se}}<p class="nastro__saltata"><span class="nastro__tag">{{settimana.etichettaSaltata}}</span>{{#se motivoSaltata}} <span class="nastro__motivo">{{motivoSaltata}}</span>{{/se}}</p>{{/se}}
         {{^se saltata}}
         <p class="nastro__quando"><span class="nastro__tag">{{tag}}</span>{{#se diretta}} <span class="nastro__orario"><b class="nastro__ora">{{ora}}</b><span class="nastro__fine"> – {{fine}}</span></span>{{/se}}</p>
         {{#se sostituito}}<p class="nastro__sostituito">{{sostituito}}</p>{{/se}}

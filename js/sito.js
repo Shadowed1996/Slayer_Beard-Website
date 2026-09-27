@@ -13,6 +13,7 @@
 
   const DURATA_SERIE = durata(ORARI.durataOre, 4);
   const EVENTI = eventiDi(ORARI.eventi);
+  const PAUSE = Array.isArray(ORARI.pause) ? ORARI.pause.filter(function (d) { return typeof d === 'string'; }) : [];
 
   const ORA_MS = 3600000;
   const GIORNO_MS = 86400000;
@@ -243,13 +244,14 @@
     });
 
     finestre.forEach(function (f) {
+      f.saltata = PAUSE.indexOf(f.data) !== -1;
       f.sostituita = !!attivo && f.inizio < attivo.termine && f.termine > attivoDa;
     });
 
     let prossimaRegolare = null;
     let inCorso = null;
     finestre.forEach(function (f) {
-      if (f.sostituita) { return; }
+      if (f.sostituita || f.saltata) { return; }
       if (!prossimaRegolare && f.inizio > adesso) { prossimaRegolare = f; }
       if (f.inizio <= adesso && adesso < f.termine) { inCorso = f; }
     });
@@ -360,8 +362,10 @@
     if (!memoria.nodoSostituito) {
       const p = document.createElement('p');
       p.className = 'nastro__sostituito';
+      const saltata = memoria.li.querySelector('.nastro__saltata');
       if (memoria.quando) { memoria.quando.insertAdjacentElement('afterend', p); }
-      else { memoria.li.appendChild(p); }
+      else if (saltata) { saltata.insertAdjacentElement('beforebegin', p); }
+      else { (memoria.li.querySelector('.nastro__corpo') || memoria.li).appendChild(p); }
       memoria.nodoSostituito = p;
     }
     memoria.nodoSostituito.hidden = false;
