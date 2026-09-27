@@ -762,7 +762,6 @@ function costruisciContesto(contenuti, opzioni) {
     settimana: settimanaDi(config, testi, adesso),
     clip: clipDi(config, testi),
     clipPagina: clipPaginaDi(config, testi),
-    sponsor: sponsorDi(config, testi, adesso),
     giochi: giochiDi(config, testi),
     sito: {
       urlCanale: urlCanale,
@@ -798,6 +797,11 @@ function costruisciContesto(contenuti, opzioni) {
     }
   });
 
+  contesto.sponsor = sponsorDi(config, testi, adesso, { cache: cache, mancanti: mancanti, giochi: contesto.giochi });
+  for (const campo of schema.campi()) {
+    if (campo.chiave.startsWith('sponsor.') && typeof contesto[campo.chiave] !== 'string') { contesto[campo.chiave] = testoSponsor(testi, campo.chiave); }
+  }
+
   const presentazioneClip = testoricco.soloTesto(testi['clip.paginaTesto'] || '');
   contesto.sito.paginaClip = {
     url: 'clip.html',
@@ -806,7 +810,7 @@ function costruisciContesto(contenuti, opzioni) {
     descrizione: presentazioneClip || String(testi['meta.descrizione'] || '')
   };
 
-  contesto.sito.sponsorInHome = !!(attiva.sponsor && contesto.sponsor.attivo);
+  contesto.sito.sponsorInHome = !!(attiva.sponsor && (contesto.sponsor.attivo || contesto.sponsor.invito));
   contesto.sito.slayer = !(config.slayer && config.slayer.attivo === false);
   contesto.sito.pollorun = {
     attivo: !(config.pollorun && config.pollorun.attivo === false),
@@ -998,6 +1002,9 @@ function accountDi(config, testi) {
 }
 
 const SPONSOR_NUOVO_GIORNI = 30;
+const RE_IMMAGINE_LOCALE = /^(img|contenuti\/media)\/[A-Za-z0-9._\/-]+\.(png|jpe?g|webp|svg|gif|avif)$/i;
+const RE_EMAIL_SICURA = /^[^\s@<>"'()\\,;:]+@[^\s@<>"'()\\,;:]+\.[A-Za-z]{2,}$/;
+const ICONA_FORMATO = 'star';
 
 function coloreMarchio(valore) {
   const pulito = String(valore || '').trim();
@@ -1012,31 +1019,133 @@ function dominioDi(url) {
   }
 }
 
-function sponsorDi(config, testi, adesso) {
+function urlSicuro(valore) {
+  const testo = String(valore || '').trim();
+  if (!testo || /[\u0000- \u007f"'<>\\`]/.test(testo)) { return ''; }
+  let letto;
+  try { letto = new URL(testo); } catch (e) { return ''; }
+  if (letto.protocol !== 'https:' && letto.protocol !== 'http:') { return ''; }
+  if (!letto.hostname || letto.username || letto.password) { return ''; }
+  return letto.href;
+}
+
+function immagineLocale(valore) {
+  const testo = String(valore || '').trim().replace(/^\/+/, '');
+  if (!RE_IMMAGINE_LOCALE.test(testo) || testo.indexOf('..') !== -1 || testo.indexOf('//') !== -1) { return ''; }
+  return testo;
+}
+
+function emailSicura(valore) {
+  const testo = String(valore || '').trim();
+  return testo.length <= 254 && RE_EMAIL_SICURA.test(testo) ? testo : '';
+}
+
+function testoSponsor(testi, chiave) {
+  if (typeof testi[chiave] === 'string') { return testi[chiave]; }
+  const campo = schema.campo(chiave);
+  return campo && typeof campo.predefinito === 'string' ? campo.predefinito : '';
+}
+
+function valoreNumero(dato, voce, config, giochi) {
+  const dati = (config.dati && typeof config.dati === 'object') ? config.dati : {};
+  const positivo = (n) => { const v = Number(n); return Number.isFinite(v) && v > 0 ? v : 0; };
+  const somma = (campo) => (giochi && Array.isArray(giochi.voci) ? giochi.voci : [])
+    .reduce((totale, g) => totale + positivo(g && g[campo]), 0);
+
+  if (dato === 'follower') { const n = positivo(dati.follower); return n ? { valore: numeroTesto(n) } : null; }
+  if (dato === 'spettatori') { const n = positivo(dati.spettatoriMedi); return n ? { valore: numeroTesto(n) } : null; }
+  if (dato === 'abbonati') { const n = positivo(dati.abbonati); return n ? { valore: numeroTesto(n) } : null; }
+  if (dato === 'settimana') {
+    const n = orariDi(config).giorni.length;
+    return n ? { valore: String(n), dettaglio: orariTesto(config) } : null;
+  }
+  if (dato === 'ore') { const n = somma('ore'); return n >= 1 ? { valore: oreTesto(Math.round(n)) } : null; }
+  if (dato === 'giochi') {
+    const n = giochi && Array.isArray(giochi.voci) ? giochi.voci.length : 0;
+    return n ? { valore: numeroTesto(n) } : null;
+  }
+  if (dato === 'clip') { const n = somma('clip'); return n ? { valore: numeroTesto(n) } : null; }
+  if (dato === 'dal') {
+    const anno = Number(dati.dal);
+    return Number.isInteger(anno) && anno >= 2005 && anno <= 2100 ? { valore: String(anno) } : null;
+  }
+  if (dato === 'lingua') { const t = String(dati.lingua || '').trim(); return t ? { valore: t } : null; }
+  if (dato === 'mano') { const t = String(voce.valore || '').trim(); return t ? { valore: t } : null; }
+  return null;
+}
+
+function numeriSponsor(ramo, config, giochi) {
+  const grezzi = Array.isArray(ramo.numeri) ? ramo.numeri : schema.campo('config.sponsor.numeri').predefinito;
+  const fuori = [];
+  grezzi.forEach((voce, indice) => {
+    if (!voce || typeof voce !== 'object') { return; }
+    const trovato = valoreNumero(String(voce.dato || ''), voce, config, giochi);
+    if (!trovato) { return; }
+    fuori.push({
+      valore: trovato.valore,
+      dettaglio: trovato.dettaglio || '',
+      etichetta: String(voce.etichetta || '').trim(),
+      chiaveEtichetta: 'config.sponsor.numeri.' + indice + '.etichetta'
+    });
+  });
+  return fuori;
+}
+
+function formatiSponsor(ramo, cache, mancanti) {
+  const grezzi = Array.isArray(ramo.formati) ? ramo.formati : schema.campo('config.sponsor.formati').predefinito;
+  const ammesse = schema.campo('config.sponsor.formati').campi.find((c) => c.chiave === 'icona').opzioni;
+  const fuori = [];
+  grezzi.forEach((voce, indice) => {
+    if (!voce || typeof voce !== 'object') { return; }
+    const titolo = String(voce.titolo || '').trim();
+    if (!titolo) { return; }
+    const icona = ammesse.indexOf(voce.icona) !== -1 ? voce.icona : ICONA_FORMATO;
+    fuori.push({
+      titolo: titolo,
+      testo: String(voce.testo || ''),
+      svg: leggiIcona(icona, cache, mancanti),
+      chiaveTitolo: 'config.sponsor.formati.' + indice + '.titolo',
+      chiaveTesto: 'config.sponsor.formati.' + indice + '.testo'
+    });
+  });
+  return fuori;
+}
+
+function sponsorDi(config, testi, adesso, extra) {
   const ramo = (config.sponsor && typeof config.sponsor === 'object') ? config.sponsor : {};
   const grezzi = Array.isArray(ramo.voci) ? ramo.voci : [];
   const ora = Number.isFinite(adesso) ? adesso : Date.now();
   const visita = String(testi['sponsor.visita'] || '').trim();
+  const aggiunte = extra || {};
+  const cache = aggiunte.cache || new Map();
+  const mancanti = aggiunte.mancanti || [];
 
   const voci = [];
-  for (const voce of grezzi) {
-    if (!voce || typeof voce !== 'object') { continue; }
-    const url = String(voce.url || '').trim();
+  grezzi.forEach((voce, indice) => {
+    if (!voce || typeof voce !== 'object') { return; }
+    const url = urlSicuro(voce.url);
     const nome = String(voce.nome || '').trim();
-    if (!url || !nome) { continue; }
+    if (!url || !nome) { return; }
 
     const da = istanteItaliano(voce.da);
     const a = istanteItaliano(voce.a);
     const colore = coloreMarchio(voce.colore);
-    if (da && ora < da.ms) { continue; }
-    if (a && ora >= a.ms) { continue; }
+    if (da && ora < da.ms) { return; }
+    if (a && ora >= a.ms) { return; }
 
+    const radice = 'config.sponsor.voci.' + indice + '.';
+    const categoria = String(voce.categoria || '').trim();
+    const nuovo = !!(da && ora - da.ms >= 0 && ora - da.ms <= SPONSOR_NUOVO_GIORNI * 86400000);
     voci.push({
+      indice: indice,
       nome: nome,
       url: url,
-      logo: String(voce.logo || '').trim(),
+      logo: immagineLocale(voce.logo),
       testo: String(voce.testo || ''),
-      categoria: String(voce.categoria || '').trim(),
+      categoria: categoria,
+      etichette: !!(categoria || voce.evidenza === true || nuovo),
+      codice: String(voce.codice || '').trim(),
+      codiceNota: String(voce.codiceNota || '').trim(),
       evidenza: voce.evidenza === true,
 
       dominio: dominioDi(url),
@@ -1045,40 +1154,55 @@ function sponsorDi(config, testi, adesso) {
       stile: colore ? '--marca: ' + colore + ';' : '',
 
       dalAnno: da ? da.data.slice(0, 4) : '',
-      nuovo: !!(da && ora - da.ms >= 0 && ora - da.ms <= SPONSOR_NUOVO_GIORNI * 86400000),
+      nuovo: nuovo,
       da: da ? da.iso : '',
       a: a ? a.iso : '',
 
-      visita: visita ? visita + ' ' + nome : nome
+      visita: visita ? visita + ' ' + nome : nome,
+
+      chiaveNome: radice + 'nome',
+      chiaveTesto: radice + 'testo',
+      chiaveLogo: radice + 'logo',
+      chiaveCategoria: radice + 'categoria',
+      chiaveCodice: radice + 'codice',
+      chiaveCodiceNota: radice + 'codiceNota'
     });
-  }
+  });
 
-  voci.sort((x, y) => (y.evidenza ? 1 : 0) - (x.evidenza ? 1 : 0));
+  voci.sort((x, y) => (y.evidenza ? 1 : 0) - (x.evidenza ? 1 : 0) || x.indice - y.indice);
 
-  const gruppi = [];
-  const indice = new Map();
-  for (const voce of voci) {
-    const chiave = voce.categoria.toLowerCase();
-    if (!indice.has(chiave)) {
-      indice.set(chiave, gruppi.length);
-      gruppi.push({ titolo: voce.categoria, senza: !voce.categoria, voci: [] });
-    }
-    gruppi[indice.get(chiave)].voci.push(voce);
-  }
-  gruppi.sort((x, y) => (x.senza ? 1 : 0) - (y.senza ? 1 : 0));
+  const pagina = ramo.attivo === true;
+  const numeri = numeriSponsor(ramo, config, aggiunte.giochi || null);
+  const formati = formatiSponsor(ramo, cache, mancanti);
 
-  const soloUno = gruppi.length === 1;
-  for (const gruppo of gruppi) {
-    if (gruppo.senza) { gruppo.titolo = String(testi['sponsor.altri'] || ''); }
-
-    gruppo.titolato = !(soloUno && gruppo.senza);
-  }
+  const email = emailSicura(ramo.email) || emailSicura(config.email);
+  const oggetto = String(testoSponsor(testi, 'sponsor.contattoOggetto')).trim();
+  const immagini = (config.immagini && typeof config.immagini === 'object') ? config.immagini : {};
 
   return {
-    attivo: ramo.attivo === true && voci.length > 0,
+    attivo: pagina && voci.length > 0,
+    pagina: pagina,
+    invito: pagina && voci.length === 0 && ramo.invitoHome === true,
     voci: voci,
-    gruppi: gruppi,
-    quanti: voci.length
+    quanti: voci.length,
+    haVoci: voci.length > 0,
+
+    copertina: immagineLocale(ramo.copertina) || immagineLocale(immagini.banner),
+    copertinaPropria: !!immagineLocale(ramo.copertina),
+
+    numeri: numeri,
+    mostraNumeri: ramo.mostraNumeri !== false && numeri.length > 0,
+    numeriQuando: dataTesto(new Date(ora).toISOString()),
+
+    formati: formati,
+    mostraFormati: ramo.mostraFormati !== false && formati.length > 0,
+
+    mostraPartner: ramo.mostraPartner !== false,
+
+    email: email,
+    mailto: email ? 'mailto:' + email + (oggetto ? '?subject=' + encodeURIComponent(oggetto) : '') : '',
+    mediaKit: urlSicuro(ramo.mediaKit),
+    polletto: ramo.polletto !== false ? immagineLocale(immagini.mascotte) : ''
   };
 }
 
@@ -1535,7 +1659,7 @@ function rendi(contenuti, opzioni) {
   }
 
   let sponsor = null;
-  if (contesto.sponsor.attivo) {
+  if (contesto.sponsor.pagina || scelte.forzaSponsor === true) {
     if (!eFile(P.modelloSponsor)) {
       throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.modelloSponsor) +
         ': e il modello della pagina degli sponsor.');
@@ -1588,8 +1712,13 @@ function perEditor(html) {
   return pagina;
 }
 
-function anteprimaEditor(contenuti) {
+function anteprimaEditor(contenuti, pagina) {
+  if (pagina === 'sponsor') { return perEditor(rendi(contenuti, { forzaSponsor: true }).sponsor); }
   return perEditor(rendi(contenuti).html);
+}
+
+function anteprimaSponsor(contenuti) {
+  return rendi(contenuti, { forzaSponsor: true }).sponsor;
 }
 
 const FILE_OCCUPATO = new Set(['EPERM', 'EACCES', 'EBUSY']);
@@ -1868,7 +1997,7 @@ function genera(opzioni) {
 
 module.exports = {
   genera, anteprima, anteprimaDi, anteprimaEditor, anteprimaManutenzione, inManutenzione,
-  allineaClipDopoRipristino, allineaSponsorDopoRipristino, allineaGiochiDopoRipristino, allineaStatoDopoRipristino,
+  anteprimaSponsor, allineaClipDopoRipristino, allineaSponsorDopoRipristino, allineaGiochiDopoRipristino, allineaStatoDopoRipristino,
   fineManutenzione, istanteItaliano, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, sponsorDi, giochiDi, jsonSicuro, chiaviRicche,

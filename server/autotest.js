@@ -4145,31 +4145,80 @@ async function provePannelloEsposto() {
 }
 
 async function proveSponsor(contenutiVeri, costruisci, archivio) {
-  apriSezione('11c. Gli sponsor');
+  apriSezione('11c. La pagina degli sponsor');
 
+  const schema = require('../contenuti/schema.js');
+  const SBStili = require('../pannello/condivisi/stili.js');
   const ADESSO = Date.UTC(2026, 8, 23, 9, 0, 0);
   const voce = (ritocco) => Object.assign({
-    chiave: 's', nome: 'Uno', logo: '', testo: '', categoria: '', url: 'https://uno.example.com/', da: '', a: '', evidenza: false
+    chiave: 's', nome: 'Uno', logo: '', testo: '', categoria: '', codice: '', codiceNota: '', colore: '',
+    url: 'https://uno.example.com/', da: '', a: '', evidenza: false
   }, ritocco || {});
-  const con = (voci) => {
+  const con = (voci, ritocco) => {
     const d = JSON.parse(JSON.stringify(contenutiVeri));
-    d.config.sponsor = { attivo: true, voci: voci };
+    d.config.sponsor = Object.assign({}, d.config.sponsor, { attivo: true, voci: voci }, ritocco || {});
     return d;
   };
   const sponsorDi = (d) => costruisci.sponsorDi(d.config, d.testi, ADESSO);
 
-  await prova('senza link non si vede: e il patto di ogni elenco del sito', () => {
+  await prova('lo schema: ogni campo nuovo ha il suo predefinito, e i contenuti di oggi si completano senza perdere niente', () => {
+    const gruppo = schema.gruppi.find((g) => g.id === 'sponsor');
+    esigi(gruppo, 'manca il gruppo sponsor');
+    for (const campo of gruppo.campi) {
+      esigi(Object.prototype.hasOwnProperty.call(campo, 'predefinito'), campo.chiave + ' senza predefinito');
+      for (const sotto of campo.campi || []) {
+        esigi(Object.prototype.hasOwnProperty.call(sotto, 'predefinito'), campo.chiave + '.' + sotto.chiave + ' senza predefinito');
+      }
+    }
+    const vecchio = { testi: { 'sponsor.titolo': 'Scritto da lei', 'sponsor.altri': 'Altri' }, config: { sponsor: { attivo: true, voci: [{ chiave: 'x', nome: 'X', url: 'https://x.example.com/' }] } } };
+    schema.completa(vecchio);
+    esigiUguale(vecchio.testi['sponsor.titolo'], 'Scritto da lei', 'un testo scritto a mano resta');
+    esigiUguale(vecchio.config.sponsor.voci[0].nome, 'X', 'lo sponsor salvato resta');
+    esigiUguale(vecchio.config.sponsor.voci[0].codice, '', 'la voce vecchia prende il campo codice vuoto');
+    esigiUguale(vecchio.config.sponsor.mostraNumeri, true, 'le sezioni nuove partono accese');
+    esigi(Array.isArray(vecchio.config.sponsor.formati) && vecchio.config.sponsor.formati.length === 4, 'i formati predefiniti');
+    esigi(!Object.prototype.hasOwnProperty.call(vecchio.testi, 'sponsor.altri'), 'sponsor.altri non serve piu e va tolto');
+    esigiUguale(schema.verificaCopertura(vecchio).filter((p) => /sponsor/.test(p.chiave)).length, 0, 'copertura dello schema');
+  });
+
+  await prova('i testi della pagina vecchia mai toccati prendono quelli nuovi, quelli cambiati restano', () => {
+    const intatto = { testi: { 'sponsor.paginaTitolo': 'Gli sponsor', 'sponsor.paginaTesto': 'Le realtà che sostengono il canale, divise per categoria. Ogni scheda porta al loro sito.' }, config: {} };
+    schema.completa(intatto);
+    esigiUguale(intatto.testi['sponsor.paginaTitolo'], schema.campo('sponsor.paginaTitolo').predefinito, 'titolo rinnovato');
+    esigi(intatto.testi['sponsor.paginaTesto'].indexOf('divise per categoria') === -1, 'presentazione rinnovata');
+    const scritto = { testi: { 'sponsor.paginaTitolo': 'I miei partner' }, config: {} };
+    schema.completa(scritto);
+    esigiUguale(scritto.testi['sponsor.paginaTitolo'], 'I miei partner', 'titolo scritto da lei');
+  });
+
+  await prova('senza link, o con un link che non e http o https, lo sponsor non si vede', () => {
     const esito = sponsorDi(con([
       voce({ chiave: 'a', nome: 'Con link' }),
       voce({ chiave: 'b', nome: 'Senza link', url: '' }),
-      voce({ chiave: 'c', nome: 'Senza nome', nome: '' })
+      voce({ chiave: 'c', nome: 'Senza nome', nome: '' }),
+      voce({ chiave: 'd', nome: 'Script', url: 'javascript:alert(1)' }),
+      voce({ chiave: 'e', nome: 'Dati', url: 'data:text/html,<b>x</b>' }),
+      voce({ chiave: 'f', nome: 'Ftp', url: 'ftp://x.example.com/' }),
+      voce({ chiave: 'g', nome: 'Password', url: 'https://io:segreto@x.example.com/' }),
+      voce({ chiave: 'h', nome: 'Virgolette', url: 'https://x.example.com/"onmouseover="x' }),
+      voce({ chiave: 'i', nome: 'Relativo', url: '/pagina' })
     ]));
     esigiUguale(esito.voci.map((v) => v.nome).join(','), 'Con link', 'voci visibili');
     esigiUguale(esito.attivo, true, 'attivo');
   });
 
-  await prova('fuori dal periodo non si vede, e il periodo e italiano', () => {
+  await prova('il logo vale solo se e un immagine del sito: niente indirizzi esterni o percorsi che escono', () => {
+    const esito = sponsorDi(con([
+      voce({ chiave: 'a', nome: 'A', logo: 'contenuti/media/logo.webp' }),
+      voce({ chiave: 'b', nome: 'B', logo: 'https://altro.example.com/logo.png' }),
+      voce({ chiave: 'c', nome: 'C', logo: 'contenuti/media/../../segreto.png' }),
+      voce({ chiave: 'd', nome: 'D', logo: 'contenuti/media/logo.exe' }),
+      voce({ chiave: 'e', nome: 'E', logo: '/img/avatar.webp' })
+    ]));
+    esigiUguale(esito.voci.map((v) => v.logo).join('|'), 'contenuti/media/logo.webp||||img/avatar.webp', 'loghi');
+  });
 
+  await prova('fuori dal periodo non si vede, e il periodo e italiano', () => {
     const esito = sponsorDi(con([
       voce({ chiave: 'a', nome: 'In corso' }),
       voce({ chiave: 'b', nome: 'Gia finito', a: '2026-09-23T10:00' }),
@@ -4178,86 +4227,129 @@ async function proveSponsor(contenutiVeri, costruisci, archivio) {
       voce({ chiave: 'e', nome: 'Finisce adesso', a: '2026-09-23T11:00' }),
       voce({ chiave: 'f', nome: 'Dentro', da: '2026-09-01T00:00', a: '2026-12-31T23:59' })
     ]));
-    esigiUguale(esito.voci.map((v) => v.nome).join(','),
-      'In corso,Comincia adesso,Dentro', 'voci dentro il periodo');
+    esigiUguale(esito.voci.map((v) => v.nome).join(','), 'In corso,Comincia adesso,Dentro', 'voci dentro il periodo');
   });
 
-  await prova('in evidenza passa davanti, e fra pari resta l ordine del pannello', () => {
+  await prova('in evidenza passa davanti, fra pari resta l ordine del pannello, e ogni scheda ricorda il suo posto nell elenco', () => {
     const esito = sponsorDi(con([
       voce({ chiave: 'a', nome: 'Primo' }),
-      voce({ chiave: 'b', nome: 'Secondo' }),
+      voce({ chiave: 'b', nome: 'Secondo', url: '' }),
       voce({ chiave: 'c', nome: 'Terzo', evidenza: true }),
       voce({ chiave: 'd', nome: 'Quarto', evidenza: true })
     ]));
-    esigiUguale(esito.voci.map((v) => v.nome).join(','), 'Terzo,Quarto,Primo,Secondo', 'ordine');
+    esigiUguale(esito.voci.map((v) => v.nome).join(','), 'Terzo,Quarto,Primo', 'ordine');
+    esigiUguale(esito.voci.map((v) => v.chiaveNome).join(','),
+      'config.sponsor.voci.2.nome,config.sponsor.voci.3.nome,config.sponsor.voci.0.nome', 'chiavi per l editor');
+    esigiUguale(esito.voci[0].chiaveLogo, 'config.sponsor.voci.2.logo', 'chiave del logo');
   });
 
-  await prova('i gruppi seguono le categorie, e chi non ne ha finisce in fondo', () => {
+  await prova('codice sconto, dominio, colore ed etichette della scheda', () => {
     const esito = sponsorDi(con([
-      voce({ chiave: 'a', nome: 'Uno', categoria: 'Hardware' }),
-      voce({ chiave: 'b', nome: 'Due', categoria: '' }),
-      voce({ chiave: 'c', nome: 'Tre', categoria: 'Energy drink' }),
-      voce({ chiave: 'd', nome: 'Quattro', categoria: 'hardware' })
-    ]));
-    esigiUguale(esito.gruppi.map((g) => g.titolo).join(' | '),
-      'Hardware | Energy drink | ' + contenutiVeri.testi['sponsor.altri'], 'titoli dei gruppi');
-    esigiUguale(esito.gruppi[0].voci.map((v) => v.nome).join(','), 'Uno,Quattro', 'maiuscole diverse, stessa categoria');
-    esigiUguale(esito.gruppi.map((g) => g.titolato).join(','), 'true,true,true', 'tutti titolati');
-  });
-
-  await prova('un gruppo solo e senza categoria non stampa nessun titolo', () => {
-    const esito = sponsorDi(con([voce({ nome: 'Uno' }), voce({ chiave: 'b', nome: 'Due' })]));
-    esigiUguale(esito.gruppi.length, 1, 'gruppi');
-    esigiUguale(esito.gruppi[0].titolato, false, 'titolato');
-  });
-
-  await prova('il dominio per il bottone, senza www e senza il resto dell indirizzo', () => {
-    const esito = sponsorDi(con([
-      voce({ chiave: 'a', nome: 'Uno', url: 'https://www.example.com/pagina?x=1' }),
-      voce({ chiave: 'b', nome: 'Due', url: 'https://negozio.example.org/' })
+      voce({ chiave: 'a', nome: 'Uno', url: 'https://www.example.com/pagina?x=1', codice: 'SLAYER10', codiceNota: '10%', colore: '#22e0ff', categoria: 'Hardware' }),
+      voce({ chiave: 'b', nome: 'Due', url: 'https://negozio.example.org/', colore: 'red; background:url(x)' })
     ]));
     esigiUguale(esito.voci.map((v) => v.dominio).join(','), 'example.com,negozio.example.org', 'domini');
+    esigiUguale(esito.voci[0].codice + '|' + esito.voci[0].codiceNota, 'SLAYER10|10%', 'codice');
+    esigiUguale(esito.voci[0].stile, '--marca: #22e0ff;', 'colore valido');
+    esigiUguale(esito.voci[1].stile, '', 'colore scritto male non entra nello stile');
+    esigiUguale(esito.voci.map((v) => v.etichette).join(','), 'true,false', 'riga delle etichette');
   });
 
-  await prova('spenti, o senza nessuno dentro il periodo, la sezione non e attiva', () => {
+  await prova('i numeri vengono dai dati del sito, e quelli che non ci sono non si inventano', () => {
+    const d = con([], {
+      numeri: [
+        { dato: 'follower', etichetta: 'Follower', valore: '' },
+        { dato: 'spettatori', etichetta: 'Spettatori', valore: '' },
+        { dato: 'abbonati', etichetta: 'Abbonati', valore: '' },
+        { dato: 'dal', etichetta: 'Dal', valore: '' },
+        { dato: 'mano', etichetta: 'Eta', valore: '18-34' },
+        { dato: 'mano', etichetta: 'Vuoto', valore: '  ' },
+        { dato: 'boh', etichetta: 'Sconosciuto', valore: '9' },
+        { dato: 'settimana', etichetta: 'A settimana', valore: '' }
+      ]
+    });
+    d.config.dati = Object.assign({}, d.config.dati, { follower: 12345, spettatoriMedi: 25, abbonati: 0, dal: 2013 });
+    const numeri = sponsorDi(d).numeri;
+    const letti = numeri.map((n) => n.etichetta + '=' + n.valore);
+    esigiUguale(letti.slice(0, 4).join(','), 'Follower=12.345,Spettatori=25,Dal=2013,Eta=18-34', 'valori');
+    esigi(!letti.some((l) => /^(Abbonati|Vuoto|Sconosciuto)=/.test(l)), 'un numero che non c e e comparso: ' + letti.join(','));
+    esigiUguale(numeri[0].chiaveEtichetta, 'config.sponsor.numeri.0.etichetta', 'chiave per l editor');
+    const giorni = d.config.orari && Array.isArray(d.config.orari.giorni) ? d.config.orari.giorni.length : 0;
+    esigiUguale(letti.some((l) => l.startsWith('A settimana=')), giorni > 0, 'dirette a settimana dalla schedule');
+    const spenti = con([], { mostraNumeri: false });
+    esigiUguale(sponsorDi(spenti).mostraNumeri, false, 'sezione spenta');
+  });
+
+  await prova('formati, contatti e media kit: icone ammesse, email sicura, link solo http o https', () => {
+    const d = con([], {
+      formati: [{ titolo: 'Uno', testo: '', icona: 'microfono' }, { titolo: 'Due', testo: '', icona: '../../segreto' }, { titolo: '', testo: 'senza titolo', icona: 'star' }],
+      email: '', mediaKit: 'javascript:alert(1)'
+    });
+    d.config.email = 'canale@example.com';
+    d.testi['sponsor.contattoOggetto'] = 'Proposta & idea';
+    const esito = costruisci.sponsorDi(d.config, d.testi, ADESSO, { cache: new Map(), mancanti: [] });
+    esigiUguale(esito.formati.map((f) => f.titolo).join(','), 'Uno,Due', 'formati senza titolo tolti');
+    esigiDentro(esito.formati[1].svg, '<svg', 'icona sconosciuta sostituita');
+    esigiUguale(esito.email, 'canale@example.com', 'ripiego sull email del sito');
+    esigiUguale(esito.mailto, 'mailto:canale@example.com?subject=Proposta%20%26%20idea', 'mailto con oggetto');
+    esigiUguale(esito.mediaKit, '', 'media kit javascript tolto');
+    d.config.sponsor.email = 'marchi@example.com"><b>';
+    esigiUguale(costruisci.sponsorDi(d.config, d.testi, ADESSO).email, 'canale@example.com', 'email sporca ignorata');
+    d.config.sponsor.email = 'marchi@example.com';
+    d.config.sponsor.mediaKit = 'https://example.com/kit.pdf';
+    const pulito = costruisci.sponsorDi(d.config, d.testi, ADESSO);
+    esigiUguale(pulito.email + '|' + pulito.mediaKit, 'marchi@example.com|https://example.com/kit.pdf', 'email e media kit propri');
+  });
+
+  await prova('spenta non c e niente; accesa la pagina esiste anche senza sponsor, la striscia in home no', () => {
     const spenti = JSON.parse(JSON.stringify(contenutiVeri));
     spenti.config.sponsor = { attivo: false, voci: [voce({})] };
-    esigiUguale(costruisci.sponsorDi(spenti.config, spenti.testi, ADESSO).attivo, false, 'interruttore spento');
-
-    const scaduti = con([voce({ a: '2020-01-01T00:00' })]);
-    esigiUguale(sponsorDi(scaduti).attivo, false, 'acceso ma nessuno nel periodo');
+    const esitoSpento = costruisci.sponsorDi(spenti.config, spenti.testi, ADESSO);
+    esigiUguale(esitoSpento.attivo + '|' + esitoSpento.pagina, 'false|false', 'interruttore spento');
+    const scaduti = sponsorDi(con([voce({ a: '2020-01-01T00:00' })]));
+    esigiUguale(scaduti.attivo + '|' + scaduti.pagina + '|' + scaduti.invito, 'false|true|false', 'accesa ma nessuno nel periodo');
+    const invito = sponsorDi(con([], { invitoHome: true }));
+    esigiUguale(invito.invito, true, 'invito in home');
   });
 
   const originale = fs.readFileSync(P.contenutiJson, 'utf8');
   const scrivi = (documento) => fs.writeFileSync(P.contenutiJson, JSON.stringify(documento, null, 2) + '\n');
 
-  await prova('la pagina si scrive quando servono, e si toglie quando non servono piu', () => {
+  await prova('con tre sponsor: la pagina si scrive con tutte le parti, la home ha la striscia; spenta si toglie', () => {
     scrivi(con([
-      voce({ chiave: 'a', nome: 'Uno', categoria: 'Hardware', url: 'https://uno.example.com/' }),
-      voce({ chiave: 'b', nome: 'Due', categoria: '', url: 'https://due.example.com/', evidenza: true })
+      voce({ chiave: 'a', nome: 'Uno', categoria: 'Hardware', url: 'https://uno.example.com/', codice: 'SLAYER10' }),
+      voce({ chiave: 'b', nome: 'Due', url: 'https://due.example.com/', evidenza: true, logo: 'img/avatar.webp' }),
+      voce({ chiave: 'c', nome: 'Tre <b>', url: 'https://tre.example.com/' })
     ]));
     const acceso = costruisci.genera({ adesso: ADESSO });
     esigiUguale(acceso.paginaSponsor.stato, 'scritta', 'sponsor.html');
-    esigiUguale(acceso.sponsor, 2, 'quanti sponsor');
-    esigi(fs.existsSync(P.sponsorHtml), 'sponsor.html non scritta');
+    esigiUguale(acceso.sponsor, 3, 'quanti sponsor');
 
     const html = fs.readFileSync(P.sponsorHtml, 'utf8');
-    esigiDentro(html, 'Due', 'il nome dello sponsor');
-    esigiDentro(html, 'rel="noopener sponsored"', 'il rel che Google chiede per le collaborazioni');
+    esigiDentro(html, 'Tre &lt;b&gt;', 'il nome protetto');
+    esigiUguale(html.split('rel="noopener sponsored"').length - 1, 3, 'un link sponsored per scheda');
     esigiDentro(html, 'uno.example.com', 'il dominio sul bottone');
+    esigiDentro(html, 'data-sponsor-copia="SLAYER10"', 'il codice da copiare');
+    esigiDentro(html, '<link rel="stylesheet" href="css/sponsor-pagina.css">', 'il foglio della pagina');
     esigiDentro(html, '<script src="js/sponsor.js" defer></script>', 'lo script della pagina');
     esigiDentro(html, '<script src="js/guardia.js" defer></script>', 'la guardia della manutenzione');
+    esigiDentro(html, 'href="#contatto"', 'il bottone verso i contatti');
+    for (const parte of ['sponsor-apertura', 'sponsor-numeri', 'sponsor-formati', 'sponsor', 'sponsor-contatto']) {
+      esigiDentro(html, 'data-sb-parte="' + parte + '"', 'la parte ' + parte);
+    }
     esigi(html.indexOf('<!--') === -1, 'la pagina pubblicata contiene un commento');
+    esigi(html.indexOf('sp-libero') === -1, 'con gli sponsor non va l invito a essere il primo');
 
     const mappa = fs.readFileSync(path.join(P.radice, 'sitemap.xml'), 'utf8');
     esigiDentro(mappa, 'sponsor.html', 'sponsor.html nella sitemap');
 
     const home = fs.readFileSync(P.indexHtml, 'utf8');
     esigiDentro(home, 'id="sponsor"', 'la striscia in home');
+    esigiDentro(home, 'data-sponsor-nastro', 'i loghi in fila');
     esigiDentro(home, 'href="sponsor.html"', 'il bottone che porta alla pagina');
     esigiDentro(home, '<link rel="stylesheet" href="css/sponsor.css">', 'il foglio');
     esigiDentro(home, '<script src="js/sponsor.js" defer></script>', 'lo script');
-
+    esigi(home.indexOf('sponsor-pagina.css') === -1, 'la home carica il foglio della pagina');
     esigi(home.indexOf('href="#sponsor"') === -1, 'la sezione sponsor e finita nel binario');
 
     const spenti = JSON.parse(fs.readFileSync(P.contenutiJson, 'utf8'));
@@ -4272,19 +4364,77 @@ async function proveSponsor(contenutiVeri, costruisci, archivio) {
     esigi(senza.indexOf('js/sponsor.js') === -1, 'lo script si carica per niente');
   });
 
-  await prova('l ultima collaborazione che scade porta via la pagina da sola', () => {
-    scrivi(con([voce({ nome: 'Uno', a: '2026-09-23T10:00' })]));
+  await prova('con uno sponsor solo, e con nessuno: la pagina resta e invita a essere il primo', () => {
+    scrivi(con([voce({ nome: 'Solo' })]));
+    costruisci.genera({ adesso: ADESSO });
+    const uno = fs.readFileSync(P.sponsorHtml, 'utf8');
+    esigiUguale(uno.split('data-sponsor-scheda').length - 1, 1, 'una scheda');
+
+    scrivi(con([voce({ nome: 'Scaduto', a: '2026-09-23T10:00' })]));
     const esito = costruisci.genera({ adesso: ADESSO });
-    esigiUguale(esito.paginaSponsor.stato, 'niente', 'sponsor.html');
+    esigiUguale(esito.paginaSponsor.stato, 'scritta', 'sponsor.html resta');
     esigiUguale(esito.sponsor, 0, 'quanti sponsor');
-    esigi(!fs.existsSync(P.sponsorHtml), 'sponsor.html esiste ancora');
+    const vuota = fs.readFileSync(P.sponsorHtml, 'utf8');
+    esigiDentro(vuota, 'sp-libero', 'l invito a essere il primo');
+    esigi(vuota.indexOf('data-sponsor-scheda') === -1, 'una scheda scaduta e rimasta');
+    const home = fs.readFileSync(P.indexHtml, 'utf8');
+    esigi(home.indexOf('id="sponsor"') === -1, 'senza sponsor la home non cambia');
+
+    scrivi(con([], { invitoHome: true }));
+    costruisci.genera({ adesso: ADESSO });
+    const conInvito = fs.readFileSync(P.indexHtml, 'utf8');
+    esigiDentro(conInvito, 'sponsor--invito', 'l invito in home, se acceso');
+    esigi(conInvito.indexOf('data-sponsor-nastro') === -1, 'la striscia vuota in home');
   });
 
-  await prova('js/sponsor.js rifa il conto nel browser, sulle date che stanno in pagina', () => {
+  await prova('l editor: la pagina si apre anche spenta, senza script, e ogni segno punta a un campo che il pannello sa cambiare', () => {
+    const d = con([
+      voce({ chiave: 'a', nome: 'Uno', logo: 'img/avatar.webp', testo: 'Ciao', categoria: 'Hardware', codice: 'X1', codiceNota: 'dieci' }),
+      voce({ chiave: 'b', nome: 'Due' })
+    ], { attivo: false, copertina: 'img/copertina.webp' });
+    const html = costruisci.anteprimaEditor(d, 'sponsor');
+    esigiDentro(html, '<base href="/">', 'la base per le risorse');
+    esigi(!/<script\b[^>]*\bsrc=/.test(html), 'gli script vanno tolti nell editor');
+    esigiDentro(html, 'class="pagina-sponsor"', 'e la pagina degli sponsor');
+    esigi(costruisci.anteprimaEditor(d).indexOf('class="pagina-sponsor"') === -1, 'senza pagina resta la home');
+
+    const testi = Array.from(html.matchAll(/data-sb-testo="([^"]+)"/g), (m) => m[1]);
+    esigi(testi.length > 20, 'troppo pochi testi modificabili: ' + testi.length);
+    const campoDi = (chiave) => {
+      const diretto = schema.campo(chiave);
+      if (diretto) { return diretto; }
+      const m = /^(config\.sponsor\.[a-z]+)\.(\d+)\.([A-Za-z]+)$/.exec(chiave);
+      const elenco = m ? schema.campo(m[1]) : null;
+      return elenco && elenco.tipo === 'elenco' ? (elenco.campi || []).find((c) => c.chiave === m[3]) : null;
+    };
+    for (const chiave of testi) {
+      esigi(campoDi(chiave), 'il testo ' + chiave + ' non ha un campo nello schema');
+      esigi(SBStili.leggiBersaglio('testo:' + chiave), 'il testo ' + chiave + ' non si puo scegliere');
+    }
+    const immagini = Array.from(html.matchAll(/data-sb-immagine="([^"]+)"/g), (m) => m[1]);
+    esigiUguale(immagini.join(','), 'config.sponsor.copertina,config.sponsor.voci.0.logo,config.sponsor.voci.1.logo', 'immagini cliccabili');
+    for (const chiave of immagini) {
+      esigi(SBStili.leggiBersaglio('immagine:' + chiave), 'l immagine ' + chiave + ' non si puo scegliere');
+      esigiUguale(campoDi(chiave).tipo, 'immagine', 'tipo del campo di ' + chiave);
+    }
+    esigiUguale(SBStili.leggiBersaglio('immagine:config.sponsor.voci.1.url'), null, 'un campo che non e un immagine');
+
+    const nomi = fs.readFileSync(path.join(RADICE_VERA, 'pannello', 'editor', 'nomi.js'), 'utf8');
+    for (const parte of Array.from(html.matchAll(/data-sb-parte="([^"]+)"/g), (m) => m[1])) {
+      esigi(nomi.indexOf("'" + parte + "': Object.freeze(") !== -1 || nomi.indexOf('  ' + parte + ': Object.freeze(') !== -1,
+        'la parte ' + parte + ' non e registrata in pannello/editor/nomi.js');
+    }
+    const registro = nomi.slice(nomi.indexOf('export const REGISTRO_PARTI'), nomi.indexOf('export const PARTI_REGISTRATE'));
+    esigi(registro.length > 100, 'non trovo REGISTRO_PARTI in nomi.js');
+    for (const chiave of Array.from(registro.matchAll(/'((?:config\.)?(?:sponsor|dati)\.[A-Za-z.]+)'/g), (m) => m[1])) {
+      esigi(schema.campo(chiave), 'nomi.js cita ' + chiave + ', che nello schema non c e');
+    }
+  });
+
+  await prova('js/sponsor.js rifa il conto nel browser e copia i codici', () => {
     scrivi(con([voce({ nome: 'Uno', da: '2026-09-01T00:00', a: '2026-12-31T23:59' })]));
     costruisci.genera({ adesso: ADESSO });
     const html = fs.readFileSync(P.sponsorHtml, 'utf8');
-
     esigiDentro(html, 'data-da="2026-09-01T00:00:00+02:00"', 'data-da');
     esigiDentro(html, 'data-a="2026-12-31T23:59:00+01:00"', 'data-a con l ora solare');
 
@@ -4292,6 +4442,8 @@ async function proveSponsor(contenutiVeri, costruisci, archivio) {
     esigiDentro(js, "getAttribute('data-da')", 'lo script legge data-da');
     esigiDentro(js, "getAttribute('data-a')", 'lo script legge data-a');
     esigiDentro(js, 'data-sponsor-vuoto', 'la riga per quando non resta nessuno');
+    esigiDentro(js, 'data-sponsor-copia', 'i bottoni per copiare');
+    esigi(js.indexOf('innerHTML') === -1, 'lo script non deve scrivere HTML');
     try { new Function(js); } catch (errore) { throw new Error('js/sponsor.js non si compila: ' + errore.message); }
   });
 

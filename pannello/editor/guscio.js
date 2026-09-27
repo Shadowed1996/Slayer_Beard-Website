@@ -598,11 +598,71 @@ function tastiSchede(evento) {
   impostaScheda(SCHEDE[j].id, true);
 }
 
+const PARTI_SPONSOR = [
+  { parte: 'sponsor-apertura', nome: 'Apertura', nota: 'Titolo, presentazione, bottoni e foto' },
+  { parte: 'sponsor-numeri', nome: 'I numeri del canale', nota: 'Quali cifre mostrare e con che parole', interruttore: 'config.sponsor.mostraNumeri' },
+  { parte: 'sponsor-formati', nome: 'Formati di collaborazione', nota: 'Le schede su come collaborare', interruttore: 'config.sponsor.mostraFormati' },
+  { parte: 'sponsor', nome: 'Sponsor attuali', nota: 'Aggiungi, togli e riordina: logo, testo, codice, link', interruttore: 'config.sponsor.mostraPartner' },
+  { parte: 'sponsor-contatto', nome: 'Contatti', nota: 'Email, media kit e il polletto' }
+];
+
+function paginaAnteprima() {
+  return mot('pagina') === 'sponsor' ? 'sponsor' : 'home';
+}
+
+function campoPonte(chiave) {
+  const definizione = ponte.campo(chiave);
+  if (!definizione) return null;
+  try {
+    const controllo = ponte.creaCampo(definizione);
+    return controllo && controllo.nodo ? controllo.nodo : null;
+  } catch (errore) {
+    log('campo ' + chiave, errore);
+    return null;
+  }
+}
+
+function disegnaNavigatoreSponsor(contenitore) {
+  contenitore.append(el('p', { classe: 'lato__nota', testo: 'Questa è «sponsor.html», la pagina per i marchi. Clicca un testo, un logo o una parte nell\'anteprima, oppure sceglila qui sotto. Una parte spenta non si vede nell\'anteprima: si riaccende da qui.' }));
+  const acceso = campoPonte('config.sponsor.attivo');
+  if (acceso) contenitore.append(acceso);
+  const elenco = el('ul', { classe: 'menu-lato menu-lato--compatto' });
+  for (const voce of PARTI_SPONSOR) {
+    const riga = el('li', {}, [el('button', {
+      type: 'button', classe: 'menu-lato__btn',
+      su: { click: () => { if (!mot('seleziona', 'parte:' + voce.parte)) avviso('«' + voce.nome + '» adesso non è nella pagina: accendila qui sotto.', { tipo: 'info' }); } }
+    }, [
+      el('span', { classe: 'menu-lato__nome', testo: voce.nome }),
+      el('span', { classe: 'menu-lato__nota', testo: voce.nota })
+    ])]);
+    if (voce.interruttore) {
+      const campo = campoPonte(voce.interruttore);
+      if (campo) riga.append(campo);
+    }
+    elenco.append(riga);
+  }
+  contenitore.append(elenco);
+}
+
+function sincronizzaPagina() {
+  const ui = sh.ui;
+  const p = paginaAnteprima();
+  for (const b of ui.pagine || []) b.setAttribute('aria-pressed', String(b.dataset.pagina === p));
+  if (ui.titoloPagina) ui.titoloPagina.textContent = p === 'sponsor' ? 'Pagina degli sponsor' : 'Pagina';
+  if (ui.palco) ui.palco.dataset.pagina = p;
+  if (sh.paginaDisegnata !== p) {
+    sh.paginaDisegnata = p;
+    sh.navVecchio = true;
+    if (sh.montato && !sh.vista && !sh.selezione) disegna({ azzeraScorrimento: true });
+  }
+}
+
 function disegnaPagina(opzioni, cambiato) {
   const ui = sh.ui;
   if (sh.navVecchio || !ui.navigatore.firstChild) {
     svuota(ui.navigatore);
-    disegnaNavigatore(ui.navigatore);
+    if (paginaAnteprima() === 'sponsor') disegnaNavigatoreSponsor(ui.navigatore);
+    else disegnaNavigatore(ui.navigatore);
     sh.navVecchio = false;
   }
   if (opzioni.azzeraScorrimento || cambiato) ui.scorriPagina.scrollTop = 0;
@@ -1770,6 +1830,14 @@ function legaBarra() {
       sincronizzaDispositivo(true);
     });
   }
+  for (const b of ui.pagine || []) {
+    b.addEventListener('click', () => {
+      if (sh.vista) chiudiVista(false);
+      mot('impostaPagina', b.dataset.pagina);
+      sincronizzaPagina();
+    });
+  }
+  document.addEventListener('sb:pagina', () => sincronizzaPagina());
   ui.btnAnnulla.addEventListener('click', () => passoStoria(-1));
   ui.btnRipeti.addEventListener('click', () => passoStoria(1));
 
@@ -1964,7 +2032,8 @@ async function monta() {
     nomeSelezione: $('nome-selezione'),
     btnAnnulla: $('btn-annulla'),
     btnRipeti: $('btn-ripeti'),
-    dispositivi: Array.from(document.querySelectorAll('#barra [data-dispositivo]'))
+    dispositivi: Array.from(document.querySelectorAll('#barra [data-dispositivo]')),
+    pagine: Array.from(document.querySelectorAll('#barra [data-pagina]'))
   });
   if (!ui.banco || !ui.lato || !ui.anteprima || !ui.maniglia) {
     throw new Error('pannello/index.html non ha la struttura dell\'editor (#banco, #pannello, #anteprima, #maniglia)');

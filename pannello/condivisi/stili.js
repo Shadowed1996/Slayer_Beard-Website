@@ -61,7 +61,7 @@
 
   const TIPI_BERSAGLIO = {
     testo: /^[a-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/,
-    immagine: /^config\.immagini\.[a-z][A-Za-z0-9]*$/,
+    immagine: /^config\.(immagini\.[a-z][A-Za-z0-9]*|sponsor\.copertina|sponsor\.voci\.\d{1,3}\.logo)$/,
     parte: /^[a-z][a-z0-9-]{0,40}$/,
     blocco: /^[a-z][a-z0-9-]{0,40}\.[a-z][a-z0-9-]{0,40}$/,
     sezione: null
