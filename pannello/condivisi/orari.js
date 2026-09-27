@@ -1,45 +1,9 @@
-/* =====================================================================
-   orari.js — le regole della schedule (CONTRATTO-5 §3).
-
-   config.orari è il ramo che tiene insieme giorni e ora di serie, le sette
-   schede dei giorni, gli eventi speciali e il fondale della sezione. Da qui
-   escono i suoi limiti, la sua forma pulita, i suoi problemi detti in
-   italiano e i conti con i fusi orari.
-
-   UN file per due posti che devono dire la stessa cosa, come stili.js:
-     - il server (require) lo usa per convalidare prima di salvare e per
-       generare la sezione «La settimana» e il ramo `orari` di js/dati.js;
-     - il pannello (import '../condivisi/orari.js', che riempie
-       window.SBOrari) lo usa per i limiti dei controlli, i valori vuoti e
-       gli errori accanto alle caselle.
-   Se fossero due copie, prima o poi il pannello accetterebbe una nota che
-   il server rifiuta al salvataggio: con un file solo non può succedere.
-
-   Funzioni pure: niente DOM, niente fs, niente rete. L'unica cosa che viene
-   da fuori è Intl, che c'è sia in Node sia nel browser e che conosce i
-   cambi dell'ora legale di ogni fuso: nessuna tabella scritta a mano.
-
-   Due funzioni con due mestieri diversi:
-     - normalizza() non lancia mai e restituisce SEMPRE un ramo usabile:
-       serve alla generazione e all'anteprima, che devono mostrare qualcosa
-       anche mentre una casella è a metà;
-     - problemi() dice che cosa non va, senza correggere niente: serve al
-       salvataggio, dove un titolo troppo lungo va detto a chi l'ha scritto,
-       non tagliato alle sue spalle.
-   ===================================================================== */
 (function (radice, fabbrica) {
   if (typeof module === 'object' && module.exports) module.exports = fabbrica();
   else radice.SBOrari = fabbrica();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  /* ------------------------------------------------------------------ */
-  /* VOCABOLARIO                                                         */
-  /* ------------------------------------------------------------------ */
-
-  /* Congelate per lo stesso motivo di stili.js: le leggono il server e più
-     moduli del pannello, e un `.sort()` fatto sul posto da uno di loro
-     cambierebbe l'ordine dei giorni per tutti gli altri. */
   function congela(valore) {
     if (valore && typeof valore === 'object' && !Object.isFrozen(valore)) {
       Object.freeze(valore);
@@ -66,21 +30,13 @@
     durataMin: 0.5,
     durataMax: 24,
     durataEventoMax: 72,
-    // Le durate vanno a mezz'ora: un «2,37 ore» non lo scrive nessuno, e il
-    // cursore del pannello deve poter arrivare a ogni valore ammesso.
     passoDurata: 0.5,
-    // Giorni singoli saltati (motivi personali, non un evento): pochi alla
-    // volta, un motivo corto — è una scritta sopra il nastro, non una nota.
     pause: 12,
     motivoPausa: 60
   });
 
-  /* I valori di serie quando il ramo stesso è rotto o assente. Sono quelli
-     del canale: una schedule illeggibile nell'anteprima mostra le 21:00 di
-     sempre invece di un nastro vuoto. */
   const PREDEFINITI = congela({ ora: '21:00', durataOre: 4, fuso: 'Europe/Rome' });
 
-  // Indice 0 = domenica, come Date.getDay() e come config.orari.giorni.
   const GIORNI = congela([
     { n: 0, abbr: 'DOM', nome: 'Domenica', minuscolo: 'domenica' },
     { n: 1, abbr: 'LUN', nome: 'Lunedì', minuscolo: 'lunedì' },
@@ -91,7 +47,6 @@
     { n: 6, abbr: 'SAB', nome: 'Sabato', minuscolo: 'sabato' }
   ]);
 
-  // Ordine di lettura italiano: la settimana comincia di lunedì.
   const ORDINE = congela([1, 2, 3, 4, 5, 6, 0]);
 
   const MESI = congela([
@@ -103,18 +58,10 @@
 
   const RE_ORA = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
   const RE_DATA = /^(\d{4})-(\d{2})-(\d{2})$/;
-  /* Solo file del sito. Il percorso finisce in un src e, attraverso il
-     fuoco, in un attributo style: niente schemi (un «javascript:» o un
-     «https://» altrui), niente spazi, niente virgolette o parentesi, niente
-     risalite. Il `..` si esclude a parte perché i punti servono nei nomi. */
   const RE_PERCORSO = /^(img|contenuti\/media)\/[A-Za-z0-9._-]+(\/[A-Za-z0-9._-]+)*\.(png|jpe?g|webp|avif|svg)$/;
 
   const MS_ORA = 3600000;
   const MS_GIORNO = 24 * MS_ORA;
-
-  /* ------------------------------------------------------------------ */
-  /* PICCOLI CONTROLLI                                                   */
-  /* ------------------------------------------------------------------ */
 
   function oggetto(valore) {
     return valore !== null && typeof valore === 'object' && !Array.isArray(valore);
@@ -124,9 +71,6 @@
     return (n < 10 ? '0' : '') + n;
   }
 
-  /* Un numero da un valore qualunque, o null. normalizza() accetta anche
-     «4» scritto come testo (un modulo scritto a mano lo manda così);
-     problemi() no, e lo dice. */
   function numeroLargo(valore) {
     if (typeof valore === 'number') { return Number.isFinite(valore) ? valore : null; }
     if (typeof valore === 'string' && /^\s*-?\d+(\.\d+)?\s*$/.test(valore)) { return Number(valore); }
@@ -141,7 +85,6 @@
     return Math.round(n * 2) === n * 2;
   }
 
-  /** «4» -> 4, «0,5» -> 0.5 nel testo italiano dei messaggi. */
   function numeroTesto(n) {
     return String(n).replace('.', ',');
   }
@@ -161,7 +104,6 @@
     return [31, bisestile(anno) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mese - 1];
   }
 
-  /** { anno, mese, giorno, testo } se la data ha la forma giusta ED esiste nel calendario. */
   function leggiData(data) {
     if (typeof data !== 'string') { return null; }
     const pulita = data.trim();
@@ -174,9 +116,6 @@
     return { testo: pulita, anno: anno, mese: mese, giorno: giorno };
   }
 
-  /* Millisecondi di un orologio «come se fosse UTC». Date.UTC() non va bene:
-     porta gli anni da 0 a 99 nel Novecento, e una data dell'anno 50 non deve
-     diventare il 1950 in silenzio. */
   function utc(anno, mese, giorno, ore, minuti, secondi) {
     const d = new Date(0);
     d.setUTCFullYear(anno, mese - 1, giorno);
@@ -184,10 +123,6 @@
     return d.getTime();
   }
 
-  /* I fusi buoni si preparano una volta sola: un Intl.DateTimeFormat costa, e
-     il server chiede lo stesso fuso per ogni giorno e ogni evento. Quelli
-     sbagliati invece non si ricordano: arrivano da una casella, e un server
-     acceso per mesi non deve tenersi in memoria ogni refuso battuto. */
   const formattatori = new Map();
 
   function formattatore(fuso) {
@@ -209,7 +144,6 @@
     return typeof fuso === 'string' && fuso.trim() !== '' && formattatore(fuso.trim()) !== null;
   }
 
-  /** L'orologio di `fuso` all'istante `ms`: { anno, mese, giorno, ore, minuti, secondi }. */
   function orologio(ms, fuso) {
     const parti = {};
     formattatore(fuso).formatToParts(new Date(ms)).forEach(function (p) { parti[p.type] = p.value; });
@@ -217,35 +151,25 @@
       anno: Number(parti.year),
       mese: Number(parti.month),
       giorno: Number(parti.day),
-      // Qualche motore scrive ancora «24» per la mezzanotte anche con h23.
       ore: Number(parti.hour) % 24,
       minuti: Number(parti.minute),
       secondi: Number(parti.second)
     };
   }
 
-  /** Quanto l'orologio di `fuso` è avanti su UTC all'istante `ms`, in millisecondi. */
   function scarto(ms, fuso) {
     const o = orologio(ms, fuso);
     return utc(o.anno, o.mese, o.giorno, o.ore, o.minuti, o.secondi) - Math.floor(ms / 1000) * 1000;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* VALORI VUOTI                                                        */
-  /* ------------------------------------------------------------------ */
-
   function fuocoVuoto() {
     return { x: LIMITI.fuoco, y: LIMITI.fuoco };
   }
 
-  /** La scheda di un giorno senza niente di suo: ora e durata di serie, nessun testo, nessuna immagine. */
   function schedaVuota() {
     return { ora: '', durataOre: null, titolo: '', gioco: '', nota: '', immagine: '', fuoco: fuocoVuoto(), velo: LIMITI.velo };
   }
 
-  /* Data, ora e durata restano vuote di proposito: sono obbligatorie, e un
-     evento nuovo con una data inventata finirebbe sul sito prima che chi
-     amministra l'abbia scelta. problemi() le chiede. */
   function eventoVuoto() {
     return { data: '', ora: '', durataOre: null, titolo: '', gioco: '', nota: '', immagine: '', fuoco: fuocoVuoto(), velo: LIMITI.velo, ultimoGiorno: '' };
   }
@@ -254,21 +178,10 @@
     return { immagine: '', fuoco: fuocoVuoto(), intensita: LIMITI.intensita };
   }
 
-  /* Un giorno singolo saltato per un motivo personale (non un evento): tiene
-     precedenza su tutto il resto di quel giorno, anche su un evento speciale
-     in corso — vedi pausaDi() più sotto. */
   function pausaVuota() {
     return { data: '', motivo: '' };
   }
 
-  /* ------------------------------------------------------------------ */
-  /* NORMALIZZAZIONE                                                     */
-  /* ------------------------------------------------------------------ */
-
-  /* Una riga di testo semplice. Gli a capo e i caratteri di controllo
-     diventano spazi (finiscono in un attributo e in js/dati.js, dove non
-     hanno un senso), gli spazi doppi si stringono, e il taglio non spezza a
-     metà un carattere scritto con due unità UTF-16 come un'emoji. */
   function riga(valore, massimo) {
     if (typeof valore !== 'string') { return ''; }
     let testo = valore.replace(/[\u0000-\u001f\u007f\u2028\u2029]/g, ' ').replace(/ {2,}/g, ' ').trim();
@@ -302,7 +215,6 @@
     };
   }
 
-  /** Durata stretta al bordo e arrotondata alla mezz'ora, oppure `ripiego` se non è un numero. */
   function durata(valore, massimo, ripiego) {
     const n = numeroLargo(valore);
     if (n === null) { return ripiego; }
@@ -325,7 +237,6 @@
 
   function normalizzaScheda(valore) {
     const s = oggetto(valore) ? valore : {};
-    // Vuota o non numerica = «vale quella di serie», che è null.
     const vuota = s.durataOre === null || s.durataOre === undefined || s.durataOre === '';
     return {
       ora: ora(s.ora, ''),
@@ -353,9 +264,6 @@
       immagine: immagine(e.immagine),
       fuoco: fuoco(e.fuoco),
       velo: intero(e.velo, LIMITI.veloMin, LIMITI.veloMax, LIMITI.velo),
-      // Solo un avviso («massimo entro il...»): non spegne l'evento da solo,
-      // non entra nei conti di eventiFuturi()/eventoAttivo(). Chi amministra
-      // toglie l'evento (o gli dà una durata) quando è davvero finito.
       ultimoGiorno: ultimo ? ultimo.testo : ''
     };
   }
@@ -369,17 +277,6 @@
     };
   }
 
-  /**
-   * config.orari completo e pulito. Non lancia mai, qualunque cosa riceva.
-   *
-   * - sette schede sempre, una per giorno (0 = domenica): quelle che
-   *   mancano nascono vuote, quelle oltre la settima si tolgono;
-   * - eventi al massimo LIMITI.eventi, SEMPRE oggetti e nella stessa
-   *   posizione: il pannello li ritrova per indice, e un evento scartato
-   *   che facesse scalare gli altri aprirebbe quello sbagliato;
-   * - numeri stretti al bordo, testi su una riga e tagliati, percorsi non
-   *   ammessi svuotati. Un fuso inesistente torna a Europe/Rome.
-   */
   function normalizza(orari) {
     const o = oggetto(orari) ? orari : {};
     const schede = Array.isArray(o.schede) ? o.schede : [];
@@ -402,17 +299,11 @@
     };
   }
 
-  /* ------------------------------------------------------------------ */
-  /* PROBLEMI                                                            */
-  /* ------------------------------------------------------------------ */
-
   const NOMI_TESTO = { titolo: 'Il titolo', gioco: 'Il gioco', nota: 'La nota' };
 
   const REGOLA_IMMAGINE = ' deve essere un file del sito, dentro img/ o contenuti/media/, in png, jpg, webp, avif o svg:'
     + ' niente indirizzi esterni, spazi o «..».';
 
-  /* I controlli di un testo di una riga. `di` è il complemento già pronto
-     («di lunedì», «dell'evento «Maratona»»). */
   function problemiTesto(valore, nome, massimo, di, percorso, aggiungi, obbligatorio) {
     const soggetto = NOMI_TESTO[nome] + ' ' + di;
     if (valore === undefined) {
@@ -474,8 +365,6 @@
     problemiVelo(scheda.velo, di, dove + '.velo', aggiungi);
   }
 
-  /* Un evento si chiama col suo titolo quando ce l'ha, così nel riepilogo
-     degli errori si riconosce senza contare. */
   function nomeEvento(evento, i) {
     const titolo = typeof evento.titolo === 'string' ? evento.titolo.trim() : '';
     if (titolo && titolo.length <= LIMITI.titolo && !/[\r\n\u2028\u2029]/.test(titolo)) {
@@ -503,19 +392,12 @@
       aggiungi(dove + '.ora', 'L\'ora ' + di + ' va scritta come 21:00.');
     }
 
-    // Facoltativa: un evento senza durata è a tempo indefinito (una maratona
-    // che non si sa quando finisce) e resta «non ancora finito» finché non lo
-    // si toglie a mano — vedi eventiFuturi() più sotto. Se però c'è scritto
-    // qualcosa, deve essere un numero buono: un valore storto (un testo, un
-    // numero fuori dai limiti) non si distingue da «vuoto» e sparirebbe la
-    // fine senza che chi scrive se ne accorga.
     if (evento.durataOre !== undefined && evento.durataOre !== null && evento.durataOre !== '' &&
       !durataBuona(evento.durataOre, LIMITI.durataEventoMax)) {
       aggiungi(dove + '.durataOre', 'La durata ' + di + ' va indicata in ore, da ' + numeroTesto(LIMITI.durataMin) + ' a '
         + LIMITI.durataEventoMax + ', a passi di mezz\'ora — oppure lasciata vuota per un evento senza una fine nota.');
     }
 
-    // Senza titolo il nome è sempre «numero N»: il titolo è proprio quello che manca.
     problemiTesto(evento.titolo, 'titolo', LIMITI.titolo, 'dell\'evento numero ' + (i + 1), dove + '.titolo', aggiungi, true);
     problemiTesto(evento.gioco, 'gioco', LIMITI.gioco, di, dove + '.gioco', aggiungi, false);
     problemiTesto(evento.nota, 'nota', LIMITI.notaEvento, di, dove + '.nota', aggiungi, false);
@@ -523,10 +405,6 @@
     problemiFuoco(evento.fuoco, 'dell\'immagine ' + di, dove + '.fuoco', aggiungi);
     problemiVelo(evento.velo, di, dove + '.velo', aggiungi);
 
-    // Facoltativa quanto la durata, e per lo stesso motivo: è solo un
-    // avviso («massimo entro il...») sopra l'evento, non spegne niente da
-    // solo. Se c'è scritto qualcosa deve essere una data vera, altrimenti
-    // meglio dirlo che stampare una data storta sul sito.
     if (evento.ultimoGiorno !== undefined && evento.ultimoGiorno !== null && evento.ultimoGiorno !== '') {
       if (typeof evento.ultimoGiorno !== 'string' || !RE_DATA.test(evento.ultimoGiorno.trim())) {
         aggiungi(dove + '.ultimoGiorno', 'La data limite ' + di + ' va scritta come 2026-10-10, oppure lasciata vuota.');
@@ -554,8 +432,6 @@
       aggiungi(dove + '.data', 'La data del giorno saltato ' + di + ' non esiste nel calendario: ' + pausa.data.trim() + '.');
     }
 
-    // Il motivo è facoltativo: un giorno si può saltare anche senza dirlo
-    // in pagina, l'etichetta «saltata» da sola basta.
     if (pausa.motivo !== undefined && typeof pausa.motivo === 'string' && pausa.motivo.length > LIMITI.motivoPausa) {
       aggiungi(dove + '.motivo', 'Il motivo del giorno saltato ' + di + ' supera i ' + LIMITI.motivoPausa + ' caratteri: adesso sono ' + pausa.motivo.length + '.');
     } else if (pausa.motivo !== undefined && typeof pausa.motivo !== 'string') {
@@ -563,18 +439,6 @@
     }
   }
 
-  /**
-   * Che cosa non va in config.orari, come [{ percorso, messaggio }]; [] se va
-   * bene. Il percorso è relativo al ramo ('schede.1.ora', 'eventi.0.data',
-   * 'sfondo.intensita', 'ora', 'giorni'); '' se è il ramo intero.
-   *
-   * Tollerante sulle assenze, severo sui valori: un contenuti.json di prima
-   * della schedule nuova, senza schede, eventi e fondale, resta valido, e
-   * una scheda senza velo vale col velo di serie. Un valore che c'è invece
-   * deve essere giusto: 45 caratteri in un titolo si dicono, non si tagliano.
-   * Un evento già finito non è un problema: resta nei dati e sparisce dal
-   * sito da solo.
-   */
   function problemi(orari) {
     const fuori = [];
     const aggiungi = function (percorso, messaggio) { fuori.push({ percorso: percorso, messaggio: messaggio }); };
@@ -584,7 +448,6 @@
       return fuori;
     }
 
-    // --- giorni, ora, durata e fuso: le regole di sempre
     if (!Array.isArray(orari.giorni) || orari.giorni.length === 0) {
       aggiungi('giorni', 'Serve almeno un giorno di diretta.');
     } else {
@@ -608,12 +471,9 @@
     if (typeof orari.fuso !== 'string' || !orari.fuso.trim()) {
       aggiungi('fuso', 'Manca il fuso orario, per esempio Europe/Rome.');
     } else if (!fusoValido(orari.fuso)) {
-      // Un fuso inesistente farebbe esplodere il conto alla rovescia nel
-      // browser di chi guarda: meglio scoprirlo qui.
       aggiungi('fuso', 'Il fuso orario «' + orari.fuso.trim() + '» non esiste: usa un nome come Europe/Rome.');
     }
 
-    // --- schede dei giorni
     if (orari.schede !== undefined) {
       if (!Array.isArray(orari.schede)) {
         aggiungi('schede', 'Le schede dei giorni devono essere un elenco, una per giorno.');
@@ -625,7 +485,6 @@
       }
     }
 
-    // --- eventi speciali
     if (orari.eventi !== undefined) {
       if (!Array.isArray(orari.eventi)) {
         aggiungi('eventi', 'Gli eventi speciali devono essere un elenco.');
@@ -637,7 +496,6 @@
       }
     }
 
-    // --- giorni saltati
     if (orari.pause !== undefined) {
       if (!Array.isArray(orari.pause)) {
         aggiungi('pause', 'I giorni saltati devono essere un elenco.');
@@ -649,7 +507,6 @@
       }
     }
 
-    // --- fondale della sezione
     if (orari.sfondo !== undefined) {
       if (!oggetto(orari.sfondo)) {
         aggiungi('sfondo', 'Il fondale della sezione deve essere un gruppo di valori con immagine, fuoco e intensità.');
@@ -666,24 +523,18 @@
     return fuori;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* ORE EFFETTIVE                                                       */
-  /* ------------------------------------------------------------------ */
-
   function schedaDi(orari, giorno) {
     const n = numeroLargo(giorno);
     if (!oggetto(orari) || !Array.isArray(orari.schede) || n === null || !Number.isInteger(n) || n < 0 || n > 6) { return {}; }
     return oggetto(orari.schede[n]) ? orari.schede[n] : {};
   }
 
-  /** L'ora di inizio di quel giorno (0 = domenica): quella della scheda, o quella di serie. */
   function oraDi(orari, giorno) {
     const propria = ora(schedaDi(orari, giorno).ora, '');
     if (propria) { return propria; }
     return ora(oggetto(orari) ? orari.ora : undefined, PREDEFINITI.ora);
   }
 
-  /** La durata in ore di quel giorno: quella della scheda, o quella di serie. Stesse regole di normalizza(). */
   function durataDi(orari, giorno) {
     const scheda = schedaDi(orari, giorno);
     const vuota = scheda.durataOre === null || scheda.durataOre === undefined || scheda.durataOre === '';
@@ -692,13 +543,6 @@
     return durata(oggetto(orari) ? orari.durataOre : undefined, LIMITI.durataMax, PREDEFINITI.durataOre);
   }
 
-  /**
-   * L'ora a cui finisce una diretta che parte a `ora` e dura `durataOre`,
-   * sull'orologio: '21:00', 4 -> '01:00'. È il conto di chi legge il nastro,
-   * senza data: la notte del cambio dell'ora sbaglia di un'ora come
-   * sbaglierebbe chiunque a mente. Per gli eventi, che una data ce l'hanno,
-   * c'è oraNelFuso(termine). '' se i valori non si leggono.
-   */
   function fine(inizio, durataOre) {
     const o = leggiOra(inizio);
     const d = numeroLargo(durataOre);
@@ -707,24 +551,6 @@
     return due(Math.floor(minuti / 60)) + ':' + due(minuti % 60);
   }
 
-  /* ------------------------------------------------------------------ */
-  /* FUSI ORARI                                                          */
-  /* ------------------------------------------------------------------ */
-
-  /**
-   * L'istante (ms UTC) in cui l'orologio di `fuso` segna `data` alle `ora`.
-   * NaN se data, ora o fuso non si leggono; senza fuso vale Europe/Rome.
-   *
-   * I due casi del cambio d'ora si risolvono come fanno i calendari (e il
-   * «compatible» di Temporal):
-   *   - l'ora che non esiste (29 marzo 2026, 02:30 a Roma: alle 02:00 si
-   *     salta alle 03:00) scivola avanti dell'ora saltata, alle 03:30;
-   *   - l'ora che esiste due volte (25 ottobre 2026, 02:30 a Roma) è la
-   *     prima delle due, quella ancora in ora legale.
-   * Il metodo: si prova l'orologio con lo scarto di un giorno prima e con
-   * quello di un giorno dopo, e si tengono i tentativi che, riletti nel
-   * fuso, danno davvero quell'orologio.
-   */
   function istante(data, oraInizio, fuso) {
     const d = leggiData(data);
     const o = leggiOra(oraInizio);
@@ -737,12 +563,9 @@
     const dopo = locale - scarto(locale + MS_GIORNO, zona);
     const buoni = [prima, dopo].filter(function (t) { return t + scarto(t, zona) === locale; });
     if (buoni.length) { return Math.min.apply(null, buoni); }
-    // Nessun tentativo torna: è l'ora saltata. Lo scarto di prima del salto
-    // porta avanti proprio dell'ora mancante.
     return prima;
   }
 
-  /** 'HH:MM' sull'orologio di `fuso` all'istante `ms`; '' se non si legge. */
   function oraNelFuso(ms, fuso) {
     const zona = fuso === undefined || fuso === null || fuso === '' ? PREDEFINITI.fuso : fuso;
     if (typeof ms !== 'number' || !Number.isFinite(ms) || !fusoValido(zona)) { return ''; }
@@ -750,7 +573,6 @@
     return due(o.ore) + ':' + due(o.minuti);
   }
 
-  /** 'AAAA-MM-GG' sul calendario di `fuso` all'istante `ms`; '' se non si legge. */
   function dataNelFuso(ms, fuso) {
     const zona = fuso === undefined || fuso === null || fuso === '' ? PREDEFINITI.fuso : fuso;
     if (typeof ms !== 'number' || !Number.isFinite(ms) || !fusoValido(zona)) { return ''; }
@@ -759,34 +581,13 @@
     return (anno.length >= 4 ? anno : ('0000' + anno).slice(-4)) + '-' + due(o.mese) + '-' + due(o.giorno);
   }
 
-  /** Il giorno della settimana di una data 'AAAA-MM-GG' (0 = domenica), -1 se la data non esiste. */
   function giornoDellaSettimana(data) {
     const d = leggiData(data);
     return d ? new Date(utc(d.anno, d.mese, d.giorno, 12, 0, 0)).getUTCDay() : -1;
   }
 
-  // Un anno: la finta «fine» di un evento senza durata (una maratona di cui
-  // non si sa l'ultimo giorno). Non è mai una fine vera — chi amministra
-  // toglierà l'evento, o gli darà una durata, molto prima — ma deve essere
-  // un numero finito e normale: server e sito la trasformano in una data
-  // ISO, e js/sito.js scarta gli eventi il cui termine non è più grande
-  // dell'inizio, quindi un vero «infinito» sparirebbe invece di restare.
   const ORE_APERTO = 24 * 365;
 
-  /**
-   * Gli eventi non ancora finiti a `adessoMs`, dal primo che parte:
-   * [{ indice, inizio, termine, ...evento }] con inizio e termine in ms UTC
-   * e l'evento già normalizzato. `indice` è la posizione in orari.eventi.
-   * Un evento senza data o ora leggibili non ha un quando, e resta fuori;
-   * uno in corso invece c'è ancora.
-   *
-   * Un evento senza durata (durataOre === null: il campo lasciato vuoto)
-   * usa ORE_APERTO al posto della durata: resta «non ancora finito» per un
-   * anno, che per una maratona vale «finché non lo tolgo io». Chi scrive
-   * `termine` in un testo per chi legge (non per un confronto fra numeri)
-   * deve guardare prima `durataOre === null` e non stampare quella data
-   * finta: è qui sotto in eventiDi() e orariDati(), server/lib/costruisci.js.
-   */
   function eventiFuturi(orari, adessoMs) {
     const adesso = typeof adessoMs === 'number' && Number.isFinite(adessoMs) ? adessoMs : Date.now();
     const pulito = normalizza(orari);
@@ -806,50 +607,12 @@
     return fuori;
   }
 
-  /* ------------------------------------------------------------------ */
-  /* PRIORITÀ DELL'EVENTO SPECIALE                                       */
-  /* ------------------------------------------------------------------ */
-
-  /**
-   * L'evento speciale acceso a `adessoMs` (inizio <= adesso < termine),
-   * oppure null. Se per un errore ce ne fossero due sovrapposti vince
-   * quello cominciato prima: è quello che chi guarda sta già vedendo.
-   *
-   * La voce è la stessa di eventiFuturi(): { indice, inizio, termine, … }.
-   */
   function eventoAttivo(orari, adessoMs) {
     const adesso = typeof adessoMs === 'number' && Number.isFinite(adessoMs) ? adessoMs : Date.now();
     const accesi = eventiFuturi(orari, adesso).filter(function (e) { return e.inizio <= adesso; });
     return accesi.length ? accesi[0] : null;
   }
 
-  /**
-   * Che cosa si porta via un evento speciale acceso.
-   *
-   * La regola: finché un evento è in corso è LUI il programma, e la
-   * schedule regolare che gli finisce sotto non vale. Una maratona che
-   * comincia sabato alle 15:00 e va avanti fino alle 03:00 copre la
-   * diretta regolare del sabato sera: quella sera non c'è «anche» il
-   * programma di sempre, c'è la maratona e basta. Un giorno che invece
-   * comincia dopo la fine dell'evento non c'entra niente e resta com'è.
-   *
-   * -> { evento, giorni } — `evento` è quello acceso (null se non ce n'è) e
-   * `giorni[0..6]` dice, giorno della settimana per giorno della settimana,
-   * se la sua diretta regolare cade dentro l'evento.
-   *
-   * Si guardano le date di calendario toccate dall'evento nel fuso del
-   * canale, da quella prima del suo inizio (una diretta cominciata la sera
-   * prima e non ancora finita) e per al massimo una settimana: il nastro è
-   * lungo sette giorni, e un evento senza fine nota (ORE_APERTO) li copre
-   * comunque tutti.
-   *
-   * Qui l'evento comanda da MEZZANOTTE del suo giorno (nel fuso del canale),
-   * non dall'ora in cui comincia: in una maratona «Day 4» alle 11:00, già
-   * dalle 00:00 le serate sono sue (orario sbarrato, «Speciale»). Prima si
-   * guardava l'ora di inizio, e fino alle 11 la schedule tornava quella di
-   * sempre. eventoAttivo(), che serve alla categoria di Twitch, resta
-   * sull'ora vera.
-   */
   function programmaSostituito(orari, adessoMs) {
     const pulito = normalizza(orari);
     const giorni = [false, false, false, false, false, false, false];
@@ -863,8 +626,6 @@
 
     for (let salto = -1; salto <= 7; salto++) {
       const ms = evento.inizio + salto * MS_GIORNO;
-      // Oltre la fine dell'evento non si guarda: da lì in poi il programma
-      // regolare torna a valere.
       if (salto > 0 && ms >= evento.termine + MS_GIORNO) { break; }
       const data = dataNelFuso(ms, pulito.fuso);
       const g = giornoDellaSettimana(data);
@@ -872,24 +633,12 @@
       const inizio = istante(data, oraDi(pulito, g), pulito.fuso);
       if (!Number.isFinite(inizio)) { continue; }
       const termine = inizio + Math.round(durataDi(pulito, g) * MS_ORA);
-      // Si sovrappongono? Due finestre si toccano se ognuna comincia prima
-      // che l'altra finisca. Sfiorarsi (una finisce dove l'altra comincia)
-      // non è sovrapporsi: la serata regolare che comincia quando la
-      // maratona finisce si fa davvero.
       if (inizio < evento.termine && termine > evento.accesoDa) { giorni[g] = true; }
     }
 
     return { evento: evento, giorni: giorni };
   }
 
-  /**
-   * La pausa che cade su quella data di calendario ('2026-10-02'), o null.
-   * Tiene la precedenza su tutto il resto di quel giorno — la scheda
-   * regolare E un evento speciale in corso — perché non è una regola del
-   * calendario, è chi amministra che dice «questo giorno preciso no»: chi
-   * chiama (server/lib/costruisci.js) guarda prima questa, poi il resto.
-   * Con più pause sulla stessa data (un errore) vince la prima.
-   */
   function pausaDi(orari, data) {
     const d = leggiData(data);
     if (!d) { return null; }

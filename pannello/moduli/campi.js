@@ -1,23 +1,3 @@
-/* =====================================================================
-   campi.js — disegna un campo a partire dalla sua descrizione.
-
-   Qui dentro non compare nemmeno una chiave del sito: il pannello non sa
-   che esiste «deck.titolo», sa solo che il server gli ha mandato un campo
-   di tipo «testo» con quell'etichetta. Se domani il sito guadagna una
-   sezione, cresce lo schema e il pannello la disegna senza modifiche.
-
-   Tipi ammessi (contratto §7 e CONTRATTO-2 §5):
-     testo · testolungo · url · email · numero · immagine · orario
-     orari · scelta · elencoTesti · elenco
-     ricco · colore · font · interruttore
-
-   Ogni campo restituisce un oggetto di controllo:
-     { chiave, campo, nodo, valida(), mostraErrore(t), pulisci(), fuoco() }
-
-   Il tipo «orari» (la schedule della settimana) è un editor intero e sta
-   in moduli/settimana.js (CONTRATTO-5 §8): qui lo si carica e lo si usa.
-   ===================================================================== */
-
 import { el, bottone, svuota, idUnico, urlRisorsa } from './dom.js';
 import { creaCampoElenco, creaCampoElencoTesti } from './elenchi.js';
 import { creaCampoRicco, soloTesto } from './ricco.js';
@@ -26,10 +6,6 @@ import {
   fontCaricati, suFontCaricati, famigliaCaricato
 } from './tema.js';
 
-/* L'editor della schedule si carica a parte, con import() e non con un
-   import statico: questo file lo importa pannello.js, e un guasto là dentro
-   (o condivisi/orari.js che non arriva) non deve portarsi via il pannello
-   intero. Parte subito, così quando si disegna il primo campo c'è già. */
 let moduloSettimana = null;
 const attesaSettimana = import('./settimana.js').then(
   (modulo) => { moduloSettimana = modulo; return modulo; },
@@ -39,27 +15,13 @@ const attesaSettimana = import('./settimana.js').then(
   }
 );
 
-/* ---------------------------------------------------------------------
-   Lettura e scrittura dei dati per chiave.
-
-   Il server manda due oggetti diversi e lo schema li indirizza con una
-   sola convenzione:
-     "deck.titolo"   -> testi["deck.titolo"]      mappa PIATTA
-     "config.orari"  -> config.orari              albero ANNIDATO
-   La differenza sta nella natura dei due, non in una scelta del pannello:
-   `testi` nasce come mappa di chiavi con il punto dentro, `config` e' un
-   albero. Il resto del pannello usa solo le funzioni qui sotto.
-   --------------------------------------------------------------------- */
-
 const PREFISSO_CONFIG = 'config.';
 
-/** Copia profonda: la bozza salvata va confrontata con quella in corso. */
 export function clona(valore) {
   if (typeof structuredClone === 'function') return structuredClone(valore);
   return JSON.parse(JSON.stringify(valore));
 }
 
-/** Confronto strutturale, sufficiente per dati JSON puri. */
 export function uguali(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -84,37 +46,26 @@ function scriviPercorso(oggetto, percorso, valore) {
   nodo[ultimo] = valore;
 }
 
-/** Legge il valore di una chiave dello schema dentro i dati completi. */
 export function leggiChiave(dati, chiave) {
   if (chiave === 'config') return dati.config;
   if (chiave.startsWith(PREFISSO_CONFIG)) return leggiPercorso(dati.config, chiave.slice(PREFISSO_CONFIG.length));
   return dati.testi ? dati.testi[chiave] : undefined;
 }
 
-/** Scrive il valore di una chiave dello schema dentro i dati completi. */
 export function scriviChiave(dati, chiave, valore) {
   if (chiave.startsWith(PREFISSO_CONFIG)) scriviPercorso(dati.config, chiave.slice(PREFISSO_CONFIG.length), valore);
   else dati.testi[chiave] = valore;
 }
 
-/**
- * Nome della proprieta' dentro una voce di elenco.
- * Lo schema puo' scriverla relativa («nome») o completa
- * («config.social.nome»): entrambe finiscono sulla stessa proprieta', cosi'
- * il pannello non impone una forma allo schema.
- */
 export function chiaveRelativa(chiaveElenco, chiaveCampo) {
   const prefisso = chiaveElenco + '.';
   return chiaveCampo.startsWith(prefisso) ? chiaveCampo.slice(prefisso.length) : chiaveCampo;
 }
 
-/** Valore iniziale sensato per un campo appena creato dentro un elenco. */
 export function valoreVuoto(campo) {
   switch (campo.tipo) {
     case 'numero': return typeof campo.min === 'number' ? campo.min : 0;
     case 'orario': return '21:00';
-    // La forma completa e pulita la conosce solo condivisi/orari.js; senza,
-    // restano i valori di serie del canale.
     case 'orari': return typeof window !== 'undefined' && window.SBOrari
       ? window.SBOrari.normalizza({})
       : { giorni: [], ora: '21:00', fuso: 'Europe/Rome', durataOre: 4 };
@@ -122,17 +73,13 @@ export function valoreVuoto(campo) {
     case 'font': return Array.isArray(campo.opzioni) && campo.opzioni.length ? valoreOpzione(campo.opzioni[0]) : '';
     case 'elenco':
     case 'elencoTesti': return [];
-    // Nero: e' un colore valido, e il selettore nativo una stringa vuota
-    // non la accetta (si rimetterebbe su #000000 da solo, di nascosto).
     case 'colore': return normalizzaColore(campo.predefinito) || '#000000';
-    // Spento: una voce appena creata non accende funzioni da sola.
     case 'interruttore': return campo.predefinito === true;
     case 'ricco': return '';
     default: return '';
   }
 }
 
-/** Le opzioni possono essere stringhe o { valore, etichetta }. */
 export function valoreOpzione(opzione) {
   if (opzione && typeof opzione === 'object') {
     return String(opzione.valore ?? opzione.value ?? opzione.chiave ?? '');
@@ -147,43 +94,16 @@ export function etichettaOpzione(opzione) {
   return String(opzione);
 }
 
-/* ---------------------------------------------------------------------
-   Convalida immediata.
-
-   Il server resta l'unico giudice: queste regole servono solo a non far
-   arrivare fino al salvataggio un errore che si vede a occhio.
-
-   LA REGOLA, che vale per ogni riga qui sotto: il controllo locale puo'
-   essere piu' severo del server solo se il server rifiuterebbe comunque;
-   non deve MAI essere piu' permissivo, e non deve MAI contare in modo
-   diverso. Un pannello che dice «ci sta» e poi si becca un rifiuto al
-   Salva e' peggio di un pannello che non controlla niente: chi
-   amministra non sa piu' a chi credere.
-
-   Percio' le regole di url, email, orario, colore e lunghezza sono la
-   copia di quelle di `server/lib/convalida.js`, e il conto dei caratteri
-   visibili del testo ricco passa dallo stesso `soloTesto()` del server.
-   Se una delle due parti cambia, cambiano tutte e due.
-   --------------------------------------------------------------------- */
-
 const LIMITE_TESTO = 4000;
 
-/* Copia esatta di RE_EMAIL di server/lib/convalida.js: il dominio vuole
-   almeno un punto, e i pezzi fra i punti non possono essere vuoti. */
 const RE_EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
-/**
- * Le stesse quattro regole di `urlAmmesso()` del server, nello stesso
- * ordine e con le stesse parole nei messaggi.
- * Torna il messaggio del problema, oppure null se l'indirizzo va bene.
- */
 function problemaUrl(testo) {
   if (testo.startsWith('//')) {
     return 'Un indirizzo che inizia con // eredita il protocollo della pagina: scrivi https:// per intero.';
   }
   const schema = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(testo);
   if (!schema) {
-    // Nessun protocollo: percorso relativo o ancora interna, e va bene.
     if (testo.indexOf('\\') !== -1) return 'Nei percorsi si usa la barra normale /, non la barra rovesciata.';
     return null;
   }
@@ -200,19 +120,11 @@ function problemaUrl(testo) {
 
 export function erroreLocale(campo, valore) {
   const testo = typeof valore === 'string' ? valore.trim() : valore;
-  /* Il server chiama «facoltativo» il campo che puo' restare vuoto
-     (`vuotoAmmesso` in convalida.js): senza questa riga il pannello
-     pretenderebbe un valore anche dove il salvataggio non lo chiede. */
   const facoltativo = campo.facoltativo === true;
 
   switch (campo.tipo) {
     case 'url':
-      // Vuoto = la voce sparisce dal sito. Se il campo e' obbligatorio lo
-      // dice il server con `facoltativo`, e il suo errore arriva sul campo.
       if (testo === '') return null;
-      // Un percorso relativo senza barra davanti («pagina.html») per il
-      // server e' valido: bocciarlo qui vorrebbe dire vietare a mano una
-      // cosa che il salvataggio accetta.
       return problemaUrl(testo);
 
     case 'email':
@@ -247,24 +159,13 @@ export function erroreLocale(campo, valore) {
     case 'testo':
     case 'testolungo': {
       const limite = Number(campo.max) > 0 ? Number(campo.max) : LIMITE_TESTO;
-      // Si conta il valore GREZZO, spazi in fondo compresi: il server fa
-      // `valore.length` senza ripulire niente, e contando il testo
-      // ripulito un valore di 41 caratteri con uno spazio in coda
-      // passerebbe di qui per poi essere rifiutato al Salva.
       if (typeof valore === 'string' && valore.length > limite) {
         return 'Sono ' + valore.length + ' caratteri: il massimo è ' + limite + '.';
       }
       return null;
     }
 
-    /* I quattro tipi nuovi. Le regole restano quelle del server, scritte
-       un attimo prima: qui si blocca solo cio' che il server rifiuterebbe
-       di sicuro, mai qualcosa che lui accetterebbe. Quello che il
-       sanificatore toglie in silenzio (un tag fuori lista) non e' un
-       errore: e' una pulizia, e l'editor la fa vedere da solo. */
-
     case 'ricco': {
-      // campo.max conta i caratteri VISIBILI, non i tag (CONTRATTO-2 §5).
       const limite = Number(campo.max) > 0 ? Number(campo.max) : LIMITE_TESTO;
       const visibile = soloTesto(typeof valore === 'string' ? valore : '');
       if (visibile.length > limite) {
@@ -277,7 +178,6 @@ export function erroreLocale(campo, valore) {
       if (testo === '' || testo === null || testo === undefined) {
         return facoltativo ? null : 'Serve un colore, scritto come #8b2fff.';
       }
-      // Stessa regola di RE_COLORE del server: cancelletto e sei cifre.
       if (!/^#[0-9a-fA-F]{6}$/.test(String(testo))) {
         return 'Il colore va scritto con il cancelletto e sei cifre, per esempio #8b2fff.';
       }
@@ -286,24 +186,14 @@ export function erroreLocale(campo, valore) {
 
     case 'font': {
       if (testo === '') return facoltativo ? null : 'Scegli una famiglia dal menu.';
-      // Il nome finisce dentro css/tema.css: questi caratteri uscirebbero
-      // dalla dichiarazione, e il server li rifiuta sempre, catalogo o no.
       if (/[<>"'{};\\]/.test(String(testo))) {
         return 'Il nome di un carattere può contenere solo lettere, numeri e spazi.';
       }
-      // Un font caricato (CONTRATTO-4 §4.4) non sta nel catalogo. Si boccia
-      // solo la forma sbagliata, che il server rifiuta. Un font che non c'e'
-      // piu' (eliminato, poi Annulla) invece NON e' un errore: il server lo
-      // rimette da solo sul font di partenza prima di convalidare, e
-      // bloccare qui il Salva vorrebbe dire essere piu' severi di lui. Il
-      // campo lo dice comunque, nella riga sotto il menu.
       const caricato = /^caricato:(.*)$/.exec(String(testo));
       if (caricato) {
         if (!/^[0-9a-f]{16}$/.test(caricato[1])) return 'Il font caricato è indicato male: sceglilo di nuovo dal menu.';
         return null;
       }
-      // Senza catalogo nello schema non si inventa una regola: il server
-      // ha il suo elenco per ogni slot e resta lui a dire l'ultima parola.
       const catalogo = Array.isArray(campo.opzioni) ? campo.opzioni.map(valoreOpzione) : null;
       if (!catalogo || !catalogo.length) return null;
       if (!catalogo.includes(String(testo))) {
@@ -313,8 +203,6 @@ export function erroreLocale(campo, valore) {
     }
 
     case 'interruttore':
-      // Il widget scrive sempre un booleano: qui si prendono solo i valori
-      // arrivati storti dal file dei contenuti («true» come stringa).
       if (typeof valore !== 'boolean') return 'Questo campo può valere solo acceso o spento.';
       return null;
 
@@ -323,16 +211,6 @@ export function erroreLocale(campo, valore) {
   }
 }
 
-/* ---------------------------------------------------------------------
-   Impalcatura comune
-   --------------------------------------------------------------------- */
-
-/**
- * Guscio di un campo: etichetta, aiuto, riga dell'errore.
- * `perInput` a false quando il controllo non e' un singolo input: in quel
- * caso l'etichetta non puo' essere una <label for>, e il gruppo si lega
- * con aria-labelledby.
- */
 export function guscio(campo, { mostraChiave = true, perInput = true } = {}) {
   const idCampo = idUnico('c');
   const idEtichetta = idCampo + '-et';
@@ -355,7 +233,6 @@ export function guscio(campo, { mostraChiave = true, perInput = true } = {}) {
   return { nodo, etichetta, idEtichetta, idCampo, pie, errore, principale: null };
 }
 
-/** Attacca a un controllo i metodi per mostrare e togliere l'errore. */
 export function attaccaErrore(parti, controllo) {
   controllo.mostraErrore = (testo) => {
     parti.errore.textContent = testo || '';
@@ -367,15 +244,9 @@ export function attaccaErrore(parti, controllo) {
   controllo.mostraErrore('');
 }
 
-/* ---------------------------------------------------------------------
-   Campi di testo, url, email, numero, orario
-   --------------------------------------------------------------------- */
-
 function campoTesto(campo, accesso, ctx) {
   const parti = guscio(campo, ctx.opzioni);
   const multiriga = campo.tipo === 'testolungo';
-  // Per un numero `max` è il valore più alto, non una lunghezza: contarci
-  // sopra i caratteri scriverebbe «2 / 32» sotto un arrotondamento di 14.
   const limite = campo.tipo !== 'numero' && Number(campo.max) > 0 ? Number(campo.max) : null;
 
   const tipoHtml = { url: 'url', email: 'email', numero: 'number', orario: 'time', dataora: 'datetime-local' }[campo.tipo] || 'text';
@@ -404,7 +275,6 @@ function campoTesto(campo, accesso, ctx) {
   const iniziale = accesso.leggi();
   input.value = iniziale === undefined || iniziale === null ? '' : String(iniziale);
 
-  // Il contatore serve dove c'e' un tetto: senza, non si sa quanto manca.
   let contatore = null;
   if (limite) {
     contatore = el('span', { classe: 'campo__contatore' });
@@ -424,8 +294,6 @@ function campoTesto(campo, accesso, ctx) {
     const grezzo = input.value;
     if (campo.tipo === 'numero') {
       const n = Number(grezzo);
-      // Un valore non numerico resta com'e': valida() blocca il salvataggio
-      // invece di mandare al server uno zero al posto di un errore.
       accesso.scrivi(grezzo !== '' && Number.isFinite(n) ? n : grezzo);
     } else {
       accesso.scrivi(grezzo);
@@ -435,8 +303,6 @@ function campoTesto(campo, accesso, ctx) {
   input.addEventListener('input', () => {
     scrivi();
     aggiornaContatore();
-    // Mentre si scrive si corregge solo quello che era gia' segnalato:
-    // segnalare a ogni tasto un'email incompleta e' fastidioso e inutile.
     if (!parti.errore.hidden) controllo.mostraErrore(erroreLocale(campo, input.value) || '');
     ctx.modificato();
   });
@@ -454,10 +320,6 @@ function campoTesto(campo, accesso, ctx) {
   return controllo;
 }
 
-/* ---------------------------------------------------------------------
-   Scelta fra opzioni
-   --------------------------------------------------------------------- */
-
 function campoScelta(campo, accesso, ctx) {
   const parti = guscio(campo, ctx.opzioni);
   const opzioni = Array.isArray(campo.opzioni) ? campo.opzioni : [];
@@ -468,8 +330,6 @@ function campoScelta(campo, accesso, ctx) {
   parti.principale = select;
 
   if (!opzioni.some((o) => valoreOpzione(o) === valoreAttuale)) {
-    // Il valore salvato non e' fra le opzioni: si mostra lo stesso, cosi'
-    // non sparisce dai dati senza che nessuno se ne accorga.
     select.append(el('option', {
       value: valoreAttuale,
       testo: valoreAttuale ? valoreAttuale + ' (valore attuale, non in elenco)' : '— non impostato —'
@@ -494,10 +354,6 @@ function campoScelta(campo, accesso, ctx) {
   parti.nodo.append(select, parti.pie);
   return controllo;
 }
-
-/* ---------------------------------------------------------------------
-   Immagine
-   --------------------------------------------------------------------- */
 
 function campoImmagine(campo, accesso, ctx) {
   const parti = guscio(campo, ctx.opzioni);
@@ -563,20 +419,6 @@ function campoImmagine(campo, accesso, ctx) {
   return controllo;
 }
 
-/* ---------------------------------------------------------------------
-   Orari: la schedule della settimana (CONTRATTO-5 §8)
-
-   Il campo vero lo costruisce moduli/settimana.js. Se il modulo è già
-   arrivato (il caso normale: parte appena si carica questo file) lo si
-   usa e basta. Se non è ancora arrivato, il campo nasce come contenitore
-   e si riempie appena c'è, girando all'editor vero le richieste fatte nel
-   frattempo; se non arriva affatto, lo dice al posto dell'editor e il
-   resto del pannello continua a funzionare.
-   --------------------------------------------------------------------- */
-
-/* Le richieste che l'editor può ricevere prima di esserci: quelle del
-   contratto dei campi, più quelle con cui le parti aprono la schedule
-   sulla vista giusta. */
 const RICHIESTE_IN_ATTESA = ['mostraErrore', 'pulisci', 'apriVista', 'apriGiorno', 'apriEvento'];
 
 function campoOrari(campo, accesso, ctx) {
@@ -618,22 +460,8 @@ function campoOrari(campo, accesso, ctx) {
   return controllo;
 }
 
-/* ---------------------------------------------------------------------
-   Colore
-
-   Tre pezzi che dicono la stessa cosa in tre modi: il selettore nativo
-   (si sceglie col dito), la casella esadecimale (si incolla dal logo) e
-   il rapporto di contrasto (si scopre che quel grigio non si legge).
-   Il terzo e' quello che conta: e' l'unico che impedisce di rendere il
-   sito illeggibile con un clic e accorgersene dopo aver pubblicato.
-   --------------------------------------------------------------------- */
-
-/* Ultimo appiglio quando nel gruppo non c'e' un campo di fondo o di testo
-   da cui leggere: sono i valori di partenza del contratto (§4.2), e si
-   dichiara sempre che sono quelli, invece di far finta di sapere. */
 const COLORI_DI_PARTENZA = { fondo: '#07070c', testo: '#f2f0f8' };
 
-/** Da «8b2fff», «#8B2FFF» o «#abc» a «#8b2fff». Stringa vuota se non si capisce. */
 function normalizzaColore(valore) {
   const corpo = String(valore === null || valore === undefined ? '' : valore).trim().toLowerCase().replace(/^#/, '');
   if (/^[0-9a-f]{3}$/.test(corpo)) return '#' + corpo.split('').map((c) => c + c).join('');
@@ -641,19 +469,6 @@ function normalizzaColore(valore) {
   return '';
 }
 
-/**
- * I campi colore che sono a video adesso.
- *
- * Serve perche' il contrasto e' un rapporto fra DUE colori: il campo del
- * testo deve sapere che fondo ha scelto il campo qui sopra, e viceversa.
- * Passare per un registro invece che per i dati tiene questo file dove
- * deve stare: non sa quali chiavi esistono, sa solo chi e' disegnato.
- * Le voci morte si buttano guardando isConnected, cosi' il cambio di
- * gruppo non lascia in giro riferimenti a nodi che non esistono piu'.
- * Si butta pero' solo chi in pagina c'e' gia' stato: quando un campo si
- * costruisce, il suo nodo non e' ancora appeso a niente, e buttarlo
- * subito vorrebbe dire cancellarlo un istante dopo averlo scritto.
- */
 const coloriAVideo = new Set();
 
 function coloriVivi() {
@@ -664,13 +479,6 @@ function coloriVivi() {
   return Array.from(coloriAVideo);
 }
 
-/**
- * Il colore contro cui misurare questo campo.
- * Lo schema puo' dirlo con `contrastoCon` (una chiave o un colore); se
- * non lo dice, si guarda il nome dell'ultimo pezzo della chiave: un
- * campo che si chiama «fondo» si misura col testo, tutti gli altri si
- * misurano col fondo. E' una convenzione, e come tale sta scritta qui.
- */
 function riferimentoColore(campo) {
   const ultimo = String(campo.chiave || '').split('.').pop();
   const eFondo = /fondo/i.test(ultimo);
@@ -695,8 +503,6 @@ function riferimentoColore(campo) {
 }
 
 function campoColore(campo, accesso, ctx) {
-  // Il selettore nativo e' un <input>: l'etichetta puo' restare una
-  // <label for>, che e' la cosa piu' solida che ci sia.
   const parti = guscio(campo, ctx.opzioni);
   const etichettaCampo = campo.etichetta || campo.chiave;
 
@@ -706,9 +512,6 @@ function campoColore(campo, accesso, ctx) {
     id: parti.idCampo, classe: 'colore__pozzo', type: 'color',
     value: iniziale || '#000000'
   });
-  // La casella mostra il valore VERO, anche se e' storto: se nei contenuti
-  // c'e' scritto «viola», si deve vedere «viola» e correggerlo, non un
-  // nero comparso dal nulla.
   const esa = el('input', {
     classe: 'campo__input colore__esa', type: 'text',
     maxlength: 7, spellcheck: 'false', autocomplete: 'off', placeholder: '#8b2fff',
@@ -725,7 +528,6 @@ function campoColore(campo, accesso, ctx) {
   const controllo = { chiave: campo.chiave, campo, nodo: parti.nodo };
   attaccaErrore(parti, controllo);
 
-  /** Ridisegna il verdetto: lo chiamano anche gli altri campi colore. */
   const ricalcola = () => {
     const mio = normalizzaColore(esa.value);
     if (!mio) {
@@ -740,7 +542,6 @@ function campoColore(campo, accesso, ctx) {
     livello.textContent = et.livello;
     verdetto.textContent = et.testo + ' Misurato contro ' + rif.nome + '.';
 
-    // L'esempio mostra la coppia vera: il colore su cui finira' davvero.
     const eFondo = /fondo/i.test(String(campo.chiave || '').split('.').pop());
     esempio.style.background = eFondo ? mio : rif.colore;
     esempio.style.color = eFondo ? rif.colore : mio;
@@ -755,15 +556,12 @@ function campoColore(campo, accesso, ctx) {
     ricalcola
   });
 
-  /** Cambiando un colore cambia il verdetto di tutti gli altri. */
   const ricalcolaTutti = () => {
     for (const voce of coloriVivi()) voce.ricalcola();
   };
 
   const applica = (grezzo) => {
     const pulito = normalizzaColore(grezzo);
-    // Se non e' un colore valido si scrive comunque quello che c'e':
-    // valida() blocca il salvataggio invece di correggere di nascosto.
     accesso.scrivi(pulito || grezzo);
     if (pulito) selettore.value = pulito;
     if (!parti.errore.hidden) controllo.mostraErrore(erroreLocale(campo, pulito || grezzo) || '');
@@ -777,8 +575,6 @@ function campoColore(campo, accesso, ctx) {
   });
   esa.addEventListener('input', () => applica(esa.value));
   esa.addEventListener('blur', () => {
-    // Alla fine si mette in ordine: «8b2fff» e «#8B2FFF» diventano
-    // «#8b2fff», che e' l'unica forma che il server accetta.
     const pulito = normalizzaColore(esa.value);
     if (pulito) { esa.value = pulito; applica(pulito); }
     controllo.mostraErrore(erroreLocale(campo, esa.value) || '');
@@ -803,16 +599,6 @@ function campoColore(campo, accesso, ctx) {
   return controllo;
 }
 
-/* ---------------------------------------------------------------------
-   Font
-
-   Il menu scrive ogni voce nel font vero. Non tutti i browser applicano
-   font-family alle <option> (Safari e i menu di sistema di Android le
-   disegnano a modo loro), quindi sotto al campo c'e' anche una riga di
-   anteprima, che invece e' un elemento normale e si comporta ovunque
-   allo stesso modo.
-   --------------------------------------------------------------------- */
-
 const ANTEPRIMA_FONT = 'Il pollo canta alle 21:00 — ABCabc 0123';
 
 function voceFont(grezza) {
@@ -827,13 +613,6 @@ function voceFont(grezza) {
   return { nome: String(grezza || '').trim(), ripiego: '', categoria: '', pesi: [] };
 }
 
-/**
- * Il catalogo per questo campo.
- * Prima lo schema (`opzioni` o `catalogo`), poi il catalogo per slot che
- * il server manda in `GET /api/contenuti` sotto `tema.font` e che
- * pannello.js puo' appoggiare in `ctx.tema`. Lo slot e' `campo.slot`
- * oppure l'ultimo pezzo della chiave (titolo, testo, mono).
- */
 function catalogoFont(campo, ctx) {
   const daSchema = Array.isArray(campo.opzioni) ? campo.opzioni
     : (Array.isArray(campo.catalogo) ? campo.catalogo : null);
@@ -844,16 +623,11 @@ function catalogoFont(campo, ctx) {
   return daApi ? daApi.map(voceFont).filter((v) => v.nome) : [];
 }
 
-/** La pila completa: la famiglia scelta e, dietro, il ripiego di sistema. */
 function pilaFont(voce) {
   const ripiego = voce.ripiego || 'system-ui, sans-serif';
   return '"' + voce.nome.replace(/"/g, '') + '", ' + ripiego;
 }
 
-/* I font caricati da chi amministra (CONTRATTO-4 §4.4) stanno in fondo al
-   menu, con valore «caricato:<id>». L'elenco arriva dal registro di
-   tema.js, che riempie editor/impostazioni.js; se il registro e' ancora
-   vuoto si usa quello che il contesto eventualmente porta. */
 const RE_VALORE_CARICATO = /^caricato:([0-9a-f]{16})$/;
 
 function caricatiPerCampo(ctx) {
@@ -862,14 +636,10 @@ function caricatiPerCampo(ctx) {
   return ctx && Array.isArray(ctx.fontCaricati) ? ctx.fontCaricati : null;
 }
 
-/* Un file che non arriva lascia al suo posto i font di sistema: il nome
-   'sb-<id>' non esiste da nessun'altra parte. */
 const RIPIEGO_CARICATO = 'system-ui, sans-serif';
 
 function campoFont(campo, accesso, ctx) {
   const catalogo = catalogoFont(campo, ctx);
-  // Nessun catalogo: meglio una casella di testo che un menu vuoto, che
-  // renderebbe il campo impossibile da correggere.
   if (!catalogo.length) return campoTesto({ ...campo, tipo: 'testo' }, accesso, ctx);
 
   const parti = guscio(campo, ctx.opzioni);
@@ -877,11 +647,6 @@ function campoFont(campo, accesso, ctx) {
   const select = el('select', { id: parti.idCampo, classe: 'campo__scelta font__scelta' });
   parti.principale = select;
 
-  /**
-   * Il menu si riempie qui e non una volta sola: l'elenco dei font
-   * caricati puo' arrivare dopo che il campo e' gia' a video, o cambiare
-   * mentre lo e' (un font caricato o eliminato dalla libreria).
-   */
   const riempi = () => {
     const attuale = accesso.leggi();
     const valoreAttuale = attuale === undefined || attuale === null ? '' : String(attuale);
@@ -897,8 +662,6 @@ function campoFont(campo, accesso, ctx) {
       select.append(el('option', { value: valoreAttuale, testo }));
     }
 
-    // Con dei caricati il menu si divide in due gruppi, cosi' si capisce
-    // quali font vengono da Google e quali dal computer di chi amministra.
     const suoi = caricati && caricati.length ? caricati : null;
     const gruppoCatalogo = suoi ? el('optgroup', { label: 'Catalogo' }) : select;
     for (const voce of catalogo) {
@@ -962,14 +725,8 @@ function campoFont(campo, accesso, ctx) {
 
   riempi();
   aggiorna();
-  // Le anteprime hanno senso solo se i font ci sono davvero: Google Fonts
-  // e' l'unico CDN che il contratto ammette, ed e' esattamente per questo.
   precaricaFont(catalogo).then(aggiorna);
 
-  /* Iscrizione ai cambi dell'elenco dei caricati. Si toglie da sola quando
-     il campo, dopo essere stato in pagina, non c'e' piu': un campo appena
-     costruito non e' ancora appeso a niente, e toglierla subito vorrebbe
-     dire non ricevere mai il primo elenco. */
   let appeso = false;
   const togli = suFontCaricati(() => {
     if (parti.nodo.isConnected) appeso = true;
@@ -984,18 +741,6 @@ function campoFont(campo, accesso, ctx) {
   parti.nodo.append(el('div', { classe: 'font' }, [select, anteprima, ripiego]), parti.pie);
   return controllo;
 }
-
-/* ---------------------------------------------------------------------
-   Interruttore
-
-   E' un <button role="switch">, non una <input type="checkbox"> vestita.
-   Due motivi: il bottone ha gia' la tastiera giusta (Spazio e Invio) e
-   il fuoco visibile senza trucchi, e uno screen reader annuncia
-   «interruttore, attivato», che e' quello che la cosa e' davvero, invece
-   di «casella di controllo, selezionata». La casella stilata avrebbe
-   richiesto di nascondere l'input vero e di ridisegnargli il fuoco
-   addosso: piu' codice per un risultato peggiore.
-   --------------------------------------------------------------------- */
 
 function campoInterruttore(campo, accesso, ctx) {
   const parti = guscio(campo, { ...(ctx.opzioni || {}), perInput: false });
@@ -1029,8 +774,6 @@ function campoInterruttore(campo, accesso, ctx) {
     ctx.modificato();
   });
 
-  // L'etichetta qui e' uno <span>, non una <label>: il clic sopra non
-  // porterebbe da nessuna parte, e chi amministra proverebbe due volte.
   parti.etichetta.addEventListener('click', () => leva.focus());
 
   const controllo = { chiave: campo.chiave, campo, nodo: parti.nodo };
@@ -1047,20 +790,6 @@ function campoInterruttore(campo, accesso, ctx) {
   return controllo;
 }
 
-/* ---------------------------------------------------------------------
-   Fabbrica
-   --------------------------------------------------------------------- */
-
-/**
- * @param {object} campo    descrizione dallo schema { chiave, etichetta, tipo, … }
- * @param {object} accesso  { leggi(), scrivi(valore) } sul dato vero
- * @param {object} ctx      { modificato(), registra(), scegliImmagine(), conferma(), opzioni }
- *   Facoltativo, e usato solo dai campi «font»: `ctx.tema` = quello che
- *   GET /api/contenuti manda sotto `tema` ({ font: CATALOGO_FONT, preset }).
- *   Se manca, il catalogo si prende dalle `opzioni` dello schema; se non
- *   c'e' nemmeno quello, il campo diventa una casella di testo e resta
- *   modificabile lo stesso.
- */
 export function creaCampo(campo, accesso, ctx) {
   const controllo = costruisci(campo, accesso, ctx);
   if (ctx.registra) ctx.registra(controllo);
@@ -1086,9 +815,6 @@ function costruisci(campo, accesso, ctx) {
     case 'orario':
     case 'dataora':     return campoTesto(campo, accesso, ctx);
     default:
-      // Tipo sconosciuto: meglio una casella di testo che un campo assente.
-      // Cosi' un'estensione futura dello schema resta comunque modificabile
-      // anche da un pannello che non la conosce ancora.
       return campoTesto({ ...campo, tipo: 'testo' }, accesso, ctx);
   }
 }

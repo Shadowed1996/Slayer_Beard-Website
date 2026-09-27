@@ -1,49 +1,22 @@
-/* =====================================================================
-   api.js — l'unico punto del pannello che parla con il server.
-
-   Tutto passa di qui per tre motivi che altrimenti andrebbero ripetuti a
-   ogni chiamata: il cookie di sessione (`credentials: 'same-origin'`), la
-   traduzione di qualsiasi guaio in un ErroreApi con un messaggio gia'
-   scritto in italiano, e l'avviso unico quando la sessione scade — cosi'
-   chi chiama non deve controllare 401 dappertutto.
-
-   Rotte: contratto §8. Nessun token CSRF: il server accetta solo richieste
-   con Origin proprio, e il cookie e' SameSite=Strict.
-   ===================================================================== */
-
-/** Errore con dentro quello che serve per decidere come reagire. */
 export class ErroreApi extends Error {
   constructor(messaggio, { stato = 0, dati = null } = {}) {
     super(messaggio);
     this.name = 'ErroreApi';
-    this.stato = stato;   // codice HTTP; 0 se il server non ha risposto affatto
-    this.dati = dati;     // corpo completo della risposta, se era JSON
+    this.stato = stato;
+    this.dati = dati;
   }
 
-  /** La richiesta non e' nemmeno partita: server spento o rete assente. */
   get offline() { return this.stato === 0; }
 
-  /** Sessione non piu' valida: si torna alla schermata di accesso. */
   get scaduta() { return this.stato === 401 || this.stato === 403; }
 
-  /** Il server ha rifiutato i contenuti perche' non passano la convalida. */
   get convalida() { return this.stato === 422 || this.stato === 400; }
 }
 
-/**
- * La rotta non esiste su questo server.
- *
- * Serve per le rotte aggiunte dopo (POST /api/anteprima, POST /api/tema):
- * se il server e' rimasto indietro il pannello spegne quella funzione e
- * continua a lavorare, invece di riprovare a ogni tasto premuto.
- */
 export function rottaAssente(errore) {
   return errore instanceof ErroreApi && (errore.stato === 404 || errore.stato === 405 || errore.stato === 501);
 }
 
-/* Chi vuole sapere che la sessione e' caduta si iscrive una volta sola.
-   Serve al pannello per rimettere in piedi il login senza buttare via le
-   modifiche che l'utente ha in memoria. */
 let alloScadere = null;
 export function quandoScadeLaSessione(fn) { alloScadere = fn; }
 
@@ -64,22 +37,15 @@ function messaggioPredefinito(stato) {
   }
 }
 
-/**
- * Trasporto comune. `corpo` puo' essere un oggetto (va in JSON), un
- * FormData o undefined. Torna sempre `{ risposta, testo, dati }`: `dati` e'
- * il JSON quando il corpo lo era, `testo` il corpo grezzo. Serve entrambi
- * perche' /api/anteprima risponde HTML e tutto il resto risponde JSON.
- */
 async function grezza(metodo, percorso, corpo, { silenziosa = false, accetta = 'application/json' } = {}) {
   const opzioni = {
     method: metodo,
-    credentials: 'same-origin',   // la sessione e' un cookie: senza questo non parte
+    credentials: 'same-origin',
     headers: { Accept: accetta },
     cache: 'no-store'
   };
 
   if (corpo instanceof FormData) {
-    // Niente Content-Type a mano: lo mette fetch con il boundary giusto.
     opzioni.body = corpo;
   } else if (corpo !== undefined) {
     opzioni.headers['Content-Type'] = 'application/json';
@@ -90,16 +56,12 @@ async function grezza(metodo, percorso, corpo, { silenziosa = false, accetta = '
   try {
     risposta = await fetch(percorso, opzioni);
   } catch {
-    // fetch fallisce solo se la richiesta non e' partita: server spento,
-    // rete staccata, pagina aperta da file:// invece che da localhost.
     throw new ErroreApi(
       'Non riesco a contattare il server. Controlla che sia acceso: node server/server.js',
       { stato: 0 }
     );
   }
 
-  // Il contratto dice JSON su ogni rotta /api, ma un 500 puo' arrivare in
-  // HTML: meglio non far esplodere il pannello su una parentesi.
   let dati = null;
   const testo = await risposta.text();
   if (testo) {
@@ -116,21 +78,11 @@ async function grezza(metodo, percorso, corpo, { silenziosa = false, accetta = '
   return { risposta, testo, dati };
 }
 
-/** Richiesta che si aspetta JSON: e' il caso di quasi tutte le rotte. */
 async function richiesta(metodo, percorso, corpo, opzioni = {}) {
   const { dati } = await grezza(metodo, percorso, corpo, opzioni);
   return dati === null ? {} : dati;
 }
 
-/* ---------------------------------------------------------------------
-   Normalizzazioni.
-
-   Il contratto fissa le rotte ma non la forma esatta di ogni elenco. Qui
-   si accettano le varianti ragionevoli e si restituisce sempre la stessa
-   cosa al resto del pannello, che cosi' non ha "se" sparsi in giro.
-   --------------------------------------------------------------------- */
-
-/** Prende il primo array utile dentro una risposta. */
 function comeElenco(risposta, ...nomi) {
   if (Array.isArray(risposta)) return risposta;
   if (!risposta || typeof risposta !== 'object') return [];
@@ -150,7 +102,6 @@ function primoValore(oggetto, nomi, predefinito = undefined) {
   return predefinito;
 }
 
-/** Voce della libreria immagini, sempre { nome, percorso, dimensione, data }. */
 function normalizzaMedia(voce) {
   if (typeof voce === 'string') return { nome: voce, percorso: 'contenuti/media/' + voce, dimensione: null, data: null };
   const nome = String(primoValore(voce, ['nome', 'name', 'file', 'nomeFile'], '') || '');
@@ -166,7 +117,6 @@ function normalizzaMedia(voce) {
   };
 }
 
-/** Voce dei backup, sempre { id, data, dimensione, file }. */
 function normalizzaBackup(voce) {
   if (typeof voce === 'string') return { id: voce, data: voce, dimensione: NaN, file: null };
   const id = String(primoValore(voce, ['id', 'nome', 'name', 'cartella', 'backup'], '') || '');
@@ -178,12 +128,6 @@ function normalizzaBackup(voce) {
   };
 }
 
-/**
- * Estrae dall'errore l'elenco { chiave, messaggio } della convalida.
- * Il contratto lo prevede sulla risposta di PUT /api/contenuti; il nome
- * del campo che lo contiene non e' fissato, quindi si cerca il primo
- * array di oggetti che abbia una chiave e un messaggio.
- */
 export function erroriDiConvalida(errore) {
   const corpo = errore && errore.dati;
   if (!corpo) return [];
@@ -210,17 +154,6 @@ export function erroriDiConvalida(errore) {
   }
   return [];
 }
-
-/* ---------------------------------------------------------------------
-   Caricamento di un'immagine.
-
-   Il contratto dice «POST /api/media carica un'immagine» ma non fissa la
-   codifica. Si prova prima multipart/form-data, che e' quello che manda
-   un <form> normale; se il server risponde «non capisco la richiesta»
-   (400/404/405/415/422/501) si riprova in JSON con il file in base64.
-   Un 401, un 409 o un 413 invece sono risposte vere: si fermano subito,
-   ritentare vorrebbe dire caricare due volte lo stesso file.
-   --------------------------------------------------------------------- */
 
 const STATI_DA_RITENTARE = new Set([400, 404, 405, 415, 422, 501]);
 
@@ -251,46 +184,19 @@ async function caricaMedia(file) {
   }
 }
 
-/* ---------------------------------------------------------------------
-   Le rotte
-   --------------------------------------------------------------------- */
-
 export const api = {
-  /* accesso — `silenziosa` perche' un 401 qui e' la risposta normale a una
-     password sbagliata, non una sessione da rimettere in piedi. */
   sessione: () => richiesta('GET', '/api/sessione', undefined, { silenziosa: true }),
   entra: (password) => richiesta('POST', '/api/entra', { password }, { silenziosa: true }),
   esci: () => richiesta('POST', '/api/esci', {}, { silenziosa: true }),
 
-  /**
-   * Crea la password al primo avvio: POST /api/entra, quando auth.json non
-   * esiste, imposta la password e apra la sessione. Niente ripiego su
-   * /api/password: da CONTRATTO-4 §7 quella rotta cambia una password che
-   * c'è già, con la sessione aperta, e al primo avvio risponderebbe 401.
-   */
   creaPassword: (password) => richiesta('POST', '/api/entra', { password }, { silenziosa: true }),
 
-  /* contenuti */
   contenuti: () => richiesta('GET', '/api/contenuti'),
   salva: (corpo) => richiesta('PUT', '/api/contenuti', corpo),
   pubblica: () => richiesta('POST', '/api/pubblica', {}),
 
-  /* Anteprima della bozza GIA' SALVATA: e' HTML, ci va dentro un <iframe>
-     con src. Il numero in coda impedisce al browser di riusare la copia in
-     cache quando si preme «Aggiorna». Resta il ripiego di quella dal vivo
-     e l'indirizzo del bottone «Scheda nuova». */
   urlAnteprima: () => '/api/anteprima?t=' + Date.now(),
 
-  /**
-   * Anteprima dal vivo (CONTRATTO-2 §9): rende i contenuti che sono ancora
-   * solo nel pannello, senza salvare e senza pubblicare. Torna la pagina
-   * come stringa, che poi finisce dentro il documento dell'iframe.
-   *
-   * Il corpo porta i contenuti due volte: annidati sotto `contenuti`, come
-   * dice il contratto, e anche piatti, che e' la forma con cui li riceve
-   * PUT /api/contenuti. Costa qualche kilobyte su localhost ed evita che
-   * l'anteprima muoia per una lettura diversa dello stesso contratto.
-   */
   async anteprimaViva({ testi, config }) {
     const { testo, dati } = await grezza(
       'POST', '/api/anteprima',
@@ -304,11 +210,6 @@ export const api = {
     return testo;
   },
 
-  /**
-   * Anteprima dell'editor (CONTRATTO-4 §6.3): con `editor: true` il server
-   * toglie gli script, mette <base href="/"> e stampa sempre i due <style>
-   * dell'editor. Senza `editor` è la stessa di `anteprimaViva`. Torna HTML.
-   */
   async anteprima({ contenuti, editor = false } = {}) {
     const corpo = { contenuti };
     if (editor) corpo.editor = true;
@@ -320,20 +221,12 @@ export const api = {
     return testo;
   },
 
-  /**
-   * Foglio del tema calcolato al volo (CONTRATTO-2 §9). Non salva niente:
-   * serve solo a far vedere subito un colore cambiato, iniettandolo nel
-   * documento dell'anteprima.
-   */
   async temaCss(tema) {
     const { testo, dati } = await grezza('POST', '/api/tema', { tema }, { accetta: 'application/json, text/css' });
     if (dati && typeof dati === 'object' && typeof dati.css === 'string') return dati.css;
-    // Un server che rispondesse direttamente col foglio invece che con
-    // { css } sarebbe comunque utilizzabile: quello che conta e' il CSS.
     return typeof testo === 'string' ? testo : '';
   },
 
-  /* immagini */
   async media() {
     const risposta = await richiesta('GET', '/api/media');
     return comeElenco(risposta, 'media', 'file', 'files', 'elenco', 'voci').map(normalizzaMedia);
@@ -341,26 +234,17 @@ export const api = {
   caricaMedia,
   eliminaMedia: (nome) => richiesta('DELETE', '/api/media/' + encodeURIComponent(nome)),
 
-  /* copie di sicurezza */
   async backup() {
     const risposta = await richiesta('GET', '/api/backup');
     return comeElenco(risposta, 'backup', 'copie', 'elenco', 'voci', 'items').map(normalizzaBackup);
   },
   ripristina: (id) => richiesta('POST', '/api/backup/' + encodeURIComponent(id) + '/ripristina', {}),
 
-  /* font caricati (CONTRATTO-4 §7) */
-
-  /** -> [{ id, etichetta, file, formato, caricatoIl, usatoIn: [testo] }] */
   async font() {
     const risposta = await richiesta('GET', '/api/font');
     return comeElenco(risposta, 'font').filter((voce) => voce && typeof voce === 'object' && voce.id);
   },
 
-  /**
-   * Carica un file di font. -> la voce creata { id, etichetta, file, formato, caricatoIl }.
-   * 413 oltre 2 MB, 415 se i primi byte non sono di un font: arrivano come
-   * ErroreApi con il messaggio del server.
-   */
   async caricaFont(file, etichetta = '') {
     const modulo = new FormData();
     modulo.append('file', file, file.name);
@@ -369,20 +253,9 @@ export const api = {
     return (risposta && risposta.font) || risposta;
   },
 
-  /**
-   * Cancella un font. Se è in uso il server risponde 409 con `usatoIn`:
-   * l'ErroreApi porta `dati.usatoIn`, e chi chiama chiede conferma e
-   * riprova con `{ forza: true }`.
-   */
   eliminaFont: (id, { forza = false } = {}) =>
     richiesta('DELETE', '/api/font/' + encodeURIComponent(id) + (forza ? '?forza=1' : '')),
 
-  /**
-   * Cambia la password (CONTRATTO-4 §7). Un 403 qui vuol dire «password
-   * attuale sbagliata», non «sessione scaduta», e non deve riportare alla
-   * schermata di accesso: la richiesta parte silenziosa e solo un 401 vero
-   * avvisa chi aspetta la scadenza della sessione.
-   */
   async cambiaPassword(attuale, nuova) {
     try {
       return await richiesta('POST', '/api/password', { attuale, nuova }, { silenziosa: true });
@@ -392,17 +265,10 @@ export const api = {
     }
   },
 
-  /* --- Collegamento a Twitch per follower e abbonati (§«Collegati per i
-     numeri»). rottaAssente() lascia il pannello lavorare anche contro un
-     server piu' vecchio, che non ha ancora queste tre rotte. --------- */
-
-  /** Collegato o no, e con chi: per disegnare il bottone giusto all'apertura. */
   twitchStato: () => richiesta('GET', '/api/twitch/collega'),
 
-  /** Comincia: torna { codiceUtente, indirizzo, scadeTraSec, intervalloSec }. */
   twitchCollega: () => richiesta('POST', '/api/twitch/collega'),
 
-  /** Un tentativo: il chiamante la richiama ogni pochi secondi finche' dura. */
   twitchCollegaStato: () => richiesta('POST', '/api/twitch/collega/stato'),
 
   twitchScollega: () => richiesta('POST', '/api/twitch/scollega'),

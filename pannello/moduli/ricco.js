@@ -1,45 +1,6 @@
-/* =====================================================================
-   ricco.js — l'editor dei testi con un po' di HTML dentro.
-
-   Serve a una cosa sola: far scrivere «una parola in grassetto» e «vai a
-   capo qui» a chi non sa cos'e' un tag, senza aprire la porta a tutto il
-   resto dell'HTML.
-
-   Tre regole che tengono in piedi il file:
-
-   1. LA LISTA BIANCA E' QUELLA DEL CONTRATTO-2 §7, e vale in entrata.
-      Quello che si incolla passa da sanifica() PRIMA di entrare nel
-      documento: non esiste un solo innerHTML con dati non ripuliti. Il
-      sanificatore del server (server/lib/testoricco.js) resta l'autorita';
-      questo serve a non fargli arrivare schifezze, non a fidarsene.
-
-   2. IL DOCUMENTO NON E' IL DATO. Quello che finisce nella bozza e' sempre
-      la serializzazione ripulita di quello che si vede: se il browser si
-      inventa uno <span style>, muore li'.
-
-   3. execCommand E' DEPRECATO, e lo si usa lo stesso per grassetto,
-      corsivo, sottolineato, «togli formattazione» e l'inserimento.
-      Motivo: e' l'unica cosa che tutti i browser implementano allo stesso
-      modo, ed e' l'unica strada che non spacca l'annulla (Ctrl+Z), che
-      invece si perde a ogni modifica fatta a mano sul DOM. L'uscita viene
-      normalizzata dalla lista bianca, quindi il «come» lo decide il
-      browser ma il «cosa resta» lo decidiamo noi.
-
-   Esporta:
-     creaCampoRicco(campo, accesso, ctx)  -> il controllo del campo
-     sanifica(html)    -> stringa ripulita
-     soloTesto(html)   -> il testo senza tag, per contare i caratteri
-     TAG_AMMESSI       -> la lista bianca, uguale a quella del server
-   ===================================================================== */
-
 import { el, bottone, svuota } from './dom.js';
 import { guscio, attaccaErrore, erroreLocale } from './campi.js';
 
-/* ---------------------------------------------------------------------
-   1. La lista bianca
-   --------------------------------------------------------------------- */
-
-/** Tag ammessi -> attributi ammessi su quel tag. Tutto il resto sparisce. */
 export const TAG_AMMESSI = {
   b: [], strong: [], i: [], em: [], u: [], s: [], br: [],
   small: [], mark: [], sup: [], sub: [], code: [],
@@ -48,15 +9,8 @@ export const TAG_AMMESSI = {
   a: ['href', 'title']
 };
 
-/** Le uniche classi ammesse su <span>: sono quelle che il sito sa stilare. */
 const CLASSI_SPAN = ['evidenza', 'tenue', 'mono'];
 
-/**
- * Tag che spariscono con tutto quello che hanno dentro.
- * Per gli altri si tiene il contenuto (un <div> incollato lascia il suo
- * testo); per questi no: il «contenuto» di uno <script> e' codice, e
- * lasciarlo come testo visibile sarebbe solo un modo diverso di sporcare.
- */
 const DA_BUTTARE = new Set([
   'script', 'style', 'noscript', 'template', 'iframe', 'object', 'embed',
   'svg', 'math', 'canvas', 'video', 'audio', 'img', 'picture', 'source',
@@ -64,41 +18,18 @@ const DA_BUTTARE = new Set([
   'link', 'meta', 'head', 'title', 'base'
 ]);
 
-/**
- * Tag di blocco: non sono ammessi (i testi vivono dentro elementi che
- * gia' esistono nel modello), ma quando si incolla da un documento vero
- * segnano dei veri a capo. Si tiene il contenuto e si aggiunge un <br>,
- * altrimenti tre paragrafi diventano una riga sola.
- */
 const BLOCCHI = new Set([
   'p', 'div', 'li', 'tr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'blockquote', 'pre', 'section', 'article', 'header', 'footer', 'figure', 'figcaption'
 ]);
 
-/* ---------------------------------------------------------------------
-   Pulizia del testo — le stesse identiche regole del server.
-
-   `senzaControlli` e `unaRiga` sono la copia di quelle di
-   `server/lib/testoricco.js`: se qui si contasse o si ripulisse anche
-   solo di un carattere in modo diverso, il pannello direbbe «ci sta» e il
-   salvataggio risponderebbe di no, che e' il modo piu' sicuro di far
-   impazzire chi amministra.
-   --------------------------------------------------------------------- */
-
-/* Caratteri di controllo, separatori di riga Unicode e BOM: invisibili e
-   usati apposta per spezzare i controlli («java[tab]script:» per il
-   browser e' javascript:). Restano tabulazione, a capo e ritorno a capo,
-   che poi vengono compattati da unaRiga().
-   Sono gli stessi codici di RE_CONTROLLI del server, scritti in numero
-   invece che come classe di caratteri: in un sorgente si leggono solo
-   cosi', e nessuno li cancella per sbaglio credendoli spazi. */
 const CONTROLLI_SPARSI = new Set([0x7f, 0xad, 0x2028, 0x2029, 0xfeff]);
 
 function eDaButtare(codice) {
-  if (codice <= 0x08) return true;                       // \u0000-\u0008
-  if (codice === 0x0b || codice === 0x0c) return true;   // tabulazione verticale, avanzamento pagina
+  if (codice <= 0x08) return true;
+  if (codice === 0x0b || codice === 0x0c) return true;
   if (codice >= 0x0e && codice <= 0x1f) return true;
-  return CONTROLLI_SPARSI.has(codice);                   // DEL, soft hyphen, separatori di riga, BOM
+  return CONTROLLI_SPARSI.has(codice);
 }
 
 function senzaControlli(testo) {
@@ -106,30 +37,10 @@ function senzaControlli(testo) {
   return Array.from(grezzo).filter((c) => !eDaButtare(c.charCodeAt(0))).join('');
 }
 
-/** Testo su una riga sola, senza spazi doppi: e' il conto che fa il server. */
 function unaRiga(testo) {
   return senzaControlli(testo).replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Indirizzo accettabile per un <a>.
- *
- * Sono le tre regole di `esaminaUrl()` del server, ripetute qui parola per
- * parola, perche' la barra del link non puo' accettare un indirizzo che
- * poi fa rifiutare il salvataggio dell'intero documento:
- *   1. niente «//» o «\\» iniziali: erediterebbero il protocollo della
- *      pagina e porterebbero su un altro dominio;
- *   2. http e https vogliono «//» e almeno il nome del sito dietro
- *      («https:evil.com» non e' un indirizzo);
- *   3. mailto vuole un'email intera, con la chiocciola e un dominio col
- *      punto («mailto:a@b» non basta).
- * Ogni altro protocollo (javascript:, data:, file:) e' fuori.
- *
- * Il controllo si fa su una copia «nuda» — senza caratteri di controllo,
- * senza spazi, tutta minuscola — perche' e' quello che guarda il browser;
- * quello che si tiene e' invece il valore ripulito ma leggibile, lo
- * stesso che tiene il server.
- */
 function hrefSicuro(valore) {
   const deciso = senzaControlli(valore).trim();
   const nudo = deciso.replace(/\s+/g, '').toLowerCase();
@@ -138,7 +49,7 @@ function hrefSicuro(valore) {
   if (/^[/\\][/\\]/.test(nudo) || nudo.charAt(0) === '\\') return null;
 
   const trovato = /^([a-z][a-z0-9+.-]*):/.exec(nudo);
-  if (!trovato) return deciso;                 // percorso relativo o #ancora: va bene
+  if (!trovato) return deciso;
 
   const protocollo = trovato[1];
   if (protocollo === 'http' || protocollo === 'https') {
@@ -150,24 +61,13 @@ function hrefSicuro(valore) {
   return null;
 }
 
-/* ---------------------------------------------------------------------
-   2. Il sanificatore
-
-   Si legge con DOMParser, che costruisce un documento inerte: niente
-   script eseguiti, niente immagini scaricate, niente onerror. Poi si
-   ricostruisce nodo per nodo dentro il documento vero, copiando solo
-   quello che e' in lista. Ricostruire invece di ripulire e' la parte
-   importante: quello che non si conosce non passa, invece di sperare di
-   averlo tolto tutto.
-   --------------------------------------------------------------------- */
-
 function copiaAmmessi(sorgente, destinazione) {
   for (const nodo of Array.from(sorgente.childNodes)) {
     if (nodo.nodeType === Node.TEXT_NODE) {
       destinazione.append(document.createTextNode(nodo.nodeValue));
       continue;
     }
-    if (nodo.nodeType !== Node.ELEMENT_NODE) continue;   // commenti e simili: via
+    if (nodo.nodeType !== Node.ELEMENT_NODE) continue;
 
     const tag = nodo.tagName.toLowerCase();
     if (DA_BUTTARE.has(tag)) continue;
@@ -196,8 +96,6 @@ function copiaAmmessi(sorgente, destinazione) {
       }
     }
 
-    // Un <a> senza indirizzo valido e uno <span> senza classe utile non
-    // sono elementi: sono involucri. Si tiene quello che c'e' dentro.
     if ((tag === 'a' && !nuovo.hasAttribute('href')) || (tag === 'span' && !nuovo.hasAttribute('class'))) {
       copiaAmmessi(nodo, destinazione);
       continue;
@@ -208,82 +106,51 @@ function copiaAmmessi(sorgente, destinazione) {
   }
 }
 
-/** Frammento ripulito, pronto da appendere a un nodo vivo. */
 function frammentoSicuro(html) {
   const frammento = document.createDocumentFragment();
   const testo = String(html === null || html === undefined ? '' : html);
   if (!testo) return frammento;
 
-  // Il documento di DOMParser non ha una finestra: niente si carica e
-  // niente si esegue mentre lo si legge.
   const inerte = new DOMParser().parseFromString('<!doctype html><body>' + testo, 'text/html');
   copiaAmmessi(inerte.body, frammento);
   return frammento;
 }
 
-/** Da nodo (o frammento) a stringa. La serializzazione non e' un rischio: esce, non entra. */
 function serializza(nodo) {
   const scatola = document.createElement('div');
   scatola.append(nodo.cloneNode ? nodo.cloneNode(true) : nodo);
   return scatola.innerHTML;
 }
 
-/**
- * Solo il contenuto di un elemento, senza l'elemento stesso.
- * Serve per l'area scrivibile: il dato e' quello che c'e' dentro, non il
- * <div contenteditable> che lo contiene.
- */
 function serializzaFigli(elemento) {
   const scatola = document.createElement('div');
   for (const figlio of Array.from(elemento.childNodes)) scatola.append(figlio.cloneNode(true));
   return scatola.innerHTML;
 }
 
-/** Toglie gli spazi e i <br> in coda: non si vedono, e sporcano il diff. */
 function limaBordi(html) {
   return String(html || '')
     .replace(/^(?:\s|<br\s*\/?>)+/i, '')
     .replace(/(?:\s|<br\s*\/?>)+$/i, '');
 }
 
-/**
- * Passaggio dalla lista bianca, senza toccare i bordi.
- * Serve per i pezzi che si inseriscono nel mezzo del testo: un <br> da
- * solo e' esattamente cio' che limaBordi() butterebbe via.
- */
 function ripulisci(html) {
   return serializza(frammentoSicuro(html));
 }
 
-/**
- * Ripulisce l'HTML tenendo solo quello che il contratto ammette.
- * Non lancia mai: quello che non e' ammesso sparisce, il testo resta.
- */
 export function sanifica(html) {
   return limaBordi(ripulisci(html));
 }
 
-/**
- * Il testo senza tag, come lo legge chi guarda la pagina.
- * Un <br> vale un a capo, cioe' un carattere: se non lo si contasse, il
- * pannello direbbe che ci sta e il server risponderebbe di no.
- */
 export function soloTesto(html) {
   const scatola = document.createElement('div');
   scatola.append(frammentoSicuro(html));
-  // Un <br> vale UNO SPAZIO, non un a capo: e' quello che fa `soloTesto()`
-  // del server, e in un attributo un a capo non ci potrebbe nemmeno stare.
   for (const salto of Array.from(scatola.querySelectorAll('br'))) {
     salto.replaceWith(document.createTextNode(' '));
   }
-  // unaRiga() compatta gli spazi e taglia i bordi, esattamente come il
-  // browser quando disegna la pagina: «ciao   mondo» sono dieci caratteri
-  // letti, non dodici. Contare in un altro modo vorrebbe dire bloccare in
-  // locale del testo che il server accetterebbe.
   return unaRiga(scatola.textContent);
 }
 
-/** Frammento da testo semplice: gli a capo diventano <br>, il resto e' testo. */
 function frammentoDaTesto(testo) {
   const frammento = document.createDocumentFragment();
   const righe = String(testo || '').split(/\r\n|\r|\n/);
@@ -300,18 +167,11 @@ function escapeAttributo(valore) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/* ---------------------------------------------------------------------
-   3. Il campo
-   --------------------------------------------------------------------- */
-
 const TESTO_TAG_AMMESSI =
   'Tag ammessi: <b> <strong> <i> <em> <u> <s> <br> <small> <mark> <sup> <sub> <code> ' +
   '<abbr title> <span class="evidenza|tenue|mono"> <a href title>. Tutto il resto viene tolto.';
 
 export function creaCampoRicco(campo, accesso, ctx) {
-  // Il controllo non e' un singolo input: l'etichetta non puo' essere una
-  // <label for>, quindi il guscio la fa diventare uno <span> e la si lega
-  // all'area con aria-labelledby.
   const parti = guscio(campo, { ...(ctx.opzioni || {}), perInput: false });
   const limite = Number(campo.max) > 0 ? Number(campo.max) : null;
 
@@ -319,7 +179,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
   const idNota = idArea + '-nota';
   const idSorgente = idArea + '-src';
 
-  /* --- l'area scrivibile --- */
   const area = el('div', {
     id: idArea,
     classe: 'ricco__area',
@@ -332,7 +191,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
   });
   parti.principale = area;
 
-  /* --- il sorgente HTML --- */
   const sorgente = el('textarea', {
     id: idSorgente,
     classe: 'ricco__sorgente campo__area',
@@ -343,8 +201,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
     'aria-describedby': idNota
   });
 
-  // La descrizione e' sempre in pagina (anche se non si vede): un
-  // aria-describedby che punta a un nodo nascosto non viene letto.
   const descrizione = el('p', {
     classe: 'sr-only', id: idNota,
     testo: 'Campo di testo con formattazione. Usa la barra qui sopra o Ctrl+B, Ctrl+I, Ctrl+U; Invio va a capo.'
@@ -359,8 +215,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
   attaccaErrore(parti, controllo);
 
   let inCodice = false;
-
-  /* ------------------------------------------------- lettura e scrittura */
 
   const valore = () => {
     const v = accesso.leggi();
@@ -379,7 +233,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
       : (limite && quanti > limite * 0.9 ? 'vicino' : 'normale');
   };
 
-  /** Dal documento alla bozza: quello che si salva e' sempre ripulito. */
   const scriviDalDocumento = () => {
     const html = sanifica(serializzaFigli(area));
     accesso.scrivi(html);
@@ -388,18 +241,13 @@ export function creaCampoRicco(campo, accesso, ctx) {
     ctx.modificato();
   };
 
-  /** Dal sorgente alla bozza: si scrive quello che c'e' scritto, e si avvisa. */
   const scriviDalSorgente = () => {
     const grezzo = sorgente.value;
     accesso.scrivi(grezzo);
     aggiornaContatore(soloTesto(grezzo));
     const ripulito = sanifica(grezzo);
-    // Confronto onesto: si dice che qualcosa verra' tolto, non lo si
-    // toglie sotto le dita mentre si sta ancora scrivendo.
     const cambia = ripulito !== limaBordi(grezzo);
     avvisoPulizia.hidden = !cambia;
-    // Il server non ripulisce in silenzio: un tag fuori lista glielo fa
-    // RIFIUTARE, il salvataggio. Meglio dirlo qui, mentre si scrive.
     if (cambia) {
       avvisoPulizia.textContent = 'C\'è qualcosa fuori lista: torna all\'editor e viene tolto, ' +
         'ma se salvi così il server rifiuta tutto il documento. ' + TESTO_TAG_AMMESSI;
@@ -407,8 +255,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
     if (!parti.errore.hidden) controllo.mostraErrore(erroreLocale(campo, grezzo) || '');
     ctx.modificato();
   };
-
-  /* ------------------------------------------------------- selezione */
 
   const selezione = () => {
     const sel = window.getSelection();
@@ -431,33 +277,22 @@ export function creaCampoRicco(campo, accesso, ctx) {
     sel.addRange(rangeSalvato);
   };
 
-  /* -------------------------------------------------------- comandi */
-
-  /**
-   * execCommand: deprecato, ma e' l'unico comando di formattazione che
-   * tutti i browser implementano allo stesso modo, e l'unico che non
-   * azzera la pila dell'annulla. styleWithCSS a false serve a farsi dare
-   * <b>/<i>/<u> invece di <span style>, che la lista bianca butterebbe.
-   */
   const esegui = (comando, valoreComando = null) => {
     area.focus();
     try {
       document.execCommand('styleWithCSS', false, false);
       document.execCommand(comando, false, valoreComando);
-    } catch { /* browser che non lo implementa: il testo resta com'e' */ }
+    } catch {}
     scriviDalDocumento();
     aggiornaStatoBarra();
   };
 
-  /** Inserisce HTML gia' ripulito nel punto del cursore. */
   const inserisci = (html) => {
     const pulito = ripulisci(html);
     if (!pulito) return;
     area.focus();
 
     let fatto = false;
-    // La stringa e' gia' passata dalla lista bianca: insertHTML qui non
-    // e' una scorciatoia pericolosa, e' l'unico modo di non perdere Ctrl+Z.
     try { fatto = document.execCommand('insertHTML', false, pulito); } catch { fatto = false; }
 
     if (!fatto) {
@@ -484,10 +319,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
   const aCapo = () => {
     inserisci('<br>');
 
-    // Un <br> in fondo al contenuto non si vede: il browser ha bisogno di
-    // un secondo <br> di appoggio perche' il cursore scenda davvero.
-    // Si aggiunge solo se dopo il cursore non e' rimasto niente, e
-    // sparisce da solo al salvataggio, perche' sanifica() lima i bordi.
     const dove = selezione();
     const ultimo = area.lastChild;
     if (!dove || !ultimo || ultimo.nodeName !== 'BR') return;
@@ -496,8 +327,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
     resto.setStart(dove.range.endContainer, dove.range.endOffset);
     if (resto.toString() === '') area.append(document.createElement('br'));
   };
-
-  /* ------------------------------------------------------ riga del link */
 
   const campoLink = el('input', {
     type: 'text', classe: 'campo__input ricco__link-input',
@@ -522,7 +351,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
     erroreLink
   ]);
 
-  /** Il <a> in cui sta il cursore, se c'e': serve a modificarlo invece di annidarne un altro. */
   const linkSottoIlCursore = () => {
     const dove = selezione();
     if (!dove) return null;
@@ -551,8 +379,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
   function applicaLink() {
     const indirizzo = hrefSicuro(campoLink.value);
     if (!indirizzo) {
-      // Le stesse parole delle regole vere: se il messaggio dicesse meno
-      // di quello che il controllo chiede, si proverebbe a indovinare.
       erroreLink.textContent = 'Indirizzo non valido: ci vuole https:// con almeno il nome del sito, ' +
         'oppure mailto: con un\'email completa (nome@dominio.it), oppure un percorso di questo sito ' +
         'con la barra normale /.';
@@ -562,10 +388,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
     }
     ripristinaSelezione();
 
-    // Se il cursore era dentro un link che c'e' gia', si prende tutto il
-    // link: cosi' quello si modifica, invece di annidarcene un altro
-    // dentro (un <a> dentro un <a> non e' HTML valido, e il browser lo
-    // smonterebbe a modo suo).
     const esistente = linkSottoIlCursore();
     const sel = window.getSelection();
     if (esistente && sel) {
@@ -584,8 +406,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
       ? serializza(attuale.range.cloneContents())
       : '';
 
-    // Cursore fermo e nessun testo scelto: il link scrive se stesso, che
-    // e' meglio di un <a> vuoto e invisibile.
     inserisci('<a href="' + escapeAttributo(indirizzo) + '">' + (dentro || escapeAttributo(indirizzo)) + '</a>');
     chiudiLink();
     area.focus();
@@ -596,17 +416,8 @@ export function creaCampoRicco(campo, accesso, ctx) {
     if (ev.key === 'Escape') { ev.preventDefault(); chiudiLink(); area.focus(); }
   });
 
-  /* ----------------------------------------------------------- la barra */
-
   const comandi = [];
 
-  /**
-   * Un bottone della barra.
-   * I glifi sono lettere, non icone: le icone del pannello stanno nello
-   * sprite di index.html, che e' di un altro file e potrebbe non avere
-   * quelle che servono qui. G/C/S e' anche la sigla che chiunque abbia
-   * usato un programma di scrittura in italiano riconosce al volo.
-   */
   const cmd = ({ glifo, nome, titolo, classe = '', azione, stato = null }) => {
     const nodo = el('button', {
       type: 'button',
@@ -615,8 +426,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
       tabindex: '-1',
       su: {
         click: (ev) => { ev.preventDefault(); azione(); },
-        // Senza questo, il clic sposta il fuoco sul bottone e la selezione
-        // nel testo si perde: si premerebbe «grassetto» su niente.
         mousedown: (ev) => ev.preventDefault()
       }
     }, [
@@ -655,9 +464,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
     el('div', { classe: 'ricco__gruppo ricco__gruppo--fine' }, [btnCodice])
   ]);
 
-  /* Barra con un solo punto di tabulazione: si entra con Tab, ci si muove
-     con le frecce. E' il comportamento previsto per role="toolbar", e
-     soprattutto evita di dover premere Tab otto volte per arrivare al testo. */
   let indiceFuoco = 0;
   const metteFuoco = (nuovo) => {
     const attivi = comandi.filter((c) => !c.nodo.disabled);
@@ -675,7 +481,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
   });
   comandi[0].nodo.tabIndex = 0;
 
-  /** Accende i bottoni che corrispondono alla formattazione sotto il cursore. */
   function aggiornaStatoBarra() {
     for (const c of comandi) {
       if (!c.stato) continue;
@@ -686,11 +491,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
     }
   }
 
-  /* Lo stato della barra dipende da dove sta il cursore, e il cursore
-     cambia anche col mouse: selectionchange e' l'unico evento che lo dice.
-     L'ascoltatore sta sul documento e si toglie da solo quando il campo
-     non e' piu' in pagina, altrimenti a ogni cambio di gruppo se ne
-     accumulerebbe uno nuovo. */
   const suSelezione = () => {
     if (!area.isConnected) {
       document.removeEventListener('selectionchange', suSelezione);
@@ -699,8 +499,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
     if (document.activeElement === area) aggiornaStatoBarra();
   };
   document.addEventListener('selectionchange', suSelezione);
-
-  /* ------------------------------------------------------- modalita' */
 
   function cambiaModalita(versoCodice) {
     if (versoCodice === inCodice) return;
@@ -713,8 +511,6 @@ export function creaCampoRicco(campo, accesso, ctx) {
       chiudiLink();
       sorgente.focus();
     } else {
-      // Si rientra sempre con il testo ripulito: quello che non era in
-      // lista sparisce qui, dove si vede, non di nascosto al salvataggio.
       const pulito = sanifica(sorgente.value);
       accesso.scrivi(pulito);
       rendi(pulito);
@@ -730,21 +526,16 @@ export function creaCampoRicco(campo, accesso, ctx) {
     nota.hidden = !versoCodice;
     btnCodice.setAttribute('aria-pressed', String(versoCodice));
     btnCodice.classList.toggle('is-attivo', versoCodice);
-    // Grassetto e compagnia non hanno senso su una textarea di codice.
     for (const c of comandi) {
       if (c.nodo !== btnCodice) c.nodo.disabled = versoCodice;
     }
     parti.nodo.classList.toggle('is-codice', versoCodice);
   }
 
-  /* -------------------------------------------------------- ascoltatori */
-
   area.addEventListener('input', scriviDalDocumento);
   sorgente.addEventListener('input', scriviDalSorgente);
 
   area.addEventListener('keydown', (ev) => {
-    // Ctrl+S e' il salvataggio del pannello: qui non si tocca, si lascia
-    // passare. Rubarlo sarebbe il modo piu' rapido di far perdere lavoro.
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) {
       const tasto = ev.key.toLowerCase();
       if (tasto === 'b') { ev.preventDefault(); esegui('bold'); return; }
@@ -754,19 +545,11 @@ export function creaCampoRicco(campo, accesso, ctx) {
       return;
     }
     if (ev.key === 'Enter') {
-      // Invio in un contenteditable creerebbe un <div> o un <p>: tag di
-      // blocco, che il contratto non ammette. Qui Invio vuol dire <br>.
       ev.preventDefault();
       aCapo();
     }
   });
 
-  /**
-   * Incolla e trascina passano dalla stessa porta: il contenuto viene
-   * ripulito PRIMA di entrare nel documento. Se dell'HTML incollato non
-   * resta niente in lista (per esempio si e' incollata un'immagine), si
-   * ripiega sul testo semplice invece di non fare niente.
-   */
   const incollaDa = (dati) => {
     if (!dati) return;
     const html = dati.getData('text/html');
@@ -782,21 +565,13 @@ export function creaCampoRicco(campo, accesso, ctx) {
   });
 
   area.addEventListener('drop', (ev) => {
-    // Trascinare dentro un pezzo di pagina web porterebbe con se' tutto il
-    // suo markup: passa dalla stessa porta dell'incolla, o non passa.
     ev.preventDefault();
     area.focus();
     incollaDa(ev.dataTransfer);
   });
 
   area.addEventListener('blur', () => {
-    // Con la riga del link aperta il fuoco se n'e' andato apposta: rifare
-    // il documento adesso vorrebbe dire buttare via i nodi su cui punta
-    // la selezione salvata, e il link finirebbe nel vuoto.
     if (rigaLink.hidden) {
-      // Il browser puo' aver lasciato in giro roba fuori lista mentre si
-      // scriveva (capita con l'annulla e con certe scorciatoie di sistema).
-      // Perso il fuoco, documento e dato tornano a coincidere.
       const grezzo = serializzaFigli(area);
       const pulito = sanifica(grezzo);
       if (pulito !== limaBordi(grezzo)) rendi(pulito);
@@ -805,13 +580,9 @@ export function creaCampoRicco(campo, accesso, ctx) {
     aggiornaStatoBarra();
   });
 
-  // Cliccare l'etichetta porta al testo: con <span> al posto di <label>
-  // non succederebbe da solo, e chi amministra non lo verrebbe a sapere.
   parti.etichetta.addEventListener('click', () => {
     if (inCodice) sorgente.focus(); else area.focus();
   });
-
-  /* ------------------------------------------------------------ avvio */
 
   const iniziale = valore();
   rendi(iniziale);

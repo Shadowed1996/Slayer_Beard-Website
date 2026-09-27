@@ -1,25 +1,8 @@
-/* =====================================================================
-   avvisi.js — messaggi in basso a destra e finestre di conferma.
-
-   Niente alert(), confirm() o prompt(): bloccano il browser, non si
-   possono scrivere in italiano decente e non si stilano. Al loro posto
-   ci sono <dialog> (che gestisce da solo Esc, il fondale e la trappola
-   del fuoco) e una pila di avvisi con aria-live.
-
-   Ogni operazione di rete usa `avvisoAttesa()`: nasce «in corso» e poi
-   diventa riuscita o fallita sullo stesso avviso, invece di lasciare a
-   chi guarda il dubbio che non sia successo niente.
-   ===================================================================== */
-
 import { el, icona, bottone, idUnico } from './dom.js';
 
 const ICONA_DI = { ok: 'ok', errore: 'attenzione', attesa: 'ricarica', info: 'info' };
 const DURATA_DI = { ok: 4000, errore: 9000, info: 6000, attesa: 0 };
 
-/**
- * Mostra un avviso in basso a destra.
- * @returns {{aggiorna:Function, riuscito:Function, fallito:Function, chiudi:Function}}
- */
 export function avviso(testo, { tipo = 'info', titolo = '', durata = null } = {}) {
   const contenitore = document.getElementById('avvisi');
 
@@ -73,27 +56,10 @@ export function avviso(testo, { tipo = 'info', titolo = '', durata = null } = {}
   };
 }
 
-/** Avviso «sto lavorando»: non sparisce da solo, lo chiude chi lo apre. */
 export function avvisoAttesa(testo, titolo = '') {
   return avviso(testo, { tipo: 'attesa', titolo, durata: 0 });
 }
 
-/* ---------------------------------------------------------------------
-   Dialoghi
-   --------------------------------------------------------------------- */
-
-/**
- * Apre un dialogo modale e risolve con il valore del bottone premuto
- * (null se si chiude con Esc o cliccando il fondale).
- *
- * Il <dialog> viene creato ogni volta invece di riusarne uno solo: cosi'
- * un dialogo puo' aprirne un altro sopra (scegliere un'immagine e da li'
- * confermare una cancellazione) senza che il primo si chiuda.
- *
- * `contenuto` puo' essere un nodo, un elenco di nodi, o una funzione che
- * riceve `(chiudi, bottoni)` — dove `bottoni` e' una Map nome -> elemento,
- * utile per accendere o spegnere un bottone da dentro il contenuto.
- */
 export function apriDialogo({ titolo, ico = 'info', contenuto = [], bottoni = [], largo = false, pericolo = false }) {
   return new Promise((risolvi) => {
     const idTitolo = idUnico('dlg');
@@ -111,8 +77,6 @@ export function apriDialogo({ titolo, ico = 'info', contenuto = [], bottoni = []
       dialogo.close();
     };
 
-    // I bottoni si costruiscono prima del contenuto: cosi' il contenuto puo'
-    // riceverli e comandarli (per esempio una spunta che sblocca «Conferma»).
     const azioni = el('div', { classe: 'dialogo__azioni' });
     const perNome = new Map();
     const elencoBottoni = bottoni.length ? bottoni : [{ testo: 'Chiudi', valore: null, primario: true }];
@@ -144,8 +108,6 @@ export function apriDialogo({ titolo, ico = 'info', contenuto = [], bottoni = []
       azioni
     ]));
 
-    // <dialog> non ha un evento per il fondale, ma il bersaglio del clic e'
-    // l'elemento dialog stesso solo quando si colpisce fuori dal contenuto.
     dialogo.addEventListener('click', (evento) => {
       if (evento.target === dialogo) chiudi(null);
     });
@@ -163,10 +125,6 @@ export function apriDialogo({ titolo, ico = 'info', contenuto = [], bottoni = []
   });
 }
 
-/**
- * Domanda si' / no. Con `spunta` il bottone di conferma resta spento
- * finche' non si spunta la casella: serve per le cose che non si annullano.
- */
 export async function conferma({
   titolo,
   testo = [],

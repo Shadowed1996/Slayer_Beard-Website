@@ -1,30 +1,3 @@
-/* =====================================================================
-   campi.css — i widget nuovi del pannello, e nient'altro.
-
-   Qui dentro stanno SOLO le classi che nascono con i tipi di campo
-   aggiunti dal CONTRATTO-2 §5: testo ricco, colore, font, interruttore,
-   piu' la barra delle combinazioni pronte, e l'editor della schedule del
-   CONTRATTO-5 §8 (tipo «orari»). Niente di pannello.css viene
-   ridefinito: quel foglio ha un altro proprietario, e le sue variabili
-   (--p-*) qui si usano e basta. Si carica dopo, cosi' l'ordine e' chiaro
-   anche a chi legge il sorgente della pagina.
-
-   Nessun colore scritto a mano (CONTRATTO-4 §12): le tinte velate si
-   ottengono da --p-* con color-mix, cosi' seguono le variabili del
-   pannello invece di ripeterne i numeri.
-
-   Struttura:
-     1. editor di testo ricco   (.ricco__*)
-     2. colore                  (.colore__*)
-     3. font                    (.font__*)
-     4. interruttore            (.interruttore__*)
-     5. barra delle combinazioni (.tema-barra, .preset*)
-     6. schermi stretti e prefers-reduced-motion
-     7. la schedule della settimana (.palinsesto*, CONTRATTO-5 §8),
-        con il suo movimento ridotto in fondo
-   ===================================================================== */
-
-/* --------------------------------------------------------------- 1. */
 .ricco {
   display: flex;
   flex-direction: column;
@@ -45,8 +18,6 @@
   border-bottom: 1px solid var(--p-linea);
 }
 .ricco__gruppo { display: flex; align-items: center; gap: 3px; }
-/* Il bottone del codice se ne va a destra: non e' una formattazione,
-   e' un cambio di modalita'. La distanza dice che fa un'altra cosa. */
 .ricco__gruppo--fine { margin-left: auto; }
 
 .ricco__cmd {
@@ -68,8 +39,6 @@
 .ricco__cmd:disabled { opacity: .38; cursor: not-allowed; }
 .ricco__cmd:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 1px; }
 
-/* Acceso = la formattazione e' gia' sotto il cursore. Il colore da solo
-   non basterebbe: c'e' anche il bordo, per chi i colori non li distingue. */
 .ricco__cmd.is-attivo,
 .ricco__cmd[aria-pressed="true"] {
   background: color-mix(in srgb, var(--p-ciano) 13%, transparent);
@@ -93,7 +62,6 @@
   overflow-wrap: anywhere;
 }
 .ricco__area:focus { outline: 2px solid var(--p-viola); outline-offset: -2px; }
-/* Il campo vuoto dice cosa farci: un rettangolo nero non lo dice. */
 .ricco__area:empty::before {
   content: 'Scrivi qui. Invio va a capo.';
   color: var(--p-testo-tenue);
@@ -139,11 +107,8 @@
 .ricco__nota { color: var(--p-testo-tenue); font-family: var(--p-mono); overflow-wrap: anywhere; }
 .ricco__avviso { color: var(--p-allerta); background: color-mix(in srgb, var(--p-allerta) 8%, transparent); }
 
-/* In modalita' codice il campo cambia faccia: si vede a colpo d'occhio
-   che quello che si sta toccando non e' piu' il testo, e' il sorgente. */
 .campo.is-codice .ricco { border-color: var(--p-linea-viva); }
 
-/* --------------------------------------------------------------- 2. */
 .colore { display: flex; flex-direction: column; gap: 8px; }
 .colore__comandi { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
@@ -170,8 +135,6 @@
   text-transform: lowercase;
 }
 
-/* La coppia vera, non un campione isolato: il colore scelto sul fondo su
-   cui finira' davvero. E' l'unica anteprima che dice qualcosa. */
 .colore__esempio {
   padding: 10px 12px;
   border: 1px solid var(--p-linea);
@@ -199,9 +162,6 @@
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-/* Sotto 4,5:1 il pannello smette di essere gentile: bordo, colore e
-   parola cambiano insieme, cosi' l'avviso arriva anche a chi non
-   distingue il verde dal rosso. */
 .colore__contrasto[data-grave="1"] .colore__livello {
   border-color: var(--p-errore);
   color: var(--p-errore);
@@ -209,7 +169,6 @@
 }
 .colore__contrasto[data-grave="1"] .colore__verdetto { color: var(--p-errore); }
 
-/* --------------------------------------------------------------- 3. */
 .font { display: flex; flex-direction: column; gap: 8px; }
 .font__scelta { max-width: 380px; }
 .font__anteprima {
@@ -224,7 +183,6 @@
 }
 .font__ripiego { font-size: 12px; color: var(--p-testo-tenue); font-family: var(--p-mono); overflow-wrap: anywhere; }
 
-/* --------------------------------------------------------------- 4. */
 .interruttore__riga { display: flex; align-items: center; gap: 10px; }
 
 .interruttore {
@@ -269,7 +227,6 @@
 }
 .campo[data-acceso="1"] .interruttore__stato { color: var(--p-ciano); }
 
-/* --------------------------------------------------------------- 5. */
 .tema-barra {
   display: flex;
   flex-direction: column;
@@ -302,9 +259,6 @@
   cursor: pointer;
   transition: border-color var(--p-durata-lampo) ease;
 }
-/* Superfici piatte come nella regia (CONTRATTO-4 §12): al passaggio del
-   mouse compare una linea, niente ombre né sollevamenti. Il bordo porta
-   già il colore guida del preset, quindi la linea sta fuori, staccata. */
 .preset:hover { outline: 1px solid var(--p-linea-viva); outline-offset: 1px; }
 .preset:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 2px; }
 .preset__nome { font-size: 13.5px; font-weight: 600; }
@@ -313,13 +267,10 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  /* Il contorno chiaro serve ai campioni scuri su fondo scuro: senza,
-     il nero del tema notte sparirebbe dentro il bottone. */
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p-testo) 35%, transparent);
 }
 .preset__vuoto { font-size: 13px; color: var(--p-testo-tenue); }
 
-/* --------------------------------------------------------------- 6. */
 @media (max-width: 560px) {
   .ricco__barra { gap: 3px 6px; }
   .ricco__cmd { min-width: 28px; height: 28px; padding: 0 5px; }
@@ -330,9 +281,6 @@
   .tema-barra { padding: 11px; }
 }
 
-/* Da 360px in giu' l'anteprima del font e l'esempio del colore restano
-   leggibili solo se possono andare a capo dove capita: sono testi di
-   prova, non contenuti da preservare. */
 @media (max-width: 380px) {
   .ricco__gruppo--fine { margin-left: 0; }
   .font__anteprima, .colore__esempio { overflow-wrap: anywhere; hyphens: auto; }
@@ -346,16 +294,6 @@
     transition: none;
   }
 }
-
-/* --------------------------------------------------------------- 7. */
-/* La schedule della settimana (moduli/settimana.js).
-
-   Parla la lingua della regia come il resto del pannello: linee da 1 px,
-   etichette in monospazio maiuscolo, viola per ciò che è scelto (la vista,
-   il giorno aperto), ciano per ciò che è acceso (i giorni di diretta, il
-   fuoco, l'orario in onda). Il pannello va da 380 a 760 px: quello che
-   dipende dalla larghezza passa da container query sull'editor stesso,
-   così sta bene anche in una vista del menu. */
 
 .palinsesto-campo-radice { gap: 10px; }
 
@@ -389,7 +327,6 @@
   color: var(--p-testo);
 }
 
-/* --- riepilogo ------------------------------------------------------ */
 .palinsesto-riepilogo {
   container: riepilogo / inline-size;
   display: flex;
@@ -401,8 +338,6 @@
   background: var(--p-pannello);
 }
 
-/* Quattro strumenti divisi da linee da 1 px: la griglia ha il colore della
-   linea e le celle il colore del fondo, come i quadri della copertina. */
 .palinsesto-riepilogo__strumenti {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -466,8 +401,6 @@ button.palinsesto-riepilogo__cella:hover { border-color: var(--p-linea-viva); }
 }
 button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--p-ciano); }
 .palinsesto-riepilogo__cella { overflow: hidden; isolation: isolate; }
-/* La locandina del giorno in trasparenza sotto nome e ora, come sul nastro
-   vero; l'ombra del testo lo tiene leggibile anche su un'immagine chiara. */
 .palinsesto-riepilogo__foto { position: absolute; inset: 0; z-index: -1; }
 .palinsesto-riepilogo__foto img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: .4; }
 .palinsesto-riepilogo__cella[data-immagine="1"] { text-shadow: 0 1px 2px var(--p-nero); }
@@ -489,7 +422,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
   .palinsesto-riepilogo__ora { font-size: 12px; }
 }
 
-/* --- viste ---------------------------------------------------------- */
 .palinsesto__linguette {
   display: flex;
   border-bottom: 1px solid var(--p-linea);
@@ -519,7 +451,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 .palinsesto__linguetta:hover { color: var(--p-testo-medio); }
 .palinsesto__linguetta[aria-selected="true"] { color: var(--p-testo); border-bottom-color: var(--p-viola); }
 .palinsesto__linguetta:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: -2px; border-radius: 3px; }
-/* Una vista con errori a video lo dice anche da chiusa. */
 .palinsesto__linguetta[data-errori="1"] > span:first-child::after { content: " ●"; color: var(--p-errore); }
 
 .palinsesto__badge {
@@ -541,15 +472,12 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 .palinsesto__vista { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .palinsesto__intesta { display: flex; flex-direction: column; gap: 6px; }
 
-/* --- caselle -------------------------------------------------------- */
 .palinsesto__griglia {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 12px;
 }
-/* Orario di serie: ora e durata affiancate, il fuso (lungo) sotto. */
 .palinsesto__griglia--serie > :nth-child(3) { grid-column: 1 / -1; }
-/* Evento: la data prende la riga intera, il calendario nativo è largo. */
 .palinsesto__griglia--evento > :first-child { grid-column: 1 / -1; }
 @container palinsesto (min-width: 600px) {
   .palinsesto__griglia--serie { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr); }
@@ -558,12 +486,9 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 
 .palinsesto-campo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .palinsesto-campo__input { width: 100%; min-width: 0; }
-/* Il segnaposto dice il valore di serie o un esempio: non deve sembrare
-   scritto, altrimenti una casella vuota pare già compilata. */
 .palinsesto-campo__input::placeholder { color: var(--p-testo-tenue); opacity: 1; }
 .palinsesto-campo__aiuto { font-size: 12px; line-height: 1.4; color: var(--p-testo-tenue); }
 .palinsesto-campo .campo__contatore { flex: none; white-space: nowrap; }
-/* La riga sotto la casella c'è solo se ha qualcosa da dire. */
 .palinsesto-campo .campo__pie:not(:has(.campo__contatore)):has(.campo__errore[hidden]) { display: none; }
 .palinsesto-campo.is-errato .campo__input { border-color: var(--p-errore); }
 .palinsesto-campo.is-errato .palinsesto__etichetta { color: var(--p-errore); }
@@ -578,8 +503,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
   background: var(--p-fondo-2);
 }
 
-/* L'orario vero del giorno o dell'evento, in ciano: è quello che va in onda.
-   Un evento finito non va più in onda, e si spegne. */
 .palinsesto__fine {
   font-family: var(--p-mono);
   font-size: 11.5px;
@@ -589,7 +512,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 }
 .palinsesto__fine[data-passato="1"] { color: var(--p-testo-tenue); }
 
-/* --- righe dei giorni e degli eventi -------------------------------- */
 .palinsesto__giorni,
 .palinsesto__eventi {
   display: flex;
@@ -612,7 +534,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 .palinsesto-evento[data-aperto="1"] { border-color: var(--p-viola-bordo); }
 .palinsesto-giorno[data-errori="1"],
 .palinsesto-evento[data-errori="1"] { border-color: var(--p-errore-bordo); }
-/* Raggiunta da un clic nell'anteprima: un contorno che dice «sei qui». */
 .palinsesto-giorno.is-trovato,
 .palinsesto-evento.is-trovato { outline: 2px solid var(--p-ciano); outline-offset: 2px; }
 
@@ -685,10 +606,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 }
 .palinsesto__errori { border-color: var(--p-errore-bordo); color: var(--p-errore); }
 
-/* Con un'immagine la riga si porta dietro la sua locandina, sfumata da
-   destra verso il testo: la settimana si riconosce a colpo d'occhio anche
-   con tutti i giorni chiusi, come sul nastro vero. Sta sotto al contenuto
-   del bottone (isolation), e la maschera la spegne dove c'è da leggere. */
 .palinsesto-giorno__apri,
 .palinsesto-evento__apri { position: relative; isolation: isolate; overflow: hidden; }
 .palinsesto__mini {
@@ -721,7 +638,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 [aria-expanded="true"] > .palinsesto__freccia { transform: rotate(90deg); color: var(--p-viola-chiaro); }
 .palinsesto-giorno__apri:disabled > .palinsesto__freccia { opacity: .3; }
 
-/* In poco spazio la riga tiene l'essenziale: giorno, orario, stato. */
 @container palinsesto (max-width: 400px) {
   .palinsesto__segno:not(.palinsesto-evento__stato) { display: none; }
 }
@@ -736,14 +652,12 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
   background: var(--p-fondo-2);
 }
 
-/* Largo abbastanza, le caselle a sinistra e l'immagine a destra. */
 .palinsesto__due { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .palinsesto__colonna { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 @container palinsesto (min-width: 640px) {
   .palinsesto__due { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 20px; }
 }
 
-/* --- eventi --------------------------------------------------------- */
 .palinsesto__azioni { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .palinsesto__conta { font-family: var(--p-mono); font-size: 12px; color: var(--p-testo-medio); font-variant-numeric: tabular-nums; }
 .palinsesto__limite {
@@ -771,7 +685,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
   color: var(--p-testo-tenue);
 }
 
-/* La data come un foglio di calendario: numero grande, mese in ciano. */
 .palinsesto-evento__data {
   flex: none;
   display: flex;
@@ -809,8 +722,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
   border-top: 1px solid var(--p-linea);
 }
 
-/* --- giorni saltati --------------------------------------------------
-   Solo due caselle a riga, niente da aprire: la riga mostra già tutto. */
 .palinsesto__pause {
   display: flex;
   flex-direction: column;
@@ -832,7 +743,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
   padding-top: 10px;
 }
 
-/* --- blocco immagine ------------------------------------------------ */
 .palinsesto-img { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .palinsesto-img__testa { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
 .palinsesto-img__file {
@@ -861,7 +771,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 .palinsesto-img .palinsesto-img__palco[data-sopra="1"] { border-style: solid; border-color: var(--p-ciano); background: var(--p-ciano-velo); }
 .palinsesto-img.is-errato .palinsesto-img__palco { border-color: var(--p-errore); }
 
-/* L'immagine intera, non ritagliata: il fuoco si sceglie guardando tutto. */
 .palinsesto-img__foto {
   position: relative;
   display: inline-block;
@@ -878,8 +787,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
   .palinsesto-img__img { max-height: 300px; }
 }
 
-/* La velatura del sito: il nero sale dal basso, dove sta il testo, e il
-   cursore «Velo» ne decide la forza attraverso --velo (0,3–0,9). */
 .palinsesto-img__velo {
   position: absolute;
   inset: 0;
@@ -887,11 +794,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
   opacity: var(--velo, .6);
   pointer-events: none;
 }
-/* Con l'intensità (il fondale) non c'è testo sopra e quindi niente
-   velatura: nei ritagli l'immagine si vede con la sua opacità, nel riquadro
-   grande resta piena, per mirare bene. */
-/* Anche a 0 (spento) resta un filo di immagine: il ritaglio serve a mirare, e
-   «spento» lo dicono già il cursore e la linguetta. */
 .palinsesto-img--intensita .palinsesto-img__cornice img { opacity: max(.15, var(--intensita, .3)); }
 
 .palinsesto-img__mirino {
@@ -952,10 +854,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 }
 .palinsesto-img__aiuto { font-size: 12px; line-height: 1.4; color: var(--p-testo-tenue); }
 
-/* I ritagli (la locandina del computer, la fascia del telefono…), con la
-   stessa velatura e due righe finte al posto del testo. Ognuno cresce in
-   proporzione al suo rapporto (flex-grow e aspect-ratio li mette il
-   modulo): con la base a 0 le altezze tornano tutte uguali. */
 .palinsesto-img__ritagli { display: flex; align-items: flex-end; gap: 10px; width: 100%; }
 .palinsesto-img__ritaglio { display: flex; flex: 1 1 0; flex-direction: column; gap: 4px; min-width: 0; margin: 0; }
 .palinsesto-img__ritaglio figcaption { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -998,7 +896,6 @@ button.palinsesto-riepilogo__cella[data-acceso="1"]:hover { border-color: var(--
 .palinsesto-img__cursore-input { width: 100%; margin: 4px 0; accent-color: var(--p-viola); cursor: pointer; }
 .palinsesto-img__cursore-input:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 3px; }
 
-/* --- la schedule nella parte «stato» -------------------------------- */
 .parti__schedule .parti__azioni { display: flex; flex-wrap: wrap; gap: 8px; }
 
 @media (prefers-reduced-motion: reduce) {

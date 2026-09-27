@@ -1,64 +1,8 @@
-/* =====================================================================
-   motore.js — il motore dell'editor unico (CONTRATTO-4 §10).
-
-   Tiene l'anteprima del sito dentro il pannello e sa cosa c'è sotto il
-   puntatore: montaggio, zoom, selezione, trascinamento dei blocchi, CSS
-   dal vivo, ispettori. Schede, campi, stili e nomi li disegnano gli altri
-   moduli attraverso gli ispettori e gli eventi sul `document` del pannello.
-
-   Quattro scelte reggono il file.
-
-   1. L'ANTEPRIMA È SCRITTA, NON CARICATA. L'HTML arriva da POST
-      /api/anteprima con `editor: true` e finisce nell'iframe con
-      document.write sotto <base href="/">: così si vedono le modifiche non
-      salvate e nessuno script del sito parte (§2.6). Il motore toglie
-      comunque da sé ogni <script> eseguibile prima di scrivere: un server
-      rimasto indietro non deve poter accendere il player di Twitch dentro
-      l'editor, che sarebbe una seconda sessione video (CONTRATTO-3 §3.4).
-
-   2. COORDINATE DELL'IFRAME, SEMPRE. L'iframe è largo quanto il
-      dispositivo e la cornice si rimpicciolisce con transform: scale().
-      Eventi, misure e sovrapposizione vivono dentro il documento
-      dell'iframe, dove il browser riporta già tutto in scala: nessuna
-      conversione da fare, quindi nessuna da sbagliare. Solo maniglie ed
-      etichetta si ingrandiscono di 1/scala per restare afferrabili.
-
-   3. document.open() NON CAMBIA DOCUMENTO. Riscrivere l'iframe tiene lo
-      stesso oggetto Document e la stessa Window, ma cancella nodi e
-      ascoltatori. «È ancora lo stesso documento?» non basta a capire se
-      una risposta è vecchia: ogni scrittura ha un numero di generazione, e
-      tutto quello che aspetta (richieste, fotogrammi, timer) controlla quello.
-
-   4. DENTRO L'IFRAME SOLO ROBA NOSTRA. Stili con id `sb-motore*` e i
-      gemelli «dal vivo», una sovrapposizione figlia di <html>, gli
-      ascoltatori. Nessuna classe o attributo sugli elementi del sito:
-      quello che STILE legge con getComputedStyle deve essere il sito.
-
-   Indice
-     1. Costanti
-     2. Stato e utilità
-     3. Nomi, dati, font
-     4. Disposizione: lettura, scrittura, CSS dal vivo
-     5. Tema, stili e testi dal vivo
-     6. Selezione
-     7. Documento dell'iframe: stili, sovrapposizione, eventi
-     8. Trascinamento, maniglie, tastiera
-     9. Anteprima: montaggio, zoom, caricamento
-    10. Ispettori e posizioni
-    11. L'oggetto `motore`
-   ===================================================================== */
-
 import { ponte } from './ponte.js';
 
-/* ============================================================ 1. COSTANTI */
-
-// Ordine delle fasce esclusive della regola geometrica (§4.3).
 const DISPOSITIVI = ['telefono', 'tablet', 'computer'];
 const NOMI_DISPOSITIVI = { telefono: 'Telefono', tablet: 'Tablet', computer: 'Computer' };
 
-/* Ripieghi delle tabelle di SBStili (§3, §8): servono solo se
-   condivisi/stili.js non si è caricato. Con il generatore presente vale
-   il suo vocabolario, così un numero cambiato là non si sdoppia qui. */
 const LARGHEZZE_DI_SERIE = { telefono: 375, tablet: 900, computer: 1100 };
 const FASCE_DI_SERIE = {
   telefono: '(max-width: 759.98px)',
@@ -69,7 +13,6 @@ const RIQUADRI_DI_SERIE = ['regia', 'settimana', 'chi', 'supporto', 'saluti', 'p
 const SEZIONI_DI_SERIE = ['binario', 'regia', 'diretta', 'sondaggio', 'settimana', 'chi', 'supporto', 'saluti', 'piede'];
 
 const SCHEDE = ['contenuto', 'stile', 'avanzate'];
-// I soli tipi che MARCATORI mette su data-sb-testo (§5.1.4): gli altri non si scrivono sul posto.
 const TIPI_SUL_POSTO = ['testo', 'testolungo', 'ricco'];
 
 const RE_TESTO = /^[a-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
@@ -77,23 +20,18 @@ const RE_IMMAGINE = /^config\.immagini\.[a-z][A-Za-z0-9]*$/;
 const RE_PARTE = /^[a-z][a-z0-9-]{0,40}$/;
 const RE_BLOCCO = /^[a-z][a-z0-9-]{0,40}\.[a-z][a-z0-9-]{0,40}$/;
 
-// Unità della disposizione: percentuale della larghezza del contenuto del riquadro (§4.3).
 const X_MAX = 100;
 const Y_MAX = 2000;
 const MISURA_MIN = 1;
 
-// Sotto questa scala l'anteprima non si legge più: oltre si scorre di lato.
 const ZOOM_MIN = 0.2;
 
 const SELETTORE_MARCATORI = '[data-sb-testo], [data-sb-immagine], [data-sb-parte], [data-sb-blocco], [data-sb-sezione]';
 const MANIGLIE = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 const FRECCE = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
-// Il binario è fisso: scorrere a un elemento lo lascia un po' staccato dal bordo alto.
 const MARGINE_SCORRIMENTO = 24;
-// Oltre questo tempo senza pagina pronta si mostra l'errore invece di aspettare per sempre.
 const TEMPO_MAX_CARICAMENTO = 20000;
-// Dopo quanto chiedere la ricarica per una famiglia di Google Fonts nuova.
 const ATTESA_RICARICA_FONT = 700;
 
 const ID_STILE_EDITOR = 'sb-motore';
@@ -105,10 +43,6 @@ const ID_TEMA_VIVO = 'sb-tema-dal-vivo';
 const ID_STILI_VIVI = 'sb-stili-dal-vivo';
 const ID_DISPOSIZIONE_VIVA = 'sb-disposizione-dal-vivo';
 
-/* I colori della regia (§12) entrano nell'iframe come variabili lette a
-   runtime da pannello.css: così nel file non c'è un solo esadecimale e un
-   ritocco della palette del pannello arriva anche qui. I ripieghi sono
-   parole chiave del CSS, per un pannello senza il suo foglio. */
 const VARIABILI_REGIA = [
   ['--sbm-ciano', '--p-ciano', 'cyan'],
   ['--sbm-linea-viva', '--p-linea-viva', 'gray'],
@@ -119,31 +53,29 @@ const VARIABILI_REGIA = [
   ['--sbm-mono', '--p-mono', 'monospace']
 ];
 
-/* ================================================== 2. STATO E UTILITÀ */
-
 const st = {
-  ui: null,                 // nodi dell'anteprima montata
+  ui: null,
   dispositivo: 'computer',
-  zoomModo: 'adatta',       // 'adatta' = rimpicciolita per starci, 'reale' = grandezza vera
-  scala: 1,                 // scala applicata adesso alla cornice
-  scalaAdatta: 1,           // scala che servirebbe per farla stare nello spazio
+  zoomModo: 'adatta',
+  scala: 1,
+  scalaAdatta: 1,
 
-  doc: null,                // documento dell'iframe, solo quando è pronto
+  doc: null,
   win: null,
-  generazione: 0,           // cresce a ogni document.write
+  generazione: 0,
   pronto: false,
-  richiesta: 0,             // numero dell'ultima ricarica chiesta
-  primo: null,              // { risolvi, fatto } per la Promise di monta()
-  inviati: null,            // { testi, config } con cui è stata disegnata la pagina
-  famiglieDisegnate: null,  // Set delle famiglie di font che la pagina disegnata chiede a Google
-  ripiego: false,           // la pagina è la bozza salvata, non quella dal vivo
-  originali: null,          // WeakSet dei nodi del sito
-  attesaPronti: [],         // chi aspetta la pagina pronta (monta, seleziona prima del caricamento)
+  richiesta: 0,
+  primo: null,
+  inviati: null,
+  famiglieDisegnate: null,
+  ripiego: false,
+  originali: null,
+  attesaPronti: [],
 
   selezione: null,
-  ricordo: null,            // { id, indice } per ritrovare la selezione dopo una ricarica
+  ricordo: null,
   iscritti: [],
-  passaggio: null,          // elemento sotto il puntatore
+  passaggio: null,
   evidenziatoId: null,
   evidenziatoEl: null,
   sovrapposizione: null,
@@ -152,14 +84,14 @@ const st = {
 
   ispettori: [],
   trascina: null,
-  inAttesa: null,           // puntatore premuto sul blocco scelto, prima che diventi un trascinamento
-  soppressoFino: 0,         // il clic che chiude un trascinamento non cambia selezione
-  vivo: null,               // { dispositivo, riquadro, voci } posizioni del trascinamento in corso
+  inAttesa: null,
+  soppressoFino: 0,
+  vivo: null,
   fotogrammaDisposizione: 0,
-  fissatiAuto: new Map(),   // "dispositivo|riquadro" -> Map(id -> pos) fissati in automatico
+  fissatiAuto: new Map(),
 
   tema: { inVolo: false, inCoda: false, css: '', firma: '' },
-  fontCaricati: null,       // elenco di GET /api/font
+  fontCaricati: null,
   fontRichiesta: null,
   fontRiletti: new Set(),
   timerRicaricaFont: 0,
@@ -171,8 +103,6 @@ function arrotonda2(n) { const r = Math.round(n * 100) / 100; return r === 0 ? 0
 function stringi(n, min, max) { return Math.min(max, Math.max(min, n)); }
 function registraErrore(errore) { if (window.console) console.error('[motore]', errore); }
 
-/* Numero per il CSS come `formatta` di SBStili: due decimali al massimo,
-   niente zeri finali, niente -0. Serve solo al generatore di ripiego. */
 function numeroCss(n) {
   const r = arrotonda2(Number(n));
   if (!isFinite(r) || r === 0) return '0';
@@ -190,8 +120,6 @@ function emetti(nome, dettaglio) {
   try { document.dispatchEvent(new CustomEvent(nome, { detail: dettaglio })); } catch (e) { registraErrore(e); }
 }
 
-/* Costruttore di nodi del pannello. Mai innerHTML: il testo passa sempre
-   da textContent (stessa regola di moduli/dom.js). */
 function crea(tag, attributi = {}, figli = []) {
   const nodo = document.createElement(tag);
   for (const [nome, valore] of Object.entries(attributi)) {
@@ -218,8 +146,6 @@ function elementoDi(nodo) {
 
 function montato() { return !!(st.ui && st.ui.radice && st.ui.radice.isConnected); }
 
-/* Il documento dell'iframe, solo se è pronto e ancora quello scritto per
-   questa generazione. */
 function docVivo() {
   if (!st.pronto || !st.doc || !montato()) return null;
   let d = null;
@@ -227,9 +153,6 @@ function docVivo() {
   return d === st.doc ? d : null;
 }
 
-/* Un 404/405/501 vuol dire «questo server non conosce la rotta»: la stessa
-   regola di rottaAssente() di moduli/api.js, ripetuta per non legarsi a un
-   export che non è nel contratto. */
 function rottaAssente(errore) {
   const stato = errore && errore.stato;
   return stato === 404 || stato === 405 || stato === 501;
@@ -239,8 +162,6 @@ function annuncia(testo) {
   if (st.ui && st.ui.annuncio) st.ui.annuncio.textContent = testo;
 }
 
-/* Il foglio del motore lo collega GUSCIO in index.html; se non c'è lo si
-   aggiunge accanto al modulo, una volta sola. */
 (function collegaFoglio() {
   try {
     const presente = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
@@ -250,27 +171,21 @@ function annuncia(testo) {
     link.rel = 'stylesheet';
     link.href = new URL('./motore.css', import.meta.url).href;
     document.head.append(link);
-  } catch { /* senza foglio l'anteprima funziona, solo meno curata */ }
+  } catch {}
 })();
 
-/* ================================================ 3. NOMI, DATI, FONT */
-
-/* Moduli facoltativi. nomi.js (PARTI) è l'unica fonte dei nomi umani;
-   ricco.js dà la stessa lista bianca del server; impostazioni.js (TEMA)
-   conosce catalogo e font caricati. Si caricano a parte: se uno manca o
-   lancia, il motore lavora lo stesso. */
 const moduli = { nomi: null, sanifica: null, impostazioni: null, impostazioniChieste: false };
 
 import('./nomi.js').then((m) => {
   moduli.nomi = m;
   if (st.selezione) { rinfrescaEtichette(); disegnaSovrapposizione(true); }
-}).catch(() => { /* restano i nomi di ripiego */ });
+}).catch(() => {});
 
 import('../moduli/ricco.js').then((m) => {
   if (typeof m.sanifica !== 'function') return;
   moduli.sanifica = m.sanifica;
   if (docVivo()) applicaTesti();
-}).catch(() => { /* i testi ricchi si aggiornano come testo semplice finché non c'è */ });
+}).catch(() => {});
 
 function chiediImpostazioni() {
   if (moduli.impostazioniChieste) return;
@@ -278,7 +193,7 @@ function chiediImpostazioni() {
   import('./impostazioni.js').then((m) => {
     moduli.impostazioni = m;
     if (docVivo()) applicaStili();
-  }).catch(() => { /* restano catalogo e GET /api/font */ });
+  }).catch(() => {});
 }
 
 function leggibile(pezzo) {
@@ -303,7 +218,7 @@ function etichettaChiave(chiave) {
   try {
     const e = ponte.etichetta(chiave);
     if (typeof e === 'string' && e.trim() && e !== chiave) return e.trim();
-  } catch { /* ripiego sotto */ }
+  } catch {}
   return chiave.startsWith('config.immagini.') ? 'Immagine' : 'Testo';
 }
 
@@ -327,16 +242,12 @@ function vocabolario() {
 
 function chiaveGuidata(chiave) {
   const c = String(chiave || '');
-  // Una chiave con un indice è la proprietà di una voce di elenco: si cambia dalla sua parte.
   if (/(^|\.)\d+(\.|$)|\[/.test(c)) return true;
   const stato = ponte.stato;
-  // Senza schema non si sa: meglio lasciar scrivere che bloccare un testo vero.
   if (!stato || !stato.schema) return false;
   const campo = campoDi(c);
   return !campo || TIPI_SUL_POSTO.indexOf(campo.tipo) === -1;
 }
-
-/* --- font per gli stili --------------------------------------------- */
 
 function elencoFont() {
   const stato = ponte.stato;
@@ -373,7 +284,6 @@ function famigliaDiRipiego(nome) {
 function fontDiRipiego(id) {
   const voce = elencoFont().find((f) => f && f.id === id);
   if (voce) return voce;
-  // Un id sconosciuto può essere un font appena caricato dalle Impostazioni: si rilegge una volta.
   if (!st.fontRiletti.has(id)) {
     st.fontRiletti.add(id);
     leggiFont(true).then(() => { if (docVivo()) applicaStili(); });
@@ -386,20 +296,16 @@ function opzioniStili() {
   return {
     base: '',
     famiglia(nome) {
-      try { if (imp && typeof imp.voceFamiglia === 'function') { const v = imp.voceFamiglia(nome); if (v) return v; } } catch { /* ripiego */ }
+      try { if (imp && typeof imp.voceFamiglia === 'function') { const v = imp.voceFamiglia(nome); if (v) return v; } } catch {}
       return famigliaDiRipiego(nome);
     },
     font(id) {
-      try { if (imp && typeof imp.voceFont === 'function') { const v = imp.voceFont(id); if (v) return v; } } catch { /* ripiego */ }
+      try { if (imp && typeof imp.voceFont === 'function') { const v = imp.voceFont(id); if (v) return v; } } catch {}
       return fontDiRipiego(id);
     }
   };
 }
 
-/* Famiglie che la pagina chiede a Google Fonts: quelle degli slot del tema
-   e le `famiglia:` di config.stili. Il <link> lo scrive la generazione, e
-   uno stile dal vivo non lo può aggiungere: una famiglia nuova vuole una
-   ricarica. */
 function famiglieUsate(config) {
   const insieme = new Set();
   if (!oggetto(config)) return insieme;
@@ -429,8 +335,6 @@ function controllaFamiglie() {
   st.timerRicaricaFont = setTimeout(() => { if (montato()) ricarica({ tieniScorrimento: true }); }, ATTESA_RICARICA_FONT);
 }
 
-/* ===================== 4. DISPOSIZIONE: LETTURA, SCRITTURA, CSS DAL VIVO */
-
 function blocchiDisposizione() {
   const d = leggi('config.disposizione');
   return oggetto(d) && oggetto(d.blocchi) ? d.blocchi : {};
@@ -438,14 +342,11 @@ function blocchiDisposizione() {
 
 function numeroValido(v) { return typeof v === 'number' && isFinite(v); }
 
-/* { x, y, l, a } stretto ai bordi e a due decimali, come pulisciRettangolo
-   di SBStili; null se un campo non è un numero. */
 function pulisciRettangolo(p) {
   if (!oggetto(p)) return null;
   const S = window.SBStili;
   const riquadro = S && Array.isArray(S.RIQUADRI) ? S.RIQUADRI[0] : '';
   if (riquadro && typeof S.pulisciDisposizione === 'function') {
-    // Si passa dal generatore vero con un blocco di comodo: stessa strettoia del sito, al centesimo.
     const pulita = S.pulisciDisposizione({ blocchi: { [riquadro]: [{ id: riquadro + '.misura', pos: { telefono: p, tablet: null, computer: null } }] } });
     const voce = pulita.blocchi[riquadro] && pulita.blocchi[riquadro][0];
     return voce ? voce.pos.telefono : null;
@@ -470,7 +371,6 @@ function senzaPrefisso(id) {
   return s.startsWith('blocco:') ? s.slice('blocco:'.length) : s;
 }
 
-// Il riquadro di un blocco è il suo prefisso: la generazione salta gli id col prefisso sbagliato (§4.3).
 function riquadroDelBlocco(idBlocco) { return String(idBlocco).split('.')[0]; }
 
 function voceBlocco(idBlocco) {
@@ -487,9 +387,6 @@ function posizione(idBlocco, dispositivo) {
   return voce && oggetto(voce.pos) ? pulisciRettangolo(voce.pos[d]) : null;
 }
 
-/* Blocchi che la pagina ha davvero: { riquadro: { id: el } }. Un blocco
-   conta per il riquadro che lo contiene più da vicino, escluso sé stesso:
-   la stessa regola che SERVER usa per `presente`. */
 function blocchiInPagina(doc) {
   const mappa = {};
   if (!doc) return mappa;
@@ -509,8 +406,6 @@ function blocchiDelRiquadro(riquadro) {
   return Object.keys(trovati).map((id) => ({ id, el: trovati[id] }));
 }
 
-/* config.disposizione con sopra le posizioni del trascinamento in corso:
-   il CSS dal vivo si rifà a ogni movimento senza toccare la bozza. */
 function disposizionePerCss() {
   const blocchi = blocchiDisposizione();
   const vivo = st.vivo;
@@ -540,10 +435,6 @@ function disposizionePerCss() {
   return { blocchi: copia };
 }
 
-/* Generatore di ripiego della regola geometrica (§4.3), per il solo caso
-   in cui condivisi/stili.js non si sia caricato. Con SBStili presente non
-   si usa: il CSS dal vivo è il suo, e il byte è garantito dall'essere lo
-   stesso codice del sito. */
 function disposizioneCssDiRipiego(disposizione, presente) {
   const { riquadri, fasce } = vocabolario();
   const blocchi = oggetto(disposizione) && oggetto(disposizione.blocchi) ? disposizione.blocchi : {};
@@ -596,10 +487,6 @@ function cssDisposizione(doc) {
   return disposizioneCssDiRipiego(disposizione, presente);
 }
 
-/* Lo <style> pubblicato si spegne, non si toglie: se il motore sparisse
-   (modulo ricaricato, errore) basterebbe riaccenderlo. `media` in più di
-   `disabled` perché un foglio disabilitato si riaccende da solo se il suo
-   testo cambia. */
 function spegniPubblicato(doc, id) {
   const pubblicato = doc.getElementById(id);
   if (pubblicato && pubblicato.tagName === 'STYLE' && !pubblicato.disabled) {
@@ -608,8 +495,6 @@ function spegniPubblicato(doc, id) {
   }
 }
 
-/* Lo <style> dal vivo va subito dopo il suo gemello pubblicato: l'ordine
-   della cascata resta quello del sito (disposizione, poi stili). */
 function stileDalVivo(doc, id, dopoId) {
   let stile = doc.getElementById(id);
   if (stile) return stile;
@@ -644,10 +529,6 @@ function avvisa(testo, tipo = 'info') {
   try { ponte.avviso(testo, { tipo }); } catch { annuncia(testo); }
 }
 
-/* Scrive più posizioni dello stesso riquadro in un colpo solo, per il
-   dispositivo `d`. Un blocco che torna nel flusso su tutti e tre i
-   dispositivi esce dall'elenco, e un riquadro vuoto esce da `blocchi`:
-   rimettere tutto a posto riporta i dati ai valori di partenza. */
 function scriviPosizioni(riquadro, voci, d) {
   if (vocabolario().riquadri.indexOf(riquadro) === -1) {
     avvisa('Questo blocco sta in una parte del sito che non accetta posizioni libere.', 'errore');
@@ -695,8 +576,6 @@ function scriviPosizioni(riquadro, voci, d) {
   return true;
 }
 
-/* Blocchi fissati in automatico: servono a «Riporta al posto originale»
-   per capire se riportare al flusso l'intero riquadro. Solo in memoria. */
 function fissati(d, riquadro) {
   const chiave = d + '|' + riquadro;
   if (!st.fissatiAuto.has(chiave)) st.fissatiAuto.set(chiave, new Map());
@@ -708,9 +587,6 @@ function ricordaFissati(d, riquadro, voci) {
   for (const v of voci) mappa.set(v.id, v.pos);
 }
 
-/* Quando il primo blocco di un riquadro esce dal flusso i fratelli
-   risalirebbero: si fissano dove sono adesso, misurati PRIMA di spostare
-   qualunque cosa. I blocchi nascosti in questa vista restano nel flusso. */
 function misuraFratelli(riquadro, eccetto) {
   const fuori = [];
   for (const b of blocchiDelRiquadro(riquadro)) {
@@ -741,7 +617,6 @@ function impostaPosizione(idBlocco, pos) {
   }
   const doc = docVivo();
   const riquadro = riquadroDelBlocco(id);
-  // Con l'anteprima caricata si posizionano solo blocchi che la pagina ha davvero.
   if (doc && pulita && !(blocchiInPagina(doc)[riquadro] || {})[id]) return false;
 
   let voci = [{ id, pos: pulita }];
@@ -752,8 +627,6 @@ function impostaPosizione(idBlocco, pos) {
     voci = voci.concat(fratelli);
   }
   if (!pulita) {
-    /* Se restano posizionati solo fratelli fissati in automatico e mai più
-       toccati, il riquadro torna tutto nel flusso, com'era all'inizio. */
     const altri = blocchiDelRiquadro(riquadro).filter((b) => b.id !== id && posizione(b.id, d));
     if (altri.length && altri.every((b) => auto.has(b.id) && stessoRettangolo(auto.get(b.id), posizione(b.id, d)))) {
       for (const b of altri) voci.push({ id: b.id, pos: null });
@@ -761,7 +634,7 @@ function impostaPosizione(idBlocco, pos) {
     auto.delete(id);
     if (!altri.length || voci.length > 1) st.fissatiAuto.delete(d + '|' + riquadro);
   } else if (auto.has(id) && !stessoRettangolo(auto.get(id), pulita)) {
-    auto.delete(id);   // toccato a mano: non è più «automatico»
+    auto.delete(id);
   }
   return scriviPosizioni(riquadro, voci, d);
 }
@@ -779,14 +652,8 @@ function fissaRiquadro(riquadro) {
   return voci.length ? scriviPosizioni(riquadro, voci, d) : false;
 }
 
-/* ================================== 5. TEMA, STILI E TESTI DAL VIVO */
-
 function firmaTema(tema) { try { return JSON.stringify(tema); } catch { return ''; } }
 
-/* Il foglio del tema va subito dopo <link href="css/tema.css">, che poi si
-   spegne: il foglio dal vivo lo sostituisce nello stesso punto della
-   cascata. Messo in fondo a <head> batterebbe anche i :root dei fogli di
-   sezione, e l'anteprima non sarebbe più il sito. */
 function scriviTema(doc, css) {
   let stile = doc.getElementById(ID_TEMA_VIVO);
   const link = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'))
@@ -805,7 +672,6 @@ async function applicaTema() {
   if (!docVivo()) return;
   const api = ponte.api;
   if (!api || typeof api.temaCss !== 'function') return;
-  // Una richiesta in volo e una in coda: le chiamate doppie nello stesso fotogramma ne fanno una.
   if (st.tema.inVolo) { st.tema.inCoda = true; return; }
   const tema = leggi('config.tema');
   if (!oggetto(tema)) return;
@@ -833,11 +699,9 @@ function applicaStili() {
   const doc = docVivo();
   if (!doc) return;
   const S = window.SBStili;
-  // Senza generatore resta lo <style id="sb-stili"> della pagina: meglio lo stile salvato che nessuno.
   if (!S || typeof S.stiliCss !== 'function') return;
   let testoStili = '';
   try { testoStili = JSON.stringify(leggi('config.stili') || {}); } catch { testoStili = ''; }
-  // Catalogo e font caricati servono solo a chi li usa: niente richieste per una pagina senza.
   if (/"(famiglia|caricato):/.test(testoStili)) chiediImpostazioni();
   if (testoStili.indexOf('"caricato:') !== -1 && !st.fontCaricati &&
       !(ponte.stato && oggetto(ponte.stato.editor) && Array.isArray(ponte.stato.editor.font))) {
@@ -856,9 +720,6 @@ function applicaStiliOra(doc, S) {
   if (stile.textContent !== css) stile.textContent = css;
 }
 
-/* Testi e immagini dallo stato ai marcatori. `filtro(chiave)` limita il
-   giro alle chiavi cambiate (dopo un caricamento, quelle scritte mentre la
-   richiesta era in volo). */
 function inScrittura(el) {
   if (!el) return false;
   if (el.isContentEditable) return true;
@@ -879,14 +740,12 @@ function testoSenzaTag(html) {
 
 function scriviRicco(el, valore) {
   if (!moduli.sanifica) {
-    // Senza la lista bianca non entra un solo tag: si scrive il testo nudo.
     const testo = testoSenzaTag(valore);
     if (el.textContent !== testo) el.textContent = testo;
     return;
   }
   let pulito = '';
   try { pulito = moduli.sanifica(valore); } catch (e) { registraErrore(e); return; }
-  // DOMParser costruisce un documento inerte: niente si carica e niente si esegue mentre lo si legge.
   const inerte = new DOMParser().parseFromString('<!doctype html><body>' + pulito, 'text/html');
   if (el.innerHTML === inerte.body.innerHTML) return;
   const doc = el.ownerDocument;
@@ -895,14 +754,6 @@ function scriviRicco(el, valore) {
   segnaOriginali(el);
 }
 
-/* Un marcatore va scritto come testo ricco? Una chiave senza campo suo è la
-   proprietà di una voce di elenco (config.supporto.0.testo) o il pezzo di un
-   campo composto (config.orari.giochi.1): si risale al campo che la contiene
-   e, per un elenco, si guarda il tipo del sottocampo. Fuori da un «ricco»
-   dichiarato il valore resta testo, come lo stampa la generazione con la
-   doppia graffa: passarlo dal sanificatore toglierebbe dall'anteprima un
-   «<Quake>» che sul sito pubblicato si legge. Solo senza schema vale ancora
-   la strada prudente: un tag nel valore si ripulisce come ricco. */
 function testoRicco(chiave, valore) {
   const campo = campoDi(chiave);
   if (campo) return campo.tipo === 'ricco';
@@ -950,8 +801,6 @@ function applicaTesti(filtro = null) {
   }
 }
 
-/* Chiavi il cui valore adesso è diverso da quello con cui la pagina è
-   stata disegnata. */
 function filtroCambiati(inviati) {
   if (!inviati) return null;
   return (chiave) => {
@@ -966,8 +815,6 @@ function filtroCambiati(inviati) {
     return adesso !== prima;
   };
 }
-
-/* ============================================================ 6. SELEZIONE */
 
 function creaMeta(tipo, chiave, el) {
   const meta = {
@@ -1005,8 +852,6 @@ function creaMeta(tipo, chiave, el) {
   return meta;
 }
 
-/* I tipi presenti su UN elemento, dal più interno al più esterno (§5.3):
-   prima il contenuto, poi la parte, poi il blocco, poi la sezione. */
 function metaSu(el) {
   const fuori = [];
   if (!el || el.nodeType !== 1) return fuori;
@@ -1032,8 +877,6 @@ function metaSu(el) {
   return fuori;
 }
 
-/* La catena a partire da `el`; con `daId` si parte da quel tipo preciso
-   sull'elemento (un <p> che è testo e blocco, scelto come blocco). */
 function catena(el, daId) {
   let elenco = [];
   let primo = true;
@@ -1061,7 +904,6 @@ function metaDaBersaglio(bersaglio) {
   return el ? catena(el, null)[0] || null : null;
 }
 
-// 'chi.corpo' (id nudo di un blocco) -> 'blocco:chi.corpo'.
 function normalizzaId(id) {
   const s = String(id == null ? '' : id).trim();
   return RE_BLOCCO.test(s) ? 'blocco:' + s : s;
@@ -1137,7 +979,7 @@ function seleziona(id) {
   }
   const nid = normalizzaId(id);
   if (!docVivo()) {
-    st.ricordo = { id: nid, indice: 0 };   // si applica appena l'anteprima è pronta
+    st.ricordo = { id: nid, indice: 0 };
     return null;
   }
   const attuale = st.selezione;
@@ -1166,9 +1008,6 @@ function fisso(el) {
   try { return st.win.getComputedStyle(el).position === 'fixed'; } catch { return false; }
 }
 
-/* Scorre SOLO l'iframe: scrollIntoView farebbe scorrere anche il pannello.
-   'alto' mette l'elemento in cima (Navigatore), 'mostra' lo porta al centro
-   solo se è fuori dallo schermo. */
 function scorriAElemento(el, come) {
   const win = st.win;
   if (!el || !win || !el.isConnected || fisso(el)) return;
@@ -1185,8 +1024,6 @@ function scorriAElemento(el, come) {
   try { win.scrollTo({ top: alto, left: win.scrollX, behavior: morbido ? 'smooth' : 'instant' }); } catch { win.scrollTo(win.scrollX, alto); }
 }
 
-/* ========================= 7. DOCUMENTO DELL'IFRAME: STILI, EVENTI */
-
 function valoreCssSicuro(v) { return String(v || '').trim().replace(/[;{}<>\\]/g, ''); }
 
 function variabiliRegia() {
@@ -1200,8 +1037,6 @@ function variabiliRegia() {
   return ':root {\n' + righe.join('\n') + '\n}';
 }
 
-/* --sbm-k = 1 / zoom: con la cornice rimpicciolita etichetta, maniglie e
-   spessori restano grandi uguali a schermo. */
 const CSS_EDITOR = [
   '/* Solo nell\'anteprima dell\'editor: il sito pubblicato non ha niente di questo. */',
   '[data-sb-testo], [data-sb-immagine] { cursor: pointer; }',
@@ -1276,7 +1111,6 @@ function creaSovrapposizione(doc) {
     scelta.append(m);
   }
   radice.append(genitore, passaggio, scelta);
-  // Figlia di <html>, fuori dal <body>: nessun foglio di sezione la tocca e non sposta niente.
   doc.documentElement.append(radice);
   return { radice, passaggio, genitore, scelta, etichetta };
 }
@@ -1287,7 +1121,6 @@ function mettiRiquadro(riq, el, forza) {
     return null;
   }
   const r = el.getBoundingClientRect();
-  // Nascosto in questa vista («nascosto» per dispositivo): niente riquadro né etichetta in alto a sinistra.
   if (!r.width && !r.height && !el.getClientRects().length) {
     if (riq.style.display !== 'none') { riq.style.display = 'none'; riq._chiave = ''; }
     return null;
@@ -1308,7 +1141,6 @@ function disegnaSovrapposizione(forza) {
   if (!doc || !sv || !sv.radice.isConnected) return;
   let sel = st.selezione;
 
-  // Selezione staccata (un testo riscritto, una pagina nuova): la si ritrova per id.
   if (sel && !sel.el.isConnected) {
     const ritrovato = st.ricordo ? risolviId(st.ricordo.id, st.ricordo.indice) : null;
     if (ritrovato) { st.selezione = sel = ritrovato; avvisaIscritti(ritrovato); }
@@ -1325,7 +1157,6 @@ function disegnaSovrapposizione(forza) {
   if (r) {
     const k = st.scala > 0 ? 1 / st.scala : 1;
     sv.scelta.classList.toggle('is-basso', r.top < 22 * k);
-    // Etichetta leggibile anche quando l'inizio dell'elemento è sopra lo schermo.
     const alto = r.top < 0 ? Math.min(-r.top, Math.max(0, r.height - 20 * k)) + 'px' : '';
     if (sv.etichetta.style.top !== alto) sv.etichetta.style.top = alto;
   }
@@ -1354,9 +1185,6 @@ function segnaOriginali(el) {
   for (const figlio of el.getElementsByTagName('*')) st.originali.add(figlio);
 }
 
-/* Un nodo «del sito»: c'era al caricamento, o sta dentro un testo del sito
-   (i grassetti nati scrivendo). Quelli aggiunti da altri moduli (una barra
-   di CONTENUTI dentro l'iframe) non si selezionano. */
 function nodoDelSito(el) {
   if (!el || !st.originali) return false;
   if (st.originali.has(el)) return true;
@@ -1400,15 +1228,13 @@ function preparaDocumento(doc, win) {
 function suClic(ev) {
   const el = elementoDi(ev.target);
   if (!el || sovrapposizioneDi(el)) return;
-  // Nessun link e nessun bottone porta via dall'editor, di chiunque sia il nodo.
   ev.preventDefault();
-  if (inScrittura(el)) return;                 // il clic è di CONTENUTI
+  if (inScrittura(el)) return;
   if (!nodoDelSito(el)) return;
-  if (Date.now() < st.soppressoFino) return;   // era la fine di un trascinamento
+  if (Date.now() < st.soppressoFino) return;
   impostaSelezione(metaDaBersaglio(el));
-  // Con un blocco scelto le frecce devono arrivare all'iframe.
   if (st.selezione && st.selezione.puoPosizionare && st.ui) {
-    try { st.ui.iframe.focus(); } catch { /* il fuoco resta dov'è */ }
+    try { st.ui.iframe.focus(); } catch {}
   }
 }
 
@@ -1429,10 +1255,6 @@ function accendiSposta(acceso) {
   if (stile && stile.disabled === !!acceso) stile.disabled = !acceso;
 }
 
-/* ============================ 8. TRASCINAMENTO, MANIGLIE, TASTIERA */
-
-/* Pixel -> unità della regola geometrica (§4.3): percentuale della
-   larghezza del contenuto del riquadro, dall'angolo del suo padding box. */
 function misura(el) {
   const win = st.win;
   const riquadro = el && el.parentElement ? el.parentElement.closest('[data-sb-riquadro]') : null;
@@ -1456,7 +1278,6 @@ function misura(el) {
   };
 }
 
-// Da dove si parte: la posizione salvata, o quella misurata adesso.
 function rettangoloDiPartenza(meta) {
   const salvata = posizione(meta.chiave, st.dispositivo);
   if (salvata) return salvata;
@@ -1484,7 +1305,7 @@ function suPremuto(ev) {
   }
   if (sovrapposizioneDi(el) || inScrittura(el) || !nodoDelSito(el)) return;
   if (spostabile(sel) && sel.el.contains(el)) {
-    ev.preventDefault();   // niente selezione del testo: qui si trascina
+    ev.preventDefault();
     st.inAttesa = { x: ev.clientX, y: ev.clientY, pointerId: ev.pointerId };
   }
 }
@@ -1497,7 +1318,6 @@ function suMovimento(ev) {
   }
   if (st.inAttesa && ev.pointerId === st.inAttesa.pointerId) {
     const p = st.inAttesa;
-    // Quattro pixel di tolleranza: un clic un po' mosso resta un clic.
     if (Math.abs(ev.clientX - p.x) + Math.abs(ev.clientY - p.y) > 4 && spostabile(st.selezione)) {
       st.inAttesa = null;
       iniziaTrascina('move', p.x, p.y, p.pointerId, st.selezione.el);
@@ -1539,7 +1359,6 @@ function iniziaTrascina(tipo, clientX, clientY, pointerId, catturante) {
     return;
   }
   const riquadro = sel.riquadro;
-  // Primo blocco del riquadro che esce dal flusso: i fratelli si misurano adesso, prima che risalgano.
   const fratelli = riquadroHaPosizioni(riquadro, st.dispositivo) ? [] : misuraFratelli(riquadro, sel.chiave);
   const rr = m.riquadro.getBoundingClientRect();
   st.trascina = {
@@ -1559,7 +1378,7 @@ function iniziaTrascina(tipo, clientX, clientY, pointerId, catturante) {
     pointerId,
     catturante
   };
-  try { catturante.setPointerCapture(pointerId); } catch { /* senza cattura si segue lo stesso finché il puntatore resta nell'iframe */ }
+  try { catturante.setPointerCapture(pointerId); } catch {}
   stileProprio(doc, ID_STILE_TRASCINA, 'html, html * { cursor: ' + (CURSORI[tipo] || 'grabbing') + ' !important; -webkit-user-select: none !important; user-select: none !important; }', true);
   st.passaggio = null;
 }
@@ -1568,9 +1387,6 @@ function muoviTrascina(ev) {
   const t = st.trascina;
   const win = st.win;
   if (!t || !win) return;
-  /* Il riquadro può spostarsi mentre si trascina (la sua altezza cambia con
-     aspect-ratio e la sezione lo ricentra): il suo spostamento si toglie,
-     così il blocco resta sotto il puntatore. */
   const rr = t.elRiquadro.isConnected ? t.elRiquadro.getBoundingClientRect() : null;
   const scartoX = rr ? rr.left + win.scrollX - t.rx : 0;
   const scartoY = rr ? rr.top + win.scrollY - t.ry : 0;
@@ -1585,10 +1401,6 @@ function muoviTrascina(ev) {
   let B = s.y + s.a;
 
   if (t.tipo === 'move') {
-    /* Un blocco largo quanto il contenuto parte già con x + l oltre 100: x si
-       misura dal bordo del riempimento, l sulla larghezza del contenuto. Il
-       tetto è quindi almeno la x di partenza, altrimenti al primo movimento,
-       anche solo in verticale, salterebbe a sinistra dentro il riempimento. */
     L = stringi(g(s.x + dx), 0, Math.max(0, X_MAX - s.l, s.x));
     T = stringi(g(s.y + dy), 0, Math.max(0, Y_MAX - s.a));
     R = L + s.l;
@@ -1618,7 +1430,7 @@ function fineTrascina(annulla) {
   if (!t) return;
   st.trascina = null;
   st.vivo = null;
-  try { if (t.catturante && t.catturante.releasePointerCapture) t.catturante.releasePointerCapture(t.pointerId); } catch { /* già rilasciata */ }
+  try { if (t.catturante && t.catturante.releasePointerCapture) t.catturante.releasePointerCapture(t.pointerId); } catch {}
   const doc = docVivo();
   if (doc) stileProprio(doc, ID_STILE_TRASCINA, '', false);
   if (!annulla && t.mosso) {
@@ -1645,7 +1457,6 @@ function spingi(dx, dy, dl, da) {
   const l = stringi(cur.l + dl, MISURA_MIN, X_MAX);
   const a = stringi(cur.a + da, MISURA_MIN, Y_MAX);
   const p = {
-    // Stesso tetto del trascinamento: una freccia in verticale non sposta di lato.
     x: stringi(cur.x + dx, 0, Math.max(0, X_MAX - l, cur.x)),
     y: stringi(cur.y + dy, 0, Math.max(0, Y_MAX - a)),
     l,
@@ -1655,7 +1466,6 @@ function spingi(dx, dy, dl, da) {
   annuncia('Posizione: da sinistra ' + numeroCss(p.x) + ', dall\'alto ' + numeroCss(p.y) + ', larghezza ' + numeroCss(p.l) + ', altezza ' + numeroCss(p.a) + '.');
 }
 
-/* Tasti del motore, dentro l'iframe o sul telaio. Torna vero se il tasto è stato usato. */
 function gestisciTasto(ev) {
   if (ev.key === 'Escape' || ev.key === 'Esc') {
     if (st.trascina) { ev.preventDefault(); fineTrascina(true); return true; }
@@ -1675,12 +1485,10 @@ function gestisciTasto(ev) {
 
 function suTastoIframe(ev) {
   const el = elementoDi(ev.target);
-  // Dentro un testo in scrittura i tasti sono di CONTENUTI (annulla nativo, Ctrl+S suo).
   if (el && inScrittura(el)) return;
   const conComando = (ev.ctrlKey || ev.metaKey) && !ev.altKey;
   if (conComando && /^[szyk]$/i.test(ev.key || '')) {
     if (bersaglioDiScrittura(el) && !/^s$/i.test(ev.key)) return;
-    // Le scorciatoie del pannello valgono anche con il fuoco nell'anteprima.
     ev.preventDefault();
     rilancia(ev);
     return;
@@ -1689,8 +1497,6 @@ function suTastoIframe(ev) {
   if (gestisciTasto(ev)) ev.stopPropagation();
 }
 
-/* Ripete la scorciatoia sul documento del pannello, dove la ascoltano
-   pannello.js e il guscio. */
 function rilancia(ev) {
   try {
     document.dispatchEvent(new KeyboardEvent('keydown', {
@@ -1700,18 +1506,10 @@ function rilancia(ev) {
   } catch (e) { registraErrore(e); }
 }
 
-/* ======================= 9. ANTEPRIMA: MONTAGGIO, ZOOM, CARICAMENTO */
-
 function impostaStile(el, proprieta, valore) {
   if (el && el.style[proprieta] !== valore) el.style[proprieta] = valore;
 }
 
-/* Cornice del dispositivo con zoom automatico. L'iframe resta largo quanto
-   il dispositivo (Computer almeno 1100, Tablet 900, Telefono 375), così
-   dentro valgono le media query del sito vero; se lo spazio non basta la
-   cornice si rimpicciolisce con transform: scale() dentro .motore__zoom,
-   grande quanto il risultato a schermo, e l'iframe diventa più alto in
-   proporzione: lo scorrimento dentro l'anteprima copre tutta la pagina. */
 function dimensiona() {
   const ui = st.ui;
   if (!montato()) return;
@@ -1747,9 +1545,6 @@ function dimensiona() {
   }
 }
 
-/* L'indicatore compare solo quando l'anteprima a grandezza reale non ci
-   starebbe: «100%» la mostra vera (si scorre di lato), «Adatta» la
-   rimpicciolisce di nuovo. */
 function disegnaBarraZoom() {
   const ui = st.ui;
   if (!ui || !ui.barraZoom) return;
@@ -1787,7 +1582,7 @@ function impostaDispositivo(d) {
   if (st.trascina) fineTrascina(true);
   const cambiato = st.dispositivo !== d;
   st.dispositivo = d;
-  if (cambiato) st.zoomModo = 'adatta';   // ogni dispositivo riparte adattato allo spazio
+  if (cambiato) st.zoomModo = 'adatta';
   if (montato()) dimensiona();
   if (cambiato) {
     aggiornaPannelloPosizioni();
@@ -1855,9 +1650,6 @@ async function chiediAnteprima(inviati) {
   throw Object.assign(new Error('Il pannello non sa chiedere l\'anteprima al server.'), { stato: 501 });
 }
 
-/* Ripiego: la bozza salvata (GET /api/anteprima), letta come testo e
-   scritta con la stessa pulizia. Caricarla con src farebbe partire gli
-   script del sito. */
 async function chiediBozzaSalvata() {
   let risposta;
   try {
@@ -1869,17 +1661,12 @@ async function chiediBozzaSalvata() {
   return risposta.text();
 }
 
-/* Via ogni <script> eseguibile (resta il JSON-LD), <base href="/"> in testa.
-   Si passa da DOMParser e non da un'espressione regolare: nei commenti del
-   modello la parola «<script>» compare davvero, e un taglio sbagliato
-   lascerebbe un commento aperto su mezza pagina. */
 function preparaHtml(html) {
   const inerte = new DOMParser().parseFromString(String(html || ''), 'text/html');
   for (const script of Array.from(inerte.querySelectorAll('script'))) {
     const tipo = (script.getAttribute('type') || '').trim().toLowerCase();
     if (tipo !== 'application/ld+json') script.remove();
   }
-  // Attributi on…: il modello non ne ha, ma un server rimasto indietro non deve poterli far valere.
   for (const nodo of inerte.querySelectorAll('*')) {
     for (const attributo of Array.from(nodo.attributes)) {
       if (/^on/i.test(attributo.name)) nodo.removeAttribute(attributo.name);
@@ -1891,7 +1678,6 @@ function preparaHtml(html) {
     base = inerte.createElement('base');
     base.setAttribute('href', '/');
   }
-  // Primo figlio di <head>: tutto quello che viene dopo si risolve dalla radice del sito.
   if (testa.firstChild !== base) testa.insertBefore(base, testa.firstChild);
   const doctype = inerte.doctype ? '<!doctype html>\n' : '';
   return doctype + inerte.documentElement.outerHTML;
@@ -1906,7 +1692,6 @@ async function ricarica({ tieniScorrimento = false } = {}) {
 
   const dati = ponte.stato && ponte.stato.dati;
   if (!dati) {
-    // Contenuti non ancora caricati: si aspetta sb:pronto invece di mostrare una pagina vuota.
     mostraVelo('carico', 'Carico l\'anteprima del sito…');
     return new Promise((risolvi) => {
       document.addEventListener('sb:pronto', () => {
@@ -2010,17 +1795,14 @@ function paginaScritta(doc, generazione, scorrimento, inviati) {
   st.win = win;
   st.pronto = true;
   try { preparaDocumento(doc, win); } catch (e) { registraErrore(e); }
-  // Il tema dell'ultima risposta subito, così la pagina non lampeggia con i colori pubblicati.
   try { if (st.tema.css && st.tema.firma === firmaTema(leggi('config.tema'))) scriviTema(doc, st.tema.css); } catch (e) { registraErrore(e); }
   try { applicaDisposizione(); } catch (e) { registraErrore(e); }
   try { applicaStili(); } catch (e) { registraErrore(e); }
   try { applicaTesti(filtroCambiati(inviati)); } catch (e) { registraErrore(e); }
   applicaTema();
-  // La selezione si ritrova subito, prima dei fogli: così il giro di disegno non la ritrova una seconda volta.
   ripristinaSelezione();
   avviaDisegno(win, generazione);
 
-  // L'evento e la Promise aspettano i fogli: chi legge getComputedStyle deve trovare il sito.
   return new Promise((risolvi) => {
     const inizio = Date.now();
     const giro = () => {
@@ -2039,7 +1821,6 @@ function paginaScritta(doc, generazione, scorrimento, inviati) {
   });
 }
 
-/* Subito non basta: immagini e font allungano la pagina dopo il primo disegno. */
 function rimettiScorrimento(win, generazione, pos) {
   const vai = () => {
     if (generazione !== st.generazione || !docVivo()) return;
@@ -2069,14 +1850,13 @@ function costruisciAnteprima(contenitore) {
   const ui = {};
   ui.iframe = crea('iframe', { classe: 'motore__iframe', title: 'Anteprima modificabile del sito' });
   ui.cornice = crea('div', { classe: 'motore__cornice' }, [ui.iframe]);
-  // Grande quanto la cornice A SCHERMO, dopo lo zoom: è lui che occupa spazio.
   ui.zoom = crea('div', { classe: 'motore__zoom' }, [ui.cornice]);
   ui.telaio = crea('div', {
     classe: 'motore__telaio', tabindex: '0',
     'aria-label': 'Anteprima del sito. Clicca un elemento per sceglierlo; Esc passa al contenitore, le frecce spostano il blocco scelto.'
   }, [ui.zoom]);
   ui.telaio.addEventListener('click', (ev) => {
-    if (ev.target === ui.telaio || ev.target === ui.zoom) seleziona(null);   // clic fuori dalla pagina
+    if (ev.target === ui.telaio || ev.target === ui.zoom) seleziona(null);
   });
   ui.telaio.addEventListener('keydown', (ev) => { if (ev.target === ui.telaio) gestisciTasto(ev); });
 
@@ -2103,7 +1883,7 @@ function monta(contenitore, { dispositivo } = {}) {
   if (DISPOSITIVI.indexOf(dispositivo) !== -1) st.dispositivo = dispositivo;
 
   if (st.trascina) { st.trascina = null; st.vivo = null; }
-  if (st.osservatore) { try { st.osservatore.disconnect(); } catch { /* già staccato */ } st.osservatore = null; }
+  if (st.osservatore) { try { st.osservatore.disconnect(); } catch {} st.osservatore = null; }
   if (st.ui && st.ui.radice && st.ui.radice.parentNode) st.ui.radice.remove();
   st.generazione += 1;
   st.pronto = false;
@@ -2111,7 +1891,6 @@ function monta(contenitore, { dispositivo } = {}) {
   st.win = null;
   st.sovrapposizione = null;
   if (st.selezione) {
-    // La selezione stava nell'iframe di prima: si ritrova dopo il caricamento.
     st.selezione = null;
     avvisaIscritti(null);
   }
@@ -2124,18 +1903,13 @@ function monta(contenitore, { dispositivo } = {}) {
     st.osservatore.observe(st.ui.telaio);
   }
   dimensiona();
-  // Un giro di respiro: le misure del contenitore sono quelle vere solo dopo l'inserimento.
   setTimeout(() => { dimensiona(); ricarica({ tieniScorrimento: false }); }, 0);
   return promessa;
 }
 
 window.addEventListener('resize', () => { if (montato()) dimensiona(); });
 
-/* Dopo Annulla/Ripeti o un ripristino i blocchi fissati in automatico non
-   corrispondono più ai dati: si dimenticano. La ricarica la chiede GUSCIO. */
 document.addEventListener('sb:sostituito', () => { st.fissatiAuto.clear(); });
-
-/* ======================================= 10. ISPETTORI E POSIZIONI */
 
 function registraIspettore(fn, { scheda = 'contenuto', ordine = 100, quando = null } = {}) {
   if (typeof fn !== 'function') return false;
@@ -2160,13 +1934,8 @@ function ispettoriPer(scheda, meta) {
   }).sort((a, b) => (a.ordine - b.ordine) || (a.seq - b.seq));
 }
 
-// Riquadri già creati per ogni contenitore: { scheda, riquadri: [{ fn, riquadro }] }.
 const riquadriIspettori = new WeakMap();
 
-/* Disegna nel contenitore gli ispettori della scheda validi per `meta`,
-   ognuno nel SUO riquadro. I riquadri si riusano da un disegno all'altro e
-   non si svuotano: un ispettore che tiene da parte il proprio nodo non fa
-   perdere il fuoco al campo in cui si sta scrivendo. */
 function disegnaIspettori(scheda, contenitore, meta) {
   if (!contenitore || typeof contenitore.appendChild !== 'function') return 0;
   const m = meta === undefined ? st.selezione : meta;
@@ -2199,8 +1968,6 @@ function disegnaIspettori(scheda, contenitore, meta) {
   mappa.riquadri = tenuti;
   return elenco.length;
 }
-
-/* --- ispettore delle posizioni (scheda Avanzate) -------------------- */
 
 let pannelloPosizioni = null;
 let sequenzaCampi = 0;
@@ -2277,7 +2044,7 @@ function aggiornaPannelloPosizioni() {
 }
 
 function disegnaPosizioni(contenitore, meta) {
-  svuota(contenitore);   // il riquadro si riusa: questo ispettore si ridisegna da capo
+  svuota(contenitore);
   if (!spostabile(meta)) { pannelloPosizioni = null; return; }
   const campi = {
     x: campoPosizione('x', 'Da sinistra', X_MAX),
@@ -2344,8 +2111,6 @@ function disegnaPosizioni(contenitore, meta) {
 }
 
 registraIspettore(disegnaPosizioni, { scheda: 'avanzate', ordine: 10, quando: (meta) => spostabile(meta) });
-
-/* ============================================= 11. L'OGGETTO `motore` */
 
 function protetto(fn, riserva) {
   return (...argomenti) => {

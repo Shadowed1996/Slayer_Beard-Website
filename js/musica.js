@@ -91,8 +91,6 @@
     nodi.stato.textContent = messaggio || '';
   }
 
-  /* ---------------------------------------------------------------- */
-
   function colori() {
     if (tinte) { return tinte; }
     var stile = getComputedStyle(document.documentElement);
@@ -264,8 +262,6 @@
     });
   }
 
-  /* ---------------------------------------------------------------- */
-
   function misuraScorrimento() {
     var titolo = nodi.titolo;
     titolo.classList.remove('is-lunga');
@@ -329,8 +325,6 @@
     nodi.elencoApri.setAttribute('aria-expanded', mostra ? 'true' : 'false');
     if (mostra && voci[indice]) { voci[indice].focus(); }
   }
-
-  /* ---------------------------------------------------------------- */
 
   function mostraTraccia() {
     var voce = tracce[indice];
@@ -459,8 +453,6 @@
     nodi.casuale.setAttribute('title', etichetta);
   }
 
-  /* ---------------------------------------------------------------- */
-
   function dipingi() {
     var acceso = suona();
     nodi.guscio.classList.toggle('is-suona', acceso);
@@ -503,8 +495,6 @@
     if (dallUtente) { scrivi(CHIAVE_MUTO, muta ? '1' : '0'); }
   }
 
-  /* ---------------------------------------------------------------- */
-
   function apriChiudi(apri, dalGesto) {
     nodi.guscio.setAttribute('data-aperto', apri ? '1' : '0');
     nodi.riduci.setAttribute('aria-expanded', apri ? 'true' : 'false');
@@ -520,8 +510,6 @@
     }
     avvisa();
   }
-
-  /* ---------------------------------------------------------------- */
 
   function collegaDiretta() {
     if (window.Player && typeof window.Player.suVideo === 'function') {
@@ -540,8 +528,6 @@
       });
     }
   }
-
-  /* ---------------------------------------------------------------- */
 
   function prendiNodi() {
     var guscio = document.getElementById('musica');

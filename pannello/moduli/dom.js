@@ -1,19 +1,3 @@
-/* =====================================================================
-   dom.js — i mattoni: creazione di nodi, icone, bottoni, formattazioni.
-
-   Regola del pannello: nessun innerHTML con dati che vengono dal server o
-   da chi scrive. Tutto quello che si vede passa da document.createElement
-   e da textContent, che non interpreta niente. Per questo el() non ha
-   nemmeno l'opzione "html": se non c'e', non si puo' usare per sbaglio.
-   ===================================================================== */
-
-/**
- * Costruttore breve di nodi.
- * Attributi speciali: `classe`, `testo`, `su` (mappa di ascoltatori),
- * `dati` (mappa per dataset). Tutto il resto finisce in setAttribute.
- * Un valore null / undefined / false salta l'attributo: comodo per
- * scrivere `disabled: condizione` senza if.
- */
 export function el(tag, attributi = {}, figli = []) {
   const nodo = document.createElement(tag);
 
@@ -34,7 +18,6 @@ export function el(tag, attributi = {}, figli = []) {
   return nodo;
 }
 
-/** Icona presa dallo sprite inline di index.html. */
 export function icona(nome, classe = 'ico') {
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
@@ -47,11 +30,6 @@ export function icona(nome, classe = 'ico') {
   return svg;
 }
 
-/**
- * Bottone con icona facoltativa.
- * Con `soloIcona` il testo resta per chi usa uno screen reader e diventa
- * anche il title: un bottone senza nome accessibile e' un bottone rotto.
- */
 export function bottone({ testo, ico, classe = 'btn', titolo, su, tipo = 'button', soloIcona = false, disabilitato = false, dati = null }) {
   const nodo = el('button', {
     type: tipo,
@@ -66,31 +44,19 @@ export function bottone({ testo, ico, classe = 'btn', titolo, su, tipo = 'button
   return nodo;
 }
 
-/** Svuota un nodo senza passare da innerHTML. */
 export function svuota(nodo) {
   while (nodo.firstChild) nodo.removeChild(nodo.firstChild);
   return nodo;
 }
 
 let contatoreId = 0;
-/** Id unico per legare <label for> e aria-controls senza collisioni. */
 export function idUnico(prefisso = 'x') {
   contatoreId += 1;
   return prefisso + '-' + contatoreId.toString(36);
 }
 
-/* ---------------------------------------------------------------------
-   Preferenze del pannello
-
-   Come si guarda il pannello (larghezza, scheda aperta, nomi tecnici), mai
-   i contenuti: quelli stanno sul server. Tutte con lo stesso prefisso, così
-   si riconoscono e si cancellano insieme. In navigazione privata
-   localStorage può lanciare a ogni accesso: ogni guasto vale «predefinito».
-   --------------------------------------------------------------------- */
-
 const PREFISSO_PREFERENZE = 'sb-pannello-';
 
-/** Valore grezzo (stringa) della preferenza, o `predefinito`. */
 export function leggiPreferenza(nome, predefinito = null) {
   try {
     const valore = localStorage.getItem(PREFISSO_PREFERENZE + nome);
@@ -100,33 +66,21 @@ export function leggiPreferenza(nome, predefinito = null) {
   }
 }
 
-/** Scrive la preferenza come stringa; null o undefined la tolgono. */
 export function scriviPreferenza(nome, valore) {
   try {
     if (valore === null || valore === undefined) localStorage.removeItem(PREFISSO_PREFERENZE + nome);
     else localStorage.setItem(PREFISSO_PREFERENZE + nome, String(valore));
-  } catch { /* pazienza: resta la preferenza di serie */ }
+  } catch {}
 }
 
-/** Chi ha chiesto meno movimento lo ottiene anche dagli scorrimenti in JS. */
 export function menoMovimento() {
   return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
-
-/* ---------------------------------------------------------------------
-   Formattazioni
-   --------------------------------------------------------------------- */
 
 const FORMATO_DATA = new Intl.DateTimeFormat('it-IT', {
   day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
 });
 
-/**
- * Le cartelle dei backup si chiamano con un ISO, ma su Windows i due punti
- * nei nomi di file non sono ammessi: arrivano quasi sempre con i trattini
- * al posto loro. Qui si prova prima la lettura normale e poi si rimettono
- * i due punti, invece di mostrare "Invalid Date" a chi amministra.
- */
 export function aData(valore) {
   if (valore instanceof Date) return valore;
   if (typeof valore === 'number') return new Date(valore);
@@ -144,13 +98,11 @@ export function aData(valore) {
   return Number.isNaN(data.getTime()) ? null : data;
 }
 
-/** Data leggibile in italiano, es. «5 settembre 2026, 23:24». */
 export function formattaData(valore) {
   const data = aData(valore);
   return data ? FORMATO_DATA.format(data) : String(valore || 'data sconosciuta');
 }
 
-/** «3 minuti fa», «ieri», in italiano. Torna stringa vuota se non si sa. */
 export function tempoFa(valore) {
   const data = aData(valore);
   if (!data) return '';
@@ -175,7 +127,6 @@ export function tempoFa(valore) {
   return n + ' ' + (n === 1 ? etichetta[0] : etichetta[1]) + ' fa';
 }
 
-/** Peso di un file in unita' comprensibili. */
 export function formattaPeso(byte) {
   const n = Number(byte);
   if (!Number.isFinite(n) || n < 0) return '';
@@ -184,17 +135,13 @@ export function formattaPeso(byte) {
   return (n / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-/**
- * Copia negli appunti. navigator.clipboard non c'e' fuori da https e da
- * localhost, quindi resta il vecchio trucco della textarea nascosta.
- */
 export async function copiaTesto(testo) {
   try {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(testo);
       return true;
     }
-  } catch { /* si prova il ripiego qui sotto */ }
+  } catch {}
 
   try {
     const area = el('textarea', { value: testo, 'aria-hidden': 'true', tabindex: '-1' });
@@ -209,12 +156,6 @@ export async function copiaTesto(testo) {
   }
 }
 
-/**
- * Percorso di una risorsa del sito visto dal pannello.
- * Nei contenuti le immagini stanno relative alla radice ("img/avatar.webp"),
- * ma il pannello vive sotto /pannello/: senza questa riga l'anteprima
- * cercherebbe /pannello/img/avatar.webp e non troverebbe niente.
- */
 export function urlRisorsa(percorso) {
   const v = String(percorso || '').trim();
   if (!v) return '';

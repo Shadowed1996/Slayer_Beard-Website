@@ -1,23 +1,3 @@
-/* =====================================================================
-   parti.css — ispettori di parti e sezioni, e Navigatore
-   (CONTRATTO-4 §11.3 e §12).
-
-   Parla la lingua della regia: superfici piatte, linee da 1 px, etichette
-   in monospazio maiuscolo, viola per ciò che è scelto o si sta spostando,
-   ciano per ciò che è acceso. Solo variabili di pannello.css: nessun
-   colore scritto qui. Le tinte leggere si mescolano con color-mix dalle
-   stesse variabili, così seguono pannello.css se un giorno cambia.
-
-   Il pannello è largo da 380 a 760 px e si trascina: tutto quello che
-   dipende dalla larghezza passa da container query sui contenitori di
-   questo foglio, mai dalla finestra.
-
-   Classi: .parti* per gli ispettori, .navigatore* per il Navigatore.
-   Campi, bottoni e interruttori sono quelli del pannello (.campo,
-   .interruttore): qui si mettono solo in fila.
-   ===================================================================== */
-
-/* ------------------------------------------------------ 1. ispettori */
 .parti {
   container: parti / inline-size;
   display: flex;
@@ -63,8 +43,6 @@
   font-size: 13.5px;
 }
 
-/* Un gruppo di controlli con il suo titolo: una linea sopra, niente
-   scatola, come le fasce di strumenti del sito. */
 .parti__blocco {
   display: flex;
   flex-direction: column;
@@ -85,7 +63,6 @@
 
 .parti__ico { width: 18px; height: 18px; flex: none; display: block; }
 
-/* --------------------------------------------------- 2. visibilità */
 .parti__vis {
   display: flex;
   flex-direction: column;
@@ -123,7 +100,6 @@
 }
 .parti__lucchetto .parti__ico { color: var(--p-testo-tenue); margin-top: 1px; }
 
-/* ------------------------------------------------ 3. cosa contiene */
 .parti__gruppo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
 .parti__gruppo-titolo {
@@ -152,7 +128,6 @@
   list-style: none;
 }
 .parti__gruppo--piega > summary::-webkit-details-marker { display: none; }
-/* summary in flex perde il triangolo del browser: se ne disegna uno piatto. */
 .parti__gruppo--piega > summary::before {
   content: "";
   flex: none;
@@ -214,7 +189,6 @@
   padding: 0 5px;
 }
 
-/* ------------------------------------------------------ 4. Navigatore */
 .navigatore {
   container: navigatore / inline-size;
   display: flex;
@@ -249,8 +223,6 @@
 }
 .navigatore__riga:hover { border-color: var(--p-linea-forte); }
 
-/* Binario, piede e copertina non si muovono: fondo della colonna e linea
-   tratteggiata, così si capisce senza leggere che sono fermi. */
 .navigatore__riga[data-fissa="1"],
 .navigatore__riga[data-bloccata="1"] {
   background: var(--p-fondo-2);
@@ -259,7 +231,6 @@
 
 .navigatore__riga[data-spenta="1"] .navigatore__testo { opacity: .55; }
 
-/* La sezione dell'elemento scelto nell'anteprima: acceso, quindi ciano. */
 .navigatore__riga[aria-current="true"] {
   border-color: color-mix(in srgb, var(--p-ciano) 55%, transparent);
   box-shadow: inset 2px 0 0 var(--p-ciano);
@@ -306,8 +277,6 @@
   cursor: pointer;
   transition: background-color var(--p-durata-lampo) ease, color var(--p-durata-lampo) ease, border-color var(--p-durata-lampo) ease;
 }
-/* touch-action: senza, sul telefono il dito sulla maniglia scorrerebbe il
-   pannello invece di trascinare la riga. */
 .navigatore__maniglia { cursor: grab; touch-action: none; }
 .navigatore__maniglia:hover,
 .navigatore__attrezzo:hover:not(:disabled) {
@@ -383,8 +352,6 @@
   color: var(--p-testo-tenue);
 }
 
-/* Colonna stretta: la descrizione lascia il posto al nome, che è quello
-   che serve per orientarsi mentre si sposta. */
 @container navigatore (max-width: 420px) {
   .navigatore__cosa { display: none; }
   .navigatore__principale { align-items: center; }
@@ -397,8 +364,6 @@
   .parti__voce-dettaglio { flex-basis: 100%; }
 }
 
-/* Movimento ridotto: le transizioni passano già dai token di pannello.css,
-   resta il triangolo dei gruppi pieghevoli. */
 @media (prefers-reduced-motion: reduce) {
   .parti__gruppo--piega > summary::before { transition: none; }
 }
