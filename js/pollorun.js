@@ -7,6 +7,8 @@
   var STILI = ['synthwave', 'geometrydash'];
   var RIPIEGO = { titolo: 'Back On Track', autore: 'DJVI', file: 'mp3/DJVI%20-%20Back%20On%20Track.mp3' };
   var VOLUME_BASE = 30;
+  var PASSO_VOLUME = 5;
+  var TASTI_VOLUME = ['Escape', 'Tab', '-', '_', '+', '=', 'm', 'M'];
   var CHIAVE_VOLUMI = 'sb-manutenzione-volumi';
   var CLASSE = 'is-pollorun';
   var ORIGINE = document.currentScript;
@@ -77,14 +79,28 @@
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || nodo.isContentEditable === true;
   }
 
-  function volumeSalvato() {
-    var livello = VOLUME_BASE;
+  function leggiVolumi() {
     try {
-      var letti = JSON.parse(localStorage.getItem(CHIAVE_VOLUMI) || '{}') || {};
-      var n = Number(letti.gioco);
-      if (isFinite(n) && n >= 0 && n <= 100) { livello = n; }
-    } catch (errore) { }
-    return livello / 100;
+      var letti = JSON.parse(localStorage.getItem(CHIAVE_VOLUMI) || '{}');
+      return letti && typeof letti === 'object' && !Array.isArray(letti) ? letti : {};
+    } catch (errore) {
+      return {};
+    }
+  }
+
+  function livelloSalvato() {
+    var n = Number(leggiVolumi().gioco);
+    return isFinite(n) && n >= 0 && n <= 100 ? n : VOLUME_BASE;
+  }
+
+  function salvaLivello(livello) {
+    var dati = leggiVolumi();
+    dati.gioco = livello;
+    try { localStorage.setItem(CHIAVE_VOLUMI, JSON.stringify(dati)); } catch (errore) { }
+  }
+
+  function volumeAttuale() {
+    return (aperto ? aperto.livello : livelloSalvato()) / 100;
   }
 
   function preparaPista() {
@@ -113,7 +129,7 @@
       }
     } catch (errore) { return; }
     try { p.currentTime = 0; } catch (errore) { }
-    p.volume = volumeSalvato();
+    p.volume = volumeAttuale();
     try {
       var promessa = p.play();
       if (promessa && typeof promessa.catch === 'function') { promessa.catch(function () { }); }
@@ -390,6 +406,200 @@
     return true;
   }
 
+  function svg(classe, tracce) {
+    if (typeof document.createElementNS !== 'function') { return null; }
+    var spazio = ['http:', '', 'www.w3.org', '2000', 'svg'].join('/');
+    var icona = document.createElementNS(spazio, 'svg');
+    icona.setAttribute('class', classe);
+    icona.setAttribute('viewBox', '0 0 24 24');
+    icona.setAttribute('fill', 'none');
+    icona.setAttribute('stroke', 'currentColor');
+    icona.setAttribute('stroke-width', '1.75');
+    icona.setAttribute('stroke-linecap', 'round');
+    icona.setAttribute('stroke-linejoin', 'round');
+    icona.setAttribute('aria-hidden', 'true');
+    icona.setAttribute('focusable', 'false');
+    for (var i = 0; i < tracce.length; i++) {
+      var traccia = document.createElementNS(spazio, 'path');
+      traccia.setAttribute('d', tracce[i][1]);
+      if (tracce[i][0]) { traccia.setAttribute('class', tracce[i][0]); }
+      icona.appendChild(traccia);
+    }
+    return icona;
+  }
+
+  function altoparlante() {
+    return svg('pollorun__icona', [
+      ['', 'M4 9.5h3.5L12 5.5v13l-4.5-4H4z'],
+      ['pollorun__onde', 'M15.5 9a4 4 0 0 1 0 6'],
+      ['pollorun__onde', 'M18 6.5a7.5 7.5 0 0 1 0 11'],
+      ['pollorun__zitto', 'M15.5 9.5l5 5'],
+      ['pollorun__zitto', 'M20.5 9.5l-5 5']
+    ]);
+  }
+
+  function limita(n) {
+    var tondo = Math.round(Number(n));
+    return isFinite(tondo) ? Math.min(100, Math.max(0, tondo)) : VOLUME_BASE;
+  }
+
+  function mostraVolume(stato) {
+    var v = stato.volume;
+    var testo = String(stato.livello);
+    var muto = stato.livello === 0;
+    v.cursore.value = testo;
+    v.cursore.setAttribute('aria-valuetext', muto ? 'muto' : testo + ' su 100');
+    v.valore.value = testo;
+    v.valore.textContent = testo;
+    v.scatola.className = 'pollorun__volume' + (muto ? ' is-muto' : '');
+    v.muto.setAttribute('aria-pressed', muto ? 'true' : 'false');
+    v.muto.textContent = muto ? 'Riattiva l\u2019audio' : 'Muto';
+    v.regola.setAttribute('aria-label', 'Regola il volume, ora ' + (muto ? 'muto' : testo));
+  }
+
+  function impostaVolume(livello, avvisa) {
+    if (!aperto) { return false; }
+    var stato = aperto;
+    stato.livello = limita(livello);
+    if (stato.livello > 0) { stato.udibile = stato.livello; }
+    if (pista) { pista.volume = stato.livello / 100; }
+    salvaLivello(stato.livello);
+    mostraVolume(stato);
+    if (avvisa && stato.volume.pannello.hidden) { avvisaVolume(stato); }
+    return true;
+  }
+
+  function avvisaVolume(stato) {
+    var avviso = stato.volume.avviso;
+    avviso.textContent = stato.livello === 0 ? 'Volume: muto' : 'Volume: ' + stato.livello;
+    avviso.className = 'pollorun__avviso is-visibile';
+    var giro = ++stato.volume.giro;
+    dopo(function () {
+      if (giro === stato.volume.giro) { avviso.className = 'pollorun__avviso'; }
+    }, 1400);
+  }
+
+  function zittisci() {
+    if (!aperto) { return false; }
+    return impostaVolume(aperto.livello > 0 ? 0 : (aperto.udibile || VOLUME_BASE), true);
+  }
+
+  function apriVolume(apri) {
+    if (!aperto) { return false; }
+    var v = aperto.volume;
+    v.pannello.hidden = !apri;
+    if (apri) {
+      v.giro++;
+      v.avviso.className = 'pollorun__avviso';
+    }
+    v.regola.setAttribute('aria-expanded', apri ? 'true' : 'false');
+    return true;
+  }
+
+  function volumeDaTasto(evento) {
+    var tasto = evento.key;
+    var v = aperto.volume;
+    if (tasto === 'Escape') {
+      if (v.pannello.hidden) { return; }
+      apriVolume(false);
+      try { v.regola.focus({ preventScroll: true }); } catch (errore) { }
+      evento.preventDefault();
+      if (typeof evento.stopImmediatePropagation === 'function') { evento.stopImmediatePropagation(); }
+      return;
+    }
+    if (evento.ctrlKey || evento.altKey || evento.metaKey || evento.isComposing) { return; }
+    if (evento.target !== v.cursore && eCampoDiTesto(evento.target)) { return; }
+    if (tasto === '-' || tasto === '_') {
+      impostaVolume(aperto.livello - PASSO_VOLUME, true);
+    } else if (tasto === '+' || tasto === '=') {
+      impostaVolume(aperto.livello + PASSO_VOLUME, true);
+    } else if ((tasto === 'm' || tasto === 'M') && !evento.repeat) {
+      zittisci();
+    } else {
+      return;
+    }
+    evento.preventDefault();
+  }
+
+  function creaVolume(stato) {
+    var scatola = document.createElement('div');
+    scatola.className = 'pollorun__volume';
+
+    var regola = document.createElement('button');
+    regola.type = 'button';
+    regola.className = 'pollorun__regola';
+    regola.setAttribute('aria-expanded', 'false');
+    regola.setAttribute('aria-controls', 'pollorun-volumi');
+    regola.setAttribute('title', 'Volume');
+    var icona = altoparlante();
+    if (icona) { regola.appendChild(icona); } else { regola.textContent = '\u266A'; }
+
+    var pannello = document.createElement('div');
+    pannello.className = 'pollorun__volumi';
+    pannello.id = 'pollorun-volumi';
+    pannello.setAttribute('role', 'group');
+    pannello.setAttribute('aria-label', 'Volume della canzone');
+    pannello.hidden = true;
+
+    var etichetta = document.createElement('label');
+    etichetta.className = 'pollorun__cursore';
+    etichetta.setAttribute('for', 'pollorun-vol');
+    var nome = document.createElement('span');
+    nome.className = 'pollorun__cursore-nome';
+    nome.textContent = 'Volume';
+
+    var cursore = document.createElement('input');
+    cursore.type = 'range';
+    cursore.id = 'pollorun-vol';
+    cursore.min = '0';
+    cursore.max = '100';
+    cursore.step = '1';
+
+    var valore = document.createElement('output');
+    valore.className = 'pollorun__cursore-valore';
+    valore.setAttribute('for', 'pollorun-vol');
+
+    etichetta.appendChild(nome);
+    etichetta.appendChild(valore);
+    etichetta.appendChild(cursore);
+
+    var muto = document.createElement('button');
+    muto.type = 'button';
+    muto.className = 'pollorun__muto';
+
+    var aiuto = document.createElement('p');
+    aiuto.className = 'pollorun__aiuto';
+    aiuto.textContent = 'Tasti: \u2212 e + per il volume, M per il muto';
+
+    pannello.appendChild(etichetta);
+    pannello.appendChild(muto);
+    pannello.appendChild(aiuto);
+
+    var avviso = document.createElement('p');
+    avviso.className = 'pollorun__avviso';
+    avviso.setAttribute('role', 'status');
+    avviso.setAttribute('aria-live', 'polite');
+
+    scatola.appendChild(regola);
+    scatola.appendChild(pannello);
+    scatola.appendChild(avviso);
+
+    regola.addEventListener('click', function () { apriVolume(pannello.hidden); });
+    muto.addEventListener('click', function () { zittisci(); });
+    cursore.addEventListener('input', function () { impostaVolume(cursore.value, false); });
+    scatola.addEventListener('pointerdown', function (evento) { evento.stopPropagation(); });
+    scatola.addEventListener('keydown', function (evento) {
+      if (TASTI_VOLUME.indexOf(evento.key) !== -1) { return; }
+      evento.stopPropagation();
+    });
+    stato.radice.addEventListener('pointerdown', function () {
+      if (aperto === stato && !pannello.hidden) { apriVolume(false); }
+    });
+
+    stato.volume = { scatola: scatola, regola: regola, pannello: pannello, cursore: cursore, valore: valore, muto: muto, avviso: avviso, giro: 0 };
+    return scatola;
+  }
+
   function monta(primo) {
     var radice = document.createElement('div');
     radice.className = 'pollorun';
@@ -409,11 +619,16 @@
     tela.className = 'pollorun__tela';
     tela.setAttribute('aria-hidden', 'true');
 
+    var livello = limita(livelloSalvato());
+    var stato = { radice: radice, gioco: null, musicaSuonava: false, volume: null, livello: livello, udibile: livello > 0 ? livello : VOLUME_BASE };
+    var volume = creaVolume(stato);
+
     radice.appendChild(bottone);
+    radice.appendChild(volume);
     radice.appendChild(tela);
 
-    var stato = { radice: radice, gioco: null, musicaSuonava: false };
     aperto = stato;
+    mostraVolume(stato);
     if (document.activeElement && typeof document.activeElement.blur === 'function') { document.activeElement.blur(); }
     document.body.appendChild(radice);
     document.documentElement.classList.add(CLASSE);
@@ -470,10 +685,10 @@
   }
 
   function suTasto(evento) {
-    if (evento.defaultPrevented || evento.repeat || evento.isComposing) { return; }
+    if (evento.defaultPrevented || typeof evento.key !== 'string') { return; }
+    if (aperto) { memoria = ''; volumeDaTasto(evento); return; }
+    if (evento.repeat || evento.isComposing) { return; }
     var tasto = evento.key;
-    if (typeof tasto !== 'string') { return; }
-    if (aperto) { memoria = ''; return; }
     if (carico) {
       memoria = '';
       if (tasto === 'Escape') { annulla(); }
@@ -513,6 +728,9 @@
     chiudi: chiudi,
     annulla: annulla,
     aperto: function () { return !!aperto; },
+    volume: function () { return aperto ? aperto.livello : limita(livelloSalvato()); },
+    impostaVolume: function (livello) { return impostaVolume(livello, false); },
+    zittisci: zittisci,
     caricando: function () { return !!carico; }
   };
 }());

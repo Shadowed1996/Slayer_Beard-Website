@@ -5456,7 +5456,7 @@ async function proveGiocoPollo(costruisci, archivio) {
   });
 
   const montaSito = (opzioni) => {
-    const o = Object.assign({ musicaSuona: false, motoreCaricato: false, frasiAttr: '["Una","Due"]', polloAttr: 'img/mascotte.webp', volume: null, motoreRotto: false, xhr: false }, opzioni || {});
+    const o = Object.assign({ musicaSuona: false, motoreCaricato: false, frasiAttr: '["Una","Due"]', polloAttr: 'img/mascotte.webp', volume: null, volumi: null, motoreRotto: false, xhr: false }, opzioni || {});
     let ora = 5000000;
     const registro = { appesi: [], nodi: [], audio: [], richieste: [], blob: 0, play: 0, pause: 0, musicaFerma: 0, musicaParti: 0, crea: [], avvia: 0, ferma: 0, focus: 0, blur: 0 };
     function RichiestaFinta() {
@@ -5474,6 +5474,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     const ascoltatori = {};
     const memoria = {};
     if (o.volume !== null) { memoria['sb-manutenzione-volumi'] = JSON.stringify({ attesa: 10, gioco: o.volume }); }
+    if (o.volumi !== null) { memoria['sb-manutenzione-volumi'] = typeof o.volumi === 'string' ? o.volumi : JSON.stringify(o.volumi); }
     const finestra = { addEventListener: (tipo, fn) => { ascoltatori['w:' + tipo] = fn; } };
     if (o.musicaSuona !== null) {
       finestra.Musica = {
@@ -5526,16 +5527,21 @@ async function proveGiocoPollo(costruisci, archivio) {
       window: finestra,
       document: documento,
       Audio: Audio,
-      localStorage: { getItem: (k) => (k in memoria ? memoria[k] : null) },
+      localStorage: { getItem: (k) => (k in memoria ? memoria[k] : null), setItem: (k, v) => { memoria[k] = String(v); } },
       Date: { now: () => ora },
       JSON: JSON,
       encodeURIComponent: encodeURIComponent,
       XMLHttpRequest: o.xhr ? RichiestaFinta : undefined,
       URL: o.xhr ? UrlFinto : undefined
     });
-    const tasto = (key, extra) => ascoltatori.keydown(Object.assign({
-      key: key, target: { tagName: 'BODY', nodeType: 1 }, ctrlKey: false, altKey: false, metaKey: false, repeat: false, isComposing: false, defaultPrevented: false
-    }, extra || {}));
+    const evento = (key, extra) => Object.assign({
+      key: key, target: { tagName: 'BODY', nodeType: 1 }, ctrlKey: false, altKey: false, metaKey: false, repeat: false, isComposing: false, defaultPrevented: false,
+      fermato: false, fermatoSubito: false,
+      preventDefault() { this.defaultPrevented = true; },
+      stopPropagation() { this.fermato = true; },
+      stopImmediatePropagation() { this.fermato = true; this.fermatoSubito = true; }
+    }, extra || {});
+    const tasto = (key, extra) => { const e = evento(key, extra); ascoltatori.keydown(e); return e; };
     const scrivi = (testo, extra, pausa) => {
       for (const c of testo) { tasto(c, extra); ora += pausa === undefined ? 120 : pausa; }
     };
@@ -5554,7 +5560,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         if (n.tag === 'link' && n.onload && !n.caricato) { n.caricato = true; n.onload(); }
       }
     };
-    return { registro: registro, classi: classi, finestra: finestra, corpo: corpo, tasto: tasto, scrivi: scrivi, carica: carica, ascoltatori: ascoltatori, avanza: (ms) => { ora += ms; } };
+    return { registro: registro, classi: classi, finestra: finestra, corpo: corpo, tasto: tasto, evento: evento, scrivi: scrivi, carica: carica, ascoltatori: ascoltatori, memoria: memoria, avanza: (ms) => { ora += ms; } };
   };
 
   await prova('pollorun.js: scrivendo pollorun carica stile e motore, monta il gioco a tutto schermo e lo avvia', () => {
@@ -5759,6 +5765,181 @@ async function proveGiocoPollo(costruisci, archivio) {
     predefinito.carica();
     predefinito.registro.crea[0].suCanzone(voce);
     esigiUguale(predefinito.registro.audio[0].volume, 0.3, 'volume di partenza');
+  });
+
+  const apriGiocoConVolume = (opzioni) => {
+    const p = montaSito(opzioni);
+    p.scrivi('pollorun');
+    p.carica();
+    const radice = p.corpo.children[0];
+    const v = {
+      radice: radice,
+      scatola: trovaNodo(radice, 'pollorun__volume'),
+      regola: trovaNodo(radice, 'pollorun__regola'),
+      pannello: trovaNodo(radice, 'pollorun__volumi'),
+      cursore: trovaNodo(radice, 'pollorun__cursore').children.find((c) => c.tag === 'input'),
+      valore: trovaNodo(radice, 'pollorun__cursore-valore'),
+      muto: trovaNodo(radice, 'pollorun__muto'),
+      etichetta: trovaNodo(radice, 'pollorun__cursore')
+    };
+    const voce = { titolo: 'Back On Track', autore: 'DJVI', file: 'mp3/DJVI%20-%20Back%20On%20Track.mp3', indice: 0 };
+    const suona = () => { p.registro.crea[p.registro.crea.length - 1].suCanzone(voce); return p.registro.audio[0]; };
+    const salvati = () => JSON.parse(p.memoria['sb-manutenzione-volumi']);
+    return Object.assign(p, { v: v, suona: suona, salvati: salvati });
+  };
+
+  await prova('pollorun.js: nel gioco c e il bottone del volume accanto alla X, apre e chiude il pannello con cursore 0-100, etichetta e valore', () => {
+    const p = apriGiocoConVolume({ volume: 40 });
+    const v = p.v;
+    esigi(v.scatola && v.regola && v.pannello && v.cursore && v.valore && v.muto, 'manca un pezzo del volume');
+    esigiUguale(v.regola.tag, 'button', 'il bottone del volume non e un bottone');
+    esigiUguale(v.regola.type, 'button', 'tipo del bottone');
+    esigi(/^Regola il volume/.test(v.regola.getAttribute('aria-label')), 'etichetta del bottone');
+    esigiUguale(v.regola.getAttribute('aria-controls'), v.pannello.id, 'aria-controls non punta al pannello');
+    esigiUguale(v.regola.getAttribute('aria-expanded'), 'false', 'il pannello parte aperto');
+    esigiUguale(v.pannello.hidden, true, 'il pannello parte visibile');
+    esigiUguale(v.radice.children.indexOf(v.scatola), 1, 'il volume non sta subito dopo la X');
+    esigiUguale(v.cursore.type, 'range', 'il cursore non e un range');
+    esigiUguale([v.cursore.min, v.cursore.max, v.cursore.step].join(','), '0,100,1', 'limiti del cursore');
+    esigiUguale(v.etichetta.tag, 'label', 'il cursore non ha una label');
+    esigiUguale(v.etichetta.getAttribute('for'), v.cursore.id, 'la label non e legata al cursore');
+    esigiUguale(v.valore.tag, 'output', 'il valore non e un output');
+    esigiUguale(v.valore.getAttribute('for'), v.cursore.id, 'output non legato al cursore');
+    esigiUguale(v.cursore.value, '40', 'il cursore non parte dal volume salvato');
+    esigiUguale(v.valore.textContent, '40', 'il numero non parte dal volume salvato');
+    v.regola.attrs['@click']();
+    esigiUguale(v.pannello.hidden, false, 'il bottone non apre il pannello');
+    esigiUguale(v.regola.getAttribute('aria-expanded'), 'true', 'aria-expanded non segue');
+    v.regola.attrs['@click']();
+    esigiUguale(v.pannello.hidden, true, 'il bottone non chiude il pannello');
+    esigiUguale(v.regola.getAttribute('aria-expanded'), 'false', 'aria-expanded non torna a false');
+    v.regola.attrs['@click']();
+    v.radice.attrs['@pointerdown']({ target: v.radice });
+    esigiUguale(v.pannello.hidden, true, 'toccando fuori il pannello non si chiude');
+    v.regola.attrs['@click']();
+    const e = p.tasto('Escape');
+    esigiUguale(v.pannello.hidden, true, 'Esc non chiude il pannello');
+    esigi(e.fermatoSubito && e.defaultPrevented, 'Esc chiude il pannello ma arriva anche al gioco, che si chiuderebbe');
+    const f = p.tasto('Escape');
+    esigi(!f.fermatoSubito && !f.defaultPrevented, 'a pannello chiuso Esc non arriva piu al gioco');
+  });
+
+  await prova('pollorun.js: il cursore cambia subito il volume della canzone e salva solo «gioco», lasciando «attesa» e gli altri campi', () => {
+    const p = apriGiocoConVolume({ volumi: { attesa: 12, gioco: 50, altro: 'x' } });
+    const pista = p.suona();
+    esigiUguale(pista.volume, 0.5, 'la canzone non parte dal volume salvato');
+    p.v.cursore.value = '73';
+    p.v.cursore.attrs['@input']();
+    esigiUguale(pista.volume, 0.73, 'il cursore non cambia subito il volume');
+    esigiUguale(p.v.valore.textContent, '73', 'il numero accanto non segue');
+    esigiUguale(JSON.stringify(p.salvati()), JSON.stringify({ attesa: 12, gioco: 73, altro: 'x' }), 'salvataggio sbagliato');
+    p.v.cursore.value = '0';
+    p.v.cursore.attrs['@input']();
+    esigiUguale(pista.volume, 0, 'a zero la canzone deve tacere');
+    esigiUguale(p.salvati().attesa, 12, 'attesa cambiata');
+    p.registro.crea[0].suCanzone(null);
+    p.suona();
+    esigiUguale(pista.volume, 0, 'al tentativo dopo il volume torna quello vecchio');
+
+    for (const rotto of ['non json', '[1,2]', 'null', '{"gioco":"boh"}', '{"gioco":250}']) {
+      const q = apriGiocoConVolume({ volumi: rotto });
+      esigiUguale(q.v.cursore.value, '30', 'con ' + rotto + ' il cursore non parte da 30');
+      q.v.cursore.value = '44';
+      q.v.cursore.attrs['@input']();
+      esigiUguale(q.salvati().gioco, 44, 'con ' + rotto + ' non salva');
+    }
+  });
+
+  await prova('pollorun.js: il volume scelto nel gioco si rilegge alla riapertura ed e lo stesso della manutenzione', () => {
+    const p = apriGiocoConVolume({ volumi: { attesa: 8, gioco: 20 } });
+    p.v.cursore.value = '65';
+    p.v.cursore.attrs['@input']();
+    p.registro.crea[0].suChiudi();
+    p.scrivi('pollorun');
+    p.carica();
+    const radice = p.corpo.children[0];
+    const cursore = trovaNodo(radice, 'pollorun__cursore').children.find((c) => c.tag === 'input');
+    esigiUguale(cursore.value, '65', 'riaprendo il cursore non ricorda il volume');
+    esigiUguale(trovaNodo(radice, 'pollorun__volumi').hidden, true, 'riaprendo il pannello e gia aperto');
+    esigiUguale(p.finestra.PolloRunSito.volume(), 65, 'volume letto');
+    p.registro.crea[1].suCanzone({ file: 'mp3/DJVI%20-%20Back%20On%20Track.mp3' });
+    esigiUguale(p.registro.audio[0].volume, 0.65, 'la canzone non usa il volume scelto');
+    esigiUguale(p.salvati().attesa, 8, 'la musica d attesa della manutenzione e cambiata');
+  });
+
+  await prova('pollorun.js: tasti - + = e M cambiano il volume o lo zittiscono, e non toccano Spazio, Invio, Esc e frecce del gioco', () => {
+    const p = apriGiocoConVolume({ volumi: { attesa: 5, gioco: 50 } });
+    const pista = p.suona();
+    let e = p.tasto('-');
+    esigiUguale(pista.volume, 0.45, 'meno non abbassa');
+    esigi(e.defaultPrevented, 'meno deve essere consumato');
+    p.tasto('+');
+    p.tasto('=');
+    esigiUguale(pista.volume, 0.55, 'piu e uguale non alzano');
+    esigiUguale(p.salvati().gioco, 55, 'i tasti non salvano');
+    esigiUguale(p.salvati().attesa, 5, 'i tasti toccano attesa');
+    esigiUguale(p.v.cursore.value, '55', 'il cursore non segue i tasti');
+    p.tasto('-', { repeat: true });
+    esigiUguale(pista.volume, 0.5, 'tenendo premuto meno non scende');
+    const avviso = trovaNodo(p.v.radice, 'pollorun__avviso') || trovaNodo(p.v.radice, 'pollorun__avviso is-visibile');
+    esigi(avviso && avviso.getAttribute('role') === 'status' && /50/.test(avviso.textContent), 'a pannello chiuso non si vede il nuovo volume');
+    p.tasto('M');
+    esigiUguale(pista.volume, 0, 'M non zittisce');
+    esigiUguale(p.v.muto.getAttribute('aria-pressed'), 'true', 'il bottone muto non lo mostra');
+    esigi(p.v.scatola.className.indexOf('is-muto') !== -1, 'l icona non mostra il muto');
+    p.tasto('m', { repeat: true });
+    esigiUguale(pista.volume, 0, 'M tenuto premuto fa avanti e indietro');
+    p.tasto('m');
+    esigiUguale(pista.volume, 0.5, 'M non ridà il volume di prima');
+    p.v.muto.attrs['@click']();
+    esigiUguale(pista.volume, 0, 'il bottone muto non zittisce');
+    p.v.muto.attrs['@click']();
+    esigiUguale(pista.volume, 0.5, 'il bottone muto non riattiva');
+    for (let i = 0; i < 30; i++) { p.tasto('+'); }
+    esigiUguale(pista.volume, 1, 'oltre 100');
+    for (let i = 0; i < 30; i++) { p.tasto('-'); }
+    esigiUguale(pista.volume, 0, 'sotto 0');
+    p.tasto('+', { ctrlKey: true });
+    esigiUguale(pista.volume, 0, 'Ctrl + e lo zoom del browser, non il volume');
+    p.tasto('m', { target: { tagName: 'INPUT', nodeType: 1 } });
+    esigiUguale(pista.volume, 0, 'dentro un campo di testo M non deve contare');
+    p.tasto('+', { target: p.v.cursore });
+    esigiUguale(pista.volume, 0.05, 'sul cursore piu non funziona');
+
+    for (const key of [' ', 'Enter', 'Escape', 'ArrowUp', 'ArrowLeft', 'ArrowRight', '1', '2', '3', '4']) {
+      const g = p.tasto(key, key === ' ' ? { code: 'Space' } : {});
+      esigi(!g.defaultPrevented && !g.fermato && !g.fermatoSubito, key + ' viene bloccato prima del gioco');
+      esigi(p.corpo.children.length === 1, key + ' chiude il gioco dal sito');
+    }
+    esigiUguale(pista.volume, 0.05, 'i tasti del gioco cambiano il volume');
+
+    const scatola = p.v.scatola.attrs['@keydown'];
+    for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown', ' ', 'Enter', '1']) {
+      const g = p.evento(key, { target: p.v.cursore });
+      scatola(g);
+      esigi(g.fermato, key + ' sul cursore arriva al gioco');
+    }
+    for (const key of ['Escape', 'Tab', '-', '+', 'm']) {
+      const g = p.evento(key, { target: p.v.cursore });
+      scatola(g);
+      esigi(!g.fermato, key + ' sul cursore non arriva piu al sito');
+    }
+    const tocco = p.evento('');
+    p.v.scatola.attrs['@pointerdown'](tocco);
+    esigi(tocco.fermato, 'toccare il pannello fa saltare il pollo');
+  });
+
+  await prova('pollorun.js: chiudendo il gioco il pannello del volume sparisce e i tasti del volume non fanno piu niente', () => {
+    const p = apriGiocoConVolume({ volumi: { attesa: 5, gioco: 50 } });
+    p.v.regola.attrs['@click']();
+    esigiUguale(p.v.pannello.hidden, false, 'il pannello non si apre');
+    p.registro.crea[0].suChiudi();
+    esigiUguale(p.corpo.children.length, 0, 'il gioco resta');
+    esigi(p.v.scatola.parentNode === p.v.radice && p.v.radice.parentNode === null, 'il pannello resta nella pagina');
+    const e = p.tasto('-');
+    esigi(!e.defaultPrevented, 'a gioco chiuso meno viene ancora consumato');
+    esigiUguale(p.salvati().gioco, 50, 'a gioco chiuso i tasti cambiano il volume');
+    esigiUguale(p.finestra.PolloRunSito.impostaVolume(90), false, 'a gioco chiuso si puo cambiare il volume');
   });
 
   await prova('pollorun.js: frasi rotte o mancanti non impediscono di giocare', () => {
