@@ -32,6 +32,7 @@
     modo: modo,
     fissa: fissa,
     stile: stile,
+    ingombro: document.getElementById('mnt-audio-box'),
     suCanzone: function (voce) {
       var file = voce && typeof voce.file === 'string' && voce.file.indexOf('mp3/') === 0 ? voce.file : '';
       try { document.dispatchEvent(new CustomEvent('sb:canzone', { detail: { file: file } })); } catch (e) { }
