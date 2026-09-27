@@ -12,6 +12,7 @@
   var CHIAVE_VOLUMI = 'sb-manutenzione-volumi';
   var CLASSE = 'is-pollorun';
   var ORIGINE = document.currentScript;
+  var CHIAVE_TOKEN = 'sb-account-token';
 
   function leggiFrasi(testo) {
     try {
@@ -58,6 +59,7 @@
   var FRASI = leggiFrasi(ORIGINE ? ORIGINE.getAttribute('data-frasi') : '');
   var MUSICA = leggiCanzoni(ORIGINE ? ORIGINE.getAttribute('data-canzoni') : '');
   var STILE = leggiStile(ORIGINE ? ORIGINE.getAttribute('data-stile') : '');
+  var CLASSIFICA = !!ORIGINE && ORIGINE.getAttribute('data-classifica') === '1';
 
   var PESI = { stile: 5, pollo: 5, motore: 20, musica: 70 };
   var ATTESA_BRANO_MS = 90000;
@@ -72,6 +74,7 @@
   var pronti = {};
   var pista = null;
   var branoPista = '';
+  var ascoltoAccount = false;
 
   function eCampoDiTesto(nodo) {
     if (!nodo || nodo.nodeType === 9) { return false; }
@@ -600,6 +603,233 @@
     return scatola;
   }
 
+  function leggiToken() {
+    try { return String(sessionStorage.getItem(CHIAVE_TOKEN) || ''); } catch (errore) { return ''; }
+  }
+
+  function account() {
+    var a = window.Account;
+    return a && a.attivo === true && typeof a.entra === 'function' ? a : null;
+  }
+
+  function chiamaApi(metodo, indirizzo, token, corpo) {
+    var richiesta = { method: metodo, headers: { Accept: 'application/json', Authorization: 'Bearer ' + token }, credentials: 'same-origin', cache: 'no-store' };
+    if (corpo) {
+      richiesta.headers['Content-Type'] = 'application/json';
+      richiesta.body = JSON.stringify(corpo);
+    }
+    var promessa;
+    try { promessa = fetch(indirizzo, richiesta); } catch (errore) { promessa = null; }
+    if (!promessa || typeof promessa.then !== 'function') { return null; }
+    return promessa.then(function (risposta) {
+      var codice = risposta && typeof risposta.status === 'number' ? risposta.status : 0;
+      var lettura = null;
+      try { lettura = risposta.json(); } catch (errore) { lettura = null; }
+      if (!lettura || typeof lettura.then !== 'function') { return { codice: codice, dati: {} }; }
+      return lettura.then(function (dati) {
+        return { codice: codice, dati: dati && typeof dati === 'object' ? dati : {} };
+      }, function () {
+        return { codice: codice, dati: {} };
+      });
+    }, function () {
+      return { codice: 0, dati: {} };
+    });
+  }
+
+  function messaggioErrore(esito) {
+    var dati = esito.dati || {};
+    if (esito.codice === 409 && dati.codice === 'SERVE_PRECEDENTE' && Number(dati.serve) >= 1) {
+      return 'Per entrare in classifica completa prima il livello ' + Math.floor(Number(dati.serve)) + ' a questa difficoltà';
+    }
+    if (typeof dati.errore === 'string' && dati.errore.trim()) { return dati.errore.trim().slice(0, 160); }
+    if (esito.codice === 401) { return 'Accesso scaduto: entra di nuovo con Twitch per la classifica'; }
+    if (esito.codice === 403) { return 'Non puoi entrare in classifica'; }
+    if (esito.codice === 409) { return 'Per entrare in classifica completa prima il livello precedente a questa difficoltà'; }
+    if (esito.codice === 422) { return 'Questo livello non entra in classifica'; }
+    if (esito.codice === 429) { return 'Troppe partite in poco tempo: riprova fra un po’'; }
+    return 'La classifica ora non risponde: il gioco continua lo stesso';
+  }
+
+  function avvisaClassifica(stato, testo) {
+    var cl = stato.classifica;
+    if (!cl || aperto !== stato) { return; }
+    cl.avviso.textContent = testo;
+    cl.avviso.className = 'pollorun__classifica-avviso is-visibile';
+    var giro = ++cl.giro;
+    dopo(function () {
+      if (giro === cl.giro) { cl.avviso.className = 'pollorun__classifica-avviso'; }
+    }, 4200);
+  }
+
+  function dipingiClassifica(stato) {
+    var cl = stato.classifica;
+    if (!cl) { return; }
+    if (cl.spenta) {
+      cl.scatola.hidden = true;
+      return;
+    }
+    if (cl.collegato === true) {
+      cl.scatola.hidden = false;
+      cl.pillola.className = 'pollorun__pillola is-collegato';
+      cl.pillola.disabled = true;
+      cl.pillola.textContent = 'Classifica: giochi come ' + (cl.nome || 'te');
+      return;
+    }
+    if (cl.collegato === null) {
+      cl.scatola.hidden = false;
+      cl.pillola.className = 'pollorun__pillola is-attesa';
+      cl.pillola.disabled = true;
+      cl.pillola.textContent = 'Classifica…';
+      return;
+    }
+    cl.scatola.hidden = !account();
+    cl.pillola.className = 'pollorun__pillola';
+    cl.pillola.disabled = false;
+    cl.pillola.textContent = 'Entra con Twitch per la classifica';
+  }
+
+  function chiediChiSei(stato) {
+    var cl = stato.classifica;
+    var token = leggiToken();
+    cl.token = token;
+    cl.partita = null;
+    if (!token || typeof fetch !== 'function') {
+      cl.collegato = false;
+      dipingiClassifica(stato);
+      return;
+    }
+    cl.collegato = null;
+    dipingiClassifica(stato);
+    var giro = ++cl.chiesto;
+    var promessa = chiamaApi('GET', 'api/classifica/io', token, null);
+    if (!promessa) {
+      cl.collegato = false;
+      dipingiClassifica(stato);
+      return;
+    }
+    promessa.then(function (esito) {
+      if (aperto !== stato || giro !== cl.chiesto) { return; }
+      if (esito.codice === 404) { cl.spenta = true; }
+      var dati = esito.dati || {};
+      cl.collegato = esito.codice === 200 && dati.collegato === true;
+      cl.nome = cl.collegato ? String(dati.nome || dati.login || '').slice(0, 40) : '';
+      dipingiClassifica(stato);
+    });
+  }
+
+  function scaduto(stato) {
+    var cl = stato.classifica;
+    cl.collegato = false;
+    cl.nome = '';
+    cl.partita = null;
+    dipingiClassifica(stato);
+  }
+
+  function gestisciErrore(stato, esito) {
+    if (esito.codice === 404) {
+      stato.classifica.spenta = true;
+      dipingiClassifica(stato);
+      return;
+    }
+    if (esito.codice === 401) { scaduto(stato); }
+    avvisaClassifica(stato, messaggioErrore(esito));
+  }
+
+  function mandaLivello(stato, partita, evento) {
+    var cl = stato.classifica;
+    var promessa = chiamaApi('POST', 'api/classifica/livello', cl.token, { partita: partita.gettone, tentativi: Math.max(1, Math.floor(Number(evento.tentativi)) || 1) });
+    if (!promessa) { return; }
+    promessa.then(function (esito) {
+      if (aperto !== stato) { return; }
+      if (esito.codice !== 200) { gestisciErrore(stato, esito); return; }
+      var dati = esito.dati || {};
+      if (stato.gioco && typeof stato.gioco.classifica === 'function') {
+        try {
+          stato.gioco.classifica({ posizione: dati.posizione, totale: dati.totale, migliore: dati.migliore === true, livello: dati.livello || evento.livello, difficolta: dati.difficolta || evento.difficolta });
+        } catch (errore) { }
+      }
+    });
+  }
+
+  function suLivello(stato, evento) {
+    var cl = stato.classifica;
+    if (!cl || cl.spenta || !evento || aperto !== stato) { return; }
+    if (!cl.token || cl.collegato === false || typeof fetch !== 'function') { return; }
+    var chiave = evento.livello + ':' + evento.difficolta;
+    if (evento.tipo === 'inizio') {
+      var partita = { chiave: chiave, gettone: '', fine: null, chiusa: false };
+      cl.partita = partita;
+      var promessa = chiamaApi('POST', 'api/classifica/partita', cl.token, { livello: evento.livello, difficolta: evento.difficolta });
+      if (!promessa) { return; }
+      promessa.then(function (esito) {
+        if (aperto !== stato || cl.partita !== partita) { return; }
+        if (esito.codice !== 200 || !esito.dati || typeof esito.dati.partita !== 'string') {
+          cl.partita = null;
+          gestisciErrore(stato, esito);
+          return;
+        }
+        partita.gettone = esito.dati.partita;
+        if (partita.fine) {
+          cl.partita = null;
+          mandaLivello(stato, partita, partita.fine);
+        }
+      });
+      return;
+    }
+    if (evento.tipo === 'fine') {
+      var aperta = cl.partita;
+      if (!aperta || aperta.chiave !== chiave) { return; }
+      if (!aperta.gettone) {
+        aperta.fine = evento;
+        return;
+      }
+      cl.partita = null;
+      mandaLivello(stato, aperta, evento);
+    }
+  }
+
+  function creaClassifica(stato) {
+    var scatola = document.createElement('div');
+    scatola.className = 'pollorun__classifica';
+    var pillola = document.createElement('button');
+    pillola.type = 'button';
+    pillola.className = 'pollorun__pillola';
+    var avviso = document.createElement('p');
+    avviso.className = 'pollorun__classifica-avviso';
+    avviso.setAttribute('role', 'status');
+    avviso.setAttribute('aria-live', 'polite');
+    scatola.appendChild(avviso);
+    scatola.appendChild(pillola);
+    scatola.addEventListener('pointerdown', function (evento) { evento.stopPropagation(); });
+    scatola.addEventListener('keydown', function (evento) {
+      if (evento.key === 'Escape') { return; }
+      evento.stopPropagation();
+    });
+    pillola.addEventListener('click', function () {
+      var cl = stato.classifica;
+      var a = account();
+      if (!cl || cl.collegato !== false || !a) { return; }
+      try { a.entra(); } catch (errore) { }
+      try { stato.radice.focus({ preventScroll: true }); } catch (errore) { }
+    });
+    stato.classifica = { scatola: scatola, pillola: pillola, avviso: avviso, giro: 0, chiesto: 0, token: '', collegato: false, nome: '', partita: null, spenta: false };
+    var a = account();
+    if (a && typeof a.suStato === 'function' && !ascoltoAccount) {
+      ascoltoAccount = true;
+      var pronto = false;
+      try {
+        a.suStato(function (situazione) {
+          if (!pronto || !aperto || !aperto.classifica) { return; }
+          var token = leggiToken();
+          var collegato = !!(situazione && situazione.collegato);
+          if (token !== aperto.classifica.token || (collegato && aperto.classifica.collegato === false)) { chiediChiSei(aperto); }
+        });
+      } catch (errore) { }
+      pronto = true;
+    }
+    return scatola;
+  }
+
   function monta(primo) {
     var radice = document.createElement('div');
     radice.className = 'pollorun';
@@ -620,14 +850,21 @@
     tela.setAttribute('aria-hidden', 'true');
 
     var livello = limita(livelloSalvato());
-    var stato = { radice: radice, gioco: null, musicaSuonava: false, volume: null, livello: livello, udibile: livello > 0 ? livello : VOLUME_BASE };
+    var stato = { radice: radice, gioco: null, musicaSuonava: false, volume: null, livello: livello, udibile: livello > 0 ? livello : VOLUME_BASE, classifica: null };
     var volume = creaVolume(stato);
 
     radice.appendChild(bottone);
     radice.appendChild(volume);
     radice.appendChild(tela);
+    var ingombro = [bottone, volume];
 
     aperto = stato;
+    if (CLASSIFICA) {
+      var classifica = creaClassifica(stato);
+      radice.appendChild(classifica);
+      ingombro.push(classifica);
+      chiediChiSei(stato);
+    }
     mostraVolume(stato);
     if (document.activeElement && typeof document.activeElement.blur === 'function') { document.activeElement.blur(); }
     document.body.appendChild(radice);
@@ -645,7 +882,9 @@
       sipario: true,
       suCanzone: suCanzone,
       suPartita: function () { },
-      suChiudi: chiudi
+      suChiudi: chiudi,
+      ingombro: ingombro,
+      suLivello: CLASSIFICA ? function (evento) { suLivello(stato, evento); } : undefined
     });
     stato.gioco.avvia();
     try { radice.focus({ preventScroll: true }); } catch (errore) { }

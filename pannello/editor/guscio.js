@@ -6,6 +6,7 @@ import { apriVoci } from '../moduli/elenchi.js';
 import { creaLibreria } from '../moduli/media.js';
 import { creaBackup } from '../moduli/backup.js';
 import { creaSondaggi } from '../moduli/sondaggi.js';
+import { creaClassifica } from '../moduli/classifica.js';
 
 const LARGHEZZA_MIN = 380;
 const LARGHEZZA_MAX = 760;
@@ -52,6 +53,7 @@ const MENU = [
   { vista: 'manutenzione', nome: 'Manutenzione', nota: 'Metti il sito in pausa: i visitatori vedono la pagina di manutenzione', ico: 'attenzione' },
   { vista: 'meteora', nome: 'Meteora col polletto', nota: 'Lancia la meteora a chi è sulla home, o accendi il timer automatico', ico: 'meteora' },
   { vista: 'sondaggi', nome: 'Sondaggi', nota: 'Crea un sondaggio per chi è collegato con Twitch e guarda i risultati', ico: 'sondaggio' },
+  { vista: 'classifica', nome: 'Classifica di Pollo Run', nota: 'Impostazioni, overlay per OBS, chi è in classifica e nuova stagione', ico: 'coppa' },
   { vista: 'immagini', nome: 'Immagini', nota: 'Carica e gestisci i file', ico: 'immagine' },
   { vista: 'backup', nome: 'Copie di sicurezza', nota: 'Torna a com\'era il sito prima di una pubblicazione', ico: 'backup' },
   { vista: 'password', nome: 'Password', nota: 'Cambia la password del pannello', ico: 'chiave' },
@@ -85,6 +87,10 @@ const VISTE = {
   sondaggi: {
     titolo: 'Sondaggi',
     nota: 'Un sondaggio alla volta. Va online appena lo crei, senza pubblicare: vota solo chi è collegato al sito con Twitch, una volta a testa.'
+  },
+  classifica: {
+    titolo: 'Classifica di Pollo Run',
+    nota: 'Chi gioca a Pollo Run collegato con Twitch entra in classifica, una per difficoltà: conta il livello più alto completato. Le impostazioni valgono dopo Salva e Pubblica; togliere, bloccare e la nuova stagione valgono subito.'
   },
   backup: { titolo: 'Copie di sicurezza', nota: 'Le copie che il server tiene da parte a ogni pubblicazione.' },
   password: { titolo: 'Password', nota: 'La password che serve per entrare in questo pannello.' }
@@ -656,7 +662,7 @@ function titoloVista(nome) {
   return 'Pannello';
 }
 
-const VISTE_AUTONOME = new Set(['menu', 'impostazioni', 'struttura', 'immagini', 'sondaggi', 'backup', 'password']);
+const VISTE_AUTONOME = new Set(['menu', 'impostazioni', 'struttura', 'immagini', 'sondaggi', 'classifica', 'backup', 'password']);
 
 function disegnaVista(opzioni) {
   const ui = sh.ui;
@@ -697,6 +703,7 @@ function disegnaVista(opzioni) {
     else if (nome === 'struttura') disegnaStruttura(scorri);
     else if (nome === 'immagini') disegnaImmagini(scorri);
     else if (nome === 'sondaggi') scorri.append(creaSondaggi().nodo);
+    else if (nome === 'classifica') scorri.append(creaClassifica({ impostazioni: campiClassifica() }).nodo);
     else if (nome === 'backup') disegnaCopie(scorri);
     else if (nome === 'password') disegnaPassword(scorri);
     else if (gruppo) disegnaGruppo(scorri, gruppo);
@@ -791,6 +798,20 @@ function disegnaGruppo(scorri, gruppo) {
   if (gruppo.id === 'sondaggio') scorri.prepend(rimandoSondaggi());
   if (gruppo.id === 'manutenzione') scorri.append(anteprimaManutenzione());
   if (gruppo.id === 'meteora') scorri.prepend(lancioMeteora());
+}
+
+function campiClassifica() {
+  const gruppo = ponte.gruppoDi('config.classifica.attiva');
+  const campi = gruppo ? (gruppo.campi || []).filter((c) => c.chiave === 'config.classifica' || String(c.chiave).startsWith('config.classifica.')) : [];
+  if (!campi.length) {
+    return el('p', { classe: 'campo__aiuto', testo: 'Le impostazioni della classifica compaiono qui quando il server è aggiornato.' });
+  }
+  const corpo = el('div', { classe: 'lato__campi' });
+  for (const campo of campi) {
+    const controllo = ponte.creaCampo(campo);
+    if (controllo && controllo.nodo) corpo.append(controllo.nodo);
+  }
+  return el('div', { classe: 'classifica__blocco' }, [el('h3', { classe: 'lato__occhiello', testo: 'Impostazioni' }), corpo]);
 }
 
 function lancioMeteora() {

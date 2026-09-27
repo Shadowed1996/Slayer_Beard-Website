@@ -5206,7 +5206,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     };
     const contesto = new Proxy({}, {
       get(t, nome) {
-        if (nome === 'fillText') { return (testo, x, y) => { registro.testi.push(String(testo)); registro.scritte.push({ testo: String(testo), x: x, y: y, largo: larghezzaDi(t, testo) }); }; }
+        if (nome === 'fillText') { return (testo, x, y) => { const corpo = /(\d+)px/.exec(String(t.font || '')); registro.testi.push(String(testo)); registro.scritte.push({ testo: String(testo), x: x, y: y, largo: larghezzaDi(t, testo), dim: corpo ? Number(corpo[1]) : 0, allinea: t.textAlign || 'left', base: t.textBaseline || 'alphabetic' }); }; }
         if (nome === 'strokeText') { return () => { registro.contorni++; }; }
         if (nome === 'measureText') { return (testo) => ({ width: larghezzaDi(t, testo) }); }
         if (nome === 'createLinearGradient') { return () => ({ addColorStop: () => {} }); }
@@ -5620,37 +5620,240 @@ async function proveGiocoPollo(costruisci, archivio) {
     }
   });
 
-  await prova('gioco: su un telefono stretto la schermata iniziale, selettore compreso, sta tutta dentro lo schermo', () => {
+  const VOCI_MENU = ['FACILE', 'MEDIO', 'DIFFICILE', 'ESTREMO'];
+  const PEZZI_MENU = VOCI_MENU.concat(['DIFFICOLTÀ', '▶', '↑/↓']);
+  const scatolaDi = (s) => {
+    const x0 = s.allinea === 'center' ? s.x - s.largo / 2 : (s.allinea === 'right' ? s.x - s.largo : s.x);
+    const y0 = s.base === 'top' ? s.y : s.y - s.dim * 0.8;
+    return { x0: x0, x1: x0 + s.largo, y0: y0, y1: y0 + s.dim * (s.base === 'top' ? 1 : 1.05) };
+  };
+  const sovrapposte = (a, b) => a.x0 < b.x1 - 0.5 && a.x1 > b.x0 + 0.5 && a.y0 < b.y1 - 0.5 && a.y1 > b.y0 + 0.5;
+  const ultimaScritta = (h, testo) => h.registro.scritte.filter((x) => x.testo === testo).pop();
+
+  await prova('gioco: la difficolta e un menu verticale, una voce sotto l altra, con il titolo DIFFICOLTÀ e la freccetta sulla scelta', () => {
     for (const stile of ['synthwave', 'geometrydash']) {
-      for (const [largo, alto] of [[390, 780], [320, 560], [1280, 800]]) {
-        const h = rendiFinta(undefined, { largo: largo, alto: alto, tocco: largo < 600 });
-        h.registro.memoria['sb-pollo-livello'] = '27';
-        h.crea({ stile: stile }).avvia();
-        const testi = h.testiUltimo();
-        esigiDentro(testi, largo < 600 ? 'Dal computer: SPAZIO per correre' : 'SPAZIO per correre', stile + ' ' + largo + ': manca l invito');
-        esigiDentro(testi, 'ESTREMO', stile + ' ' + largo + ': manca il selettore');
-        for (const scritta of h.registro.scritte) {
-          if (scritta.testo === 'MIGLIORE LIVELLO 27') { continue; }
-          esigi(scritta.x >= 0 && scritta.x + scritta.largo <= largo + 0.5, stile + ' ' + largo + ': «' + scritta.testo + '» esce dallo schermo (' + Math.round(scritta.x) + ' + ' + Math.round(scritta.largo) + ' > ' + largo + ')');
+      const h = rendiFinta(undefined, { largo: 1280, alto: 464 });
+      h.crea({ stile: stile }).avvia();
+      h.testiUltimo();
+      const voci = VOCI_MENU.map((nome) => ultimaScritta(h, nome));
+      esigi(voci.every(Boolean), stile + ': manca una voce del menu');
+      for (let i = 1; i < voci.length; i++) {
+        esigiUguale(Math.round(voci[i].x), Math.round(voci[0].x), stile + ': le voci non sono in colonna');
+        esigi(voci[i].y > voci[i - 1].y + voci[i].dim, stile + ': ' + VOCI_MENU[i] + ' non e sotto ' + VOCI_MENU[i - 1]);
+      }
+      const titolo = ultimaScritta(h, 'DIFFICOLTÀ');
+      esigi(titolo && titolo.y < voci[0].y, stile + ': manca il titolo DIFFICOLTÀ sopra il menu');
+      const segno = ultimaScritta(h, '▶');
+      esigi(segno && Math.abs(segno.y - voci[1].y) < 0.5 && segno.x < voci[1].x, stile + ': la freccetta non e accanto a MEDIO');
+      const aiuto = ultimaScritta(h, '↑/↓');
+      esigi(aiuto && aiuto.y > voci[3].y, stile + ': manca il suggerimento dei tasti sotto il menu');
+      esigi(voci[0].x > 1280 / 2, stile + ': su computer il menu non sta a destra della scena');
+      const telefono = rendiFinta(undefined, { largo: 390, alto: 452, tocco: true });
+      telefono.crea({ stile: stile }).avvia();
+      esigi(telefono.testiUltimo().indexOf('↑/↓') === -1, stile + ': sul telefono compare il suggerimento dei tasti');
+    }
+  });
+
+  await prova('gioco: frecce su e giu scelgono la difficolta nella schermata iniziale senza far partire niente; in partita no', () => {
+    for (const stile of ['synthwave', 'geometrydash']) {
+      const h = rendiFinta();
+      h.crea({ stile: stile }).avvia();
+      h.testiUltimo();
+      h.tasto('ArrowDown', 'ArrowDown');
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'difficile', stile + ': giu da MEDIO');
+      h.tasto('ArrowDown', 'ArrowDown');
+      h.tasto('ArrowDown', 'ArrowDown');
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'estremo', stile + ': giu oltre ESTREMO');
+      h.tasto('ArrowUp', 'ArrowUp');
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'difficile', stile + ': su da ESTREMO');
+      h.tasto('ArrowUp', 'ArrowUp');
+      h.tasto('ArrowUp', 'ArrowUp');
+      h.tasto('ArrowUp', 'ArrowUp');
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'facile', stile + ': su oltre FACILE');
+      h.tasto('ArrowDown', 'ArrowDown', { target: { closest: () => ({}) } });
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'facile', stile + ': giu dentro un bottone cambia la difficolta');
+      esigiUguale(h.registro.suPartita.length, 0, stile + ': le frecce fanno partire il gioco');
+      const schermo = h.testiUltimo();
+      esigiDentro(schermo, 'POLLO RUN', stile + ': le frecce lasciano la schermata iniziale');
+      const segno = ultimaScritta(h, '▶');
+      esigi(segno && Math.abs(segno.y - ultimaScritta(h, 'FACILE').y) < 0.5, stile + ': la freccetta non segue la scelta');
+      h.tasto(' ', 'Space');
+      h.testiUltimo();
+      h.tasto('ArrowDown', 'ArrowDown');
+      h.tasto('ArrowUp', 'ArrowUp');
+      h.testiUltimo();
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'facile', stile + ': in partita le frecce cambiano la difficolta');
+      esigiUguale(h.registro.suPartita.join(','), 'true', stile + ': in partita le frecce fermano il gioco');
+    }
+  });
+
+  await prova('gioco: la schermata iniziale, menu compreso, sta tutta dentro lo schermo e il menu non copre le scritte', () => {
+    const misure = [[390, 780], [320, 560], [1280, 800], [1280, 464], [390, 452], [320, 325], [768, 400]];
+    for (const stile of ['synthwave', 'geometrydash']) {
+      for (const [largo, alto] of misure) {
+        for (const record of ['27', null]) {
+          const h = rendiFinta(undefined, { largo: largo, alto: alto, tocco: largo < 600 });
+          if (record) { h.registro.memoria['sb-pollo-livello'] = record; }
+          h.crea({ stile: stile }).avvia();
+          const testi = h.testiUltimo();
+          const dove = stile + ' ' + largo + 'x' + alto + (record ? ' con record' : '');
+          esigiDentro(testi, largo < 600 ? 'Dal computer: SPAZIO per correre' : 'SPAZIO per correre', dove + ': manca l invito');
+          for (const nome of VOCI_MENU) { esigiDentro(testi, nome, dove + ': manca ' + nome); }
+          const menu = [];
+          const altre = [];
+          for (const scritta of h.registro.scritte) {
+            const b = scatolaDi(scritta);
+            if (scritta.testo !== 'MIGLIORE LIVELLO 27') {
+              esigi(b.x0 >= -0.5 && b.x1 <= largo + 0.5, dove + ': «' + scritta.testo + '» esce dallo schermo in orizzontale (' + Math.round(b.x0) + '..' + Math.round(b.x1) + ')');
+            }
+            esigi(b.y0 >= -0.5 && b.y1 <= alto + 0.5, dove + ': «' + scritta.testo + '» esce dallo schermo in verticale (' + Math.round(b.y0) + '..' + Math.round(b.y1) + ')');
+            (PEZZI_MENU.indexOf(scritta.testo) !== -1 ? menu : altre).push({ testo: scritta.testo, b: b });
+            if (VOCI_MENU.indexOf(scritta.testo) !== -1) { esigi(scritta.dim >= 9, dove + ': ' + scritta.testo + ' e troppo piccolo (' + scritta.dim + 'px)'); }
+          }
+          for (const m of menu) {
+            for (const a of altre) { esigi(!sovrapposte(m.b, a.b), dove + ': «' + m.testo + '» copre «' + a.testo + '»'); }
+          }
         }
       }
     }
   });
 
-  await prova('gioco: il selettore si stringe per non finire sotto i bottoni dell audio della pagina di manutenzione', () => {
+  await prova('gioco: il menu evita gli ingombri (bottoni dell audio della manutenzione, bottoni in alto e pillola del sito), e un ingombro nascosto non conta', () => {
+    const tocca = (h, r) => VOCI_MENU.concat(['DIFFICOLTÀ']).some((nome) => {
+      const s = ultimaScritta(h, nome);
+      return s && sovrapposte(scatolaDi(s), r);
+    });
     for (const stile of ['synthwave', 'geometrydash']) {
-      const h = rendiFinta(undefined, { largo: 390, alto: 780, tocco: true });
-      h.crea({ stile: stile, ingombro: { getBoundingClientRect: () => ({ left: 290, width: 100, top: 700, bottom: 770 }) } }).avvia();
-      h.testiUltimo();
-      for (const nome of ['FACILE', 'MEDIO', 'DIFFICILE', 'ESTREMO']) {
-        const v = h.registro.scritte.filter((x) => x.testo === nome).pop();
-        esigi(v && v.x + v.largo <= 290, stile + ': ' + nome + ' finisce sotto i bottoni dell audio');
+      for (const [largo, alto] of [[390, 780], [390, 452], [1280, 464], [320, 325]]) {
+        const dove = stile + ' ' + largo + 'x' + alto;
+        const libero = rendiFinta(undefined, { largo: largo, alto: alto, tocco: largo < 600 });
+        libero.crea({ stile: stile }).avvia();
+        libero.testiUltimo();
+        const estremo = ultimaScritta(libero, 'ESTREMO');
+        const menu = { x0: estremo.x - 40, x1: estremo.x + estremo.largo + 20, y0: ultimaScritta(libero, 'DIFFICOLTÀ').y - 20, y1: estremo.y + 10 };
+        const box = { left: menu.x0, width: menu.x1 - menu.x0, top: menu.y0 + 10, bottom: menu.y1 - 10 };
+        const r = { x0: box.left, x1: box.left + box.width, y0: box.top, y1: box.bottom };
+        const h = rendiFinta(undefined, { largo: largo, alto: alto, tocco: largo < 600 });
+        h.crea({ stile: stile, ingombro: { getBoundingClientRect: () => box } }).avvia();
+        h.testiUltimo();
+        esigi(!tocca(h, r), dove + ': il menu finisce sotto l ingombro');
+        for (const nome of VOCI_MENU) { const s = ultimaScritta(h, nome); esigi(s && s.x >= 0 && s.x + s.largo <= largo, dove + ': ' + nome + ' esce dallo schermo per evitare l ingombro'); }
+        const due = rendiFinta(undefined, { largo: largo, alto: alto, tocco: largo < 600 });
+        const alto2 = { left: largo - 120, width: 110, top: 0, bottom: 60 };
+        due.crea({ stile: stile, ingombro: [null, { hidden: true, getBoundingClientRect: () => ({ left: 0, width: largo, top: 0, bottom: alto }) }, { getBoundingClientRect: () => alto2 }, { getBoundingClientRect: () => box }] }).avvia();
+        due.testiUltimo();
+        esigi(!tocca(due, { x0: alto2.left, x1: alto2.left + alto2.width, y0: 0, y1: 60 }) && !tocca(due, r), dove + ': con piu ingombri il menu ne copre uno');
+        const nascosto = rendiFinta(undefined, { largo: largo, alto: alto, tocco: largo < 600 });
+        nascosto.crea({ stile: stile, ingombro: { hidden: true, getBoundingClientRect: () => box } }).avvia();
+        nascosto.testiUltimo();
+        esigiUguale(Math.round(ultimaScritta(nascosto, 'ESTREMO').x), Math.round(estremo.x), dove + ': un ingombro nascosto sposta il menu');
       }
-      const libero = rendiFinta(undefined, { largo: 390, alto: 780, tocco: true });
-      libero.crea({ stile: stile, ingombro: { hidden: true, getBoundingClientRect: () => ({ left: 290, width: 100, top: 700, bottom: 770 }) } }).avvia();
-      libero.testiUltimo();
-      const estremo = libero.registro.scritte.filter((x) => x.testo === 'ESTREMO').pop();
-      esigi(estremo.x + estremo.largo > 290, stile + ': un ingombro nascosto stringe lo stesso il selettore');
+    }
+    const pagina = rendiFinta(undefined, { largo: 390, alto: 780, tocco: true });
+    pagina.crea({ ingombro: { getBoundingClientRect: () => ({ left: 290, width: 100, top: 700, bottom: 770 }) } }).avvia();
+    pagina.testiUltimo();
+    esigi(!tocca(pagina, { x0: 290, x1: 390, y0: 700, y1: 770 }), 'il menu finisce sotto i bottoni dell audio della pagina di manutenzione');
+  });
+
+  await prova('gioco: se il menu verticale non ha posto (la scheda della manutenzione sul telefono) le difficolta tornano in riga nella fascia bassa, cliccabili e fuori dagli ingombri', () => {
+    for (const stile of ['synthwave', 'geometrydash']) {
+      const h = rendiFinta(undefined, { largo: 390, alto: 359, tocco: true });
+      const scheda = { left: 16, width: 358, top: -300, bottom: 248 };
+      const audio = { left: 274, width: 100, top: 295, bottom: 341 };
+      h.crea({ stile: stile, ingombro: [{ getBoundingClientRect: () => audio }, { getBoundingClientRect: () => scheda }] }).avvia();
+      const testi = h.testiUltimo();
+      esigi(testi.indexOf('DIFFICOLTÀ') === -1, stile + ': il menu verticale finisce sotto la scheda');
+      const voci = VOCI_MENU.map((nome) => ultimaScritta(h, nome));
+      esigi(voci.every(Boolean), stile + ': manca una difficolta');
+      for (const v of voci) {
+        const b = scatolaDi(v);
+        esigi(Math.abs(v.y - voci[0].y) < 0.5, stile + ': le difficolta non sono in riga');
+        esigi(b.y0 >= 248 && b.y1 <= 359, stile + ': ' + v.testo + ' non sta nella fascia libera');
+        esigi(b.x0 >= 0 && b.x1 <= 274, stile + ': ' + v.testo + ' finisce sotto i bottoni dell audio');
+      }
+      const estremo = voci[3];
+      h.tocca(estremo.x + 4, estremo.y - 4);
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'estremo', stile + ': il tocco sulla riga non sceglie la difficolta');
+      h.tasto('ArrowUp', 'ArrowUp');
+      esigiUguale(h.registro.memoria['sb-pollo-difficolta'], 'difficile', stile + ': la freccia su non funziona con la riga');
+    }
+  });
+
+  await prova('gioco: suLivello annuncia l inizio al primo tentativo di un livello (non a ogni ripartenza) e la fine con i tentativi, per ogni difficolta', () => {
+    for (const d of DIFFICOLTA) {
+      const h = rendiFinta();
+      h.registro.memoria['sb-pollo-difficolta'] = d;
+      const eventi = [];
+      h.crea({ suLivello: (e) => eventi.push(JSON.stringify(e)) }).avvia();
+      h.tasto(' ', 'Space');
+      esigiUguale(eventi.join('|'), JSON.stringify({ tipo: 'inizio', livello: 1, difficolta: d }), d + ': inizio del livello 1');
+      esigiUguale(giocaSchedule(h, [], 1000 / 60, 40).esito, 'morto', d + ': senza saltare non muore');
+      h.attendi(0.6);
+      h.tasto(' ', 'Space');
+      esigiUguale(giocaSchedule(h, [], 1000 / 60, 40).esito, 'morto', d + ': al secondo tentativo senza saltare non muore');
+      h.attendi(0.6);
+      h.tasto(' ', 'Space');
+      esigiUguale(eventi.length, 1, d + ': ripartire dallo stesso livello annuncia di nuovo l inizio');
+      const M = creaDi(1, d);
+      const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
+      esigiUguale(giocaSchedule(h, p.secondi, 1000 / 60, 200).esito, 'vinto', d + ': il livello 1 non si finisce');
+      esigiUguale(eventi[1], JSON.stringify({ tipo: 'fine', livello: 1, difficolta: d, tentativi: 3 }), d + ': fine del livello 1');
+      h.attendi(1);
+      h.tasto(' ', 'Space');
+      esigiUguale(eventi[2], JSON.stringify({ tipo: 'inizio', livello: 2, difficolta: d }), d + ': inizio del livello 2');
+      h.tasto('Escape', 'Escape');
+      h.testiUltimo();
+      h.tasto(' ', 'Space');
+      esigiUguale(eventi[3], JSON.stringify({ tipo: 'inizio', livello: 1, difficolta: d }), d + ': una partita nuova non riannuncia l inizio');
+      esigiUguale(eventi.length, 4, d + ': eventi in piu');
+    }
+    const rotto = rendiFinta();
+    rotto.crea({ suLivello: () => { throw new Error('ospite rotto'); } }).avvia();
+    rotto.tasto(' ', 'Space');
+    esigiDentro(rotto.testiUltimo(), 'LIVELLO 1', 'un ospite che va in errore ferma il gioco');
+    const senza = rendiFinta();
+    senza.crea({ suLivello: 'non una funzione' }).avvia();
+    senza.tasto(' ', 'Space');
+    esigiDentro(senza.testiUltimo(), 'LIVELLO 1', 'un suLivello che non e una funzione ferma il gioco');
+  });
+
+  await prova('gioco: a fine livello la posizione in classifica compare solo se l ospite la comunica, e sparisce al livello dopo', () => {
+    const M = creaDi(1, 'difficile');
+    const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
+    for (const stile of ['synthwave', 'geometrydash']) {
+      const h = rendiFinta();
+      h.registro.memoria['sb-pollo-difficolta'] = 'difficile';
+      let fine = null;
+      const gioco = h.crea({ stile: stile, suLivello: (e) => { if (e.tipo === 'fine') { fine = e; } } });
+      gioco.avvia();
+      esigiUguale(typeof gioco.classifica, 'function', stile + ': il controller non ha classifica');
+      esigiUguale(gioco.classifica({ posizione: 1, totale: 2 }), true, stile + ': la posizione a gioco fermo va accettata e ignorata');
+      h.tasto(' ', 'Space');
+      esigiUguale(giocaSchedule(h, p.secondi, 1000 / 60, 200).esito, 'vinto', stile + ': il livello 1 DIFFICILE non si finisce');
+      esigi(fine, stile + ': nessun evento di fine');
+      h.attendi(1);
+      const senza = h.testiUltimo();
+      esigiDentro(senza, 'LIVELLO 1 COMPLETATO', stile + ': manca la schermata di fine livello');
+      esigi(senza.indexOf('° su') === -1, stile + ': senza classifica compare una posizione');
+      for (const brutto of [null, { posizione: 0, totale: 5 }, { posizione: 7, totale: 3 }, { posizione: 'x', totale: 9 }]) {
+        esigiUguale(gioco.classifica(brutto), false, stile + ': dati brutti accettati ' + JSON.stringify(brutto));
+      }
+      esigi(h.testiUltimo().indexOf('° su') === -1, stile + ': dati brutti mostrano una posizione');
+      esigiUguale(gioco.classifica({ posizione: 3, totale: 57, migliore: false, livello: 2, difficolta: 'difficile' }), true, stile + ': posizione di un altro livello rifiutata');
+      esigi(h.testiUltimo().indexOf('° su') === -1, stile + ': compare la posizione di un altro livello');
+      gioco.classifica({ posizione: 3, totale: 57, migliore: false, livello: 1, difficolta: 'difficile' });
+      const con = h.testiUltimo();
+      esigiDentro(con, '3° su 57 · DIFFICILE', stile + ': la posizione non compare a fine livello');
+      esigiDentro(con, 'SPAZIO per il livello 2', stile + ': con la posizione sparisce l invito al livello dopo');
+      const riga = ultimaScritta(h, '3° su 57 · DIFFICILE');
+      if (stile === 'geometrydash') {
+        const b = scatolaDi(riga);
+        esigi(b.x0 >= 0 && b.x1 <= 1200 && b.y0 >= 0 && b.y1 <= 380, stile + ': la posizione esce dallo schermo');
+      }
+      gioco.classifica({ posizione: 1, totale: 57, migliore: true });
+      esigiDentro(h.testiUltimo(), 'NUOVO RECORD · 1° su 57 · DIFFICILE', stile + ': il record non si vede');
+      h.tasto(' ', 'Space');
+      esigi(h.testiUltimo().indexOf('° su') === -1, stile + ': la posizione resta al livello dopo');
     }
   });
 
@@ -5682,9 +5885,9 @@ async function proveGiocoPollo(costruisci, archivio) {
   });
 
   const montaSito = (opzioni) => {
-    const o = Object.assign({ musicaSuona: false, motoreCaricato: false, frasiAttr: '["Una","Due"]', polloAttr: 'img/mascotte.webp', volume: null, volumi: null, motoreRotto: false, xhr: false }, opzioni || {});
+    const o = Object.assign({ musicaSuona: false, motoreCaricato: false, frasiAttr: '["Una","Due"]', polloAttr: 'img/mascotte.webp', volume: null, volumi: null, motoreRotto: false, xhr: false, classifica: false, token: null, fetch: undefined, account: null, sessione: true }, opzioni || {});
     let ora = 5000000;
-    const registro = { appesi: [], nodi: [], audio: [], richieste: [], blob: 0, play: 0, pause: 0, musicaFerma: 0, musicaParti: 0, crea: [], avvia: 0, ferma: 0, focus: 0, blur: 0 };
+    const registro = { appesi: [], nodi: [], audio: [], richieste: [], blob: 0, play: 0, pause: 0, musicaFerma: 0, musicaParti: 0, crea: [], avvia: 0, ferma: 0, focus: 0, blur: 0, classifica: [] };
     function RichiestaFinta() {
       const r = {
         metodo: '', url: '', inviata: false, abortita: false, status: 0, response: null, responseType: '', timeout: 0,
@@ -5709,7 +5912,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         parti: () => { registro.musicaParti++; }
       };
     }
-    const controllerFinto = () => ({ avvia: () => { registro.avvia++; }, ferma: () => { registro.ferma++; } });
+    const controllerFinto = () => ({ avvia: () => { registro.avvia++; }, ferma: () => { registro.ferma++; }, classifica: (d) => { registro.classifica.push(d); return true; } });
     if (o.motoreCaricato) { finestra.PolloRun = { crea: (op) => { registro.crea.push(op); return controllerFinto(); } }; }
     function Audio(src) {
       const a = { src: src, loop: false, volume: 1, currentTime: 0, preload: '', play() { registro.play++; return Promise.resolve(); }, pause() { registro.pause++; } };
@@ -5739,6 +5942,10 @@ async function proveGiocoPollo(costruisci, archivio) {
     const script = nodo('script');
     script.setAttribute('data-pollo', o.polloAttr);
     script.setAttribute('data-frasi', o.frasiAttr);
+    if (o.classifica) { script.setAttribute('data-classifica', o.classifica === true ? '1' : o.classifica); }
+    if (o.account) { finestra.Account = o.account; }
+    const sessione = {};
+    if (o.token !== null) { sessione['sb-account-token'] = o.token; }
     const documento = {
       currentScript: script,
       body: corpo,
@@ -5758,7 +5965,9 @@ async function proveGiocoPollo(costruisci, archivio) {
       JSON: JSON,
       encodeURIComponent: encodeURIComponent,
       XMLHttpRequest: o.xhr ? RichiestaFinta : undefined,
-      URL: o.xhr ? UrlFinto : undefined
+      URL: o.xhr ? UrlFinto : undefined,
+      fetch: o.fetch,
+      sessionStorage: o.sessione ? { getItem: (k) => (k in sessione ? sessione[k] : null), setItem: (k, v) => { sessione[k] = String(v); } } : undefined
     });
     const evento = (key, extra) => Object.assign({
       key: key, target: { tagName: 'BODY', nodeType: 1 }, ctrlKey: false, altKey: false, metaKey: false, repeat: false, isComposing: false, defaultPrevented: false,
@@ -5786,7 +5995,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         if (n.tag === 'link' && n.onload && !n.caricato) { n.caricato = true; n.onload(); }
       }
     };
-    return { registro: registro, classi: classi, finestra: finestra, corpo: corpo, tasto: tasto, evento: evento, scrivi: scrivi, carica: carica, ascoltatori: ascoltatori, memoria: memoria, avanza: (ms) => { ora += ms; } };
+    return { registro: registro, classi: classi, finestra: finestra, corpo: corpo, tasto: tasto, evento: evento, scrivi: scrivi, carica: carica, ascoltatori: ascoltatori, memoria: memoria, sessione: sessione, avanza: (ms) => { ora += ms; } };
   };
 
   await prova('pollorun.js: scrivendo pollorun carica stile e motore, monta il gioco a tutto schermo e lo avvia', () => {
@@ -6233,6 +6442,205 @@ async function proveGiocoPollo(costruisci, archivio) {
     delete senzaRamo.config.pollorun;
     esigi(costruisci.rendi(senzaRamo).html.indexOf('js/pollorun.js') !== -1, 'senza il ramo nei contenuti online deve restare acceso');
   });
+
+  const aspettaRete = async () => { for (let i = 0; i < 8; i++) { await new Promise((fatto) => setImmediate(fatto)); } };
+  const reteFinta = (rotte) => {
+    const chiamate = [];
+    const fetchFinto = (url, op) => {
+      const c = { url: String(url), metodo: (op && op.method) || 'GET', autorizzazione: op && op.headers ? op.headers.Authorization : undefined, corpo: op && op.body ? JSON.parse(op.body) : null };
+      chiamate.push(c);
+      const rotta = rotte[c.metodo + ' ' + c.url];
+      const esito = typeof rotta === 'function' ? rotta(c) : rotta;
+      if (esito === 'lancia') { throw new Error('rete a terra'); }
+      if (!esito || esito === 'rifiuta') { return Promise.reject(new Error('rete a terra')); }
+      return Promise.resolve({ status: esito.status, json: () => (esito.rotto ? Promise.reject(new Error('non json')) : Promise.resolve(esito.dati || {})) });
+    };
+    return { chiamate: chiamate, fetch: fetchFinto };
+  };
+  const accountFinto = (attivo) => {
+    const a = { attivo: attivo, entrate: 0, iscritti: [], entra() { a.entrate++; }, suStato(fn) { a.iscritti.push(fn); fn({ collegato: false }); } };
+    return a;
+  };
+  const apriGioco = (opzioni) => {
+    const p = montaSito(opzioni);
+    p.scrivi('pollorun');
+    p.carica();
+    return p;
+  };
+  const scatolaClassifica = (p) => trovaNodo(p.corpo, 'pollorun__classifica');
+  const testoPillola = (p) => { const s = scatolaClassifica(p); const n = s && s.children.find((c) => /^pollorun__pillola/.test(c.className)); return n ? n.textContent : null; };
+  const testoAvviso = (p) => { const s = scatolaClassifica(p); const n = s && s.children.find((c) => /^pollorun__classifica-avviso/.test(c.className)); return n ? n.textContent : ''; };
+  const IO_MARIO = { status: 200, dati: { collegato: true, login: 'mario', nome: 'Mario', avatar: '', migliori: {} } };
+
+  await prova('pollorun.js: con la classifica spenta il gioco e quello di sempre: niente pillola, niente suLivello, nessuna chiamata di rete anche con il token', async () => {
+    const rete = reteFinta({ 'GET api/classifica/io': IO_MARIO });
+    const p = apriGioco({ token: 'tok', fetch: rete.fetch, account: accountFinto(true) });
+    await aspettaRete();
+    esigiUguale(scatolaClassifica(p), null, 'compare la pillola della classifica');
+    esigiUguale(p.registro.crea[0].suLivello, undefined, 'il motore riceve suLivello a classifica spenta');
+    esigiUguale(rete.chiamate.length, 0, 'chiamate di rete a classifica spenta');
+    const altro = apriGioco({ classifica: '0', token: 'tok', fetch: rete.fetch });
+    await aspettaRete();
+    esigiUguale(scatolaClassifica(altro), null, 'data-classifica diverso da 1 accende la classifica');
+    esigiUguale(rete.chiamate.length, 0, 'chiamate di rete con data-classifica diverso da 1');
+  });
+
+  await prova('pollorun.js: classifica accesa senza token: pillola «Entra con Twitch per la classifica» che avvia l accesso del sito, e nessuna chiamata di rete', async () => {
+    const rete = reteFinta({});
+    const account = accountFinto(true);
+    const p = apriGioco({ classifica: true, fetch: rete.fetch, account: account });
+    await aspettaRete();
+    esigiUguale(testoPillola(p), 'Entra con Twitch per la classifica', 'testo della pillola');
+    esigiUguale(scatolaClassifica(p).hidden, false, 'la pillola e nascosta');
+    const pillola = scatolaClassifica(p).children.find((c) => /^pollorun__pillola/.test(c.className));
+    pillola.attrs['@click']();
+    esigiUguale(account.entrate, 1, 'il clic non avvia l accesso con Twitch');
+    const op = p.registro.crea[0];
+    esigiUguale(typeof op.suLivello, 'function', 'il motore non riceve suLivello');
+    op.suLivello({ tipo: 'inizio', livello: 1, difficolta: 'medio' });
+    op.suLivello({ tipo: 'fine', livello: 1, difficolta: 'medio', tentativi: 1 });
+    await aspettaRete();
+    esigiUguale(rete.chiamate.length, 0, 'senza token parte una chiamata');
+    esigi(Array.isArray(op.ingombro) && op.ingombro.indexOf(scatolaClassifica(p)) !== -1, 'la pillola non e fra gli ingombri del menu');
+    const spento = apriGioco({ classifica: true, fetch: rete.fetch, account: accountFinto(false) });
+    await aspettaRete();
+    esigiUguale(scatolaClassifica(spento).hidden, true, 'senza accesso Twitch attivo la pillola si vede lo stesso');
+    const senzaSessione = apriGioco({ classifica: true, sessione: false, account: accountFinto(true) });
+    await aspettaRete();
+    esigiUguale(testoPillola(senzaSessione), 'Entra con Twitch per la classifica', 'senza sessionStorage il gioco si rompe');
+  });
+
+  await prova('pollorun.js: classifica accesa con il token: «giochi come», partita e livello con Bearer, e la posizione passa al motore', async () => {
+    let gettoni = 0;
+    const rete = reteFinta({
+      'GET api/classifica/io': IO_MARIO,
+      'POST api/classifica/partita': () => ({ status: 200, dati: { partita: 'gettone-' + (++gettoni), scade: '2026-09-27T12:00:00Z' } }),
+      'POST api/classifica/livello': (c) => ({ status: 200, dati: { difficolta: 'difficile', livello: 1, migliore: true, posizione: 3, totale: 57, visto: c.corpo } })
+    });
+    const account = accountFinto(true);
+    const p = apriGioco({ classifica: true, token: 'tok-123', fetch: rete.fetch, account: account });
+    esigiUguale(testoPillola(p), 'Classifica…', 'mentre chiede chi sei');
+    await aspettaRete();
+    esigiUguale(rete.chiamate.map((c) => c.metodo + ' ' + c.url + ' ' + c.autorizzazione).join(','), 'GET api/classifica/io Bearer tok-123', 'la prima chiamata');
+    esigiUguale(testoPillola(p), 'Classifica: giochi come Mario', 'testo della pillola');
+    const op = p.registro.crea[0];
+    op.suLivello({ tipo: 'inizio', livello: 1, difficolta: 'difficile' });
+    await aspettaRete();
+    const partita = rete.chiamate[1];
+    esigiUguale(partita.metodo + ' ' + partita.url, 'POST api/classifica/partita', 'chiamata di inizio');
+    esigiUguale(partita.autorizzazione, 'Bearer tok-123', 'Bearer della partita');
+    esigiUguale(JSON.stringify(partita.corpo), JSON.stringify({ livello: 1, difficolta: 'difficile' }), 'corpo della partita');
+    op.suLivello({ tipo: 'fine', livello: 1, difficolta: 'difficile', tentativi: 4 });
+    await aspettaRete();
+    const livello = rete.chiamate[2];
+    esigiUguale(livello.metodo + ' ' + livello.url + ' ' + livello.autorizzazione, 'POST api/classifica/livello Bearer tok-123', 'chiamata di fine');
+    esigiUguale(JSON.stringify(livello.corpo), JSON.stringify({ partita: 'gettone-1', tentativi: 4 }), 'corpo del livello');
+    esigiUguale(JSON.stringify(p.registro.classifica), JSON.stringify([{ posizione: 3, totale: 57, migliore: true, livello: 1, difficolta: 'difficile' }]), 'la posizione non arriva al motore');
+    op.suLivello({ tipo: 'fine', livello: 1, difficolta: 'difficile', tentativi: 4 });
+    op.suLivello({ tipo: 'fine', livello: 2, difficolta: 'difficile', tentativi: 1 });
+    await aspettaRete();
+    esigiUguale(rete.chiamate.length, 3, 'il gettone si usa due volte, o si manda un livello mai iniziato');
+    op.suLivello({ tipo: 'inizio', livello: 2, difficolta: 'difficile' });
+    op.suLivello({ tipo: 'fine', livello: 2, difficolta: 'difficile', tentativi: 2 });
+    await aspettaRete();
+    esigiUguale(rete.chiamate.slice(3).map((c) => c.url).join(','), 'api/classifica/partita,api/classifica/livello', 'una fine arrivata prima del gettone si perde');
+    esigiUguale(rete.chiamate[4].corpo.partita, 'gettone-2', 'gettone del livello 2');
+    esigiUguale(testoAvviso(p), '', 'avvisi senza errori');
+    p.finestra.PolloRunSito.chiudi();
+    const prima = rete.chiamate.length;
+    op.suLivello({ tipo: 'inizio', livello: 3, difficolta: 'difficile' });
+    await aspettaRete();
+    esigiUguale(rete.chiamate.length, prima, 'a gioco chiuso parte una chiamata');
+  });
+
+  await prova('pollorun.js: gli errori della classifica diventano un avviso gentile (409, 401, 403, 404, 422, 429, rete a terra), mai un eccezione', async () => {
+    const casi = [
+      { rotte: { 'POST api/classifica/partita': { status: 409, dati: { errore: 'Prima il livello precedente.', codice: 'SERVE_PRECEDENTE', serve: 4 } } }, livello: 5, avviso: 'Per entrare in classifica completa prima il livello 4 a questa difficoltà' },
+      { rotte: { 'POST api/classifica/partita': { status: 403, dati: { errore: 'Sei fuori dalla classifica.', codice: 'BLOCCATO' } } }, avviso: 'Sei fuori dalla classifica.' },
+      { rotte: { 'POST api/classifica/partita': { status: 429, dati: {} } }, avviso: 'Troppe partite in poco tempo' },
+      { rotte: { 'POST api/classifica/partita': 'rifiuta' }, avviso: 'La classifica ora non risponde' },
+      { rotte: { 'POST api/classifica/partita': 'lancia' }, avviso: '' },
+      { rotte: { 'POST api/classifica/partita': { status: 500, rotto: true } }, avviso: 'La classifica ora non risponde' },
+      { rotte: { 'POST api/classifica/partita': { status: 200, dati: { partita: 'g' } }, 'POST api/classifica/livello': { status: 422, dati: { errore: 'Troppo veloce per essere vero.', codice: 'TROPPO_VELOCE' } } }, avviso: 'Troppo veloce per essere vero.', fine: true }
+    ];
+    for (const caso of casi) {
+      const rete = reteFinta(Object.assign({ 'GET api/classifica/io': IO_MARIO }, caso.rotte));
+      const p = apriGioco({ classifica: true, token: 'tok', fetch: rete.fetch, account: accountFinto(true) });
+      await aspettaRete();
+      const op = p.registro.crea[0];
+      const n = caso.livello || 1;
+      op.suLivello({ tipo: 'inizio', livello: n, difficolta: 'medio' });
+      await aspettaRete();
+      op.suLivello({ tipo: 'fine', livello: n, difficolta: 'medio', tentativi: 2 });
+      await aspettaRete();
+      const chiamate = rete.chiamate.map((c) => c.url);
+      esigiUguale(chiamate.filter((u) => u === 'api/classifica/livello').length, caso.fine ? 1 : 0, JSON.stringify(caso.rotte) + ': chiamate ' + chiamate.join(','));
+      if (caso.avviso) { esigiDentro(testoAvviso(p), caso.avviso, JSON.stringify(caso.rotte) + ': avviso'); }
+      esigiUguale(p.registro.classifica.length, 0, 'con un errore arriva una posizione al motore');
+      esigiUguale(testoPillola(p), 'Classifica: giochi come Mario', 'un errore cambia la pillola');
+    }
+
+    const scaduto = reteFinta({ 'GET api/classifica/io': IO_MARIO, 'POST api/classifica/partita': { status: 401, dati: { errore: 'Accesso scaduto.', codice: 'NON_COLLEGATO' } } });
+    const p = apriGioco({ classifica: true, token: 'tok', fetch: scaduto.fetch, account: accountFinto(true) });
+    await aspettaRete();
+    p.registro.crea[0].suLivello({ tipo: 'inizio', livello: 1, difficolta: 'medio' });
+    await aspettaRete();
+    esigiDentro(testoAvviso(p), 'Accesso scaduto.', '401: avviso');
+    esigiUguale(testoPillola(p), 'Entra con Twitch per la classifica', '401: la pillola non torna a «Entra con Twitch»');
+    p.registro.crea[0].suLivello({ tipo: 'inizio', livello: 1, difficolta: 'medio' });
+    await aspettaRete();
+    esigiUguale(scaduto.chiamate.length, 2, '401: dopo il rifiuto si continua a chiamare');
+
+    const spenta = reteFinta({ 'GET api/classifica/io': { status: 200, dati: { collegato: true, nome: 'Mario' } }, 'POST api/classifica/partita': { status: 404, dati: { errore: 'La classifica è spenta.', codice: 'SPENTA' } } });
+    const q = apriGioco({ classifica: true, token: 'tok', fetch: spenta.fetch, account: accountFinto(true) });
+    await aspettaRete();
+    q.registro.crea[0].suLivello({ tipo: 'inizio', livello: 1, difficolta: 'medio' });
+    await aspettaRete();
+    esigiUguale(scatolaClassifica(q).hidden, true, '404: la pillola resta');
+    q.registro.crea[0].suLivello({ tipo: 'inizio', livello: 2, difficolta: 'medio' });
+    await aspettaRete();
+    esigiUguale(spenta.chiamate.length, 2, '404: si continua a chiamare una classifica spenta');
+
+    const nonCollegato = reteFinta({ 'GET api/classifica/io': { status: 200, dati: { collegato: false } } });
+    const r = apriGioco({ classifica: true, token: 'vecchio', fetch: nonCollegato.fetch, account: accountFinto(true) });
+    await aspettaRete();
+    esigiUguale(testoPillola(r), 'Entra con Twitch per la classifica', 'token non valido: pillola');
+    r.registro.crea[0].suLivello({ tipo: 'inizio', livello: 1, difficolta: 'medio' });
+    await aspettaRete();
+    esigiUguale(nonCollegato.chiamate.length, 1, 'token non valido: parte la partita lo stesso');
+  });
+
+  await prova('pollorun.js: dopo l accesso con Twitch in una finestrella la pillola si aggiorna da sola', async () => {
+    const rete = reteFinta({ 'GET api/classifica/io': IO_MARIO });
+    const account = accountFinto(true);
+    const p = apriGioco({ classifica: true, fetch: rete.fetch, account: account });
+    await aspettaRete();
+    esigiUguale(testoPillola(p), 'Entra con Twitch per la classifica', 'prima dell accesso');
+    esigiUguale(account.iscritti.length, 1, 'non ascolta l accesso del sito');
+    p.sessione['sb-account-token'] = 'nuovo';
+    account.iscritti[0]({ collegato: true });
+    await aspettaRete();
+    esigiUguale(rete.chiamate.map((c) => c.url + ' ' + c.autorizzazione).join(','), 'api/classifica/io Bearer nuovo', 'dopo l accesso non chiede chi sei');
+    esigiUguale(testoPillola(p), 'Classifica: giochi come Mario', 'dopo l accesso');
+    p.finestra.PolloRunSito.chiudi();
+    esigiUguale(scatolaClassifica(p), null, 'chiuso il gioco resta la pillola');
+    p.finestra.PolloRunSito.apri();
+    p.carica();
+    await aspettaRete();
+    esigiUguale(account.iscritti.length, 1, 'si iscrive di nuovo a ogni apertura');
+    esigiUguale(testoPillola(p), 'Classifica: giochi come Mario', 'riaperto il gioco non sa chi sei');
+    esigiUguale(rete.chiamate.length, 2, 'riaperto il gioco non richiede chi sei');
+  });
+
+  await prova('pollorun.css: la pillola e l avviso della classifica usano i token del tema, stanno in basso e non vanno sotto i bottoni in alto', () => {
+    const css = fs.readFileSync(fileStile, 'utf8');
+    const regola = (sel) => { const m = new RegExp(sel.replace(/[.\-]/g, (c) => '\\' + c) + '\\s*\\{([^}]*)\\}').exec(css); return m ? m[1] : ''; };
+    esigiDentro(regola('.pollorun__classifica'), 'inset-block-end', 'la classifica non sta in basso');
+    esigi(regola('.pollorun__classifica').indexOf('inset-block-start') === -1, 'la classifica sta in alto, sotto i bottoni');
+    esigiDentro(regola('.pollorun__pillola'), 'var(--', 'la pillola non usa i token');
+    esigiDentro(regola('.pollorun__pillola'), 'text-overflow: ellipsis', 'un nome lungo sfonda la pillola');
+    esigiDentro(regola('.pollorun__classifica-avviso'), 'var(--allerta)', 'l avviso non usa il token di allerta');
+  });
 }
 
 async function proveCanzoniPollo(costruisci, archivio) {
@@ -6576,9 +6984,12 @@ async function proveCanzoniPollo(costruisci, archivio) {
 
   const jsMnt = fs.readFileSync(path.join(RADICE_VERA, 'modelli', 'manutenzione-conto.js'), 'utf8');
   const manutenzione = (opzioni) => {
-    const o = Object.assign({ spenta: false, canzoni: pacchetto }, opzioni || {});
+    const o = Object.assign({ spenta: false, canzoni: pacchetto, classifica: undefined, token: null, fetch: undefined }, opzioni || {});
     const ascolta = {};
     const crea = [];
+    const note = [];
+    const posti = [];
+    const timer = [];
     const elemento = (nome, attributi) => {
       const e = { nome: nome, paused: true, currentTime: 0, volume: 1, error: null, suoni: 0, ascolta: {}, attrs: attributi || {}, hidden: false,
         getAttribute(k) { return k in e.attrs ? e.attrs[k] : null; },
@@ -6594,27 +7005,29 @@ async function proveCanzoniPollo(costruisci, archivio) {
     };
     const el = {
       'mnt-gioco': elemento('tela', Object.assign({ 'data-frasi': '[]', 'data-pollo': '' },
-        o.canzoni === null ? {} : { 'data-canzoni': o.canzoni }, o.stile === undefined ? {} : { 'data-stile': o.stile })),
+        o.canzoni === null ? {} : { 'data-canzoni': o.canzoni }, o.stile === undefined ? {} : { 'data-stile': o.stile }, o.classifica === undefined ? {} : { 'data-classifica': o.classifica })),
       'mnt-audio': elemento('attesa', { src: 'mp3/ElevatorMaintenance.mp3' }),
       'mnt-audio-gioco': elemento('brano', { src: 'mp3/Uno.mp3' }),
       'mnt-musica': elemento('tasto')
     };
     const documento = {
-      body: { classList: { toggle() {} } },
+      body: { classList: { toggle() {} }, appendChild: (n) => { note.push(n); return n; } },
       hidden: false,
+      createElement: (tag) => ({ tag: tag, attrs: {}, style: {}, hidden: false, textContent: '', setAttribute(k, v) { this.attrs[k] = v; }, getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; } }),
       getElementById: (id) => el[id] || null,
       addEventListener: (tipo, fn) => { (ascolta[tipo] = ascolta[tipo] || []).push(fn); },
       removeEventListener: () => {},
       dispatchEvent: (evento) => { for (const fn of ascolta[evento.type] || []) { fn(evento); } return true; }
     };
     const Evento = function (tipo, op) { this.type = tipo; this.detail = op && op.detail; };
-    const finestra = { addEventListener: () => {}, PolloRun: { crea: (op) => { crea.push(op); return { avvia() {} }; } } };
+    const finestra = { addEventListener: () => {}, PolloRun: { crea: (op) => { crea.push(op); return { avvia() {}, classifica: (d) => { posti.push(d); return true; } }; } } };
     const memoria = o.spenta ? { 'sb-manutenzione-musica': 'no' } : {};
-    new Function('window', 'document', 'location', 'sessionStorage', 'localStorage', 'CustomEvent', 'fetch', 'setInterval', jsMnt)(
+    if (o.token !== null) { memoria['sb-account-token'] = o.token; }
+    new Function('window', 'document', 'location', 'sessionStorage', 'localStorage', 'CustomEvent', 'fetch', 'setInterval', 'setTimeout', jsMnt)(
       finestra, documento, { pathname: '/' },
       { getItem: (k) => (k in memoria ? memoria[k] : null), setItem: (k, v) => { memoria[k] = v; } },
-      { getItem: () => null, setItem: () => {} }, Evento, undefined, () => 1);
-    return { op: crea[0], attesa: el['mnt-audio'], brano: el['mnt-audio-gioco'] };
+      { getItem: () => null, setItem: () => {} }, Evento, o.fetch, () => 1, (fn) => { timer.push(fn); return timer.length; });
+    return { op: crea[0], attesa: el['mnt-audio'], brano: el['mnt-audio-gioco'], note: note, classifica: posti, timer: timer };
   };
 
   await prova('manutenzione: il gioco riceve le canzoni del canvas e un suCanzone', () => {
@@ -6677,6 +7090,93 @@ async function proveCanzoniPollo(costruisci, archivio) {
     zitta.op.suPartita(true);
     zitta.op.suCanzone({ titolo: 'Uno', file: 'mp3/Uno.mp3', indice: 0 });
     esigiUguale(zitta.brano.paused + ':' + zitta.attesa.paused, 'true:true', 'con la musica spenta dall utente non suona niente');
+  });
+
+  const aspettaMnt = async () => { for (let i = 0; i < 8; i++) { await new Promise((fatto) => setImmediate(fatto)); } };
+  const reteMnt = (rotte) => {
+    const chiamate = [];
+    return {
+      chiamate: chiamate,
+      fetch: (url, op) => {
+        const c = { url: String(url), metodo: (op && op.method) || 'GET', autorizzazione: op && op.headers ? op.headers.Authorization : undefined, corpo: op && op.body ? JSON.parse(op.body) : null };
+        chiamate.push(c);
+        const esito = rotte[c.metodo + ' ' + c.url];
+        if (!esito) { return Promise.reject(new Error('rete a terra')); }
+        return Promise.resolve({ status: esito.status, json: () => Promise.resolve(esito.dati || {}) });
+      }
+    };
+  };
+
+  await prova('manutenzione: classifica spenta o assente = nessuna nota, nessun suLivello, nessuna chiamata', async () => {
+    for (const valore of [undefined, '0', 'si']) {
+      const rete = reteMnt({ 'GET api/classifica/io': { status: 200, dati: { collegato: true, nome: 'Mario' } } });
+      const m = manutenzione({ classifica: valore, token: 'tok', fetch: rete.fetch });
+      await aspettaMnt();
+      esigiUguale(m.op.suLivello, undefined, 'data-classifica ' + valore + ': il motore riceve suLivello');
+      esigiUguale(m.note.length, 0, 'data-classifica ' + valore + ': compare la nota');
+      esigiUguale(rete.chiamate.length, 0, 'data-classifica ' + valore + ': chiamate di rete');
+    }
+  });
+
+  await prova('manutenzione: classifica accesa senza token dice «Collegati dal sito per entrare in classifica» e non chiama la rete', async () => {
+    const rete = reteMnt({});
+    const m = manutenzione({ classifica: '1', fetch: rete.fetch });
+    await aspettaMnt();
+    esigiUguale(m.note.length, 1, 'manca la nota');
+    esigiUguale(m.note[0].textContent, 'Collegati dal sito per entrare in classifica', 'testo della nota');
+    esigi(Array.isArray(m.op.ingombro) && m.op.ingombro.indexOf(m.note[0]) !== -1, 'la nota non e fra gli ingombri del menu');
+    m.op.suLivello({ tipo: 'inizio', livello: 1, difficolta: 'medio' });
+    m.op.suLivello({ tipo: 'fine', livello: 1, difficolta: 'medio', tentativi: 1 });
+    await aspettaMnt();
+    esigiUguale(rete.chiamate.length, 0, 'senza token parte una chiamata');
+  });
+
+  await prova('manutenzione: classifica accesa con il token: chi sei, partita e livello con Bearer, posizione al motore, errori come avviso', async () => {
+    const rete = reteMnt({
+      'GET api/classifica/io': { status: 200, dati: { collegato: true, login: 'mario', nome: 'Mario' } },
+      'POST api/classifica/partita': { status: 200, dati: { partita: 'g1' } },
+      'POST api/classifica/livello': { status: 200, dati: { difficolta: 'estremo', livello: 1, migliore: false, posizione: 2, totale: 9 } }
+    });
+    const m = manutenzione({ classifica: '1', token: 'tok', fetch: rete.fetch });
+    await aspettaMnt();
+    esigiUguale(m.note[0].textContent, 'Classifica: giochi come Mario', 'testo della nota');
+    m.op.suLivello({ tipo: 'inizio', livello: 1, difficolta: 'estremo' });
+    await aspettaMnt();
+    m.op.suLivello({ tipo: 'fine', livello: 1, difficolta: 'estremo', tentativi: 6 });
+    await aspettaMnt();
+    esigiUguale(rete.chiamate.map((c) => c.metodo + ' ' + c.url + ' ' + c.autorizzazione).join(','),
+      'GET api/classifica/io Bearer tok,POST api/classifica/partita Bearer tok,POST api/classifica/livello Bearer tok', 'chiamate');
+    esigiUguale(JSON.stringify(rete.chiamate[1].corpo), JSON.stringify({ livello: 1, difficolta: 'estremo' }), 'corpo della partita');
+    esigiUguale(JSON.stringify(rete.chiamate[2].corpo), JSON.stringify({ partita: 'g1', tentativi: 6 }), 'corpo del livello');
+    esigiUguale(JSON.stringify(m.classifica), JSON.stringify([{ posizione: 2, totale: 9, migliore: false, livello: 1, difficolta: 'estremo' }]), 'la posizione non arriva al motore');
+
+    const rifiuto = reteMnt({
+      'GET api/classifica/io': { status: 200, dati: { collegato: true, nome: 'Mario' } },
+      'POST api/classifica/partita': { status: 409, dati: { errore: 'Prima il livello 2.', codice: 'SERVE_PRECEDENTE', serve: 2 } }
+    });
+    const r = manutenzione({ classifica: '1', token: 'tok', fetch: rifiuto.fetch });
+    await aspettaMnt();
+    r.op.suLivello({ tipo: 'inizio', livello: 3, difficolta: 'medio' });
+    await aspettaMnt();
+    r.op.suLivello({ tipo: 'fine', livello: 3, difficolta: 'medio', tentativi: 1 });
+    await aspettaMnt();
+    esigiUguale(r.note[0].textContent, 'Per entrare in classifica completa prima il livello 2 a questa difficoltà', '409: avviso');
+    esigiUguale(rifiuto.chiamate.length, 2, '409: parte il livello lo stesso');
+    r.timer.forEach((fn) => fn());
+    esigiUguale(r.note[0].textContent, 'Classifica: giochi come Mario', 'dopo l avviso la nota non torna com era');
+
+    const scaduto = reteMnt({ 'GET api/classifica/io': { status: 200, dati: { collegato: false } } });
+    const s = manutenzione({ classifica: '1', token: 'vecchio', fetch: scaduto.fetch });
+    await aspettaMnt();
+    esigiUguale(s.note[0].textContent, 'Collegati dal sito per entrare in classifica', 'token scaduto: nota');
+    s.op.suLivello({ tipo: 'inizio', livello: 1, difficolta: 'medio' });
+    await aspettaMnt();
+    esigiUguale(scaduto.chiamate.length, 1, 'token scaduto: parte la partita');
+
+    const spenta = reteMnt({ 'GET api/classifica/io': { status: 404, dati: { errore: 'spenta', codice: 'SPENTA' } } });
+    const t = manutenzione({ classifica: '1', token: 'tok', fetch: spenta.fetch });
+    await aspettaMnt();
+    esigiUguale(t.note[0].hidden, true, 'classifica spenta sul server: la nota resta');
   });
 
   await prova('manutenzione: una canzone che non si carica ripiega sulla musica d attesa solo finche quel brano e in errore', () => {
