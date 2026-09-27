@@ -4175,7 +4175,7 @@ async function proveSponsor(contenutiVeri, costruisci, archivio) {
     esigiUguale(vecchio.testi['sponsor.titolo'], 'Scritto da lei', 'un testo scritto a mano resta');
     esigiUguale(vecchio.config.sponsor.voci[0].nome, 'X', 'lo sponsor salvato resta');
     esigiUguale(vecchio.config.sponsor.voci[0].codice, '', 'la voce vecchia prende il campo codice vuoto');
-    esigiUguale(vecchio.config.sponsor.mostraNumeri, true, 'le sezioni nuove partono accese');
+    esigiUguale(vecchio.config.sponsor.mostraFormati, true, 'le sezioni nuove partono accese');
     esigi(Array.isArray(vecchio.config.sponsor.formati) && vecchio.config.sponsor.formati.length === 4, 'i formati predefiniti');
     esigi(!Object.prototype.hasOwnProperty.call(vecchio.testi, 'sponsor.altri'), 'sponsor.altri non serve piu e va tolto');
     esigiUguale(schema.verificaCopertura(vecchio).filter((p) => /sponsor/.test(p.chiave)).length, 0, 'copertura dello schema');
@@ -4255,29 +4255,39 @@ async function proveSponsor(contenutiVeri, costruisci, archivio) {
     esigiUguale(esito.voci.map((v) => v.etichette).join(','), 'true,false', 'riga delle etichette');
   });
 
-  await prova('i numeri vengono dai dati del sito, e quelli che non ci sono non si inventano', () => {
-    const d = con([], {
-      numeri: [
-        { dato: 'follower', etichetta: 'Follower', valore: '' },
-        { dato: 'spettatori', etichetta: 'Spettatori', valore: '' },
-        { dato: 'abbonati', etichetta: 'Abbonati', valore: '' },
-        { dato: 'dal', etichetta: 'Dal', valore: '' },
-        { dato: 'mano', etichetta: 'Eta', valore: '18-34' },
-        { dato: 'mano', etichetta: 'Vuoto', valore: '  ' },
-        { dato: 'boh', etichetta: 'Sconosciuto', valore: '9' },
-        { dato: 'settimana', etichetta: 'A settimana', valore: '' }
-      ]
+  await prova('i numeri del canale non ci sono piu: contenuti vecchi con quelle chiavi si ripuliscono senza errori', () => {
+    const tolte = ['config.sponsor.mostraNumeri', 'config.sponsor.numeri', 'sponsor.numeriOcchiello', 'sponsor.numeriTitolo',
+      'sponsor.numeriTesto', 'sponsor.numeriNota', 'sponsor.numeriData'];
+    for (const chiave of tolte) { esigi(!schema.campo(chiave), chiave + ' e ancora nello schema'); }
+    const vecchio = con([voce({})], {
+      mostraNumeri: true,
+      numeri: [{ dato: 'follower', etichetta: 'Follower su Twitch', valore: '' }, { dato: 'mano', etichetta: 'Eta', valore: '18-34' }]
     });
-    d.config.dati = Object.assign({}, d.config.dati, { follower: 12345, spettatoriMedi: 25, abbonati: 0, dal: 2013 });
-    const numeri = sponsorDi(d).numeri;
-    const letti = numeri.map((n) => n.etichetta + '=' + n.valore);
-    esigiUguale(letti.slice(0, 4).join(','), 'Follower=12.345,Spettatori=25,Dal=2013,Eta=18-34', 'valori');
-    esigi(!letti.some((l) => /^(Abbonati|Vuoto|Sconosciuto)=/.test(l)), 'un numero che non c e e comparso: ' + letti.join(','));
-    esigiUguale(numeri[0].chiaveEtichetta, 'config.sponsor.numeri.0.etichetta', 'chiave per l editor');
-    const giorni = d.config.orari && Array.isArray(d.config.orari.giorni) ? d.config.orari.giorni.length : 0;
-    esigiUguale(letti.some((l) => l.startsWith('A settimana=')), giorni > 0, 'dirette a settimana dalla schedule');
-    const spenti = con([], { mostraNumeri: false });
-    esigiUguale(sponsorDi(spenti).mostraNumeri, false, 'sezione spenta');
+    Object.assign(vecchio.testi, {
+      'sponsor.numeriOcchiello': 'Il canale', 'sponsor.numeriTitolo': 'I numeri del canale', 'sponsor.numeriTesto': 'Dati veri.',
+      'sponsor.numeriNota': 'Nota.', 'sponsor.numeriData': 'Aggiornati al',
+      'sponsor.paginaTesto': 'Un canale Twitch italiano di gaming, con dirette fisse ogni settimana e una chat che partecipa davvero. Qui trovi i numeri del canale, i modi in cui possiamo collaborare e chi lo fa già.',
+      'sponsor.invitoTesto': 'Hai un marchio che parla a chi gioca? Nella pagina dedicata trovi i numeri del canale e i modi per collaborare.'
+    });
+    const esito = sponsorDi(vecchio);
+    esigi(!('numeri' in esito) && !('mostraNumeri' in esito), 'sponsorDi prepara ancora i numeri');
+    esigiUguale(esito.voci.length, 1, 'lo sponsor resta');
+    schema.completa(vecchio);
+    esigi(!Object.prototype.hasOwnProperty.call(vecchio.config.sponsor, 'numeri'), 'config.sponsor.numeri non va tolto');
+    esigi(!Object.prototype.hasOwnProperty.call(vecchio.config.sponsor, 'mostraNumeri'), 'config.sponsor.mostraNumeri non va tolto');
+    esigi(!Object.keys(vecchio.testi).some((k) => k.indexOf('sponsor.numeri') === 0), 'restano testi dei numeri');
+    esigi(vecchio.testi['sponsor.paginaTesto'].indexOf('numeri') === -1, 'la presentazione mai toccata parla ancora dei numeri');
+    esigi(vecchio.testi['sponsor.invitoTesto'].indexOf('numeri') === -1, 'l invito mai toccato parla ancora dei numeri');
+    esigiUguale(schema.verificaCopertura(vecchio).filter((p) => /sponsor/.test(p.chiave)).length, 0, 'copertura dello schema');
+    const scritto = { testi: { 'sponsor.paginaTesto': 'Guarda i miei numeri.' }, config: {} };
+    schema.completa(scritto);
+    esigiUguale(scritto.testi['sponsor.paginaTesto'], 'Guarda i miei numeri.', 'un testo scritto da lei resta com e');
+    for (const g of schema.gruppi.filter((g) => g.id === 'sponsor')) {
+      esigi(!/numeri/i.test(g.descrizione), 'la descrizione del gruppo parla dei numeri');
+      for (const c of g.campi) {
+        esigi(typeof c.predefinito !== 'string' || !/numeri/i.test(c.predefinito), c.chiave + ' parla dei numeri');
+      }
+    }
   });
 
   await prova('formati, contatti e media kit: icone ammesse, email sicura, link solo http o https', () => {
@@ -4334,9 +4344,14 @@ async function proveSponsor(contenutiVeri, costruisci, archivio) {
     esigiDentro(html, '<script src="js/sponsor.js" defer></script>', 'lo script della pagina');
     esigiDentro(html, '<script src="js/guardia.js" defer></script>', 'la guardia della manutenzione');
     esigiDentro(html, 'href="#contatto"', 'il bottone verso i contatti');
-    for (const parte of ['sponsor-apertura', 'sponsor-numeri', 'sponsor-formati', 'sponsor', 'sponsor-contatto']) {
+    for (const parte of ['sponsor-apertura', 'sponsor-formati', 'sponsor', 'sponsor-contatto']) {
       esigiDentro(html, 'data-sb-parte="' + parte + '"', 'la parte ' + parte);
     }
+    for (const traccia of ['sponsor-numeri', 'sp-numeri', 'sp-numero', 'numeriTitolo', 'I numeri del canale']) {
+      esigi(html.indexOf(traccia) === -1, 'la pagina contiene ancora i numeri: ' + traccia);
+    }
+    const ordine = ['data-sb-parte="sponsor-apertura"', 'data-sb-parte="sponsor-formati"', 'data-sb-parte="sponsor"', 'data-sb-parte="sponsor-contatto"'].map((x) => html.indexOf(x));
+    esigi(ordine.every((n, i) => i === 0 || n > ordine[i - 1]), 'ordine apertura, formati, sponsor, contatti');
     esigi(html.indexOf('<!--') === -1, 'la pagina pubblicata contiene un commento');
     esigi(html.indexOf('sp-libero') === -1, 'con gli sponsor non va l invito a essere il primo');
 
@@ -4428,6 +4443,10 @@ async function proveSponsor(contenutiVeri, costruisci, archivio) {
     esigi(registro.length > 100, 'non trovo REGISTRO_PARTI in nomi.js');
     for (const chiave of Array.from(registro.matchAll(/'((?:config\.)?(?:sponsor|dati)\.[A-Za-z.]+)'/g), (m) => m[1])) {
       esigi(schema.campo(chiave), 'nomi.js cita ' + chiave + ', che nello schema non c e');
+    }
+    const guscio = fs.readFileSync(path.join(RADICE_VERA, 'pannello', 'editor', 'guscio.js'), 'utf8');
+    for (const [nome, testo] of [['nomi.js', nomi], ['guscio.js', guscio]]) {
+      esigi(testo.indexOf('sponsor-numeri') === -1 && testo.indexOf('mostraNumeri') === -1, nome + ' cita ancora la sezione dei numeri');
     }
   });
 

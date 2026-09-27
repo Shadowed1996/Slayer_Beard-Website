@@ -797,7 +797,7 @@ function costruisciContesto(contenuti, opzioni) {
     }
   });
 
-  contesto.sponsor = sponsorDi(config, testi, adesso, { cache: cache, mancanti: mancanti, giochi: contesto.giochi });
+  contesto.sponsor = sponsorDi(config, testi, adesso, { cache: cache, mancanti: mancanti });
   for (const campo of schema.campi()) {
     if (campo.chiave.startsWith('sponsor.') && typeof contesto[campo.chiave] !== 'string') { contesto[campo.chiave] = testoSponsor(testi, campo.chiave); }
   }
@@ -1046,51 +1046,6 @@ function testoSponsor(testi, chiave) {
   return campo && typeof campo.predefinito === 'string' ? campo.predefinito : '';
 }
 
-function valoreNumero(dato, voce, config, giochi) {
-  const dati = (config.dati && typeof config.dati === 'object') ? config.dati : {};
-  const positivo = (n) => { const v = Number(n); return Number.isFinite(v) && v > 0 ? v : 0; };
-  const somma = (campo) => (giochi && Array.isArray(giochi.voci) ? giochi.voci : [])
-    .reduce((totale, g) => totale + positivo(g && g[campo]), 0);
-
-  if (dato === 'follower') { const n = positivo(dati.follower); return n ? { valore: numeroTesto(n) } : null; }
-  if (dato === 'spettatori') { const n = positivo(dati.spettatoriMedi); return n ? { valore: numeroTesto(n) } : null; }
-  if (dato === 'abbonati') { const n = positivo(dati.abbonati); return n ? { valore: numeroTesto(n) } : null; }
-  if (dato === 'settimana') {
-    const n = orariDi(config).giorni.length;
-    return n ? { valore: String(n), dettaglio: orariTesto(config) } : null;
-  }
-  if (dato === 'ore') { const n = somma('ore'); return n >= 1 ? { valore: oreTesto(Math.round(n)) } : null; }
-  if (dato === 'giochi') {
-    const n = giochi && Array.isArray(giochi.voci) ? giochi.voci.length : 0;
-    return n ? { valore: numeroTesto(n) } : null;
-  }
-  if (dato === 'clip') { const n = somma('clip'); return n ? { valore: numeroTesto(n) } : null; }
-  if (dato === 'dal') {
-    const anno = Number(dati.dal);
-    return Number.isInteger(anno) && anno >= 2005 && anno <= 2100 ? { valore: String(anno) } : null;
-  }
-  if (dato === 'lingua') { const t = String(dati.lingua || '').trim(); return t ? { valore: t } : null; }
-  if (dato === 'mano') { const t = String(voce.valore || '').trim(); return t ? { valore: t } : null; }
-  return null;
-}
-
-function numeriSponsor(ramo, config, giochi) {
-  const grezzi = Array.isArray(ramo.numeri) ? ramo.numeri : schema.campo('config.sponsor.numeri').predefinito;
-  const fuori = [];
-  grezzi.forEach((voce, indice) => {
-    if (!voce || typeof voce !== 'object') { return; }
-    const trovato = valoreNumero(String(voce.dato || ''), voce, config, giochi);
-    if (!trovato) { return; }
-    fuori.push({
-      valore: trovato.valore,
-      dettaglio: trovato.dettaglio || '',
-      etichetta: String(voce.etichetta || '').trim(),
-      chiaveEtichetta: 'config.sponsor.numeri.' + indice + '.etichetta'
-    });
-  });
-  return fuori;
-}
-
 function formatiSponsor(ramo, cache, mancanti) {
   const grezzi = Array.isArray(ramo.formati) ? ramo.formati : schema.campo('config.sponsor.formati').predefinito;
   const ammesse = schema.campo('config.sponsor.formati').campi.find((c) => c.chiave === 'icona').opzioni;
@@ -1172,7 +1127,6 @@ function sponsorDi(config, testi, adesso, extra) {
   voci.sort((x, y) => (y.evidenza ? 1 : 0) - (x.evidenza ? 1 : 0) || x.indice - y.indice);
 
   const pagina = ramo.attivo === true;
-  const numeri = numeriSponsor(ramo, config, aggiunte.giochi || null);
   const formati = formatiSponsor(ramo, cache, mancanti);
 
   const email = emailSicura(ramo.email) || emailSicura(config.email);
@@ -1189,10 +1143,6 @@ function sponsorDi(config, testi, adesso, extra) {
 
     copertina: immagineLocale(ramo.copertina) || immagineLocale(immagini.banner),
     copertinaPropria: !!immagineLocale(ramo.copertina),
-
-    numeri: numeri,
-    mostraNumeri: ramo.mostraNumeri !== false && numeri.length > 0,
-    numeriQuando: dataTesto(new Date(ora).toISOString()),
 
     formati: formati,
     mostraFormati: ramo.mostraFormati !== false && formati.length > 0,

@@ -86,10 +86,6 @@ const PARTI = {
     nome: 'Apertura della pagina sponsor',
     descrizione: 'La prima schermata di «sponsor.html»: titolo, presentazione, i due bottoni e la foto. Qui si accende e si spegne anche la pagina intera.'
   },
-  'sponsor-numeri': {
-    nome: 'I numeri del canale',
-    descrizione: 'Le cifre che un marchio guarda per primo. I valori li prende il sito da solo (Twitch, schedule, storico delle live, gruppo «Il canale»): qui scegli quali mostrare, in che ordine e con che parole.'
-  },
   'sponsor-formati': {
     nome: 'I formati di collaborazione',
     descrizione: 'Le schede che spiegano come si può collaborare: titolo, spiegazione e icona. Aggiungi, togli e riordina.'
@@ -216,12 +212,6 @@ export const REGISTRO_PARTI = Object.freeze({
     chiavi: Object.freeze([
       'config.sponsor.attivo', 'config.sponsor.copertina', 'sponsor.paginaOcchiello', 'sponsor.paginaTitolo',
       'sponsor.paginaTesto', 'sponsor.ctaContatto', 'sponsor.ctaCanale', 'sponsor.paginaTorna'
-    ])
-  }),
-  'sponsor-numeri': Object.freeze({
-    chiavi: Object.freeze([
-      'config.sponsor.mostraNumeri', 'config.sponsor.numeri', 'sponsor.numeriNota', 'sponsor.numeriData',
-      'config.dati.spettatoriMedi', 'config.dati.abbonati', 'config.dati.dal', 'config.dati.lingua'
     ])
   }),
   'sponsor-formati': Object.freeze({ chiavi: Object.freeze(['config.sponsor.mostraFormati', 'config.sponsor.formati']) }),

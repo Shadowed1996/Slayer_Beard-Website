@@ -51,28 +51,6 @@
     </figure>{{/se}}
   </section>
 
-  {{#se sponsor.mostraNumeri}}<section class="sp-sezione sp-numeri" aria-labelledby="sp-numeri-titolo" data-sb-parte="sponsor-numeri">
-    <div class="sp-testa">
-      <p class="sezione__occhiello" data-sb-testo="sponsor.numeriOcchiello">{{sponsor.numeriOcchiello}}</p>
-      <h2 id="sp-numeri-titolo" class="sp-testa__titolo" data-sb-testo="sponsor.numeriTitolo">{{sponsor.numeriTitolo}}</h2>
-      <p class="sp-testa__testo" data-sb-testo="sponsor.numeriTesto">{{{sponsor.numeriTesto}}}</p>
-    </div>
-
-    <ul class="sp-numeri__griglia">
-      {{#ogni sponsor.numeri}}<li class="sp-numero">
-        <strong class="sp-numero__valore">{{valore}}</strong>
-        <span class="sp-numero__etichetta" data-sb-testo="{{chiaveEtichetta}}">{{etichetta}}</span>
-        {{#se dettaglio}}<span class="sp-numero__dettaglio">{{dettaglio}}</span>{{/se}}
-      </li>
-      {{/ogni}}
-    </ul>
-
-    <p class="sp-numeri__nota">
-      <span data-sb-testo="sponsor.numeriNota">{{{sponsor.numeriNota}}}</span>
-      <span class="sp-numeri__data"><span data-sb-testo="sponsor.numeriData">{{sponsor.numeriData}}</span> {{sponsor.numeriQuando}}</span>
-    </p>
-  </section>{{/se}}
-
   {{#se sponsor.mostraFormati}}<section class="sp-sezione sp-formati" aria-labelledby="sp-formati-titolo" data-sb-parte="sponsor-formati">
     <div class="sp-testa">
       <p class="sezione__occhiello" data-sb-testo="sponsor.formatiOcchiello">{{sponsor.formatiOcchiello}}</p>

@@ -600,7 +600,6 @@ function tastiSchede(evento) {
 
 const PARTI_SPONSOR = [
   { parte: 'sponsor-apertura', nome: 'Apertura', nota: 'Titolo, presentazione, bottoni e foto' },
-  { parte: 'sponsor-numeri', nome: 'I numeri del canale', nota: 'Quali cifre mostrare e con che parole', interruttore: 'config.sponsor.mostraNumeri' },
   { parte: 'sponsor-formati', nome: 'Formati di collaborazione', nota: 'Le schede su come collaborare', interruttore: 'config.sponsor.mostraFormati' },
   { parte: 'sponsor', nome: 'Sponsor attuali', nota: 'Aggiungi, togli e riordina: logo, testo, codice, link', interruttore: 'config.sponsor.mostraPartner' },
   { parte: 'sponsor-contatto', nome: 'Contatti', nota: 'Email, media kit e il polletto' }

@@ -2015,30 +2015,24 @@ uno sfondo suo, si vedrà quello. Per tornare alle note basta svuotare il campo.
 ### Gli sponsor, e la pagina «sponsor.html»
 
 La pagina `sponsor.html` è pensata per **chi deve decidere se collaborare con il
-canale**: un marchio la apre, capisce chi sei, guarda i numeri, vede come si può
-lavorare insieme e chi lo fa già, e trova subito come scriverti. In ordine:
+canale**: un marchio la apre, capisce chi sei, vede come si può lavorare insieme
+e chi lo fa già, e trova subito come scriverti. In ordine:
 
 1. **Apertura** — occhiello, titolo grande, presentazione, due bottoni
    («Proponi una collaborazione» porta giù ai contatti, «Guarda il canale» apre
    Twitch) e una foto. Senza una foto propria usa il banner della copertina.
-2. **I numeri del canale** — cifre vere, prese dal sito stesso: follower da
-   Twitch, spettatori medi, abbonati, anno e lingue dal gruppo «Il canale»,
-   dirette a settimana dalla schedule, ore e giochi dallo storico delle live.
-   Scegli tu quali mostrare, in che ordine e con che parole; un numero che il
-   sito non conosce, o che vale zero, **non compare**. «Scritto a mano» serve per
-   un dato che hai davvero e il sito non può sapere (per esempio l'età media).
-3. **Come possiamo lavorare insieme** — le schede dei formati (menzione in
+2. **Come possiamo lavorare insieme** — le schede dei formati (menzione in
    diretta, prodotto in prova, codice sconto, logo sul canale e sul sito), con
    titolo, spiegazione e icona. Si aggiungono, si tolgono e si riordinano.
-4. **Sponsor e partner** — le schede di chi collabora oggi: logo, nome,
+3. **Sponsor e partner** — le schede di chi collabora oggi: logo, nome,
    categoria, testo, codice sconto con il bottone «Copia» e il link al loro
    sito. **Senza nessuno sponsor** la sezione dice «Il primo posto è libero» e
    invita a scrivere.
-5. **Contatti** — la presentazione, l'indirizzo email (vuoto: quello pubblico del
+4. **Contatti** — la presentazione, l'indirizzo email (vuoto: quello pubblico del
    sito) con il bottone che apre la posta con l'oggetto già scritto, un link
    facoltativo al media kit e il polletto accanto.
 
-Le sezioni 2, 3 e 4 si **accendono e spengono** una per una. In home, sotto
+Le sezioni 2 e 3 si **accendono e spengono** una per una. In home, sotto
 «Dove mi trovi», resta la **striscia** dei loghi, che compare solo se c'è almeno
 uno sponsor attivo; con «Invito anche senza sponsor» acceso, quando non ce n'è
 nessuno la home mostra al suo posto un invito verso la pagina.
@@ -2057,6 +2051,13 @@ nel gruppo **Sponsor e collaborazioni** del menu.
 > sfondo **trasparente** dalla libreria delle immagini: vale solo un'immagine
 > caricata sul sito, non un indirizzo esterno. Se un logo non ce l'hai, la
 > scheda usa il nome scritto in grande.
+
+Fino al 27 settembre 2026 la pagina aveva anche una sezione **«I numeri del
+canale»** (follower, spettatori medi, ore di diretta…): è stata tolta del tutto.
+Se i contenuti salvati hanno ancora le sue impostazioni o i suoi testi, il sito
+li scarta da solo al primo caricamento; la presentazione in apertura e l'invito
+in home, se non li avevi mai cambiati, passano da soli alla versione senza
+numeri. Quelli che avevi scritto tu restano come sono.
 
 Ogni voce dell'elenco degli sponsor ha:
 

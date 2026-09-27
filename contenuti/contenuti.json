@@ -196,7 +196,7 @@
     "sponsor.dalEtichetta": "Partner dal",
     "sponsor.vaiScheda": "Vai al sito",
     "sponsor.paginaTitolo": "Porta il tuo marchio in diretta",
-    "sponsor.paginaTesto": "Un canale Twitch italiano di gaming, con dirette fisse ogni settimana e una chat che partecipa davvero. Qui trovi i numeri del canale, i modi in cui possiamo collaborare e chi lo fa già.",
+    "sponsor.paginaTesto": "Un canale Twitch italiano di gaming, con dirette fisse ogni settimana e una chat che partecipa davvero. Qui trovi i modi in cui possiamo collaborare e chi lo fa già.",
     "sponsor.paginaTorna": "Torna al sito",
     "sponsor.paginaVuota": "Nessuno sponsor attivo in questo momento.",
     "giochi.occhiello": "Lo storico delle live",
@@ -227,16 +227,11 @@
     "giochi.cercaPulisci": "Cancella la ricerca",
     "giochi.cercaVuoto": "Nessun gioco corrisponde alla ricerca. Prova con un altro nome o togli i filtri.",
     "sponsor.invitoTitolo": "Collabora con il canale",
-    "sponsor.invitoTesto": "Hai un marchio che parla a chi gioca? Nella pagina dedicata trovi i numeri del canale e i modi per collaborare.",
+    "sponsor.invitoTesto": "Hai un marchio che parla a chi gioca? Nella pagina dedicata trovi i modi per collaborare e come scrivermi.",
     "sponsor.invitoBtn": "Scopri come collaborare",
     "sponsor.paginaOcchiello": "Collaborazioni",
     "sponsor.ctaContatto": "Proponi una collaborazione",
     "sponsor.ctaCanale": "Guarda il canale",
-    "sponsor.numeriOcchiello": "Il canale",
-    "sponsor.numeriTitolo": "I numeri del canale",
-    "sponsor.numeriTesto": "Dati presi dal canale, non stime: chi guarda è una community piccola ma presente, che torna diretta dopo diretta.",
-    "sponsor.numeriNota": "I follower arrivano direttamente da Twitch; ore e giochi dallo storico delle dirette.",
-    "sponsor.numeriData": "Aggiornati al",
     "sponsor.formatiOcchiello": "Collaborare",
     "sponsor.formatiTitolo": "Come possiamo lavorare insieme",
     "sponsor.formatiTesto": "Ogni collaborazione si costruisce insieme: questi sono i formati più richiesti, da combinare come serve al tuo marchio.",
@@ -878,39 +873,6 @@
       "voci": [],
       "invitoHome": false,
       "copertina": "",
-      "mostraNumeri": true,
-      "numeri": [
-        {
-          "dato": "follower",
-          "etichetta": "Follower su Twitch",
-          "valore": ""
-        },
-        {
-          "dato": "spettatori",
-          "etichetta": "Spettatori medi",
-          "valore": ""
-        },
-        {
-          "dato": "settimana",
-          "etichetta": "Dirette a settimana",
-          "valore": ""
-        },
-        {
-          "dato": "ore",
-          "etichetta": "Ore di diretta",
-          "valore": ""
-        },
-        {
-          "dato": "giochi",
-          "etichetta": "Giochi portati in live",
-          "valore": ""
-        },
-        {
-          "dato": "dal",
-          "etichetta": "Su Twitch dal",
-          "valore": ""
-        }
-      ],
       "mostraFormati": true,
       "formati": [
         {

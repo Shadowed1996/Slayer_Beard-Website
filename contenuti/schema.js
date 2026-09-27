@@ -632,7 +632,7 @@ const gruppi = [
   {
     id: 'sponsor',
     titolo: 'Sponsor e collaborazioni',
-    descrizione: 'La pagina «sponsor.html», pensata per i marchi che valutano una collaborazione: i numeri veri del canale, i formati possibili, chi collabora già (con logo, descrizione, link e codice sconto) e come scriverti. In home, sotto «Dove mi trovi», una striscia con i loghi. Una collaborazione finita sparisce dal sito da sola quando arriva la data che le hai messo, e resta qui pronta a tornare.',
+    descrizione: 'La pagina «sponsor.html», pensata per i marchi che valutano una collaborazione: chi sei, i formati possibili, chi collabora già (con logo, descrizione, link e codice sconto) e come scriverti. In home, sotto «Dove mi trovi», una striscia con i loghi. Una collaborazione finita sparisce dal sito da sola quando arriva la data che le hai messo, e resta qui pronta a tornare.',
     campi: [
       { chiave: 'config.sponsor.attivo', etichetta: 'Pubblica la pagina degli sponsor', tipo: 'interruttore', predefinito: false,
         aiuto: 'Acceso, «sponsor.html» va online a ogni Pubblica, anche quando non hai ancora nessuno sponsor: presenta il canale ai marchi. La striscia in home compare solo se c\'è almeno uno sponsor con il link scritto e dentro il suo periodo. Spento, la pagina viene tolta dal sito e la striscia sparisce.' },
@@ -649,7 +649,7 @@ const gruppi = [
       { chiave: 'sponsor.invitoTitolo', etichetta: 'Home — titolo dell\'invito', tipo: 'testo', max: 60, predefinito: 'Collabora con il canale',
         aiuto: 'Si vede solo con l\'invito acceso e nessuno sponsor attivo.' },
       { chiave: 'sponsor.invitoTesto', etichetta: 'Home — riga dell\'invito', tipo: 'ricco', max: 220, facoltativo: true,
-        predefinito: 'Hai un marchio che parla a chi gioca? Nella pagina dedicata trovi i numeri del canale e i modi per collaborare.' },
+        predefinito: 'Hai un marchio che parla a chi gioca? Nella pagina dedicata trovi i modi per collaborare e come scrivermi.' },
       { chiave: 'sponsor.invitoBtn', etichetta: 'Home — bottone dell\'invito', tipo: 'testo', max: 30, predefinito: 'Scopri come collaborare' },
 
       { chiave: 'sponsor.paginaTorna', etichetta: 'Pagina — link per tornare al sito', tipo: 'testo', max: 30, predefinito: 'Torna al sito',
@@ -659,7 +659,7 @@ const gruppi = [
       { chiave: 'sponsor.paginaTitolo', etichetta: 'Pagina — titolo', tipo: 'testo', max: 60, predefinito: 'Porta il tuo marchio in diretta',
         aiuto: 'Il titolo grande della pagina «sponsor.html», e anche quello che si legge nella scheda del browser.' },
       { chiave: 'sponsor.paginaTesto', etichetta: 'Pagina — presentazione', tipo: 'ricco', max: 320,
-        predefinito: 'Un canale Twitch italiano di gaming, con dirette fisse ogni settimana e una chat che partecipa davvero. Qui trovi i numeri del canale, i modi in cui possiamo collaborare e chi lo fa già.',
+        predefinito: 'Un canale Twitch italiano di gaming, con dirette fisse ogni settimana e una chat che partecipa davvero. Qui trovi i modi in cui possiamo collaborare e chi lo fa già.',
         aiuto: 'Le righe sotto al titolo. È anche la descrizione che finisce su Google, ripulita dal grassetto.' },
       { chiave: 'config.sponsor.copertina', etichetta: 'Pagina — immagine di apertura', tipo: 'immagine', facoltativo: true, predefinito: '',
         aiuto: 'La foto grande accanto al titolo: meglio orizzontale, almeno 1200 pixel di larghezza. Vuota: usa il banner della copertina del sito.' },
@@ -667,44 +667,6 @@ const gruppi = [
         aiuto: 'Il bottone principale in apertura: porta giù, ai contatti.' },
       { chiave: 'sponsor.ctaCanale', etichetta: 'Pagina — bottone verso il canale', tipo: 'testo', max: 30, predefinito: 'Guarda il canale',
         aiuto: 'Il secondo bottone in apertura: apre il canale Twitch in una scheda nuova.' },
-
-      { chiave: 'config.sponsor.mostraNumeri', etichetta: 'Pagina — mostra i numeri del canale', tipo: 'interruttore', predefinito: true },
-      { chiave: 'sponsor.numeriOcchiello', etichetta: 'Numeri — occhiello', tipo: 'testo', max: 40, predefinito: 'Il canale' },
-      { chiave: 'sponsor.numeriTitolo', etichetta: 'Numeri — titolo', tipo: 'testo', max: 60, predefinito: 'I numeri del canale' },
-      { chiave: 'sponsor.numeriTesto', etichetta: 'Numeri — presentazione', tipo: 'ricco', max: 240, facoltativo: true,
-        predefinito: 'Dati presi dal canale, non stime: chi guarda è una community piccola ma presente, che torna diretta dopo diretta.' },
-      { chiave: 'config.sponsor.numeri', etichetta: 'I numeri da mostrare', tipo: 'elenco', etichettaVoce: 'etichetta',
-        predefinito: [
-          { dato: 'follower', etichetta: 'Follower su Twitch', valore: '' },
-          { dato: 'spettatori', etichetta: 'Spettatori medi', valore: '' },
-          { dato: 'settimana', etichetta: 'Dirette a settimana', valore: '' },
-          { dato: 'ore', etichetta: 'Ore di diretta', valore: '' },
-          { dato: 'giochi', etichetta: 'Giochi portati in live', valore: '' },
-          { dato: 'dal', etichetta: 'Su Twitch dal', valore: '' }
-        ],
-        aiuto: 'I valori li prende il sito da solo: i follower da Twitch, spettatori medi e anno dal gruppo «Il canale», le dirette a settimana dalla schedule, ore e giochi dallo storico delle live. Un numero che il sito non conosce (o che vale zero) non compare: niente cifre inventate.',
-        campi: [
-          { chiave: 'dato', etichetta: 'Numero', tipo: 'scelta', predefinito: 'follower',
-            opzioni: [
-              { valore: 'follower', etichetta: 'Follower di Twitch (automatico)' },
-              { valore: 'spettatori', etichetta: 'Spettatori medi (dal gruppo «Il canale»)' },
-              { valore: 'abbonati', etichetta: 'Abbonati (dal gruppo «Il canale»)' },
-              { valore: 'settimana', etichetta: 'Dirette a settimana (dalla schedule)' },
-              { valore: 'ore', etichetta: 'Ore di diretta (dallo storico delle live)' },
-              { valore: 'giochi', etichetta: 'Giochi portati in live (dallo storico)' },
-              { valore: 'clip', etichetta: 'Clip create dalla chat (dallo storico)' },
-              { valore: 'dal', etichetta: 'Anno di arrivo su Twitch (dal gruppo «Il canale»)' },
-              { valore: 'lingua', etichetta: 'Lingue delle dirette (dal gruppo «Il canale»)' },
-              { valore: 'mano', etichetta: 'Scritto a mano' }
-            ] },
-          { chiave: 'etichetta', etichetta: 'Cosa c\'è scritto sotto', tipo: 'testo', max: 40, predefinito: 'Follower su Twitch' },
-          { chiave: 'valore', etichetta: 'Valore scritto a mano', tipo: 'testo', max: 16, facoltativo: true, predefinito: '',
-            aiuto: 'Serve solo con «Scritto a mano»: per esempio «18-34» o «70%». Scrivi solo cose vere e verificabili.' }
-        ] },
-      { chiave: 'sponsor.numeriNota', etichetta: 'Numeri — nota sotto le cifre', tipo: 'ricco', max: 200, facoltativo: true,
-        predefinito: 'I follower arrivano direttamente da Twitch; ore e giochi dallo storico delle dirette.' },
-      { chiave: 'sponsor.numeriData', etichetta: 'Numeri — parola prima della data', tipo: 'testo', max: 30, predefinito: 'Aggiornati al',
-        aiuto: 'Accanto alla nota: «Aggiornati al 27 settembre 2026». La data è quella dell\'ultima pubblicazione.' },
 
       { chiave: 'config.sponsor.mostraFormati', etichetta: 'Pagina — mostra i formati di collaborazione', tipo: 'interruttore', predefinito: true },
       { chiave: 'sponsor.formatiOcchiello', etichetta: 'Formati — occhiello', tipo: 'testo', max: 40, predefinito: 'Collaborare' },
@@ -1107,12 +1069,23 @@ const SUPERATE = [
   'spotify.mostra',
   'config.spotify',
   'diretta.testo',
-  'sponsor.altri'
+  'sponsor.altri',
+  'config.sponsor.mostraNumeri',
+  'config.sponsor.numeri',
+  'sponsor.numeriOcchiello',
+  'sponsor.numeriTitolo',
+  'sponsor.numeriTesto',
+  'sponsor.numeriNota',
+  'sponsor.numeriData'
 ];
 
 const RINNOVATE = {
   'sponsor.paginaTitolo': ['Gli sponsor'],
-  'sponsor.paginaTesto': ['Le realtà che sostengono il canale, divise per categoria. Ogni scheda porta al loro sito.']
+  'sponsor.paginaTesto': [
+    'Le realtà che sostengono il canale, divise per categoria. Ogni scheda porta al loro sito.',
+    'Un canale Twitch italiano di gaming, con dirette fisse ogni settimana e una chat che partecipa davvero. Qui trovi i numeri del canale, i modi in cui possiamo collaborare e chi lo fa già.'
+  ],
+  'sponsor.invitoTesto': ['Hai un marchio che parla a chi gioca? Nella pagina dedicata trovi i numeri del canale e i modi per collaborare.']
 };
 
 function rinnova(contenuti) {
