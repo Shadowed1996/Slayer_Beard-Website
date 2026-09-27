@@ -24,7 +24,134 @@
     fissa = 0;
   }
   var stile = tela.getAttribute('data-stile') === 'geometrydash' ? 'geometrydash' : 'synthwave';
-  window.PolloRun.crea({
+  var classifica = tela.getAttribute('data-classifica') === '1' ? creaClassifica() : null;
+  function creaClassifica() {
+    var token = '';
+    try { token = String(sessionStorage.getItem('sb-account-token') || ''); } catch (e) { token = ''; }
+    var nota = document.createElement('p');
+    nota.id = 'mnt-classifica';
+    nota.setAttribute('role', 'status');
+    nota.setAttribute('aria-live', 'polite');
+    var s = nota.style;
+    s.position = 'fixed';
+    s.insetInlineStart = '50%';
+    s.insetBlockStart = '12px';
+    s.transform = 'translateX(-50%)';
+    s.zIndex = '3';
+    s.maxWidth = 'calc(100vw - 32px)';
+    s.margin = '0';
+    s.padding = '8px 14px';
+    s.border = '1px solid var(--linea-viva)';
+    s.borderRadius = '999px';
+    s.background = 'color-mix(in srgb, var(--fondo) 84%, transparent)';
+    s.color = 'var(--testo-medio, var(--testo))';
+    s.font = '600 12px/1.3 var(--font-mono, monospace)';
+    s.letterSpacing = '.04em';
+    s.whiteSpace = 'nowrap';
+    s.overflow = 'hidden';
+    s.textOverflow = 'ellipsis';
+    s.pointerEvents = 'none';
+    document.body.appendChild(nota);
+    var cl = { nota: nota, token: token, collegato: token ? null : false, nome: '', partita: null, spenta: false, giro: 0, gioco: null };
+    function dipingi(testo, allerta) {
+      if (cl.spenta) { nota.hidden = true; return; }
+      nota.hidden = false;
+      s.whiteSpace = allerta ? 'normal' : 'nowrap';
+      s.borderRadius = allerta ? '12px' : '999px';
+      s.borderColor = allerta ? 'var(--allerta)' : 'var(--linea-viva)';
+      s.color = allerta ? 'var(--allerta)' : 'var(--testo-medio, var(--testo))';
+      nota.textContent = testo;
+    }
+    function normale() {
+      if (cl.collegato === true) { dipingi('Classifica: giochi come ' + (cl.nome || 'te'), false); return; }
+      if (cl.collegato === null) { dipingi('Classifica…', false); return; }
+      dipingi('Collegati dal sito per entrare in classifica', false);
+    }
+    function avvisa(testo) {
+      dipingi(testo, true);
+      var giro = ++cl.giro;
+      setTimeout(function () { if (giro === cl.giro) { normale(); } }, 4200);
+    }
+    function chiama(metodo, indirizzo, corpo) {
+      var richiesta = { method: metodo, headers: { Accept: 'application/json', Authorization: 'Bearer ' + cl.token }, credentials: 'same-origin', cache: 'no-store' };
+      if (corpo) {
+        richiesta.headers['Content-Type'] = 'application/json';
+        richiesta.body = JSON.stringify(corpo);
+      }
+      var promessa;
+      try { promessa = fetch(indirizzo, richiesta); } catch (e) { promessa = null; }
+      if (!promessa || typeof promessa.then !== 'function') { return null; }
+      return promessa.then(function (risposta) {
+        var codice = risposta && typeof risposta.status === 'number' ? risposta.status : 0;
+        var lettura = null;
+        try { lettura = risposta.json(); } catch (e) { lettura = null; }
+        if (!lettura || typeof lettura.then !== 'function') { return { codice: codice, dati: {} }; }
+        return lettura.then(function (dati) { return { codice: codice, dati: dati && typeof dati === 'object' ? dati : {} }; }, function () { return { codice: codice, dati: {} }; });
+      }, function () { return { codice: 0, dati: {} }; });
+    }
+    function errore(esito) {
+      var dati = esito.dati || {};
+      if (esito.codice === 404) { cl.spenta = true; normale(); return; }
+      if (esito.codice === 401) { cl.collegato = false; cl.nome = ''; cl.partita = null; }
+      if (esito.codice === 409 && dati.codice === 'SERVE_PRECEDENTE' && Number(dati.serve) >= 1) { avvisa('Per entrare in classifica completa prima il livello ' + Math.floor(Number(dati.serve)) + ' a questa difficoltà'); return; }
+      if (typeof dati.errore === 'string' && dati.errore.trim()) { avvisa(dati.errore.trim().slice(0, 160)); return; }
+      if (esito.codice === 401) { avvisa('Accesso scaduto: collegati di nuovo dal sito'); return; }
+      if (esito.codice === 429) { avvisa('Troppe partite in poco tempo: riprova fra un po’'); return; }
+      avvisa('La classifica ora non risponde: il gioco continua lo stesso');
+    }
+    function manda(partita, evento) {
+      var promessa = chiama('POST', 'api/classifica/livello', { partita: partita.gettone, tentativi: Math.max(1, Math.floor(Number(evento.tentativi)) || 1) });
+      if (!promessa) { return; }
+      promessa.then(function (esito) {
+        if (esito.codice !== 200) { errore(esito); return; }
+        var dati = esito.dati || {};
+        if (cl.gioco && typeof cl.gioco.classifica === 'function') {
+          try { cl.gioco.classifica({ posizione: dati.posizione, totale: dati.totale, migliore: dati.migliore === true, livello: dati.livello || evento.livello, difficolta: dati.difficolta || evento.difficolta }); } catch (e) { }
+        }
+      });
+    }
+    cl.suLivello = function (evento) {
+      if (cl.spenta || !evento || !cl.token || cl.collegato === false || typeof fetch !== 'function') { return; }
+      var chiave = evento.livello + ':' + evento.difficolta;
+      if (evento.tipo === 'inizio') {
+        var partita = { chiave: chiave, gettone: '', fine: null };
+        cl.partita = partita;
+        var promessa = chiama('POST', 'api/classifica/partita', { livello: evento.livello, difficolta: evento.difficolta });
+        if (!promessa) { return; }
+        promessa.then(function (esito) {
+          if (cl.partita !== partita) { return; }
+          if (esito.codice !== 200 || !esito.dati || typeof esito.dati.partita !== 'string') { cl.partita = null; errore(esito); return; }
+          partita.gettone = esito.dati.partita;
+          if (partita.fine) { cl.partita = null; manda(partita, partita.fine); }
+        });
+        return;
+      }
+      if (evento.tipo === 'fine') {
+        var aperta = cl.partita;
+        if (!aperta || aperta.chiave !== chiave) { return; }
+        if (!aperta.gettone) { aperta.fine = evento; return; }
+        cl.partita = null;
+        manda(aperta, evento);
+      }
+    };
+    normale();
+    if (cl.collegato === null) {
+      var chiesta = typeof fetch === 'function' ? chiama('GET', 'api/classifica/io', null) : null;
+      if (!chiesta) {
+        cl.collegato = false;
+        normale();
+      } else {
+        chiesta.then(function (esito) {
+          if (esito.codice === 404) { cl.spenta = true; }
+          cl.collegato = esito.codice === 200 && !!esito.dati && esito.dati.collegato === true;
+          cl.nome = cl.collegato ? String(esito.dati.nome || esito.dati.login || '').slice(0, 40) : '';
+          normale();
+        });
+      }
+    }
+    return cl;
+  }
+  var gioco = window.PolloRun.crea({
     tela: tela,
     pollo: tela.getAttribute('data-pollo') || '',
     frasi: Array.isArray(frasi) ? frasi : [],
@@ -32,7 +159,8 @@
     modo: modo,
     fissa: fissa,
     stile: stile,
-    ingombro: document.getElementById('mnt-audio-box'),
+    ingombro: [document.getElementById('mnt-audio-box'), typeof document.querySelector === 'function' ? document.querySelector('.mnt__monitor') : null, classifica ? classifica.nota : null],
+    suLivello: classifica ? function (evento) { classifica.suLivello(evento); } : undefined,
     suCanzone: function (voce) {
       var file = voce && typeof voce.file === 'string' && voce.file.indexOf('mp3/') === 0 ? voce.file : '';
       try { document.dispatchEvent(new CustomEvent('sb:canzone', { detail: { file: file } })); } catch (e) { }
@@ -41,7 +169,9 @@
       document.body.classList.toggle('is-gioca', attiva);
       try { document.dispatchEvent(new CustomEvent('sb:gioco', { detail: { attivo: attiva } })); } catch (e) { }
     }
-  }).avvia();
+  });
+  if (classifica) { classifica.gioco = gioco; }
+  gioco.avvia();
 }());
 
 (function () {

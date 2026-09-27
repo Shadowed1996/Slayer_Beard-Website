@@ -194,6 +194,88 @@ html.is-pollorun {
   opacity: 1;
 }
 
+.pollorun__classifica {
+  position: absolute;
+  inset-inline: 16px;
+  inset-block-end: max(16px, env(safe-area-inset-bottom, 0px));
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.pollorun__classifica[hidden] {
+  display: none;
+}
+
+.pollorun__pillola {
+  max-inline-size: 100%;
+  min-block-size: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--twitch, var(--viola));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fondo) 82%, transparent);
+  color: var(--testo);
+  font: 600 var(--t-micro, 12px)/1.2 var(--font-mono, monospace);
+  letter-spacing: .06em;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.pollorun__pillola:hover,
+.pollorun__pillola:focus-visible {
+  border-color: var(--ciano);
+  color: var(--ciano);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--ciano) 45%, transparent);
+  outline: none;
+}
+
+.pollorun__pillola:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.pollorun__pillola.is-collegato {
+  border-color: var(--linea-viva, currentColor);
+  color: var(--testo-medio, var(--testo));
+  box-shadow: none;
+}
+
+.pollorun__pillola.is-attesa {
+  border-color: var(--linea-forte, currentColor);
+  color: var(--testo-tenue, var(--testo));
+  box-shadow: none;
+}
+
+.pollorun__classifica-avviso {
+  max-inline-size: min(520px, 100%);
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--allerta);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fondo) 92%, transparent);
+  color: var(--allerta);
+  font: 500 var(--t-micro, 12px)/1.35 var(--font-mono, monospace);
+  text-align: center;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.pollorun__classifica-avviso:empty {
+  display: none;
+}
+
+.pollorun__classifica-avviso.is-visibile {
+  opacity: 1;
+}
+
 @keyframes pollorun-entra {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -204,5 +286,7 @@ html.is-pollorun {
   .pollorun__chiudi,
   .pollorun__regola,
   .pollorun__muto,
-  .pollorun__avviso { transition: none; }
+  .pollorun__avviso,
+  .pollorun__pillola,
+  .pollorun__classifica-avviso { transition: none; }
 }

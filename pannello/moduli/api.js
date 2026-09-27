@@ -277,5 +277,10 @@ export const api = {
   creaSondaggio: (dati) => richiesta('POST', '/api/sondaggi', dati),
   chiudiSondaggio: () => richiesta('POST', '/api/sondaggi/chiudi'),
   lanciaMeteora: () => richiesta('POST', '/api/meteora/lancia'),
-  eliminaSondaggio: (id) => richiesta('DELETE', '/api/sondaggi/' + encodeURIComponent(id))
+  eliminaSondaggio: (id) => richiesta('DELETE', '/api/sondaggi/' + encodeURIComponent(id)),
+
+  classifica: () => richiesta('GET', '/api/classifica/gestione'),
+  classificaTogli: (dati) => richiesta('POST', '/api/classifica/togli', dati),
+  classificaBlocca: (dati) => richiesta('POST', '/api/classifica/blocca', dati),
+  classificaStagione: (dati) => richiesta('POST', '/api/classifica/stagione', dati)
 };

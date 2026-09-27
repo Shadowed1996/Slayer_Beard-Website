@@ -657,7 +657,7 @@
   function crea(opzioni) {
     var tela = opzioni.tela;
     var ctx = tela && tela.getContext ? tela.getContext('2d') : null;
-    if (!ctx) { return { avvia: function () { }, ferma: function () { }, distruggi: function () { } }; }
+    if (!ctx) { return { avvia: function () { }, ferma: function () { }, distruggi: function () { }, classifica: function () { return false; } }; }
     var sipario = !!opzioni.sipario;
     var gd = opzioni.stile === 'geometrydash';
     var ridotto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -745,6 +745,7 @@
     var scintille = [], onde = [], lampo = 0, scossa = 0, frase = '', frasePagina = null;
     var ultimo = 0, acceso = false, attivo = false, idFrame = 0;
     var timerPrecalcolo = 0;
+    var posto = null;
 
     function creaMonti(picchi, seme) {
       var r = casuale(seme);
@@ -1423,6 +1424,12 @@
       return { righe: righe, dimensione: Math.max(10, massimo * Math.min(1, largo / piuLarga)) };
     }
 
+    function stringi(testo, dim, peso, famiglia, largo) {
+      ctx.font = peso + ' ' + Math.round(dim) + 'px ' + famiglia;
+      var misura = ctx.measureText(testo).width;
+      return misura > largo ? Math.max(8, Math.floor(dim * largo / misura)) : dim;
+    }
+
     function glitch(testo, x, yy, dim, scarto) {
       scritta(testo, x - scarto, yy, dim, '700', TITOLO, C.magenta, 'center', false);
       scritta(testo, x + scarto, yy, dim, '700', TITOLO, C.ciano, 'center', false);
@@ -1452,73 +1459,234 @@
       ctx.restore();
     }
 
-    function inRiga(testo, x, yy, dim, peso, famiglia, colore, contorno) {
+    function inRiga(testo, x, yy, dim, peso, famiglia, colore, contorno, limite) {
       ctx.font = peso + ' ' + Math.round(dim) + 'px ' + famiglia;
       var largo = ctx.measureText(testo).width;
-      var spazio = Math.max(40, W - x - 12);
+      var spazio = Math.max(40, (limite || W) - x - 12);
       scritta(testo, x, yy, largo > spazio ? Math.max(8, Math.floor(dim * spazio / largo)) : dim, peso, famiglia, colore, 'left', contorno);
     }
 
-    function riservaDestra() {
-      var ingombro = opzioni.ingombro;
-      if (!ingombro || !ingombro.getBoundingClientRect || ingombro.hidden) { return 0; }
-      var a = ingombro.getBoundingClientRect();
+    function ingombri() {
+      var elenco = opzioni.ingombro;
+      if (!elenco) { return []; }
+      if (!Array.isArray(elenco)) { elenco = [elenco]; }
       var b = tela.getBoundingClientRect();
-      if (!a.width || a.bottom <= (b.top || 0) + suolo || a.left >= (b.left || 0) + W) { return 0; }
-      return Math.max(0, (b.left || 0) + W - a.left + 8);
+      var trovati = [];
+      for (var i = 0; i < elenco.length; i++) {
+        var e = elenco[i];
+        if (!e || !e.getBoundingClientRect || e.hidden) { continue; }
+        var a = e.getBoundingClientRect();
+        if (!a || !a.width) { continue; }
+        var x0 = (a.left || 0) - (b.left || 0);
+        var y0 = (a.top || 0) - (b.top || 0);
+        var alto = a.height || ((a.bottom || 0) - (a.top || 0));
+        var r = { x0: x0, y0: y0, x1: x0 + a.width, y1: y0 + alto };
+        if (r.x1 <= 0 || r.y1 <= 0 || r.x0 >= W || r.y0 >= H) { continue; }
+        trovati.push(r);
+      }
+      return trovati;
     }
 
-    function selettore(x, fs, contorno) {
-      var voci = [];
+    function siToccano(a, b) {
+      return a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
+    }
+
+    function misureMenu(fs, scala) {
+      var dim = Math.min(fs, 22) * scala;
+      var titolo = Math.max(8, dim * 0.62);
+      var passo = Math.max(dim * 1.7, 30 * scala);
+      var pad = Math.max(6, dim * 0.6);
+      ctx.font = '700 ' + Math.round(dim) + 'px ' + MONO;
+      var segno = ctx.measureText('▶ ').width;
+      var voci = 0;
+      for (var i = 0; i < DIFFICOLTA.length; i++) { voci = Math.max(voci, ctx.measureText(etichetta(DIFFICOLTA[i])).width); }
+      ctx.font = '700 ' + Math.round(titolo) + 'px ' + MONO;
+      var largoTitolo = ctx.measureText('DIFFICOLTÀ').width;
+      var aiuto = tocco ? 0 : titolo * 1.8;
+      return {
+        dim: dim, titolo: titolo, passo: passo, pad: pad, segno: segno, aiuto: aiuto,
+        w: pad * 2 + Math.max(segno + voci, largoTitolo),
+        h: pad * 2 + titolo * 1.7 + passo * DIFFICOLTA.length + aiuto
+      };
+    }
+
+    function pianoMenu(fs, blocco) {
+      var ostacoli = ingombri();
+      var margine = Math.max(10, Math.min(24, W * 0.03));
+      var fsHud = gd ? Math.max(12, Math.min(22, U * 0.27)) : Math.max(12, U * 0.3);
+      var cima = raggiunto > 1 ? 12 + fsHud * 1.3 + 6 : 10;
+      var fondoTela = H - 6;
+      var testo = { x0: blocco.x - 6, x1: blocco.x + blocco.largo + 12, y0: blocco.cima - 6, y1: blocco.fondo + 6 };
+      var fasce = [[cima, suolo - 6], [cima, fondoTela], [cima, blocco.cima - 8], [blocco.fondo + 8, fondoTela]];
+      function prova(m, fascia, conTesto) {
+        var alto = fascia[1] - fascia[0];
+        if (m.h > alto) { return null; }
+        var r = { x1: W - margine, y0: fascia[0] + (alto - m.h) / 2 };
+        r.x0 = r.x1 - m.w;
+        r.y1 = r.y0 + m.h;
+        for (var giro = 0; giro < 2; giro++) {
+          for (var k = 0; k < ostacoli.length; k++) {
+            if (siToccano(r, ostacoli[k])) {
+              r.x1 = ostacoli[k].x0 - 8;
+              r.x0 = r.x1 - m.w;
+            }
+          }
+        }
+        if (r.x0 < 4) { return null; }
+        if (conTesto && siToccano(r, testo)) { return null; }
+        return r;
+      }
+      var scale = [1, 0.9, 0.8, 0.7, 0.6];
+      for (var s = 0; s < scale.length; s++) {
+        var m = misureMenu(fs, scale[s]);
+        for (var f = 0; f < fasce.length; f++) {
+          var r = prova(m, fasce[f], true);
+          if (r) { return { m: m, r: r, limite: 0 }; }
+        }
+      }
+      return { riga: true, limite: 0 };
+    }
+
+    function rigaDifficolta(x, fs, contorno) {
       var separatore = ' · ';
       var fascia = Math.max(20, H - suolo);
       var dim = Math.min(fs, fascia * 0.5);
+      var yy = suolo + fascia / 2 + dim * 0.35;
+      var destra = W - 12;
+      var ostacoli = ingombri();
+      for (var k = 0; k < ostacoli.length; k++) {
+        var o = ostacoli[k];
+        if (o.y1 > suolo && o.y0 < H && o.x0 > x) { destra = Math.min(destra, o.x0 - 8); }
+      }
+      var i;
       ctx.font = '700 ' + Math.round(dim) + 'px ' + MONO;
       var totale = 0;
-      var i;
       for (i = 0; i < DIFFICOLTA.length; i++) { totale += ctx.measureText(etichetta(DIFFICOLTA[i])).width + (i ? ctx.measureText(separatore).width : 0); }
-      var spazio = Math.max(60, W - x - 12 - riservaDestra());
-      if (totale > spazio) { dim = Math.max(9, Math.floor(dim * spazio / totale)); }
-      var yy = suolo + fascia / 2 + dim * 0.35;
+      var spazio = Math.max(60, destra - x);
+      if (totale > spazio) { dim = Math.max(8, Math.floor(dim * spazio / totale)); }
       ctx.font = '700 ' + Math.round(dim) + 'px ' + MONO;
-      var larghezzaSeparatore = ctx.measureText(separatore).width;
-      var cx = x;
-      for (i = 0; i < DIFFICOLTA.length; i++) {
-        var largo = ctx.measureText(etichetta(DIFFICOLTA[i])).width;
-        voci.push({ d: DIFFICOLTA[i], x: cx, largo: largo });
-        cx += largo + larghezzaSeparatore;
-      }
-      zone = [];
+      var largoSeparatore = ctx.measureText(separatore).width;
       var altoZona = Math.max(30, dim * 1.8);
-      for (i = 0; i < voci.length; i++) {
-        var v = voci[i];
+      var cx = x;
+      zone = [];
+      for (i = 0; i < DIFFICOLTA.length; i++) {
+        var d = DIFFICOLTA[i];
+        var largo = ctx.measureText(etichetta(d)).width;
         ctx.save();
         if (i) {
           ctx.globalAlpha *= 0.55;
-          scritta(separatore, v.x - larghezzaSeparatore, yy, dim, '700', MONO, gd ? BIANCO : C.violaChiaro, 'left', false);
+          scritta(separatore, cx - largoSeparatore, yy, dim, '700', MONO, gd ? BIANCO : C.violaChiaro, 'left', false);
           ctx.globalAlpha /= 0.55;
         }
-        if (v.d === difficolta) {
-          ctx.shadowColor = coloreDifficolta(v.d);
+        if (d === difficolta) {
+          ctx.shadowColor = coloreDifficolta(d);
           ctx.shadowBlur = gd ? 10 : 12;
-          scritta(etichetta(v.d), v.x, yy, dim, '700', MONO, coloreDifficolta(v.d), 'left', contorno);
+          scritta(etichetta(d), cx, yy, dim, '700', MONO, coloreDifficolta(d), 'left', contorno);
           ctx.shadowBlur = 0;
-          ctx.fillStyle = coloreDifficolta(v.d);
-          ctx.fillRect(v.x, yy + dim * 0.28, v.largo, Math.max(2, dim * 0.12));
+          ctx.fillStyle = coloreDifficolta(d);
+          ctx.fillRect(cx, yy + dim * 0.28, largo, Math.max(2, dim * 0.12));
         } else {
           ctx.globalAlpha *= 0.75;
-          scritta(etichetta(v.d), v.x, yy, dim, '700', MONO, v.d === 'estremo' ? ROSSO : (gd ? BIANCO : C.violaChiaro), 'left', contorno);
+          scritta(etichetta(d), cx, yy, dim, '700', MONO, d === 'estremo' ? ROSSO : (gd ? BIANCO : C.violaChiaro), 'left', contorno);
         }
         ctx.restore();
         var centro = yy - dim * 0.35;
-        zone.push({ d: v.d, x0: v.x - larghezzaSeparatore / 2, x1: v.x + v.largo + larghezzaSeparatore / 2, y0: centro - altoZona / 2, y1: centro + altoZona / 2 });
+        zone.push({ d: d, x0: cx - largoSeparatore / 2, x1: cx + largo + largoSeparatore / 2, y0: centro - altoZona / 2, y1: centro + altoZona / 2 });
+        cx += largo + largoSeparatore;
       }
-      ctx.font = '600 ' + Math.round(dim * 0.85) + 'px ' + MONO;
-      var suggerimento = cx - larghezzaSeparatore + ctx.measureText('  ←/→').width;
-      if (!tocco && suggerimento <= W - 12 - riservaDestra()) {
+    }
+
+    function menuDifficolta(piano, contorno) {
+      var m = piano.m;
+      var r = piano.r;
+      var tenue = gd ? BIANCO : C.violaChiaro;
+      ctx.save();
+      ctx.textBaseline = 'alphabetic';
+      ctx.shadowBlur = 0;
+      rettangoloTondo(r.x0, r.y0, m.w, m.h, Math.min(12, m.pad * 1.2));
+      ctx.globalAlpha = gd ? 0.42 : 0.62;
+      ctx.fillStyle = gd ? NERO : C.fondo;
+      ctx.fill();
+      ctx.globalAlpha = gd ? 0.7 : 0.5;
+      ctx.lineWidth = gd ? 2 : 1.5;
+      ctx.strokeStyle = gd ? BIANCO : C.violaChiaro;
+      ctx.stroke();
+      ctx.globalAlpha = 0.8;
+      var sinistra = r.x0 + m.pad;
+      scritta('DIFFICOLTÀ', sinistra, r.y0 + m.pad + m.titolo, m.titolo, '700', MONO, tenue, 'left', false);
+      ctx.globalAlpha = 1;
+      zone = [];
+      var inizio = r.y0 + m.pad + m.titolo * 1.7;
+      for (var i = 0; i < DIFFICOLTA.length; i++) {
+        var d = DIFFICOLTA[i];
+        var centro = inizio + m.passo * (i + 0.5);
+        var base = centro + m.dim * 0.35;
         ctx.save();
-        ctx.globalAlpha *= 0.5;
-        scritta('  ←/→', cx - larghezzaSeparatore, yy, dim * 0.85, '600', MONO, gd ? BIANCO : C.violaChiaro, 'left', false);
+        if (d === difficolta) {
+          var tinta = coloreDifficolta(d);
+          ctx.globalAlpha = 0.16;
+          ctx.fillStyle = tinta;
+          rettangoloTondo(r.x0 + 4, centro - m.passo / 2 + 2, m.w - 8, m.passo - 4, Math.min(8, m.pad));
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.shadowColor = tinta;
+          ctx.shadowBlur = gd ? 10 : 12;
+          scritta('▶', sinistra, base, m.dim, '700', MONO, tinta, 'left', contorno);
+          scritta(etichetta(d), sinistra + m.segno, base, m.dim, '700', MONO, tinta, 'left', contorno);
+        } else {
+          ctx.globalAlpha = 0.75;
+          scritta(etichetta(d), sinistra + m.segno, base, m.dim, '700', MONO, d === 'estremo' ? ROSSO : tenue, 'left', contorno);
+        }
+        ctx.restore();
+        zone.push({ d: d, x0: r.x0, x1: r.x0 + m.w, y0: centro - m.passo / 2, y1: centro + m.passo / 2 });
+      }
+      if (m.aiuto) {
+        ctx.globalAlpha = 0.5;
+        scritta('↑/↓', sinistra, r.y1 - m.pad - m.titolo * 0.35, m.titolo, '600', MONO, tenue, 'left', false);
+      }
+      ctx.restore();
+    }
+
+    function bloccoTesti(righe, x) {
+      var b = { x: x, largo: 0, cima: H, fondo: 0 };
+      for (var i = 0; i < righe.length; i++) {
+        var riga = righe[i];
+        ctx.font = riga.peso + ' ' + Math.round(riga.dim) + 'px ' + riga.famiglia;
+        b.largo = Math.max(b.largo, ctx.measureText(riga.testo).width);
+        b.cima = Math.min(b.cima, riga.y - riga.dim * 0.9);
+        b.fondo = Math.max(b.fondo, riga.y + riga.dim * 0.3);
+      }
+      return b;
+    }
+
+    function schermataIniziale(fs) {
+      var x, righe;
+      if (gd) {
+        x = Math.min(polloX, 20);
+        righe = [
+          { testo: 'POLLO RUN', y: suolo - U * 2.35, dim: fs * 1.9, peso: '900', famiglia: TITOLO, colore: BIANCO, alone: '#35e6ff', bagliore: 12 },
+          { testo: (tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', y: suolo - U * 1.75, dim: fs, peso: '700', famiglia: MONO, colore: BIANCO, pulsa: 0.6 }
+        ];
+        if (raggiunto > 1) { righe.push({ testo: 'INVIO: riprendi dal livello ' + raggiunto, y: suolo - U * 1.3, dim: fs * 0.9, peso: '600', famiglia: MONO, colore: GIALLO }); }
+      } else {
+        x = polloX + larghezzaGiocatore() + U * 0.35;
+        righe = [
+          { testo: 'POLLO RUN', y: suolo - U * 0.95, dim: fs * 1.15, peso: '700', famiglia: MONO, colore: C.magenta, alone: C.magenta, bagliore: 10 },
+          { testo: (tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', y: suolo - U * 0.55, dim: fs, peso: '500', famiglia: MONO, colore: C.testo, pulsa: 0.55 }
+        ];
+        if (raggiunto > 1) { righe.push({ testo: 'INVIO: riprendi dal livello ' + raggiunto, y: suolo - U * 0.2, dim: fs * 0.9, peso: '500', famiglia: MONO, colore: C.violaChiaro }); }
+      }
+      var piano = pianoMenu(fs, bloccoTesti(righe, x));
+      if (piano.riga) { rigaDifficolta(gd ? Math.min(polloX, 20) : polloX, gd ? fs : fs * 0.95, gd); } else { menuDifficolta(piano, gd); }
+      for (var i = 0; i < righe.length; i++) {
+        var riga = righe[i];
+        ctx.save();
+        if (riga.alone) {
+          ctx.shadowColor = riga.alone;
+          ctx.shadowBlur = riga.bagliore;
+        }
+        if (riga.pulsa) { ctx.globalAlpha = ridotto ? 1 : riga.pulsa + (1 - riga.pulsa) * Math.sin(t * 4); }
+        inRiga(riga.testo, x, riga.y, riga.dim, riga.peso, riga.famiglia, riga.colore, gd, piano.limite);
         ctx.restore();
       }
     }
@@ -1655,8 +1823,9 @@
       var righe = frasePagina.righe;
       var dim = frasePagina.dimensione;
       var nota = testoCanzone();
+      var inClassifica = testoPosto();
       var altoFrase = righe.length * dim * 1.18;
-      var ph = 20 + fsTitolo * 1.35 + (righe.length ? altoFrase + 8 : 0) + fs * 1.6 + (nota ? fs * 1.45 : 0) + fs * 2.3 + 14;
+      var ph = 20 + fsTitolo * 1.35 + (righe.length ? altoFrase + 8 : 0) + fs * 1.6 + (inClassifica ? fs * 1.5 : 0) + (nota ? fs * 1.45 : 0) + fs * 2.3 + 14;
       ph = Math.min(ph, H - 12);
       var px = (W - pw) / 2;
       var py = Math.max(6, (H - ph) / 2);
@@ -1684,8 +1853,13 @@
         scritta(righe[r], W / 2, y + r * dim * 1.18, dim, '800', TITOLO, BIANCO, 'center', true);
       }
       if (righe.length) { y += altoFrase + 8; }
-      scritta(etichetta(difficolta) + '   TENTATIVI ' + tentativo + '   SALTI ' + S.salti + '   TEMPO ' + tempoTesto(durataLivello), W / 2, y, fs, '700', MONO, BIANCO, 'center', false);
+      var statistiche = etichetta(difficolta) + '   TENTATIVI ' + tentativo + '   SALTI ' + S.salti + '   TEMPO ' + tempoTesto(durataLivello);
+      scritta(statistiche, W / 2, y, stringi(statistiche, fs, '700', MONO, pw - 24), '700', MONO, BIANCO, 'center', false);
       y += fs * 1.6;
+      if (inClassifica) {
+        scritta(inClassifica, W / 2, y, stringi(inClassifica, fs, '800', MONO, pw - 24), '800', MONO, coloreDifficolta(difficolta), 'center', true);
+        y += fs * 1.5;
+      }
       if (nota) {
         ctx.globalAlpha *= 0.85;
         scritta(nota, W / 2, y, fs * 0.95, '600', TITOLO, BIANCO, 'center', false);
@@ -1704,7 +1878,8 @@
       if (eta <= 0) { return; }
       var fsTitolo = fs * 1.1;
       var nota = testoCanzone();
-      var riservato = fsTitolo * 1.6 + fs * (nota ? 4.4 : 3);
+      var inClassifica = testoPosto();
+      var riservato = fsTitolo * 1.6 + fs * ((nota ? 4.4 : 3) + (inClassifica ? 1.3 : 0));
       if (!frasePagina || frasePagina.W !== W || frasePagina.U !== U) {
         var larghezzaFrase = Math.max(60, W - 32);
         var massimo = Math.max(18, U * 0.45);
@@ -1716,7 +1891,7 @@
       }
       var righe = frasePagina.righe;
       var dim = frasePagina.dimensione;
-      var alto = fsTitolo * 1.6 + righe.length * dim * 1.1 + fs * (nota ? 4.4 : 3);
+      var alto = fsTitolo * 1.6 + righe.length * dim * 1.1 + fs * ((nota ? 4.4 : 3) + (inClassifica ? 1.3 : 0));
       var cima = Math.max(8, (orizzonte - alto) / 2);
       var zoom = ridotto ? 1 : 1 + 0.25 * Math.max(0, 1 - eta / 0.25);
       ctx.save();
@@ -1736,8 +1911,13 @@
       var y = fsTitolo * 1.6;
       for (var r = 0; r < righe.length; r++) { glitch(righe[r], 0, y + r * dim * 1.1, dim, scarto); }
       y += righe.length * dim * 1.1 + fs * 0.4;
-      scritta(etichetta(difficolta) + '   TENTATIVI ' + tentativo + '   SALTI ' + S.salti + '   TEMPO ' + tempoTesto(durataLivello), 0, y, fs * 0.9, '500', MONO, C.violaChiaro, 'center', false);
+      var statistiche = etichetta(difficolta) + '   TENTATIVI ' + tentativo + '   SALTI ' + S.salti + '   TEMPO ' + tempoTesto(durataLivello);
+      scritta(statistiche, 0, y, stringi(statistiche, fs * 0.9, '500', MONO, W - 24), '500', MONO, C.violaChiaro, 'center', false);
       y += fs * 1.3;
+      if (inClassifica) {
+        scritta(inClassifica, 0, y, stringi(inClassifica, fs * 0.9, '700', MONO, W - 24), '700', MONO, coloreDifficolta(difficolta), 'center', false);
+        y += fs * 1.3;
+      }
       if (nota) {
         scritta(nota, 0, y, fs * 0.9, '500', MONO, C.violaChiaro, 'center', false);
         y += fs * 1.3;
@@ -1770,31 +1950,7 @@
       ctx.save();
       ctx.textBaseline = 'alphabetic';
       if (stato !== 'fermo') { zone = []; }
-      if (stato === 'fermo') {
-        if (gd) {
-          var xg = Math.min(polloX, 20);
-          selettore(xg, fs, true);
-          ctx.shadowColor = '#35e6ff';
-          ctx.shadowBlur = 12;
-          inRiga('POLLO RUN', xg, suolo - U * 2.35, fs * 1.9, '900', TITOLO, BIANCO, true);
-          ctx.shadowBlur = 0;
-          ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
-          inRiga((tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', xg, suolo - U * 1.75, fs, '700', MONO, BIANCO, true);
-          ctx.globalAlpha = 1;
-          if (raggiunto > 1) { inRiga('INVIO: riprendi dal livello ' + raggiunto, xg, suolo - U * 1.3, fs * 0.9, '600', MONO, GIALLO, true); }
-        } else {
-          var x = polloX + larghezzaGiocatore() + U * 0.35;
-          selettore(polloX, fs * 0.95, false);
-          ctx.shadowColor = C.magenta;
-          ctx.shadowBlur = 10;
-          inRiga('POLLO RUN', x, suolo - U * 0.95, fs * 1.15, '700', MONO, C.magenta, false);
-          ctx.shadowBlur = 0;
-          ctx.globalAlpha = ridotto ? 1 : 0.55 + 0.45 * Math.sin(t * 4);
-          inRiga((tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', x, suolo - U * 0.55, fs, '500', MONO, C.testo, false);
-          ctx.globalAlpha = 1;
-          if (raggiunto > 1) { inRiga('INVIO: riprendi dal livello ' + raggiunto, x, suolo - U * 0.2, fs * 0.9, '500', MONO, C.violaChiaro, false); }
-        }
-      }
+      if (stato === 'fermo') { schermataIniziale(fs); }
       if (stato === 'corsa') {
         if (gd) { disegnaTesteMondo(); } else { disegnaIntro(fs); }
         if (livello === 1 && tentativo === 1 && t - tInizioTentativo > 2.4 && t - tInizioTentativo < 7) {
@@ -1939,6 +2095,30 @@
         scintilla(cx, suolo - U * 1.2, Math.cos(a) * forza, Math.sin(a) * forza, tinte[i % tinte.length], 0.9 + Math.random() * 0.9, U * (0.05 + Math.random() * 0.08));
       }
       if (!timerPrecalcolo) { timerPrecalcolo = setTimeout(function () { precalcola(livello + 1); }, 60); }
+      avvisaLivello({ tipo: 'fine', livello: livello, difficolta: difficolta, tentativi: tentativo });
+    }
+
+    function avvisaLivello(evento) {
+      if (typeof opzioni.suLivello !== 'function') { return; }
+      try { opzioni.suLivello(evento); } catch (e) { }
+    }
+
+    function classifica(dati) {
+      if (!dati || typeof dati !== 'object') { posto = null; chiedi(); return false; }
+      var pos = Math.floor(Number(dati.posizione));
+      var tot = Math.floor(Number(dati.totale));
+      if (!(pos >= 1) || !(tot >= pos)) { return false; }
+      var d = DIFFICOLTA.indexOf(dati.difficolta) !== -1 ? dati.difficolta : difficolta;
+      var n = Math.floor(Number(dati.livello)) || livello;
+      posto = { posizione: pos, totale: tot, migliore: dati.migliore === true, difficolta: d, livello: n };
+      frasePagina = null;
+      chiedi();
+      return true;
+    }
+
+    function testoPosto() {
+      if (!posto || stato !== 'vinto' || posto.livello !== livello || posto.difficolta !== difficolta) { return ''; }
+      return (posto.migliore ? 'NUOVO RECORD · ' : '') + posto.posizione + '° su ' + posto.totale + ' · ' + etichetta(posto.difficolta);
     }
 
     function avviaLivello(n) {
@@ -1957,10 +2137,12 @@
       stato = 'corsa';
       tStato = t;
       tInizioTentativo = t;
+      posto = null;
       if (n > raggiunto) { raggiunto = n; ricorda(); }
       canzone = scegliCanzone(n);
       canzoneDelLivello = n;
       suonaCanzone(canzone);
+      if (tentativo === 1) { avvisaLivello({ tipo: 'inizio', livello: n, difficolta: difficolta }); }
       chiedi();
     }
 
@@ -2097,7 +2279,7 @@
         return;
       }
       if (stato === 'fermo' && !evento.altKey && !evento.ctrlKey && !evento.metaKey) {
-        var sposta = evento.key === 'ArrowLeft' ? -1 : (evento.key === 'ArrowRight' ? 1 : 0);
+        var sposta = evento.key === 'ArrowLeft' || evento.key === 'ArrowUp' ? -1 : (evento.key === 'ArrowRight' || evento.key === 'ArrowDown' ? 1 : 0);
         var cifra = evento.key && evento.key.length === 1 ? '1234'.indexOf(evento.key) : -1;
         if (sposta || cifra !== -1) {
           var dove = evento.target;
@@ -2195,7 +2377,7 @@
       window.removeEventListener('resize', suRidimensiona);
     }
 
-    return { avvia: avvia, ferma: ferma, distruggi: ferma };
+    return { avvia: avvia, ferma: ferma, distruggi: ferma, classifica: classifica };
   }
 
   window.PolloRun.crea = crea;
