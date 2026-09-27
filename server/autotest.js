@@ -3277,7 +3277,7 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     const reso = costruisci.rendi(documentoRicco(), { adesso: ADESSO });
     const dati = JSON.parse(reso.dati.slice(reso.dati.indexOf('{'), reso.dati.lastIndexOf('}') + 1));
     const o = dati.orari;
-    esigiUguale(Object.keys(o).join(','), 'giorni,ora,fuso,durataOre,ore,durate,eventi', 'chiavi del ramo orari');
+    esigiUguale(Object.keys(o).join(','), 'giorni,ora,fuso,durataOre,ore,durate,eventi,pause', 'chiavi del ramo orari');
     esigiUguale(o.giorni.join(',') + ' ' + o.ora + ' ' + o.fuso + ' ' + o.durataOre, '1,3,0 21:00 Europe/Rome 4', 'i quattro campi di sempre');
     esigiUguale(JSON.stringify(o.ore), JSON.stringify({ 0: '16:00', 1: '21:00', 3: '18:30' }), 'ore');
     esigiUguale(JSON.stringify(o.durate), JSON.stringify({ 0: 6, 1: 4, 3: 2.5 }), 'durate');
@@ -3288,6 +3288,149 @@ async function proveSchedule(contenutiVeri, costruisci, archivio) {
     esigiUguale([dati.testi.etichettaInOnda, dati.testi.etichettaDaTe, dati.testi.etichettaEvento].join('|'), 'In onda|Da te|Speciale', 'testi nuovi');
 
     esigiUguale(reso.contesto.sito.eventi.map((e) => e.inizio).join(','), o.eventi.map((e) => e.inizio).join(','), 'pagina e dati.js');
+  });
+
+  const documentoConPause = () => {
+    const documento = copia(contenutiVeri);
+    const orari = documento.config.orari;
+    orari.giorni = [1, 3, 5, 0];
+    Object.assign(orari.schede[0], { immagine: 'contenuti/media/locandina.webp', titolo: 'Domenica lunga' });
+    orari.pause = [
+      { data: '2026-09-20', motivo: 'Motivi famigliari' },
+      { data: '2026-09-21', motivo: '' },
+      { data: '2026-09-22', motivo: 'Dentista' },
+      { data: '2026-09-22', motivo: 'Doppione' }
+    ];
+    orari.eventi = [evento({ data: '2026-09-20', ora: '09:00', durataOre: 14, titolo: 'SlayerFest | Day 13' })];
+    return documento;
+  };
+
+  const schedeDelNastro = (html) => {
+    const inizio = html.indexOf('<ol id="nastro"');
+    const nastro = html.slice(inizio, html.indexOf('</ol>', inizio));
+    const schede = {};
+    const re = /<li class="(nastro__giorno[^"]*)" data-giorno="(\d)"[^>]*>([\s\S]*?)<\/li>/g;
+    let m;
+    while ((m = re.exec(nastro))) { schede[m[2]] = { classi: m[1].split(/\s+/), dentro: m[3].trim() }; }
+    return schede;
+  };
+
+  await prova('js/dati.js: i giorni saltati arrivano al conto alla rovescia, senza doppioni', () => {
+    const reso = costruisci.rendi(documentoConPause(), { adesso: ADESSO });
+    const dati = JSON.parse(reso.dati.slice(reso.dati.indexOf('{'), reso.dati.lastIndexOf('}') + 1));
+    esigiUguale(JSON.stringify(dati.orari.pause), JSON.stringify(['2026-09-20', '2026-09-21', '2026-09-22']), 'pause');
+    const senza = costruisci.rendi(documentoRicco(), { adesso: ADESSO });
+    const datiSenza = JSON.parse(senza.dati.slice(senza.dati.indexOf('{'), senza.dati.lastIndexOf('}') + 1));
+    esigiUguale(JSON.stringify(datiSenza.orari.pause), '[]', 'senza pause');
+  });
+
+  await prova('settimana: la scheda di un giorno saltato ha gli stessi contenitori delle altre e niente fuori dal corpo', () => {
+    const schede = schedeDelNastro(costruisci.rendi(documentoConPause(), { adesso: ADESSO }).html);
+    esigiUguale(Object.keys(schede).sort().join(','), '0,1,2,3,4,5,6', 'sette schede');
+    const struttura = (scheda, cosa) => {
+      const d = scheda.dentro;
+      const testa = d.indexOf('<div class="nastro__testa">');
+      const corpo = d.indexOf('<div class="nastro__corpo">');
+      esigi(testa !== -1 && corpo > testa, cosa + ': mancano testa e corpo nell ordine giusto');
+      esigiUguale((d.match(/<div /g) || []).length, 2, cosa + ': contenitori');
+      esigi(/<\/div>$/.test(d), cosa + ': dopo il corpo c e altro');
+      esigiUguale(d.slice(0, testa).replace(/<img class="nastro__sfondo"[^>]*>|<span class="nastro__filigrana"[^>]*>[^<]*<\/span>/g, '').trim(), '', cosa + ': prima della testa c e altro');
+      return d.slice(corpo);
+    };
+    for (const g of ['3', '4', '5', '6']) { struttura(schede[g], 'giorno ' + g); }
+    const dom = schede['0'];
+    esigi(['is-diretta', 'is-saltata', 'con-immagine', 'is-sostituito'].every((c) => dom.classi.indexOf(c) !== -1), 'domenica: classi ' + dom.classi.join(' '));
+    const corpoDom = struttura(dom, 'domenica saltata con evento e immagine');
+    const titolo = corpoDom.indexOf('<p class="nastro__sostituito">SlayerFest | Day 13</p>');
+    const saltata = corpoDom.indexOf('<p class="nastro__saltata">');
+    esigi(titolo !== -1 && saltata > titolo, 'domenica: il titolo dell evento deve stare nel corpo, prima di «niente live»');
+    esigiDentro(corpoDom, '<span class="nastro__motivo">Motivi famigliari</span>', 'domenica: motivo');
+    esigi(corpoDom.indexOf('nastro__quando') === -1, 'domenica: niente orario in un giorno saltato');
+    const lun = schede['1'];
+    esigi(lun.classi.indexOf('is-diretta') !== -1 && lun.classi.indexOf('is-saltata') !== -1, 'lunedi: classi');
+    const corpoLun = struttura(lun, 'lunedi saltato senza motivo');
+    esigi(corpoLun.indexOf('nastro__motivo') === -1 && corpoLun.indexOf('nastro__sostituito') === -1, 'lunedi: niente motivo vuoto ne evento');
+    const mar = schede['2'];
+    esigi(mar.classi.indexOf('is-diretta') === -1 && mar.classi.indexOf('is-saltata') !== -1, 'martedi: classi');
+    esigiDentro(struttura(mar, 'martedi di riposo saltato'), '<span class="nastro__motivo">Dentista</span>', 'martedi: motivo');
+  });
+
+  await prova('settimana: il css tiene la scheda di un giorno saltato dentro il suo riquadro', () => {
+    const css = fs.readFileSync(path.join(RADICE_VERA, 'css', 'sezioni.css'), 'utf8').replace(/\s+/g, ' ');
+    const regola = (selettore) => {
+      const i = css.indexOf(selettore + ' {');
+      esigi(i !== -1, 'manca la regola ' + selettore);
+      return css.slice(i, css.indexOf('}', i));
+    };
+    esigiDentro(regola('.nastro__giorno:not(.is-diretta) .nastro__saltata'), 'contain: size', 'il motivo non deve allungare la scheda');
+    esigiDentro(regola('.nastro__giorno.is-saltata:not(.is-diretta) .nastro__corpo'), 'align-self: stretch', 'il corpo copre tutta la colonna');
+    esigiDentro(regola('.nastro__giorno:not(.is-diretta) .nastro__saltata .nastro__tag'), 'var(--allerta)', 'etichetta del giorno saltato');
+    esigiDentro(regola('.nastro__giorno.is-saltata .nastro__sostituito'), 'line-through', 'evento annullato barrato');
+  });
+
+  await prova('js/sito.js: un giorno saltato non e la prossima diretta e il titolo dell evento resta nel corpo', () => {
+    const adesso = Date.parse('2026-09-20T10:00:00.000Z');
+    const reso = costruisci.rendi(documentoConPause(), { adesso: adesso });
+    const dati = JSON.parse(reso.dati.slice(reso.dati.indexOf('{'), reso.dati.lastIndexOf('}') + 1));
+    const nodo = (nome) => {
+      const n = {
+        nome: nome, figli: [], vicini: [], attributi: {}, textContent: '', className: '', hidden: false,
+        appendChild(c) { n.figli.push(c); return c; },
+        insertAdjacentElement(dove, c) { n.vicini.push(dove); return c; },
+        setAttribute(k, v) { n.attributi[k] = String(v); },
+        getAttribute(k) { return k in n.attributi ? n.attributi[k] : null; },
+        querySelectorAll() { return []; },
+        remove() {}
+      };
+      return n;
+    };
+    const scheda = (g, conQuando, saltata) => {
+      const classi = new Set();
+      const parti = {
+        '.nastro__data': nodo('data'), '.nastro__segni': nodo('segni'), '.nastro__corpo': nodo('corpo'),
+        '.nastro__quando': conQuando ? nodo('quando') : null, '.nastro__saltata': saltata ? nodo('saltata') : null
+      };
+      const li = nodo('li');
+      li.attributi['data-giorno'] = String(g);
+      li.classList = { contains: (c) => classi.has(c), toggle: (c, si) => { if (si) { classi.add(c); } else { classi.delete(c); } } };
+      li.classi = classi;
+      li.parti = parti;
+      li.querySelector = (s) => parti[s] || null;
+      return li;
+    };
+    const schede = [scheda(1, false, true), scheda(2, true, false), scheda(3, true, false), scheda(4, true, false), scheda(5, true, false), scheda(6, true, false), scheda(0, false, true)];
+    const conto = nodo('conto');
+    const documento = {
+      readyState: 'complete',
+      body: nodo('body'),
+      documentElement: { clientWidth: 1280 },
+      addEventListener() {},
+      createElement: nodo,
+      createTextNode: (t) => ({ testo: t }),
+      getElementById: (id) => (id === 'conto' ? conto : null),
+      querySelector: () => null,
+      querySelectorAll: (s) => (s.indexOf('#nastro') === 0 ? schede : [])
+    };
+    class Orologio extends Date { static now() { return adesso; } }
+    const avvisi = [];
+    require('node:vm').runInNewContext(fs.readFileSync(path.join(RADICE_VERA, 'js', 'sito.js'), 'utf8'), {
+      window: { DATI: dati, addEventListener() {} },
+      document: documento,
+      Date: Orologio,
+      Intl: Intl,
+      setInterval: () => 1, clearInterval() {}, setTimeout: () => 1, clearTimeout() {},
+      console: { warn: (...a) => avvisi.push(a.join(' ')), log() {} }
+    });
+    esigiUguale(avvisi.join(' | '), '', 'blocchi non avviati');
+    const per = {};
+    for (const li of schede) { per[li.attributi['data-giorno']] = li; }
+    esigi(!per[0].classi.has('is-prossima') && !per[1].classi.has('is-prossima'), 'un giorno saltato indicato come prossima diretta');
+    esigi(per[3].classi.has('is-prossima'), 'la prossima diretta vera e mercoledi');
+    esigiUguale(conto.textContent, '3g 09:00:00', 'conto alla rovescia fino a mercoledi alle 21');
+    esigi(per[0].classi.has('is-sostituito') && per[0].classi.has('ha-evento'), 'domenica: l evento c e');
+    esigiUguale(per[0].figli.length, 0, 'domenica: qualcosa e finito direttamente nella scheda, fuori dal corpo');
+    esigiUguale(per[0].parti['.nastro__saltata'].vicini.join(','), 'beforebegin', 'domenica: il titolo dell evento va prima di «niente live»');
+    esigiUguale(per[1].figli.length + per[1].parti['.nastro__corpo'].figli.length, 0, 'lunedi: niente titolo d evento');
   });
 
   await prova('la pagina si rende con una schedule piena, con una a meta e senza immagini esterne', () => {

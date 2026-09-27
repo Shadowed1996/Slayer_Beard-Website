@@ -453,6 +453,13 @@
 
 .nastro__saltata .nastro__tag { color: var(--allerta); }
 
+.nastro__giorno.is-saltata .nastro__sostituito {
+  color: var(--testo-medio);
+  font-size: clamp(0.95rem, 0.7rem + 0.5vw, 1.25rem);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
 .nastro__motivo {
   color: var(--testo-medio);
   font-size: var(--t-piccolo);
@@ -592,6 +599,48 @@
   color: var(--testo-tenue);
 }
 
+.nastro__giorno.is-saltata:not(.is-diretta) .nastro__corpo { align-self: stretch; }
+
+.nastro__giorno:not(.is-diretta) .nastro__saltata {
+  flex: 1 1 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--passo-2);
+  min-block-size: 0;
+  contain: size;
+}
+
+.nastro__giorno:not(.is-diretta) .nastro__saltata::before,
+.nastro__giorno:not(.is-diretta) .nastro__saltata::after {
+  content: "";
+  flex: 1 1 0;
+  inline-size: 1px;
+  background-color: var(--linea);
+}
+
+.nastro__giorno:not(.is-diretta) .nastro__saltata .nastro__tag {
+  flex: none;
+  color: var(--allerta);
+}
+
+.nastro__giorno:not(.is-diretta) .nastro__motivo {
+  flex: none;
+  max-inline-size: 100%;
+  font-size: var(--t-micro);
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1100px) {
+  .nastro__giorno.is-saltata:not(.is-diretta):has(.nastro__motivo) {
+    flex-grow: 2;
+    min-inline-size: 7rem;
+  }
+}
+
 @media (max-width: 1099.98px) {
   .nastro {
     flex-direction: column;
@@ -696,6 +745,31 @@
   .nastro__giorno:not(.is-diretta) .nastro__quando::after { content: none; }
 
   .nastro__giorno:not(.is-diretta) .nastro__tag { writing-mode: horizontal-tb; }
+
+  .nastro__giorno:not(.is-diretta) .nastro__saltata {
+    flex: 1 1 auto;
+    contain: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    column-gap: var(--passo-2);
+    row-gap: 2px;
+  }
+
+  .nastro__giorno:not(.is-diretta) .nastro__saltata::before {
+    flex: 1 1 2rem;
+    inline-size: auto;
+    block-size: 1px;
+  }
+
+  .nastro__giorno:not(.is-diretta) .nastro__saltata::after { content: none; }
+
+  .nastro__giorno:not(.is-diretta) .nastro__motivo {
+    flex: 1 1 100%;
+    writing-mode: horizontal-tb;
+    font-size: var(--t-piccolo);
+    text-align: end;
+  }
 }
 
 .eventi { margin-block-start: clamp(var(--passo-6), 5vw, var(--passo-8)); }
