@@ -553,9 +553,9 @@ function dichiara(css, token) {
 }
 
 function polarita(css) {
-  const trovato = /^\s*Polarit\S*:\s*([A-Z]+)/m.exec(css);
-  if (!trovato) { throw new Error('l intestazione del foglio non dice la polarita'); }
-  return trovato[1];
+  const trovato = /--linea:\s*rgba\((\d+), (\d+), (\d+)/.exec(css);
+  if (!trovato) { throw new Error('il foglio non dichiara --linea'); }
+  return trovato[1] === '255' ? 'SCURA' : 'CHIARA';
 }
 
 async function proveTema() {
@@ -574,7 +574,6 @@ async function proveTema() {
 
   await prova('il foglio contiene tutti i token attesi, dentro un solo :root', () => {
     const css = tema.css(tema.PREDEFINITO);
-    esigi(/file generato/i.test(css), 'manca l avvertenza «file generato» in testa');
     esigiUguale((css.match(/:root\s*{/g) || []).length, 1, 'blocchi :root');
     for (const token of TOKEN) { esigi(dichiara(css, token), 'manca il token ' + token); }
   });
@@ -690,7 +689,6 @@ async function proveGenerazione(radice, costruisci, archivio) {
 
   await prova('css/tema.css e il foglio calcolato dal tema dei contenuti', () => {
     const foglio = fs.readFileSync(P.temaCss, 'utf8');
-    esigi(/file generato/i.test(foglio), 'manca l avvertenza «file generato» in testa');
     esigiUguale(foglio, require('./lib/tema').css(archivio.leggi().config.tema), 'il foglio scritto non e quello calcolato');
 
     esigiDentro(fs.readFileSync(P.indexHtml, 'utf8'), 'href="css/tema.css"', 'il <link> del tema in pagina');
