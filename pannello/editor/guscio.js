@@ -1,42 +1,3 @@
-/* =====================================================================
-   guscio.js — la struttura dell'editor unico (CONTRATTO-4 §9).
-
-   Cosa fa:
-     - carica con import() i moduli dell'editor (motore, contenuti, stile,
-       parti, nomi, impostazioni): se uno manca o lancia, l'editor parte lo
-       stesso e un avviso dice cosa non c'è;
-     - monta l'anteprima (motore.monta) e disegna il pannello laterale:
-       percorso dell'elemento scelto, «Seleziona il contenitore», schede
-       Contenuto / Stile / Avanzate (i controlli li disegnano gli altri
-       moduli con motore.disegnaIspettori, sempre nello stesso contenitore
-       per scheda);
-     - nessuna selezione: vista «Pagina» con il Navigatore, le scorciatoie
-       e i quattro passi; menu ☰ con le viste che non stanno sulla pagina;
-     - ricerca dei campi (Ctrl+K) e riepilogo degli errori di convalida,
-       che portano al campo: elemento nell'anteprima, parte o vista;
-     - pannello ridimensionabile 380–760 px, a scomparsa sotto i 1024 px;
-     - dispositivi, Annulla / Ripeti, e l'anteprima allineata a ogni
-       sb:modifica (§9.4).
-
-   Si appoggia a pannello.js (le funzioni che gli passa creaGuscio), al
-   ponte e ai moduli dell'editor solo attraverso le firme del contratto.
-
-   Indice
-     1. Costanti
-     2. Stato e utilità
-     3. Moduli dell'editor
-     4. Pannello: struttura fissa
-     5. Elemento selezionato e schede
-     6. Pagina
-     7. Viste del menu
-     8. Ricerca dei campi ed errori: portare al campo
-     9. Selezione e sincronizzazione dell'anteprima
-    10. Annulla / Ripeti
-    11. Barra alta, cassetto, larghezza
-    12. Tastiera
-    13. Avvio e interfaccia per pannello.js
-   ===================================================================== */
-
 import { ponte } from './ponte.js';
 import { api, ErroreApi, rottaAssente } from '../moduli/api.js';
 import { el, icona, bottone, svuota, leggiPreferenza, scriviPreferenza, menoMovimento } from '../moduli/dom.js';
@@ -46,20 +7,16 @@ import { creaLibreria } from '../moduli/media.js';
 import { creaBackup } from '../moduli/backup.js';
 import { creaSondaggi } from '../moduli/sondaggi.js';
 
-/* =====================================================================
-   1. COSTANTI
-   ===================================================================== */
-
 const LARGHEZZA_MIN = 380;
 const LARGHEZZA_MAX = 760;
 const LARGHEZZA_DI_SERIE = 480;
-const ANTEPRIMA_MIN = 420;          // l'anteprima non scende sotto questa larghezza
+const ANTEPRIMA_MIN = 420;
 const STRETTO = '(max-width: 1023.98px)';
 
 const MAX_STORIA = 50;
 const ATTESA_ISTANTANEA = 400;
 const ATTESA_RICARICA = 700;
-const RISERVA_RICARICA = 10000;     // se sb:anteprima-pronta non arriva, si chiude lo stesso
+const RISERVA_RICARICA = 10000;
 const RISERVA_MONTAGGIO = 8000;
 
 const MAX_RISULTATI = 12;
@@ -101,9 +58,6 @@ const MENU = [
   { azione: 'esci', nome: 'Esci', nota: 'Chiudi la sessione', ico: 'esci' }
 ];
 
-/* Viste del menu. `gruppo`: la vista è un gruppo dello schema disegnato
-   campo per campo (i tre gruppi che non stanno in nessun punto della
-   pagina, CONTRATTO-4 §5.4). */
 const VISTE = {
   menu: { titolo: 'Menu' },
   impostazioni: {
@@ -111,7 +65,6 @@ const VISTE = {
     nota: 'Colori, font e forma che valgono per tutto il sito. I singoli elementi si cambiano cliccandoli nell\'anteprima.',
     gruppo: 'aspetto'
   },
-  // Senza nota: l'introduzione la scrive già il Navigatore (parti.js).
   struttura: { titolo: 'Struttura della pagina' },
   canale: { titolo: 'Canale, contatti e immagini', gruppo: 'canale' },
   meta: { titolo: 'Google e social', gruppo: 'meta' },
@@ -137,7 +90,6 @@ const VISTE = {
   password: { titolo: 'Password', nota: 'La password che serve per entrare in questo pannello.' }
 };
 
-/* I gruppi che hanno una vista loro invece di un punto della pagina. */
 const VISTA_DEL_GRUPPO = { aspetto: 'impostazioni', canale: 'canale', meta: 'meta', manutenzione: 'manutenzione', meteora: 'meteora' };
 
 const MODULI = [
@@ -149,24 +101,20 @@ const MODULI = [
   { nome: 'impostazioni', file: './impostazioni.js', cosa: 'le Impostazioni del sito (editor/impostazioni.js)' }
 ];
 
-/* =====================================================================
-   2. STATO E UTILITÀ
-   ===================================================================== */
-
-let opz = null;   // le funzioni di pannello.js (creaGuscio)
+let opz = null;
 
 const sh = {
   montato: false,
   montaggio: null,
-  sospeso: true,        // app nascosta (accesso): niente disegni
+  sospeso: true,
 
-  modo: '',             // 'elemento' | 'pagina' | 'vista'
-  vista: null,          // vista aperta nel pannello, o null
+  modo: '',
+  vista: null,
   vistaDisegnata: null,
-  selezione: null,      // meta dell'elemento scelto (§10)
+  selezione: null,
   scheda: 'contenuto',
-  disegnate: {},        // scheda -> meta con cui è stata disegnata
-  conteggi: {},         // scheda -> riquadri disegnati (-1 motore assente, -2 errore)
+  disegnate: {},
+  conteggi: {},
   navVecchio: true,
 
   ricaricando: false,
@@ -184,8 +132,8 @@ const sh = {
   storia: { indietro: [], avanti: [], base: null, timer: null },
   applicando: false,
 
-  moduli: {},           // nome -> modulo ES caricato
-  motore: null,         // l'oggetto `motore` di motore.js
+  moduli: {},
+  motore: null,
   mancanti: [],
 
   libreria: null,
@@ -214,12 +162,10 @@ function normalizzaChiave(chiave) {
   return String(chiave || '').replace(/\[(\d+)\]/g, '.$1');
 }
 
-/** Valore sicuro dentro [attributo="…"]. */
 function perSelettore(valore) {
   return String(valore).replace(/["\\]/g, '\\$&');
 }
 
-/* Campi dove Ctrl+Z deve restare quello del browser. */
 function staScrivendo(nodo) {
   if (!nodo || nodo.nodeType !== 1) return false;
   if (nodo.isContentEditable) return true;
@@ -246,7 +192,6 @@ function gruppiSchema() {
   return schema && Array.isArray(schema.gruppi) ? schema.gruppi : [];
 }
 
-/** Riquadro «non c'è niente qui» con titolo, testo e azioni facoltative. */
 function segnaposto(titolo, testo, azioni = null) {
   return el('div', { classe: 'lato__vuoto' }, [
     el('p', { classe: 'lato__vuoto-titolo', testo: titolo }),
@@ -258,8 +203,6 @@ function segnaposto(titolo, testo, azioni = null) {
 function attendi(ms) {
   return new Promise((risolvi) => setTimeout(risolvi, ms));
 }
-
-/* --- motore ----------------------------------------------------------- */
 
 function mot(nome, ...argomenti) {
   const m = sh.motore;
@@ -281,17 +224,12 @@ function documentoAnteprima() {
   return doc && doc.body ? doc : null;
 }
 
-/** Vero se nell'anteprima c'è un marcatore di testo o immagine per la chiave. */
 function haMarcatore(chiave) {
   const doc = documentoAnteprima();
   if (!doc) return false;
   const v = perSelettore(chiave);
   return Boolean(doc.querySelector('[data-sb-testo="' + v + '"], [data-sb-immagine="' + v + '"], [data-sb-alt="' + v + '"]'));
 }
-
-/* =====================================================================
-   3. MODULI DELL'EDITOR
-   ===================================================================== */
 
 async function caricaModuli() {
   const esiti = await Promise.allSettled(MODULI.map((m) => import(m.file)));
@@ -348,8 +286,6 @@ async function montaMotore() {
     log('motore.monta', errore);
     return;
   }
-  // Un'anteprima che non arriva non deve tenere fermo tutto l'editor: dopo
-  // qualche secondo si va avanti, e quando arriva si allinea da sola.
   await Promise.race([Promise.resolve(promessa).catch((e) => log('motore.monta', e)), attendi(RISERVA_MONTAGGIO)]);
   sincronizzaDispositivo(true);
   if (leggiPreferenza('contorni', '0') === '1') mot('contorni', true);
@@ -357,19 +293,10 @@ async function montaMotore() {
   if (attuale && (!sh.selezione || attuale.id !== sh.selezione.id)) suSelezione(attuale);
 }
 
-/* =====================================================================
-   4. PANNELLO: STRUTTURA FISSA
-   Tre modi con una struttura che non si ricrea mai: «elemento» (percorso
-   e schede), «pagina» (nessuna selezione), «vista» (menu e viste). I
-   contenitori delle schede restano gli stessi: il motore ci riusa i
-   riquadri degli ispettori e chi scrive non perde il campo.
-   ===================================================================== */
-
 function costruisciPannello() {
   const ui = sh.ui;
   svuota(ui.lato);
 
-  /* --- ricerca dei campi --- */
   ui.cerca = el('input', {
     type: 'search', id: 'campo-ricerca', classe: 'ricerca__input',
     placeholder: 'Cerca un campo…', autocomplete: 'off', spellcheck: 'false',
@@ -389,10 +316,8 @@ function costruisciPannello() {
   ]);
   legaRicerca();
 
-  /* --- riepilogo degli errori del server --- */
   ui.riepilogo = el('div', { classe: 'riepilogo lato__riepilogo', id: 'riepilogo-errori', role: 'alert', hidden: true });
 
-  /* --- elemento selezionato --- */
   ui.testaElemento = el('div', { classe: 'lato__testa' });
   ui.bottoniScheda = {};
   ui.schedeElenco = el('div', { classe: 'lato__schede', role: 'tablist', 'aria-label': 'Schede dei controlli' });
@@ -421,7 +346,6 @@ function costruisciPannello() {
     ui.testaElemento, ui.schedeElenco, ui.scorriScheda
   ]);
 
-  /* --- nessuna selezione: Pagina --- */
   ui.titoloPagina = el('h2', { classe: 'lato__titolo', tabindex: '-1', testo: 'Pagina' });
   ui.navigatore = el('div', { classe: 'lato__navigatore' });
   ui.passi = el('ol', { classe: 'passi', 'aria-labelledby': 'titolo-passi' }, [
@@ -453,7 +377,6 @@ function costruisciPannello() {
     ui.scorriPagina
   ]);
 
-  /* --- viste del menu --- */
   ui.modoVista = el('div', { classe: 'lato__modo', dati: { modo: 'vista' }, hidden: true });
 
   ui.lato.append(ui.ricerca, ui.riepilogo, ui.modoElemento, ui.modoPagina, ui.modoVista);
@@ -501,10 +424,6 @@ function disegna(opzioni = {}) {
   if (opz) opz.applicaErrori();
   aggiornaBarra();
 }
-
-/* =====================================================================
-   5. ELEMENTO SELEZIONATO E SCHEDE
-   ===================================================================== */
 
 function etichettaDi(meta) {
   if (!meta) return 'Pagina';
@@ -609,8 +528,6 @@ function disegnaScheda(scheda, meta) {
   aggiornaVuoto(scheda);
 }
 
-/* Una scheda «vuota» è anche una scheda i cui ispettori non hanno messo
-   niente di usabile: il messaggio lo decide il guscio, non i moduli. */
 function schedaSenzaControlli(box) {
   if (!box.children.length) return true;
   if (box.querySelector('input, select, textarea, button, img, a[href], [role="button"], [contenteditable]')) return false;
@@ -675,10 +592,6 @@ function tastiSchede(evento) {
   impostaScheda(SCHEDE[j].id, true);
 }
 
-/* =====================================================================
-   6. PAGINA
-   ===================================================================== */
-
 function disegnaPagina(opzioni, cambiato) {
   const ui = sh.ui;
   if (sh.navVecchio || !ui.navigatore.firstChild) {
@@ -711,8 +624,6 @@ function disegnaNavigatore(contenitore) {
     ));
   }
 
-  // Senza anteprima o senza Navigatore nessun campo deve restare
-  // irraggiungibile: i gruppi dello schema, uno per vista.
   if (!sh.motore || !parti) {
     const elenco = el('ul', { classe: 'menu-lato menu-lato--compatto' });
     for (const gruppo of gruppiSchema()) {
@@ -727,10 +638,6 @@ function disegnaNavigatore(contenitore) {
     contenitore.append(el('p', { classe: 'lato__nota', testo: 'Tutti i campi, divisi come nel sito:' }), elenco);
   }
 }
-
-/* =====================================================================
-   7. VISTE DEL MENU
-   ===================================================================== */
 
 function titoloVista(nome) {
   if (VISTE[nome]) return VISTE[nome].titolo;
@@ -749,9 +656,6 @@ function titoloVista(nome) {
   return 'Pannello';
 }
 
-/* Viste che si ridisegnano da sole su sb:sostituito e sb:pronto (lo
-   dicono TEMA e PARTI), e quelle che non mostrano la bozza: rifarle da
-   capo perderebbe scorrimento e fuoco senza guadagnare niente. */
 const VISTE_AUTONOME = new Set(['menu', 'impostazioni', 'struttura', 'immagini', 'sondaggi', 'backup', 'password']);
 
 function disegnaVista(opzioni) {
@@ -782,7 +686,6 @@ function disegnaVista(opzioni) {
     el('button', { type: 'button', classe: 'btn btn--minimo lato__indietro', su: { click: () => chiudiVista(true) } }, [
       icona('indietro'), el('span', { testo: 'Torna all\'editor' })
     ]),
-    // Il titolo di una parte lo scrive PARTI dentro la vista: qui niente doppione.
     parte ? null : el('h2', { classe: 'lato__titolo', tabindex: '-1', testo: titoloVista(nome) }),
     nome !== 'menu' && nota ? el('p', { classe: 'lato__nota', testo: nota }) : null
   ]);
@@ -831,7 +734,6 @@ function disegnaMenu(scorri) {
   }
   scorri.append(elenco);
 
-  /* --- come si guarda il pannello --- */
   const nomi = el('button', {
     type: 'button', classe: 'opzione', 'aria-pressed': String(Boolean(opz.nomiTecnici())),
     su: { click: () => { opz.impostaNomiTecnici(!opz.nomiTecnici()); nomi.setAttribute('aria-pressed', String(Boolean(opz.nomiTecnici()))); } }
@@ -876,7 +778,6 @@ function disegnaMenu(scorri) {
   );
 }
 
-/** I campi di un gruppo dello schema, uno sotto l'altro. */
 function disegnaGruppo(scorri, gruppo) {
   const corpo = el('div', { classe: 'lato__campi' });
   const campi = gruppo.campi || [];
@@ -886,9 +787,6 @@ function disegnaGruppo(scorri, gruppo) {
     if (controllo && controllo.nodo) corpo.append(controllo.nodo);
   }
   scorri.append(corpo);
-  // Il collegamento a Twitch per i numeri non è un campo dello schema (non
-  // c'è niente da scrivere a mano: o si è autorizzati o no), quindi non
-  // passa da ponte.creaCampo. Vive solo nella vista «canale».
   if (gruppo.id === 'canale') scorri.append(creaCollegamentoTwitch());
   if (gruppo.id === 'sondaggio') scorri.prepend(rimandoSondaggi());
   if (gruppo.id === 'manutenzione') scorri.append(anteprimaManutenzione());
@@ -939,26 +837,6 @@ function anteprimaManutenzione() {
     ])
   ]);
 }
-
-/* =====================================================================
-   COLLEGAMENTO A TWITCH PER I NUMERI (follower e abbonati)
-   ---------------------------------------------------------------------
-   In fondo alla vista «Canale, contatti e immagini»: fa dal browser la
-   stessa cosa di «node server/imposta-twitch.js --collega» da terminale
-   (server/lib/twitch.js spiega il perché di questa autorizzazione in più
-   rispetto al solo Client ID). Serve a chi amministra un hosting senza un
-   accesso a riga di comando.
-
-   Il server tiene UN tentativo alla volta (server/lib/api.js,
-   collegamentoPendente): qui il browser lo richiama ogni intervalloSec
-   finché non arriva una risposta diversa da «in attesa»/«rallenta», o
-   finché questo riquadro non esce di scena.
-
-   `generazione` distingue un ciclo di attesa dal successivo: chi preme
-   Annulla, o comincia un altro tentativo, la fa avanzare, e un ciclo
-   vecchio che si risveglia con `mia !== generazione` si ferma da sé senza
-   dover essere inseguito con un flag di cancellazione a parte.
-   ===================================================================== */
 
 function rimandoSondaggi() {
   return el('div', { classe: 'spiegazione' }, [
@@ -1042,7 +920,7 @@ function creaCollegamentoTwitch() {
         erroreInline(e instanceof ErroreApi ? e.message : 'Il collegamento si è interrotto.');
         return;
       }
-      if (mia !== generazione) return;   // nel frattempo e' cambiato tutto
+      if (mia !== generazione) return;
 
       if (esito.stato === 'confermato') {
         collegato(esito.login);
@@ -1056,7 +934,6 @@ function creaCollegamentoTwitch() {
       if (esito.stato === 'fallito') { erroreInline(esito.messaggio || 'Il collegamento non è riuscito.'); return; }
       if (esito.stato === 'assente') { partenza(); return; }
       if (esito.stato === 'rallenta') { intervalloMs += 5000; }
-      // 'in attesa': si continua il ciclo.
     }
   }
 
@@ -1069,7 +946,7 @@ function creaCollegamentoTwitch() {
     try {
       avvio = await api.twitchCollega();
     } catch (e) {
-      if (mia !== generazione) return;   // hanno gia' premuto Annulla
+      if (mia !== generazione) return;
       erroreInline(e instanceof ErroreApi ? e.message : 'Non sono riuscito a cominciare il collegamento.');
       return;
     }
@@ -1096,7 +973,6 @@ function creaCollegamentoTwitch() {
     }
   }
 
-  // Lo stato di apertura si legge una volta sola, quando il riquadro compare.
   segna('Controllo lo stato del collegamento…');
   api.twitchStato().then((info) => {
     if (!nodo.isConnected) return;
@@ -1122,8 +998,6 @@ function disegnaImpostazioni(scorri) {
       svuota(scorri);
     }
   }
-  // Ripiego senza impostazioni.js: i campi del gruppo e le combinazioni
-  // pronte, come prima dell'editor. Mancano i font caricati.
   const gruppo = ponte.gruppo('aspetto');
   scorri.append(el('div', { classe: 'spiegazione' }, [
     icona('info'),
@@ -1234,7 +1108,7 @@ function disegnaPassword(scorri) {
     } catch (e) {
       if (e instanceof ErroreApi && e.stato === 403) mostraErrore('La password attuale non è giusta.', attuale.input);
       else if (e instanceof ErroreApi && e.stato === 422) mostraErrore(e.message, nuova.input);
-      else if (e instanceof ErroreApi && e.stato === 401) mostraErrore('');   // ci pensa il ritorno all'accesso
+      else if (e instanceof ErroreApi && e.stato === 401) mostraErrore('');
       else mostraErrore(e instanceof ErroreApi ? e.message : 'Non sono riuscito a cambiare la password.');
     } finally {
       invia.disabled = false;
@@ -1264,15 +1138,6 @@ function chiudiVista(ridaiFuoco) {
   if (ridaiFuoco && eraMenu) sh.ui.btnMenu.focus();
 }
 
-/* =====================================================================
-   8. RICERCA DEI CAMPI ED ERRORI: PORTARE AL CAMPO
-
-   L'indice si costruisce dallo schema — etichette, sezione, nome tecnico —
-   quindi cresce da solo insieme allo schema. Un risultato porta al campo
-   dove sta davvero: l'elemento nell'anteprima se ha un marcatore, la
-   parte che lo mostra, la sezione che lo contiene, o la vista del menu.
-   ===================================================================== */
-
 function normalizzaTesto(valore) {
   return String(valore || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
@@ -1287,8 +1152,6 @@ function costruisciIndice() {
         dove: gruppo.titolo || gruppo.id,
         cerca: normalizzaTesto([etichetta, gruppo.titolo, campo.chiave, campo.aiuto].join(' '))
       });
-      // I sottocampi di un elenco si cercano col loro nome ma portano
-      // all'elenco che li contiene: è lì che si aprono, uno per voce.
       for (const sotto of Array.isArray(campo.campi) ? campo.campi : []) {
         const nome = sotto.etichetta || sotto.chiave;
         sh.indice.push({
@@ -1301,9 +1164,6 @@ function costruisciIndice() {
   }
 }
 
-/* Le corrispondenze all'inizio dell'etichetta valgono più di quelle in
-   mezzo, e quelle sull'etichetta più di quelle sull'aiuto o sulla chiave:
-   chi scrive «tit» si aspetta «Titolo» in cima, non «Sottotitolo». */
 function cerca(testo) {
   const domanda = normalizzaTesto(testo).trim();
   if (domanda.length < 2) return [];
@@ -1349,8 +1209,6 @@ function disegnaRisultati() {
   const ui = sh.ui;
   svuota(ui.risultati);
   if (!sh.risultati.length) {
-    // Resta un'opzione, disattivata: dentro una listbox è l'unico modo
-    // perché anche uno screen reader senta che non c'è niente.
     ui.risultati.append(el('li', {
       classe: 'ricerca__vuoto', role: 'option', 'aria-disabled': 'true', 'aria-selected': 'false',
       testo: 'Nessun campo con questo nome.'
@@ -1416,8 +1274,6 @@ function legaRicerca() {
     }
   });
 
-  /* Il clic su un risultato non deve togliere il fuoco alla casella prima
-     che il clic arrivi: senza, la lista si chiuderebbe a metà strada. */
   ui.risultati.addEventListener('pointerdown', (evento) => evento.preventDefault());
   ui.cerca.addEventListener('blur', () => {
     setTimeout(() => { if (document.activeElement !== ui.cerca) chiudiRisultati(); }, 0);
@@ -1437,11 +1293,8 @@ function apriRicerca() {
   sh.ui.cerca.select();
 }
 
-/* --- portare al campo ---------------------------------------------- */
-
 let timerSegnale = null;
 
-/** Scorre solo lo scorrimento del pannello: mai la pagina intera. */
 function scorriNelPannello(nodo) {
   const scorri = nodo.closest('[data-scorri]');
   if (!scorri) return;
@@ -1472,14 +1325,11 @@ function portaSu(controllo, { evidenzia = false } = {}) {
   return true;
 }
 
-/** Il controllo visibile per la chiave, se c'è. */
 function controlloVisibile(chiave) {
   const controllo = opz.controlloPer(chiave);
   return controllo && visibile(controllo.nodo) ? controllo : null;
 }
 
-/* I controlli di una scheda o di una vista possono arrivare un attimo
-   dopo il disegno (un modulo che aspetta un dato): si riprova per poco. */
 async function aspettaControllo(chiave) {
   for (const attesa of [0, 60, 200, 450]) {
     if (attesa) await attendi(attesa);
@@ -1489,7 +1339,6 @@ async function aspettaControllo(chiave) {
   return null;
 }
 
-/** Id da selezionare nell'anteprima per mostrare il campo, o ''. */
 function bersaglioInPagina(chiave, gruppo) {
   const doc = documentoAnteprima();
   if (!doc || !haMotore('seleziona')) return '';
@@ -1505,8 +1354,6 @@ function bersaglioInPagina(chiave, gruppo) {
     try { parti = nomi.partiDellaChiave(chiave, opz.stato.schema) || []; } catch (errore) { log('partiDellaChiave', errore); }
     const presente = parti.find((p) => doc.querySelector('[data-sb-parte="' + perSelettore(p) + '"]'));
     if (presente) return 'parte:' + presente;
-    // Sta in una parte che la pagina adesso non stampa: la sezione non lo
-    // mostrerebbe, ci pensa la vista della parte (vaiAChiave).
     if (parti.length) return '';
   }
   if (gruppo && !VISTA_DEL_GRUPPO[gruppo.id] && nomi && typeof nomi.sezioneDelGruppo === 'function') {
@@ -1517,16 +1364,10 @@ function bersaglioInPagina(chiave, gruppo) {
   return '';
 }
 
-/**
- * Porta al campo della chiave: prima quello già a video, poi l'elemento
- * nell'anteprima (testo, immagine, parte, sezione), poi la vista del
- * menu; se niente di questo lo mostra, la vista del suo gruppo.
- */
 async function vaiAChiave(chiaveGrezza, { evidenzia = false } = {}) {
   if (!sh.montato) return false;
   const chiave = normalizzaChiave(chiaveGrezza);
 
-  /* I tre rami dell'editor non hanno campi nello schema (§2.4). */
   if (chiave.startsWith('config.stili.')) {
     const id = chiave.slice('config.stili.'.length);
     sh.vista = null;
@@ -1566,8 +1407,6 @@ async function vaiAChiave(chiaveGrezza, { evidenzia = false } = {}) {
     const meta = mot('seleziona', id);
     if (meta) {
       mot('scorriA', id);
-      // Il motore avvisa gli iscritti solo se la selezione cambia: se era
-      // già questa, o se una vista copriva il pannello, si ridisegna qui.
       if (!sh.selezione || sh.selezione.id !== meta.id) suSelezione(meta);
       else disegna({ azzeraScorrimento: true });
       impostaScheda('contenuto');
@@ -1576,8 +1415,6 @@ async function vaiAChiave(chiaveGrezza, { evidenzia = false } = {}) {
     }
   }
 
-  // Il campo sta in una parte che adesso non è nella pagina (pollo spento,
-  // clip spente): PARTI la disegna anche fuori dall'anteprima.
   const nomi = modulo('nomi');
   if (nomi && typeof nomi.partiDellaChiave === 'function') {
     let parti = [];
@@ -1592,8 +1429,6 @@ async function vaiAChiave(chiaveGrezza, { evidenzia = false } = {}) {
     apriVista(VISTA_DEL_GRUPPO[gruppo.id] || 'gruppo:' + gruppo.id);
     controllo = await aspettaControllo(chiave);
     if (!controllo && VISTA_DEL_GRUPPO[gruppo.id]) {
-      // La vista c'è ma non disegna quel campo (modulo di un altro agente
-      // che lo mette altrove): il gruppo intero non lo perde mai.
       apriVista('gruppo:' + gruppo.id);
       controllo = await aspettaControllo(chiave);
     }
@@ -1604,8 +1439,6 @@ async function vaiAChiave(chiaveGrezza, { evidenzia = false } = {}) {
   avviso('Non trovo più questo campo nel pannello: ricarica la pagina.', { tipo: 'info' });
   return false;
 }
-
-/* --- riepilogo degli errori --------------------------------------- */
 
 function descriviChiave(chiave) {
   if (chiave.startsWith('config.stili')) return 'Stile di un elemento';
@@ -1645,14 +1478,9 @@ function mostraErrori(elenco, { soloRiepilogo = false } = {}) {
   if (!soloRiepilogo) vaiAChiave(sh.errori[0].chiave);
 }
 
-/* =====================================================================
-   9. SELEZIONE E SINCRONIZZAZIONE DELL'ANTEPRIMA
-   ===================================================================== */
-
 function seleziona(id) {
   if (!haMotore('seleziona')) return null;
   const meta = mot('seleziona', id === undefined ? null : id);
-  // Deselezione con un motore che non avvisa: si allinea a mano.
   if (!id && sh.selezione && !mot('selezione')) {
     sh.selezione = null;
     disegna({ azzeraScorrimento: true });
@@ -1662,7 +1490,7 @@ function seleziona(id) {
 
 function suSelezione(meta) {
   meta = meta || null;
-  if (!meta && sh.ricaricando) return;     // l'anteprima si sta ricaricando: la selezione torna subito
+  if (!meta && sh.ricaricando) return;
   const prima = sh.selezione;
   const stesso = Boolean(meta && prima && meta.id === prima.id);
   sh.selezione = meta;
@@ -1679,13 +1507,10 @@ function suSelezione(meta) {
     else aggiornaBarra();
     return;
   }
-  // Stesso elemento: clic ripetuto o anteprima ricaricata.
   if (sh.vista) {
     if (!sh.ricaricando && !fuocoNelPannello()) { sh.vista = null; disegna({ azzeraScorrimento: true }); }
     return;
   }
-  // Con il fuoco nel pannello i controlli restano come sono: chi scrive
-  // non perde il campo. Altrimenti la scheda si rifà con il meta nuovo.
   if (!fuocoNelPannello()) disegna();
   else aggiornaBarra();
 }
@@ -1702,9 +1527,6 @@ function suModifica(evento) {
     if (chiave === 'config.disposizione' || chiave.startsWith('config.disposizione.')) { mot('aggiornaDisposizione'); return; }
     if (chiave.startsWith('config.immagini.') || !chiave.startsWith('config')) {
       mot('aggiornaTesti');
-      // Un testo senza marcatore (nella <head>, in un attributo, in un
-      // testo misto come «© 2026 …») aggiornaTesti non lo raggiunge: la
-      // pagina si rifà come per tutto il resto, così l'anteprima non mente.
       if (!haMarcatore(chiave)) programmaRicarica();
       return;
     }
@@ -1718,9 +1540,6 @@ function programmaRicarica() {
   sh.timerRicarica = setTimeout(ricaricaOra, ATTESA_RICARICA);
 }
 
-/* Durante una ricarica chiesta da qui la selezione si conserva: il motore
-   riseleziona lo stesso elemento a pagina pronta, e fino ad allora il
-   pannello resta com'è (niente salto a «Pagina», niente fuoco perso). */
 function ricaricaOra() {
   clearTimeout(sh.timerRicarica);
   sh.timerRicarica = null;
@@ -1769,7 +1588,6 @@ function suAnteprimaPronta() {
   aggiornaBarra();
 }
 
-/** Tutto quello che si riallinea dal vivo, e poi la pagina intera. */
 function riallineaTutto() {
   mot('aggiornaTema');
   mot('aggiornaTesti');
@@ -1778,10 +1596,6 @@ function riallineaTutto() {
   ricaricaOra();
 }
 
-/**
- * `stato.dati` è un oggetto nuovo (Annulla/Ripeti, ripristino, nuovo
- * accesso): lo si annuncia, si riallinea l'anteprima e si ridisegna tutto.
- */
 function sostituito(motivo, { azzera = true, fresco = false } = {}) {
   if (azzera) azzeraStoria();
   if (fresco) {
@@ -1797,13 +1611,6 @@ function sostituito(motivo, { azzera = true, fresco = false } = {}) {
   if (sh.motore) riallineaTutto();
   disegna({ forza: true, azzeraScorrimento: fresco, sostituito: true });
 }
-
-/* =====================================================================
-   10. ANNULLA / RIPETI
-   Istantanee JSON di { testi, config }, prese su sb:modifica dopo 400 ms
-   di calma, al massimo 50. Il ripristino crea un oggetto `dati` nuovo
-   (sb:sostituito): chi ne tiene copie le rilegge.
-   ===================================================================== */
 
 function istantanea() {
   const dati = opz && opz.stato.dati;
@@ -1897,10 +1704,6 @@ function aggiornaStoria() {
   ui.btnRipeti.disabled = !(s.avanti.length && !s.timer);
 }
 
-/* =====================================================================
-   11. BARRA ALTA, CASSETTO, LARGHEZZA
-   ===================================================================== */
-
 function aggiornaBarra() {
   const ui = sh.ui;
   if (!ui.nomeSelezione) return;
@@ -1974,16 +1777,11 @@ function legaBarra() {
     });
   }
 
-  // Il motore avvisa a ogni cambio di dispositivo, anche quelli chiesti da STILE.
   document.addEventListener('sb:dispositivo', () => sincronizzaDispositivo());
   document.addEventListener('sb:apri-vista', (evento) => {
     const d = (evento && evento.detail) || {};
     if (d.vista) apriVista(d.vista);
   });
-  /* La scrittura sul posto può partire con un doppio clic nell'anteprima
-     mentre è aperta Stile o Avanzate, o una vista del menu: la barra di
-     formattazione, il contatore e «Fatto» stanno nella scheda Contenuto
-     (CONTENUTI), che va portata davanti. Alla chiusura la scheda resta. */
   document.addEventListener('sb:scrittura', (evento) => {
     const d = (evento && evento.detail) || {};
     if (!sh.montato || sh.sospeso || !d.aperta) return;
@@ -1995,11 +1793,6 @@ function legaBarra() {
     impostaScheda('contenuto');
   });
 
-  /* Con una vista del menu aperta, un clic nell'anteprima vuol dire «torno
-     a lavorare sulla pagina». Se il clic cade su un elemento diverso ci
-     pensa suSelezione; se cade su quello già selezionato il motore non
-     avvisa nessuno (non è cambiato niente), e la vista resterebbe davanti.
-     Il fuoco che passa all'iframe è il segnale che il clic c'è stato. */
   window.addEventListener('blur', () => {
     setTimeout(() => {
       if (!sh.montato || sh.sospeso || !sh.vista || !sh.selezione || sh.ricaricando) return;
@@ -2011,7 +1804,6 @@ function legaBarra() {
     }, 0);
   });
 
-  // Un modulo che registra i suoi controlli in ritardo: si ridisegna la scheda.
   document.addEventListener('sb:ispettori', () => {
     if (!sh.montato || sh.modo !== 'elemento' || fuocoNelPannello()) return;
     sh.disegnate = {};
@@ -2037,8 +1829,6 @@ function applicaLarghezza(preferita, salva) {
   avvisaRidimensionamento();
 }
 
-/* Chi misura su «resize» (il motore per lo zoom, i moduli con le loro
-   misure) si riallinea quando cambia lo spazio dell'anteprima. */
 function avvisaRidimensionamento() {
   if (sh.rafResize) return;
   sh.rafResize = requestAnimationFrame(() => {
@@ -2055,12 +1845,10 @@ function legaManiglia() {
   barra.addEventListener('pointerdown', (evento) => {
     if (evento.button !== 0 || stretto()) return;
     evento.preventDefault();
-    // preventDefault toglie anche il fuoco del clic: lo si rimette, così
-    // dopo aver afferrato la maniglia le frecce continuano a regolarla.
-    try { barra.focus({ preventScroll: true }); } catch { /* il trascinamento funziona lo stesso */ }
+    try { barra.focus({ preventScroll: true }); } catch {}
     const inizioX = evento.clientX;
     const inizioL = larghezzaReale(sh.larghezza);
-    try { barra.setPointerCapture(evento.pointerId); } catch { /* il trascinamento funziona lo stesso */ }
+    try { barra.setPointerCapture(evento.pointerId); } catch {}
     ui.banco.classList.add('is-ridimensiona');
 
     const muovi = (e) => applicaLarghezza(inizioL + (e.clientX - inizioX), false);
@@ -2099,12 +1887,6 @@ function legaManiglia() {
   });
 }
 
-/* =====================================================================
-   12. TASTIERA
-   Le scorciatoie premute dentro l'anteprima le rilancia il motore sul
-   document del pannello: basta ascoltare qui. Ctrl+S è di pannello.js.
-   ===================================================================== */
-
 function tastoStoria(evento) {
   if (!(evento.ctrlKey || evento.metaKey) || evento.altKey) return 0;
   const tasto = String(evento.key || '').toLowerCase();
@@ -2118,7 +1900,6 @@ function suTasto(evento) {
 
   const comando = (evento.ctrlKey || evento.metaKey) && !evento.altKey;
   if (comando && String(evento.key || '').toLowerCase() === 'k') {
-    // Dentro l'editor di testo ricco Ctrl+K è la scorciatoia del link.
     const dentro = document.activeElement;
     if (dentro && dentro.isContentEditable) return;
     if (dialogoAperto()) return;
@@ -2148,10 +1929,6 @@ function suTasto(evento) {
     }
   }
 }
-
-/* =====================================================================
-   13. AVVIO E INTERFACCIA PER PANNELLO.JS
-   ===================================================================== */
 
 async function monta() {
   const ui = sh.ui;
@@ -2234,17 +2011,11 @@ function aggiornaPubblicazione(info) {
   sh.ui.pubblicazione.dataset.daFare = info.daFare ? '1' : '0';
 }
 
-/**
- * Crea il guscio. Una volta sola: le chiamate successive tornano lo
- * stesso oggetto con le funzioni aggiornate.
- * @param {object} funzioni  vedi pannello.js → caricaGuscio()
- */
 export function creaGuscio(funzioni) {
   opz = funzioni;
   return {
     avvia,
 
-    /** Rientro dopo la sessione scaduta: dati tenuti, anteprima da rifare. */
     riprendi() {
       if (!sh.montato) return;
       sh.sospeso = false;
@@ -2253,7 +2024,6 @@ export function creaGuscio(funzioni) {
       disegna({ forza: true });
     },
 
-    /** L'app si nasconde (accesso): niente disegni fino al prossimo avvio. */
     sospendi({ uscita = false } = {}) {
       sh.sospeso = true;
       clearTimeout(sh.timerRicarica);
@@ -2267,7 +2037,6 @@ export function creaGuscio(funzioni) {
       }
     },
 
-    /** Ridisegna schede e viste (per esempio dopo «nomi tecnici»). */
     ridisegna() {
       sh.disegnate = {};
       sh.navVecchio = true;

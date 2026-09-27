@@ -1,24 +1,3 @@
-/* =====================================================================
-   guscio.css — la struttura dell'editor unico (CONTRATTO-4 §9.1, §12).
-
-   Barra alta, pannello laterale ridimensionabile, anteprima sul palco.
-   Stessa lingua della regia del sito: grafite, linee da 1 px, etichette
-   in monospazio maiuscolo, viola per le azioni e per cio' che e' scelto,
-   ciano per cio' che e' acceso (fuoco, maniglie, passo attuale).
-
-   Solo variabili --p-* di pannello.css: niente colori scritti qui.
-
-   Indice
-     1. App e barra alta
-     2. Banco: pannello, maniglia, palco
-     3. Pannello: ricerca, riepilogo, modi, testa, percorso, schede
-     4. Pagina: scorciatoie, passi, pubblicazione
-     5. Viste del menu
-     6. Schermi stretti: cassetto sotto i 1024 px, barra a due righe
-     7. Movimento ridotto
-   ===================================================================== */
-
-/* --------------------------------------------------------------- 1. */
 .app {
   display: flex;
   flex-direction: column;
@@ -27,8 +6,6 @@
   overflow: hidden;
 }
 
-/* Link per saltare al pannello con la tastiera: invisibile finche' non
-   riceve il fuoco. */
 .salta {
   position: absolute;
   left: 8px; top: -60px;
@@ -63,8 +40,6 @@
   gap: 8px;
   min-width: 0;
 }
-/* La sinistra cede per prima (il nome dell'elemento si accorcia), centro
-   e destra non si stringono mai: niente pezzi della barra uno sopra l'altro. */
 .barra__sinistra { flex: 1 1 0; }
 .barra__centro   { flex: none; gap: 10px; }
 .barra__destra   { flex: none; justify-content: flex-end; }
@@ -117,7 +92,6 @@
   color: var(--p-ciano);
 }
 
-/* --- dispositivi: controllo a segmenti --- */
 .dispositivi {
   display: inline-flex;
   gap: 2px;
@@ -151,7 +125,6 @@
 
 .storia { display: inline-flex; gap: 4px; }
 
-/* --- stato e comandi --- */
 .barra__stato {
   display: flex;
   flex-direction: column;
@@ -201,7 +174,6 @@
   color: var(--p-nero);
 }
 
-/* --------------------------------------------------------------- 2. */
 .banco {
   --lato-larghezza: 480px;
   flex: 1 1 auto;
@@ -209,8 +181,6 @@
   display: grid;
   grid-template-columns: var(--lato-larghezza) 9px minmax(0, 1fr);
   min-height: 0;
-  /* clip e non solo hidden: uno scrollIntoView dentro il pannello non puo'
-     far salire tutto l'editor (trappola gia' vista a Mobscene93). */
   overflow: hidden;
   overflow: clip;
 }
@@ -264,8 +234,6 @@
   background-image: radial-gradient(var(--p-palco-punto) 1px, transparent 1.4px);
   background-size: 18px 18px;
 }
-/* Assoluto e a tutta area: da' al motore un contenitore con un'altezza
-   vera, dentro cui calcola lo zoom del dispositivo. */
 .palco__anteprima {
   position: absolute;
   inset: 0;
@@ -286,7 +254,6 @@
   display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
 }
 
-/* --------------------------------------------------------------- 3. */
 .lato__ricerca {
   flex: none;
   padding: 10px 14px 8px;
@@ -325,8 +292,6 @@
 }
 .ricerca__aiuto kbd { font-family: inherit; border: 1px solid var(--p-linea-forte); border-radius: 3px; padding: 0 3px; }
 
-/* I risultati coprono il pannello invece di spingerlo in giu': la testa
-   dell'elemento scelto non deve saltare mentre si digita. */
 .ricerca__risultati {
   position: absolute;
   left: 14px; right: 14px; top: calc(100% - 4px);
@@ -347,7 +312,6 @@
 .ricerca__dove { font-family: var(--p-mono); font-size: 10px; color: var(--p-testo-tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ricerca__vuoto { padding: 8px; font-size: 13px; color: var(--p-testo-medio); }
 
-/* --- riepilogo degli errori --- */
 .lato__riepilogo {
   flex: none;
   max-height: 34vh;
@@ -375,7 +339,6 @@
 .riepilogo button code { font-size: 10.5px; color: var(--p-testo-tenue); text-decoration: none; }
 .riepilogo__messaggio { font-size: 13px; }
 
-/* --- i tre modi --- */
 .lato__modo {
   flex: 1 1 auto;
   display: flex;
@@ -412,12 +375,9 @@
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
-/* I titoli ricevono il fuoco solo per guidare la tastiera (tabindex=-1). */
 .lato__titolo:focus, .lato__titolo:focus-visible { outline: none; }
 .lato__nota { font-size: 13.5px; color: var(--p-testo-medio); line-height: 1.45; }
 
-/* Il contenitore che scorre. Container query «lato» per i moduli:
-   @container lato (max-width: 460px) { … } */
 .lato__scorri {
   flex: 1 1 auto;
   min-height: 0;
@@ -448,7 +408,6 @@
 }
 .lato__azioni { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
-/* --- percorso dell'elemento --- */
 .percorso__elenco {
   display: flex; flex-wrap: wrap; align-items: center;
   gap: 2px 0;
@@ -501,7 +460,6 @@
   color: var(--p-testo-tenue);
 }
 
-/* --- schede --- */
 .lato__schede {
   flex: none;
   display: grid;
@@ -531,11 +489,9 @@
 .lato__scheda:empty { display: none; }
 .lato__scheda-vuota { margin-top: 2px; }
 
-/* I campi di una vista del menu, uno sotto l'altro. */
 .lato__campi { display: flex; flex-direction: column; gap: 18px; }
 .lato__modulo { display: flex; flex-direction: column; gap: 14px; }
 
-/* --------------------------------------------------------------- 4. */
 .scorciatoie {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -567,8 +523,6 @@
 }
 .scorciatoia__nota { font-size: 12px; color: var(--p-testo-tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* I quattro passi. Il passo che tocca adesso e' l'unico acceso: e' li'
-   che si guarda quando ci si chiede «e ora?». */
 .passi { display: flex; flex-direction: column; gap: 1px; }
 .passi__passo {
   display: flex; align-items: flex-start; gap: 9px;
@@ -600,7 +554,6 @@
 }
 .lato__pubblicazione[data-da-fare="1"] { color: var(--p-allerta); }
 
-/* --------------------------------------------------------------- 5. */
 .lato__indietro { align-self: flex-start; margin-left: -6px; gap: 6px; font-family: var(--p-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
 .lato__indietro .ico { width: 15px; height: 15px; }
 
@@ -645,8 +598,6 @@
 .opzione:hover { background: var(--p-pannello); color: var(--p-testo); }
 .opzione[aria-pressed="true"] { border-color: var(--p-linea-forte); background: var(--p-pannello-2); color: var(--p-ciano); }
 
-/* --------------------------------------------------------------- 6. */
-/* Sopra i 1600 px c'e' spazio per centrare davvero i dispositivi. */
 @media (min-width: 1600px) {
   .barra__destra { flex: 1 1 0; }
 }
@@ -666,16 +617,12 @@
 @media (max-width: 1023.98px) {
   .barra__cassetto { display: inline-flex; }
   .barra__nome, .barra__sep { display: none; }
-  /* La spia resta, la scritta la sente solo chi usa un lettore di schermo
-     (e il bottone Salva acceso in arancione dice la stessa cosa). */
   .stato { padding: 6px; }
   .stato__testo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 
   .banco { grid-template-columns: minmax(0, 1fr); }
   .maniglia { display: none; }
 
-  /* Il pannello scivola sopra l'anteprima; chiuso e' `inert` (guscio.js),
-     cosi' la tastiera non ci entra. */
   .lato {
     position: absolute;
     top: 0; bottom: 0; left: 0;
@@ -715,7 +662,6 @@
   .scorciatoie { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* --------------------------------------------------------------- 7. */
 @media (prefers-reduced-motion: reduce) {
   .lato,
   .banco.is-cassetto-aperto .lato { transition: none; }

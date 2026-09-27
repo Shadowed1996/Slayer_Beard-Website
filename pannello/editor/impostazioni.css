@@ -1,27 +1,3 @@
-/* =====================================================================
-   impostazioni.css — la vista «Impostazioni del sito», i controlli
-   colore e font della scheda Stile, la libreria dei font caricati.
-
-   Sta dentro il pannello laterale largo 380–760 px: la vista segue la
-   larghezza del pannello con le container query (@container imp), non la
-   finestra. I controlli (.comando-tema) invece devono stare bene in
-   qualunque contenitore, e usano solo griglie che si riempiono da sole.
-
-   Lingua visiva della regia (CONTRATTO-4 §12): solo le variabili --p-* di
-   pannello.css, linee da 1 px, superfici piatte, etichette in monospazio
-   maiuscolo, viola per ciò che è scelto, ciano per il fuoco e per ciò che
-   è collegato al tema. I colori dei campioni li mette il JS sull'elemento:
-   sono dati di chi amministra, non stile del pannello.
-
-   Struttura:
-     1. vista (.imp)
-     2. riepilogo dei contrasti (.contrasti)
-     3. libreria dei font (.libreria-font)
-     4. controlli colore e font (.comando-tema)
-     5. larghezze del pannello e movimento ridotto
-   ===================================================================== */
-
-/* --------------------------------------------------------------- 1. */
 .imp {
   container: imp / inline-size;
   display: flex;
@@ -69,8 +45,6 @@
 .imp__titolo:focus { outline: none; }
 .imp__titolo:focus-visible { outline: 2px solid var(--p-ciano); outline-offset: 3px; }
 
-/* La barra delle combinazioni ha un suo occhiello, che qui ripeterebbe il
-   titolo della sezione subito sopra. Resta la nota, che dice cosa fa. */
 .imp .tema-barra__testa .occhiello { display: none; }
 
 .imp__campi { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
@@ -81,7 +55,6 @@
   min-width: 0;
 }
 
-/* --------------------------------------------------------------- 2. */
 .contrasti {
   display: flex;
   flex-direction: column;
@@ -125,14 +98,11 @@
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-/* Sotto 4,5:1 cambiano insieme bordo, colore e parola: l'avviso arriva
-   anche a chi non distingue il verde dal rosso. */
 .contrasti__voce[data-grave="1"] .contrasti__livello { border-color: var(--p-errore); color: var(--p-errore); }
 .contrasti__voce[data-grave="1"] .contrasti__nome { color: var(--p-testo); }
 .contrasti__esito { font-size: 12.5px; color: var(--p-testo-tenue); }
 .contrasti__esito[data-grave="1"] { color: var(--p-errore); }
 
-/* --------------------------------------------------------------- 3. */
 .libreria-font {
   display: flex;
   flex-direction: column;
@@ -187,9 +157,6 @@
 }
 .libreria-font__piccola { font-size: 11.5px; line-height: 1.5; color: var(--p-testo-tenue); }
 
-/* L'input vero resta nella pagina (il bottone lo apre, e dà il nome al
-   file scelto) ma non si vede: il bottone «Scegli un file» parla meglio
-   del controllo nativo, che cambia lingua con il sistema. */
 .libreria-font__file {
   position: absolute;
   width: 1px;
@@ -230,7 +197,6 @@
 .libreria-font__uso[data-in-uso="1"] { color: var(--p-ciano); }
 .libreria-font__vuoto { font-size: 13px; color: var(--p-testo-tenue); padding: 4px 2px; }
 
-/* --------------------------------------------------------------- 4. */
 .comando-tema { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .comando-tema__testa {
   display: flex;
@@ -278,7 +244,6 @@
 }
 .comando-tema__campione { width: 22px; height: 22px; border-radius: 4px; }
 .comando-tema__puntino { width: 18px; height: 18px; border-radius: 50%; }
-/* Nessun colore: barrato, come una spia spenta. */
 .comando-tema__campione.is-vuoto,
 .comando-tema__puntino.is-vuoto {
   background-image: linear-gradient(135deg,
@@ -365,7 +330,6 @@
 .comando-tema__griglia--sola { grid-template-columns: minmax(0, 1fr); }
 .comando-tema__voce { position: relative; min-width: 0; }
 
-/* Radio vere, fuori dalla vista ma non dalla tastiera: la scheda è la label. */
 .comando-tema__radio {
   position: absolute;
   width: 1px;
@@ -403,8 +367,6 @@
 
 .comando-tema__testi { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
 .comando-tema__riga-opzione { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
-/* Il nome della scelta vince sul dettaglio: «Strumentazione» intero e
-   «adesso: JetBrains M…» tagliato, non il contrario. */
 .comando-tema__nome-opzione {
   flex: 0 0 auto;
   max-width: 100%;
@@ -471,15 +433,12 @@
 .comando-tema__piccola { font-size: 11.5px; line-height: 1.45; color: var(--p-testo-tenue); }
 .comando-tema__stato { font-size: 12px; color: var(--p-testo-medio); }
 
-/* --------------------------------------------------------------- 5. */
 @container imp (min-width: 540px) {
   .imp__griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .contrasti__elenco { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .libreria-font__campione { font-size: 26px; }
 }
 
-/* Sotto i 400 px del pannello (il cassetto sui telefoni) le cornici si
-   stringono, e «Elimina» resta a destra anche quando va a capo. */
 @container imp (max-width: 399px) {
   .libreria-font { padding: 11px; }
   .libreria-font__carica { padding: 10px; }

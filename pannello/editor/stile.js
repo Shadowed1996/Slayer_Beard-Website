@@ -1,50 +1,7 @@
-/* =====================================================================
-   stile.js — le schede «Stile» e «Avanzate» dell'editor (CONTRATTO-4 §11.2).
-
-   Cambia l'aspetto dell'elemento scelto nell'anteprima, un dispositivo
-   alla volta: sempre quello della barra in alto. Computer è la base;
-   Tablet e Telefono sovrascrivono con la stessa cascata del CSS che esce
-   da condivisi/stili.js (telefono ← tablet ← computer). «Nascosto» ha la
-   stessa eredità ma esce a fasce esclusive: su Tablet o Telefono `false`
-   fa ricomparire quello che un dispositivo più grande nasconde.
-
-   Dati: config.stili[bersaglio][dispositivo][proprietà], con bersaglio =
-   meta.id del motore (testo:… immagine:… parte:… blocco:… sezione:…). Si
-   modifica l'oggetto sul posto e lo si dice con ponte.segnala una volta
-   per fotogramma: duecento eventi di un cursore fanno un solo giro di
-   anteprima e una sola istantanea di Annulla.
-
-   Quello che decide condivisi/stili.js non si ripete qui: ogni valore
-   passa da SBStili.pulisciValore; min, max, passo, unità, etichette delle
-   scelte e «a quali elementi ha senso» vengono da SBStili.PROPRIETA. Così
-   la scheda non può offrire un numero che il generatore poi stringe, né
-   una scelta che il generatore non conosce.
-
-   Il renderer non svuota il contenitore che gli dà il motore: ci mette (o
-   sostituisce) il proprio div.stile e ridisegna solo quello.
-
-   Indice
-     1. Avvio: foglio di stile, moduli facoltativi
-     2. Vocabolario
-     3. Dati: lettura, eredità, scrittura, pulizia
-     4. Invio all'anteprima, una volta per fotogramma
-     5. Valori «come nel sito» e descrizioni
-     6. Pezzi dell'interfaccia
-     7. Scheda Stile
-     8. Scheda Avanzate
-     9. Disegno, ridisegno, eventi, registrazione
-   ===================================================================== */
-
 import { ponte } from './ponte.js';
 import { motore } from './motore.js';
 import { el, icona, svuota, idUnico, urlRisorsa } from '../moduli/dom.js';
 
-/* =====================================================================
-   1. AVVIO
-   ===================================================================== */
-
-/* Il foglio della scheda arriva con la scheda: se GUSCIO l'ha già messo in
-   index.html non si aggiunge una seconda volta. */
 (function collegaFoglio() {
   const gia = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
     .some((link) => /(^|\/)editor\/stile\.css([?#]|$)/.test(link.getAttribute('href') || ''));
@@ -55,21 +12,13 @@ import { el, icona, svuota, idUnico, urlRisorsa } from '../moduli/dom.js';
   document.head.append(link);
 })();
 
-/* I controlli di colore e font sono di TEMA (impostazioni.js). Si prendono
-   con import() dinamico: se quel modulo manca o si rompe, la scheda resta
-   in piedi con i controlli di ripiego qui sotto, e appena arriva si
-   ridisegna con quelli veri. */
 let tema = null;
-/* Cresce quando arriva TEMA: una scheda disegnata prima ha i controlli di
-   ripiego e va rifatta, non solo risincronizzata. */
 let versioneTema = 0;
 import('./impostazioni.js')
   .then((modulo) => {
     tema = modulo;
     versioneTema += 1;
     if (typeof modulo.caricaFont === 'function') {
-      // voceFont risponde dalla cache: senza questa lettura un font caricato
-      // scelto per primo verrebbe scartato dalla pulizia.
       Promise.resolve(modulo.caricaFont()).catch(() => null);
     }
     ridisegnaTutti();
@@ -85,36 +34,25 @@ function avverti(errore) {
   if (window.console && window.console.warn) window.console.warn('[stile]', errore);
 }
 
-/* =====================================================================
-   2. VOCABOLARIO
-   ===================================================================== */
-
 const DISPOSITIVI = ['computer', 'tablet', 'telefono'];
-const ORDINE_BARRA = ['telefono', 'tablet', 'computer'];       // come la barra in alto
+const ORDINE_BARRA = ['telefono', 'tablet', 'computer'];
 const NOME = { computer: 'Computer', tablet: 'Tablet', telefono: 'Telefono' };
-/* Da chi eredita ogni dispositivo, dal più vicino al più lontano. */
 const CATENA = { computer: [], tablet: ['computer'], telefono: ['tablet', 'computer'] };
 
 const LATI = ['sopra', 'destra', 'sotto', 'sinistra'];
 const NOME_LATO = { sopra: 'sopra', destra: 'a destra', sotto: 'sotto', sinistra: 'a sinistra' };
 const LATO_CSS = { sopra: 'Top', destra: 'Right', sotto: 'Bottom', sinistra: 'Left' };
 
-/* Il peso in numeri non dice niente a chi non lavora con i font. */
 const NOMI_PESO = {
   100: 'sottilissimo', 200: 'molto sottile', 300: 'sottile', 400: 'normale', 500: 'medio',
   600: 'semigrassetto', 700: 'grassetto', 800: 'molto grassetto', 900: 'nerissimo'
 };
 
-/* Quando il sito non ha un numero («normal», «none»): cosa scrivere nella
-   casella vuota e dove lasciare il cursore. */
 const SENZA_NUMERO = {
   interlinea: { testo: 'normale', a: 1.2 },
   larghezzaMax: { testo: 'nessuna', a: 'max' }
 };
 
-/* Le proprietà che il player non può avere le decide condivisi/stili.js
-   (VIETATE_AI_PROTETTI): la riga le nomina con le etichette del generatore,
-   così resta vera anche se l'elenco cambia. */
 function testoProtetto() {
   const nomi = vietateAiProtetti().map((nome) => '«' + (NOME_CONTROLLO[nome] || etichettaDi(nome)) + '»');
   const elenco = nomi.length > 1 ? nomi.slice(0, -1).join(', ') + ' e ' + nomi[nomi.length - 1] : nomi.join('');
@@ -122,14 +60,10 @@ function testoProtetto() {
     'renderlo trasparente o rimpicciolirlo: per questo ' + elenco + ' su questo elemento non ci sono.';
 }
 
-/* Dove la scheda chiama un controllo con un nome diverso dall'etichetta del
-   generatore: «Nascosto» descrive lo stato, il comando si chiama «Nascondi». */
 const NOME_CONTROLLO = { nascosto: 'Nascondi' };
 
 const NOTA_MARGINE_PROTETTO = 'Sul player lo spazio esterno parte da 0 e quello interno arriva al massimo a 40 px: oltre, il player finirebbe sotto un\'altra sezione o sotto la misura che Twitch chiede.';
 
-/* Disegni a tratto per quello che lo sprite del pannello non ha. Si
-   costruiscono con createElementNS: nessun markup da stringa. */
 const NS = 'http://www.w3.org/2000/svg';
 const GLIFI = {
   telefono: 'M8 3h8v18H8z M11 18h2',
@@ -177,14 +111,12 @@ function decimaliDi(passo) {
   return testo.indexOf('.') === -1 ? 0 : testo.length - testo.indexOf('.') - 1;
 }
 
-/** La voce di SBStili.PROPRIETA per quel nome, o null. */
 function definizione(nome) {
   const S = sb();
   if (!S || !Array.isArray(S.PROPRIETA)) return null;
   return S.PROPRIETA.find((d) => d && d.nome === nome) || null;
 }
 
-/** min, max, passo e decimali di un controllo numerico (per unità, se è una misura). */
 function limiti(nome, unita) {
   const d = definizione(nome) || {};
   const base = d.tipo === 'misura' && d.unita && unita ? (d.unita[unita] || {}) : d;
@@ -193,27 +125,16 @@ function limiti(nome, unita) {
     min: typeof base.min === 'number' ? base.min : 0,
     max: typeof base.max === 'number' ? base.max : 100,
     passo,
-    // Il cursore si muove a passi: scrivere più decimali del passo darebbe
-    // numeri come 1,2000000001. Dalla casella si arriva fino ai decimali
-    // che il generatore tiene.
     decimali: typeof base.decimali === 'number' ? base.decimali : decimaliDi(passo),
     decimaliPasso: decimaliDi(passo)
   };
 }
 
-/** Le scelte di una proprietà `scelta` o `interruttore`, dal generatore. */
 function scelteDi(nome) {
   const d = definizione(nome);
   return d && Array.isArray(d.valori) ? d.valori : [];
 }
 
-/* =====================================================================
-   3. DATI
-   ===================================================================== */
-
-/* Si rilegge tutto a ogni uso: dopo Annulla, Ripeti o un ripristino
-   `ponte.stato.dati` è un oggetto nuovo, e un riferimento tenuto da prima
-   scriverebbe su dati che non esistono più. */
 function stiliTutti() {
   return oggetto(ponte.leggi('config.stili'));
 }
@@ -233,9 +154,6 @@ function proprio(bersaglio, dispositivo, nome) {
   return o && propria(o, nome) && o[nome] !== null && o[nome] !== undefined ? o[nome] : undefined;
 }
 
-/* Il valore che arriva dai dispositivi più grandi (non da questo). Con
-   `lato` si cerca il singolo lato di riempimento o margine: il generatore
-   li scrive uno per uno, quindi anche l'eredità va lato per lato. */
 function ereditato(bersaglio, dispositivo, nome, lato) {
   for (const sopra of CATENA[dispositivo] || []) {
     const v = proprio(bersaglio, sopra, nome);
@@ -254,7 +172,6 @@ function haValori(bersaglio, dispositivo) {
   return Boolean(o && Object.keys(o).length);
 }
 
-/* Niente {} orfani: via i dispositivi vuoti e il bersaglio vuoto. */
 function pota(bersaglio) {
   const s = stiliTutti();
   if (!s || !oggetto(s[bersaglio])) return;
@@ -271,9 +188,6 @@ function dispositivoCorrente() {
   return DISPOSITIVI.includes(d) ? d : 'computer';
 }
 
-/* Le funzioni che dicono al generatore quali famiglie e quali font
-   caricati esistono. Senza TEMA si passa niente: il generatore tiene i
-   valori di forma giusta invece di scartarli. */
 function opzioniPulizia() {
   if (tema && typeof tema.voceFamiglia === 'function' && typeof tema.voceFont === 'function') {
     return { famiglia: tema.voceFamiglia, font: tema.voceFont };
@@ -281,15 +195,9 @@ function opzioniPulizia() {
   return {};
 }
 
-/**
- * Scrive (o toglie, con null) una proprietà sul dispositivo del contesto.
- * Torna true se adesso i dati contengono quel valore.
- */
 function scrivi(ctx, nome, valore) {
   if (!ponte.pronto) return false;
   if (dispositivoCorrente() !== ctx.dispositivo) {
-    // Il dispositivo è cambiato sotto la scheda: scrivere adesso vorrebbe
-    // dire scrivere su quello sbagliato.
     ridisegnaPresto(ctx);
     return false;
   }
@@ -315,7 +223,6 @@ function scrivi(ctx, nome, valore) {
 
   let tutti = stiliTutti();
   if (!tutti) {
-    // Prima scrittura in assoluto: il ramo non c'è ancora, lo crea il ponte.
     ponte.scrivi('config.stili', {});
     tutti = stiliTutti();
     if (!tutti) return false;
@@ -332,18 +239,11 @@ function dopoScrittura(ctx, tolto) {
   for (const altro of vivi) {
     if (altro.bersaglio !== ctx.bersaglio) continue;
     altro.impronta = firma;
-    // L'altra scheda (Stile o Avanzate) dello stesso elemento vede subito
-    // il valore nuovo; questa aggiorna solo intestazioni e contatori, i
-    // controlli li ha già sistemati chi ha scritto.
     if (altro === ctx) segnaTutto(altro);
     else sincronizzaTutto(altro);
   }
   programmaInvio(tolto ? ctx : null);
 }
-
-/* =====================================================================
-   4. INVIO ALL'ANTEPRIMA — al massimo una volta per fotogramma
-   ===================================================================== */
 
 const invio = { inAttesa: false, giro: 0, fantasmi: new Set() };
 
@@ -358,29 +258,18 @@ function programmaInvio(ctxDaRileggere) {
     invio.inAttesa = false;
     try { ponte.segnala('config.stili'); } catch (e) { avverti(e); }
     try { if (typeof motore.aggiornaStili === 'function') motore.aggiornaStili(); } catch (e) { avverti(e); }
-    // Dopo aver tolto un valore, «come nel sito» si rilegge solo ora che il
-    // CSS dell'anteprima non lo contiene più.
     const daRileggere = Array.from(invio.fantasmi);
     invio.fantasmi.clear();
     for (const c of daRileggere) if (c.radice.isConnected) sincronizzaTutto(c);
   };
   if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(esegui);
-  // Con la scheda del browser in secondo piano requestAnimationFrame non
-  // arriva: la riserva fa lo stesso lavoro una volta sola.
   setTimeout(esegui, 120);
 }
-
-/* =====================================================================
-   5. VALORI «COME NEL SITO» E DESCRIZIONI
-   ===================================================================== */
 
 function documentoAnteprima() {
   try { return typeof motore.documento === 'function' ? motore.documento() : null; } catch (e) { return null; }
 }
 
-/* L'elemento vero nell'anteprima. Dopo una ricarica il nodo del meta è
-   staccato: si prende quello nuovo dalla selezione del motore o, se la
-   selezione è altrove, il primo elemento con lo stesso marcatore. */
 function elementoVivo(ctx) {
   const doc = documentoAnteprima();
   const m = ctx.meta;
@@ -391,7 +280,7 @@ function elementoVivo(ctx) {
       ctx.meta = scelto;
       return scelto.el;
     }
-  } catch (e) { /* si prova col selettore */ }
+  } catch (e) {}
   const S = sb();
   if (doc && S && ctx.bersaglio) {
     const selettore = S.selettoreDi(ctx.bersaglio);
@@ -412,12 +301,11 @@ function rgbInEsa(testo) {
   const m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+%?))?\s*\)$/.exec(String(testo || '').trim());
   if (!m) return null;
   const alfa = m[4] === undefined ? 1 : (m[4].endsWith('%') ? parseFloat(m[4]) / 100 : parseFloat(m[4]));
-  if (!(alfa > 0)) return null;                      // trasparente: nessun colore da dire
+  if (!(alfa > 0)) return null;
   const due = (n) => Math.round(stringi(parseFloat(n), 0, 255)).toString(16).padStart(2, '0');
   return '#' + due(m[1]) + due(m[2]) + due(m[3]);
 }
 
-/* I 12 colori del tema con nome e valore attuale della bozza. */
 function coloriDelTema() {
   if (tema && typeof tema.coloriTema === 'function') {
     try {
@@ -435,8 +323,6 @@ function coloriDelTema() {
   });
 }
 
-/* Il colore calcolato, riportato al colore del tema se coincide: «Ciano»
-   dice di più di #22e0ff. */
 function coloreComeValore(testoCss) {
   const esa = rgbInEsa(testoCss);
   if (!esa) return null;
@@ -449,10 +335,6 @@ function sceltaDaCss(nome, css) {
   return trovata ? trovata.valore : null;
 }
 
-/**
- * Il valore che l'elemento ha adesso nell'anteprima, nella stessa forma dei
- * dati, oppure null. Serve solo come segnaposto: non si scrive mai.
- */
 function valoreNelSito(ctx, nome, lato) {
   const cs = calcolato(ctx);
   if (!cs) return null;
@@ -538,7 +420,6 @@ function nomeFont(valore) {
   return valore;
 }
 
-/** Un valore dei dati detto a parole, per «da Computer: …» e i segnaposto. */
 function descrivi(nome, valore) {
   const d = definizione(nome);
   if (!d || valore === undefined || valore === null) return '';
@@ -561,12 +442,6 @@ function descrivi(nome, valore) {
     default: return String(valore);
   }
 }
-
-/* =====================================================================
-   6. PEZZI DELL'INTERFACCIA
-   ===================================================================== */
-
-/* --- intestazione di un campo: pallino, nome, «da Computer», ripristino -- */
 
 function testaCampo(ctx, o) {
   const nome = o.perId
@@ -618,8 +493,6 @@ function testaCampo(ctx, o) {
   return { nodo, aggiorna };
 }
 
-/* Un campo = intestazione + controllo. `costruisci(ids)` torna
-   { nodo, sincronizza, fuoco, perEtichetta, esterno }. */
 function campo(ctx, griglia, o) {
   const ids = { etichetta: idUnico('st-nome'), campo: idUnico('st-campo'), descrizione: idUnico('st-da') };
   const controllo = o.costruisci(ids);
@@ -639,8 +512,6 @@ function campo(ctx, griglia, o) {
   ctx.campi.push(() => { testa.aggiorna(); controllo.sincronizza(); });
   return nodo;
 }
-
-/* --- numero: cursore + casella (+ unità) ----------------------------- */
 
 function controlloNumero(ctx, ids, nome) {
   const d = definizione(nome) || {};
@@ -684,8 +555,6 @@ function controlloNumero(ctx, ids, nome) {
   const forma = (n) => (conUnita ? { valore: n, unita } : n);
   const numeroDi = (v) => (conUnita ? (oggetto(v) ? v.valore : null) : (typeof v === 'number' ? v : null));
 
-  /* px e rem si convertono (16 px per rem, come il sito); px e % no: la
-     percentuale dipende da un contenitore che la scheda non misura. */
   function nellUnita(v) {
     if (!conUnita) return typeof v === 'number' ? v : null;
     if (!oggetto(v)) return null;
@@ -727,7 +596,6 @@ function controlloNumero(ctx, ids, nome) {
   function sincronizza() {
     if (conUnita) {
       const mioGrezzo = proprio(ctx.bersaglio, ctx.dispositivo, nome);
-      // Dopo Annulla l'unità salvata può essere un'altra.
       if (oggetto(mioGrezzo) && unitaPossibili.includes(mioGrezzo.unita)) unita = mioGrezzo.unita;
       coda.value = unita;
     }
@@ -761,7 +629,7 @@ function controlloNumero(ctx, ids, nome) {
 
   casella.addEventListener('input', () => {
     const l = lim();
-    if (casella.value === '') { segnaErrore(false); return; }          // si decide al «change»
+    if (casella.value === '') { segnaErrore(false); return; }
     const n = arrotonda(parseFloat(casella.value), l.decimali);
     if (!Number.isFinite(n) || n < l.min || n > l.max) { segnaErrore(true, l); return; }
     segnaErrore(false);
@@ -774,7 +642,6 @@ function controlloNumero(ctx, ids, nome) {
   casella.addEventListener('change', () => {
     const l = lim();
     if (casella.value === '') {
-      // Una casella svuotata vuol dire «togli», uno scarabocchio no.
       if (!(casella.validity && casella.validity.badInput)) scrivi(ctx, nome, null);
       casella.value = '';
       segnaErrore(false);
@@ -811,8 +678,6 @@ function controlloNumero(ctx, ids, nome) {
   return { nodo, sincronizza, fuoco: () => casella, perEtichetta: true };
 }
 
-/* --- menu a tendina ---------------------------------------------------- */
-
 function controlloScelta(ctx, ids, nome, opzioni) {
   const prima = el('option', { value: '' });
   const menu = el('select', {
@@ -846,8 +711,6 @@ function controlloScelta(ctx, ids, nome, opzioni) {
   return { nodo: menu, sincronizza, fuoco: () => menu, perEtichetta: true };
 }
 
-/* --- bottoni a scelta singola (corsivo, allineamento, bagliore) --------- */
-
 function controlloBottoni(ctx, ids, nome, opzioni) {
   const gruppo = el('div', {
     classe: 'stile__bottoni', role: 'group',
@@ -868,8 +731,6 @@ function controlloBottoni(ctx, ids, nome, opzioni) {
     }, figli);
     b.addEventListener('click', () => {
       const mio = proprio(ctx.bersaglio, ctx.dispositivo, nome);
-      // Il secondo clic sulla scelta accesa la toglie: è il modo più breve
-      // di tornare «come nel sito» senza cercare il ripristino.
       scrivi(ctx, nome, mio === o.valore ? null : o.valore);
       sincronizza();
     });
@@ -893,10 +754,6 @@ function controlloBottoni(ctx, ids, nome, opzioni) {
   return { nodo: gruppo, sincronizza, fuoco: () => bottoni[0] && bottoni[0].b, perEtichetta: false };
 }
 
-/* --- colore e font: i controlli di TEMA, o il ripiego ------------------ */
-
-/* Il testo della scelta «vuota» dei controlli di TEMA: su un dispositivo
-   più piccolo vuoto non vuol dire «come nel sito» ma «come su Computer». */
 function testoVuoto(ctx, nome) {
   const eredita = ereditato(ctx.bersaglio, ctx.dispositivo, nome);
   if (eredita) return 'Come su ' + NOME[eredita.da];
@@ -922,8 +779,6 @@ function controlloEsterno(ctx, nome, etichetta, fabbrica, segnaposto) {
         alCambio: (v) => {
           const valore = v === '' || v === undefined ? null : v;
           if (!scrivi(ctx, nome, valore)) {
-            // Un font caricato un attimo fa può non essere ancora nella
-            // cache di TEMA: si rilegge l'elenco e si riprova una volta.
             if (typeof valore === 'string' && valore.startsWith('caricato:') && tema && typeof tema.caricaFont === 'function') {
               Promise.resolve(tema.caricaFont({ forza: true })).then(() => {
                 if (!scrivi(ctx, nome, valore)) ponte.avviso('Questo font non risulta fra quelli caricati.', { tipo: 'errore' });
@@ -976,12 +831,6 @@ function controlloEsterno(ctx, nome, etichetta, fabbrica, segnaposto) {
   };
 }
 
-/* Il colore da mostrare nel campione quando su questo dispositivo non c'è
-   un valore. L'anteprima è larga quanto il dispositivo che si modifica,
-   quindi il colore calcolato comprende già quello ereditato da un
-   dispositivo più grande: è la cosa più vera da mostrare. Senza anteprima
-   si ripiega sul valore ereditato, come colore vero (i --token del sito
-   nel pannello non esistono). */
 function segnapostoColore(ctx, nome) {
   const cs = calcolato(ctx);
   if (cs) {
@@ -1010,9 +859,6 @@ function controlloColore(ctx, ids, nome, etichetta) {
   return coloreDiRipiego(ctx, ids, nome, etichetta);
 }
 
-/* Ripiego minimo finché impostazioni.js non c'è: i 12 colori del tema, un
-   colore libero, e basta. Niente contrasto né nomi lunghi: quelli sono il
-   lavoro del controllo vero. */
 function coloreDiRipiego(ctx, ids, nome, etichetta) {
   const colori = coloriDelTema();
   const campioni = el('div', { classe: 'stile__campioni', role: 'group', 'aria-label': 'Colori del sito per «' + etichetta + '»' });
@@ -1099,15 +945,12 @@ function controlloFont(ctx, ids) {
     const esterno = controlloEsterno(ctx, 'font', 'Font', tema.fontControllo, () => segnapostoFont(ctx));
     if (esterno) return esterno;
   }
-  /* Ripiego: i tre ruoli del tema, le famiglie del catalogo e i font già
-     caricati, se il pannello li conosce. */
   const opzioni = ['titolo', 'testo', 'mono'].map((ruolo) => ({ valore: 'ruolo:' + ruolo, etichetta: nomeFont('ruolo:' + ruolo) }));
   const catalogo = ponte.stato && ponte.stato.tema && oggetto(ponte.stato.tema.font) ? ponte.stato.tema.font : {};
   const viste = new Set();
   for (const slot of Object.keys(catalogo)) {
     for (const voce of Array.isArray(catalogo[slot]) ? catalogo[slot] : []) {
       const nome = String(voce && typeof voce === 'object' ? voce.nome : voce || '').trim();
-      // «Font di sistema» non è una famiglia vera (TEMA): si sceglie da un ruolo.
       if (!nome || nome === 'Font di sistema' || viste.has(nome)) continue;
       viste.add(nome);
       opzioni.push({ valore: 'famiglia:' + nome, etichetta: nome });
@@ -1122,8 +965,6 @@ function controlloFont(ctx, ids) {
   return controlloScelta(ctx, ids, 'font', opzioni);
 }
 
-/* --- immagine di sfondo ------------------------------------------------ */
-
 function controlloImmagine(ctx, ids) {
   const nome = 'sfondoImmagine';
   const miniatura = el('span', { classe: 'stile__miniatura', 'aria-hidden': 'true' });
@@ -1135,15 +976,11 @@ function controlloImmagine(ctx, ids) {
   const nessuna = el('button', { type: 'button', classe: 'btn btn--minimo', dati: { fuoco: 'immagine-nessuna' } });
   const torna = el('button', { type: 'button', classe: 'btn btn--minimo', hidden: true, dati: { fuoco: 'immagine-torna' } });
 
-  /* L'immagine che arriva da un dispositivo più grande, se c'è davvero. */
   function immagineDiSopra() {
     const eredita = ereditato(ctx.bersaglio, ctx.dispositivo, nome);
     return eredita && eredita.valore !== 'nessuna' ? eredita : null;
   }
 
-  /* «Nessuna»: se sopra c'è un'immagine serve dirlo esplicitamente
-     ('nessuna' = background-image: none), altrimenti basta togliere il
-     valore di questo dispositivo. */
   function mettiNessuna() {
     return scrivi(ctx, nome, immagineDiSopra() ? 'nessuna' : null);
   }
@@ -1159,8 +996,6 @@ function controlloImmagine(ctx, ids) {
       img.addEventListener('error', () => { svuota(miniatura); miniatura.append(el('span', { classe: 'stile__vuota', testo: 'non trovata' })); });
       miniatura.append(img);
     } else {
-      // «Del sito» solo quando non c'è nessuna scelta: con «nessuna» scritta
-      // qui o sopra, l'anteprima può non essersi ancora aggiornata.
       const nelSito = file === 'nessuna' ? null : valoreNelSito(ctx, nome);
       miniatura.append(el('span', { classe: 'stile__vuota', testo: nelSito ? 'del sito' : 'nessuna' }));
     }
@@ -1221,8 +1056,6 @@ function controlloImmagine(ctx, ids) {
   ]);
   return { nodo, sincronizza, fuoco: () => scegli, perEtichetta: false };
 }
-
-/* --- riquadro degli spazi: margine fuori, riempimento dentro ----------- */
 
 const lucchetti = {};
 
@@ -1370,8 +1203,6 @@ function scriviLati(ctx, nome, lati, n) {
   return scrivi(ctx, nome, Object.keys(nuovo).length ? nuovo : null);
 }
 
-/* --- «Nascondi su questo dispositivo» ---------------------------------- */
-
 function controlloNascosto(ctx, ids) {
   const idLeva = idUnico('st-leva');
   const leva = el('button', {
@@ -1379,15 +1210,12 @@ function controlloNascosto(ctx, ids) {
     'aria-labelledby': idLeva, 'aria-describedby': ids.descrizione, dati: { fuoco: 'nascosto' }
   }, [el('span', { classe: 'interruttore__pista', 'aria-hidden': 'true' }, [el('span', { classe: 'interruttore__pallina' })])]);
   const testoLeva = el('span', { classe: 'stile__leva-testo', id: idLeva, testo: 'Nascondi su ' + NOME[ctx.dispositivo] });
-  // L'etichetta è uno <span>: un clic sopra deve comunque arrivare alla leva.
   testoLeva.addEventListener('click', () => leva.click());
 
   const riepilogo = el('ul', { classe: 'stile__riepilogo', 'aria-label': 'Visibilità sui tre dispositivi' });
   const nota = el('p', { classe: 'stile__aiuto', hidden: true });
   const mostra = el('button', { type: 'button', classe: 'btn btn--minimo stile__mostra', hidden: true, dati: { fuoco: 'nascosto-mostra' } });
 
-  /* Il valore effettivo con la stessa eredità del generatore, e da dove
-     arriva: null se nessun dispositivo da lì in su ha scelto qualcosa. */
   function effettivo(dispositivo) {
     const S = sb();
     const voce = voceDi(ctx.bersaglio);
@@ -1408,7 +1236,6 @@ function controlloNascosto(ctx, ids) {
     for (const d of ORDINE_BARRA) {
       const r = effettivo(d);
       const nascosto = Boolean(r && r.valore === true);
-      // «(come Computer)» solo quando la scelta arriva davvero da lì.
       const come = r && r.da !== d ? ' (come ' + NOME[r.da] + ')' : '';
       riepilogo.append(el('li', {
         classe: 'stile__riepilogo-voce' + (d === ctx.dispositivo ? ' is-corrente' : ''),
@@ -1441,8 +1268,6 @@ function controlloNascosto(ctx, ids) {
     if (nota.textContent !== testo) nota.textContent = testo;
   }
 
-  /* Si scrive il minimo: il valore esplicito solo se diverso da quello che
-     arriva dai dispositivi più grandi; su Computer `false` non si scrive. */
   function impostaNascosto(voluto) {
     const s = stato();
     if (ctx.dispositivo === 'computer') return scrivi(ctx, 'nascosto', voluto ? true : null);
@@ -1468,17 +1293,10 @@ function controlloNascosto(ctx, ids) {
   return { nodo, sincronizza, fuoco: () => leva, perEtichetta: false };
 }
 
-/* --- riga che spiega perché qualcosa manca ----------------------------- */
-
 function rigaProtetta() {
   return el('p', { classe: 'stile__protetto' }, [icona('attenzione', 'ico ico--mini'), el('span', { testo: testoProtetto() })]);
 }
 
-/* =====================================================================
-   7. SCHEDA STILE
-   ===================================================================== */
-
-/** Vero se la proprietà ha senso su questo elemento e non è vietata qui. */
 function offerta(ctx, nome) {
   const d = definizione(nome);
   if (!d) return false;
@@ -1492,19 +1310,12 @@ function vietateAiProtetti() {
   return S && Array.isArray(S.VIETATE_AI_PROTETTI) ? S.VIETATE_AI_PROTETTI : ['nascosto', 'opacita', 'larghezzaMax'];
 }
 
-/* I limiti dei lati di questo elemento. Sul player lo spazio esterno non
-   scende sotto lo zero (tirerebbe il monitor sotto la sezione di prima) e
-   quello interno non supera i 40 px (lo stringerebbe sotto la misura che
-   Twitch chiede): condivisi/stili.js scarta i lati fuori da lì, e la casella
-   non deve offrire quello che poi sparirebbe. */
 const LATI_PROTETTI_DI_RISERVA = { margine: { min: 0 }, riempimento: { max: 40 } };
 
 function limitiLati(ctx, nome) {
   const l = limiti(nome);
   if (!ctx.protetto) return l;
   const S = sb();
-  // La regola vera sta in condivisi/stili.js (LATI_PROTETTI); la riserva
-  // ripete i numeri decisi dall'integratore finché non viene esportata.
   const regole = S && oggetto(S.LATI_PROTETTI) ? S.LATI_PROTETTI : LATI_PROTETTI_DI_RISERVA;
   const regola = oggetto(regole[nome]) ? regole[nome] : null;
   if (!regola) return l;
@@ -1520,7 +1331,6 @@ function etichettaDi(nome) {
   return d && d.etichetta ? d.etichetta : nome;
 }
 
-/* Campo standard dal tipo della proprietà. */
 function campoPer(ctx, griglia, nome, extra = {}) {
   if (!offerta(ctx, nome)) return;
   const d = definizione(nome);
@@ -1609,8 +1419,6 @@ const GRUPPI_STILE = [
   { chiave: 'effetti', titolo: 'Effetti', proprieta: ['bagliore', 'opacita'], disegna: disegnaEffetti, sempre: (ctx) => ctx.protetto }
 ];
 
-/* --- fisarmonica, con i gruppi aperti ricordati ------------------------ */
-
 const CHIAVE_GRUPPI = 'sb-pannello-stile-gruppi';
 const gruppiAperti = leggiGruppi();
 
@@ -1619,12 +1427,12 @@ function leggiGruppi() {
     const grezzo = window.localStorage.getItem(CHIAVE_GRUPPI);
     const letto = grezzo ? JSON.parse(grezzo) : null;
     if (oggetto(letto)) return letto;
-  } catch (e) { /* senza localStorage si ricorda solo finché la pagina resta aperta */ }
+  } catch (e) {}
   return { tipografia: true };
 }
 
 function salvaGruppi() {
-  try { window.localStorage.setItem(CHIAVE_GRUPPI, JSON.stringify(gruppiAperti)); } catch (e) { /* idem */ }
+  try { window.localStorage.setItem(CHIAVE_GRUPPI, JSON.stringify(gruppiAperti)); } catch (e) {}
 }
 
 function fisarmonica(ctx, g) {
@@ -1668,14 +1476,9 @@ function disegnaStile(ctx) {
     ctx.radice.append(nota('Questo elemento non ha proprietà di stile da cambiare.'));
     return;
   }
-  // Almeno un gruppo aperto: una scheda tutta chiusa sembra vuota.
   if (!gruppi.some((g) => gruppiAperti[g.chiave] === true)) gruppiAperti[gruppi[0].chiave] = true;
   for (const g of gruppi) ctx.radice.append(fisarmonica(ctx, g));
 }
-
-/* =====================================================================
-   8. SCHEDA AVANZATE (la parte di STILE)
-   ===================================================================== */
 
 function disegnaAvanzate(ctx) {
   const visibilita = el('section', { classe: 'stile__sezione' }, [
@@ -1692,7 +1495,6 @@ function disegnaAvanzate(ctx) {
     visibilita.append(griglia);
   }
 
-  // Sul player la larghezza massima non c'è: la riga qui sopra dice già perché.
   let larghezza = null;
   if (offerta(ctx, 'larghezzaMax')) {
     larghezza = el('section', { classe: 'stile__sezione' }, [
@@ -1752,18 +1554,11 @@ async function confermaRipristino(ctx) {
   ponte.avviso(chi.charAt(0).toUpperCase() + chi.slice(1) + ' è tornato con lo stile del sito. Ricordati di salvare.', { tipo: 'ok', titolo: 'Stile ripristinato' });
 }
 
-/* =====================================================================
-   9. DISEGNO, RIDISEGNO, EVENTI, REGISTRAZIONE
-   ===================================================================== */
-
-/* Le schede disegnate (di solito una Stile e una Avanzate). */
 let vivi = [];
 
 export function renderStile(contenitore, meta) { return disegna(contenitore, meta, 'stile'); }
 export function renderAvanzate(contenitore, meta) { return disegna(contenitore, meta, 'avanzate'); }
 
-/* L'id del meta come bersaglio di config.stili. Un id nudo di blocco
-   (`chi.corpo`) diventa `blocco:chi.corpo`. */
 function bersaglioDi(meta) {
   if (!meta || typeof meta.id !== 'string') return null;
   let id = meta.id;
@@ -1775,8 +1570,6 @@ function bersaglioDi(meta) {
 }
 
 function disegna(contenitore, meta, scheda) {
-  // Il contratto dà (contenitore, meta); un chiamante che li scambia non
-  // deve lasciare la scheda bianca.
   if (contenitore && typeof contenitore.append !== 'function' && meta && typeof meta.append === 'function') {
     [contenitore, meta] = [meta, contenitore];
   }
@@ -1784,10 +1577,6 @@ function disegna(contenitore, meta, scheda) {
 
   const vecchia = Array.from(contenitore.children).find((n) => n.classList.contains('stile') && n.dataset.scheda === scheda) || null;
 
-  /* Stesso elemento, stesso dispositivo, stessi controlli: il guscio ridisegna
-     le schede anche dopo una ricarica dell'anteprima o per un clic ripetuto.
-     Qui si tiene la scheda com'è e si rileggono solo i valori, così un menu
-     aperto resta aperto e il campo in uso non perde il fuoco. */
   const gia = vecchia ? vivi.find((c) => c.radice === vecchia) : null;
   const bersaglioNuovo = bersaglioDi(meta);
   if (gia && bersaglioNuovo && gia.bersaglio === bersaglioNuovo && gia.dispositivo === dispositivoCorrente() &&
@@ -1825,13 +1614,11 @@ function disegna(contenitore, meta, scheda) {
 
 function tienilo(c) {
   if (c.radice.isConnected) { c.visto = true; return true; }
-  // Mai entrata in pagina: un po' di pazienza, il motore può appenderla dopo.
   return !c.visto && Date.now() - c.nato < 10000;
 }
 
 function nota(testo) { return el('p', { classe: 'stile__nota', testo }); }
 
-/* Vero se l'elemento è protetto dal contratto o contiene il player. */
 function eProtetto(ctx) {
   const S = sb();
   if (S && Array.isArray(S.PROTETTI) && S.PROTETTI.includes(ctx.bersaglio)) return true;
@@ -1899,15 +1686,12 @@ function barraDispositivi(ctx) {
 
 function cambiaDispositivo(d) {
   try { if (typeof motore.impostaDispositivo === 'function') motore.impostaDispositivo(d); } catch (e) { avverti(e); }
-  // Di solito arriva sb:dispositivo e ridisegna; se il motore non lo manda,
-  // la scheda si allinea lo stesso.
   setTimeout(() => {
     const ora = dispositivoCorrente();
     for (const c of vivi.slice()) if (c.radice.isConnected && c.dispositivo !== ora) ridisegna(c);
   }, 0);
 }
 
-/* Solo intestazioni, contatori e puntini dei dispositivi. */
 function segnaTutto(ctx) {
   for (const f of ctx.teste) f();
   for (const f of ctx.contatori) f();
@@ -1920,8 +1704,6 @@ function segnaTutto(ctx) {
   }
 }
 
-/* Tutti i valori dei controlli, senza rifare i nodi: il campo in cui si
-   sta scrivendo non perde il fuoco. */
 function sincronizzaTutto(ctx) {
   for (const f of ctx.campi) {
     try { f(); } catch (e) { avverti(e); }
@@ -1944,8 +1726,6 @@ function rimettiFuoco(ctx, chiave) {
   if (nodo && typeof nodo.focus === 'function') nodo.focus({ preventScroll: true });
 }
 
-/* Rifà i nodi (cambio di dispositivo, ripristino, TEMA arrivato) tenendo
-   lo scorrimento del pannello e il fuoco sul controllo equivalente. */
 function ridisegna(ctx) {
   const attivo = document.activeElement;
   const chiave = attivo && ctx.radice.contains(attivo) && attivo.dataset ? attivo.dataset.fuoco : null;
@@ -1956,8 +1736,6 @@ function ridisegna(ctx) {
   if (chiave) rimettiFuoco(ctx, chiave);
 }
 
-/* Le schede da rifare al prossimo giro: più scritture nello stesso istante
-   (un cursore trascinato mentre cambia il dispositivo) ne rifanno una volta. */
 const daRidisegnare = new Set();
 function ridisegnaPresto(ctx) {
   if (daRidisegnare.has(ctx)) return;
@@ -1973,8 +1751,6 @@ function ridisegnaTutti() {
   for (const c of vivi.slice()) if (c.radice.isConnected) ridisegna(c);
 }
 
-/* Controlla ogni scheda viva: dispositivo cambiato → si ridisegna; dati
-   cambiati da fuori (Annulla, TEMA che toglie un font) → si risincronizza. */
 function controllaVivi({ forza = false } = {}) {
   vivi = vivi.filter(tienilo);
   const ora = dispositivoCorrente();
@@ -1995,15 +1771,10 @@ document.addEventListener('sb:dispositivo', () => {
 });
 
 document.addEventListener('sb:sostituito', () => {
-  // I dati sono un oggetto nuovo: i valori si rileggono, e un campo in
-  // scrittura resta dov'è.
   setTimeout(() => controllaVivi({ forza: true }), 0);
 });
 
 document.addEventListener('sb:anteprima-pronta', () => {
-  // L'elemento dell'anteprima è un nodo nuovo: servono i suoi valori per
-  // «come nel sito». Un fotogramma dopo, quando il motore ha già rimesso
-  // tema e stili dal vivo.
   const giro = () => {
     for (const c of vivi) {
       if (!c.radice.isConnected || !c.bersaglio) continue;
@@ -2020,8 +1791,6 @@ document.addEventListener('sb:modifica', (evento) => {
   if (chiave.startsWith('config.stili')) {
     controllaVivi();
   } else if (chiave.startsWith('config.tema')) {
-    // Il tema dal vivo arriva dal server: i colori «come nel sito» si
-    // rileggono quando è già nell'anteprima.
     setTimeout(() => controllaVivi({ forza: true }), 400);
   }
 });
