@@ -678,6 +678,7 @@
     }
     var modoCanzoni = opzioni.modo === 'fissa' || opzioni.modo === 'caso' ? opzioni.modo : 'ordine';
     var canzoneFissa = Math.max(0, parseInt(opzioni.fissa, 10) || 0);
+    var primaCanzone = parseInt(opzioni.primaCanzone, 10);
     var canzone = null;
     var canzoneDelLivello = 0;
 
@@ -1708,6 +1709,8 @@
       } else if (modoCanzoni === 'caso') {
         if (canzone && canzoneDelLivello === n) {
           indice = canzone.indice;
+        } else if (!canzone && primaCanzone >= 0 && primaCanzone < canzoni.length) {
+          indice = primaCanzone;
         } else {
           indice = Math.floor(Math.random() * canzoni.length);
           if (canzoni.length > 1 && canzone && indice === canzone.indice) { indice = (indice + 1 + Math.floor(Math.random() * (canzoni.length - 1))) % canzoni.length; }

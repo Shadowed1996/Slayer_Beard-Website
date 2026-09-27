@@ -5287,6 +5287,10 @@ async function proveGiocoPollo(costruisci, archivio) {
     caso.crea({ modo: 'caso' }).avvia();
     caso.tasto(' ', 'Space');
     esigiUguale(caso.registro.eventi[0], 'mp3/prima.mp3', 'a caso, il primo livello');
+    const preparata = rendiFinta(0);
+    preparata.crea({ modo: 'caso', primaCanzone: 2 }).avvia();
+    preparata.tasto(' ', 'Space');
+    esigiUguale(preparata.registro.eventi[0], 'mp3/terza.mp3', 'a caso, la prima canzone deve essere quella gia scaricata dal sito');
     const M1 = creaLivello(1);
     const p1 = percorsoGiocatore(M1, M1.mx * 0.5, 2, true);
     esigiUguale(giocaSchedule(caso, p1.secondi, 1000 / 60, 200).esito, 'vinto', 'il livello 1 non si finisce');
@@ -5457,9 +5461,20 @@ async function proveGiocoPollo(costruisci, archivio) {
   });
 
   const montaSito = (opzioni) => {
-    const o = Object.assign({ musicaSuona: false, motoreCaricato: false, frasiAttr: '["Una","Due"]', polloAttr: 'img/mascotte.webp', volume: null, motoreRotto: false }, opzioni || {});
+    const o = Object.assign({ musicaSuona: false, motoreCaricato: false, frasiAttr: '["Una","Due"]', polloAttr: 'img/mascotte.webp', volume: null, motoreRotto: false, xhr: false }, opzioni || {});
     let ora = 5000000;
-    const registro = { appesi: [], nodi: [], audio: [], play: 0, pause: 0, musicaFerma: 0, musicaParti: 0, crea: [], avvia: 0, ferma: 0, focus: 0, blur: 0 };
+    const registro = { appesi: [], nodi: [], audio: [], richieste: [], blob: 0, play: 0, pause: 0, musicaFerma: 0, musicaParti: 0, crea: [], avvia: 0, ferma: 0, focus: 0, blur: 0 };
+    function RichiestaFinta() {
+      const r = {
+        metodo: '', url: '', inviata: false, abortita: false, status: 0, response: null, responseType: '', timeout: 0,
+        open(m, u) { this.metodo = m; this.url = u; },
+        send() { this.inviata = true; },
+        abort() { this.abortita = true; if (this.onabort) { this.onabort(); } }
+      };
+      registro.richieste.push(r);
+      return r;
+    }
+    const UrlFinto = { createObjectURL: () => 'blob:finto/' + (++registro.blob) };
     const classi = new Set();
     const ascoltatori = {};
     const memoria = {};
@@ -5519,7 +5534,9 @@ async function proveGiocoPollo(costruisci, archivio) {
       localStorage: { getItem: (k) => (k in memoria ? memoria[k] : null) },
       Date: { now: () => ora },
       JSON: JSON,
-      encodeURIComponent: encodeURIComponent
+      encodeURIComponent: encodeURIComponent,
+      XMLHttpRequest: o.xhr ? RichiestaFinta : undefined,
+      URL: o.xhr ? UrlFinto : undefined
     });
     const tasto = (key, extra) => ascoltatori.keydown(Object.assign({
       key: key, target: { tagName: 'BODY', nodeType: 1 }, ctrlKey: false, altKey: false, metaKey: false, repeat: false, isComposing: false, defaultPrevented: false
@@ -5551,7 +5568,8 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiUguale(p.registro.appesi.length, 2, 'devono partire due caricamenti: stile e motore');
     esigi(p.registro.appesi.some((n) => n.tag === 'link' && n.href === 'css/pollorun.css' && n.rel === 'stylesheet'), 'manca lo stile');
     esigi(p.registro.appesi.some((n) => n.tag === 'script' && n.src === 'js/pollorun-gioco.js'), 'manca il motore');
-    esigiUguale(p.corpo.children.length, 0, 'il gioco compare prima che tutto sia caricato');
+    esigiUguale(p.corpo.children.length, 1, 'durante il caricamento deve esserci solo il preloader');
+    esigiUguale(p.corpo.children[0].className, 'pollorun-carica', 'il gioco compare prima che tutto sia caricato');
     p.carica();
     esigiUguale(p.corpo.children.length, 1, 'il gioco non compare');
     const radice = p.corpo.children[0];
@@ -5568,6 +5586,86 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiUguale(op.sipario, true, 'deve girare in modalita sipario');
     esigiUguale(p.registro.avvia, 1, 'il gioco non parte');
     esigi(p.registro.blur >= 1 && p.registro.focus >= 1, 'il focus non passa al gioco: SPAZIO attiverebbe il link sotto');
+  });
+
+  const trovaNodo = (n, classe) => (n.className === classe ? n : n.children.reduce((a, c) => a || trovaNodo(c, classe), null));
+
+  await prova('pollorun.js: il preloader mostra il pollo, «Caricamento in corso», la barra e la percentuale, e sparisce quando parte il gioco', () => {
+    const p = montaSito();
+    p.scrivi('pollorun');
+    const carica = p.corpo.children[0];
+    esigiUguale(carica.getAttribute('role'), 'dialog', 'ruolo del preloader');
+    esigi(p.classi.has('is-pollorun'), 'la pagina sotto il preloader non e bloccata');
+    const pollo = trovaNodo(carica, 'pollorun-carica__pollo');
+    esigi(pollo && pollo.tag === 'img' && pollo.src === 'img/mascotte.webp', 'manca il pollo che salta');
+    esigiUguale(trovaNodo(carica, 'pollorun-carica__testo').textContent, 'Caricamento in corso', 'scritta');
+    const barra = trovaNodo(carica, 'pollorun-carica__barra');
+    esigiUguale(barra.getAttribute('role'), 'progressbar', 'la barra non e una progressbar');
+    esigi(/^\d+%$/.test(trovaNodo(carica, 'pollorun-carica__percento').textContent), 'manca la percentuale');
+    esigi(trovaNodo(carica, 'pollorun-carica__chiudi'), 'manca il bottone per annullare');
+    p.carica();
+    esigiUguale(p.corpo.children.length, 1, 'restano preloader e gioco insieme');
+    esigiUguale(p.corpo.children[0].className, 'pollorun', 'dopo il caricamento deve esserci il gioco');
+  });
+
+  await prova('pollorun.js: la canzone si scarica tutta prima di partire, la percentuale sale, e poi suona dal file gia scaricato', () => {
+    const p = montaSito({ xhr: true });
+    p.scrivi('pollorun');
+    esigiUguale(p.registro.richieste.length, 1, 'la canzone non si scarica');
+    const r = p.registro.richieste[0];
+    esigiUguale(r.url, 'mp3/DJVI%20-%20Back%20On%20Track.mp3', 'canzone scaricata');
+    esigiUguale(r.responseType, 'blob', 'la canzone va tenuta come file');
+    esigi(r.inviata, 'la richiesta non parte');
+    p.carica();
+    esigiUguale(p.registro.crea.length, 0, 'il gioco parte prima che la canzone sia scaricata');
+    const carica = p.corpo.children[0];
+    const percento = () => trovaNodo(carica, 'pollorun-carica__percento').textContent;
+    esigiUguale(percento(), '30%', 'stile, pollo e motore valgono il 30%');
+    r.onprogress({ lengthComputable: true, loaded: 50, total: 100 });
+    esigiUguale(percento(), '65%', 'a meta canzone');
+    esigiUguale(trovaNodo(carica, 'pollorun-carica__barra').getAttribute('aria-valuenow'), '65', 'la barra non segue');
+    r.onprogress({ lengthComputable: true, loaded: 100, total: 100 });
+    esigiUguale(p.registro.crea.length, 0, 'parte prima della fine vera dello scaricamento');
+    r.status = 200;
+    r.response = {};
+    r.onload();
+    esigiUguale(percento(), '100%', 'alla fine non arriva a 100');
+    esigiUguale(p.registro.crea.length, 1, 'finito il caricamento il gioco non parte');
+    esigiUguale(p.corpo.children[0].className, 'pollorun', 'il preloader non lascia il posto al gioco');
+    const op = p.registro.crea[0];
+    esigiUguale(op.primaCanzone, 0, 'il gioco non sa quale canzone e stata preparata');
+    op.suCanzone(op.canzoni[0]);
+    esigiUguale(p.registro.audio[0].src, 'blob:finto/1', 'la canzone si riscarica invece di usare quella pronta');
+  });
+
+  await prova('pollorun.js: con Esc o con la X il caricamento si annulla, lo scaricamento si ferma e non si apre niente', () => {
+    const p = montaSito({ xhr: true });
+    p.scrivi('pollorun');
+    p.tasto('Escape');
+    esigiUguale(p.corpo.children.length, 0, 'Esc non toglie il preloader');
+    esigi(!p.classi.has('is-pollorun'), 'la pagina resta bloccata');
+    esigi(p.registro.richieste[0].abortita, 'la canzone continua a scaricarsi');
+    p.carica();
+    esigiUguale(p.registro.crea.length, 0, 'annullato, il gioco parte lo stesso');
+
+    p.scrivi('pollorun');
+    esigiUguale(p.corpo.children[0].className, 'pollorun-carica', 'riscrivendo la parola non riparte');
+    trovaNodo(p.corpo.children[0], 'pollorun-carica__chiudi').attrs['@click']();
+    esigiUguale(p.corpo.children.length, 0, 'la X non toglie il preloader');
+    esigiUguale(p.registro.appesi.filter((n) => n.tag === 'script').length, 1, 'il motore si riscarica');
+  });
+
+  await prova('pollorun.js: se la canzone non si scarica il gioco parte lo stesso e la canzone arriva dal sito', () => {
+    const p = montaSito({ xhr: true });
+    p.scrivi('pollorun');
+    p.carica();
+    const r = p.registro.richieste[0];
+    r.status = 404;
+    r.onload();
+    esigiUguale(p.registro.crea.length, 1, 'senza canzone il gioco non parte');
+    const op = p.registro.crea[0];
+    op.suCanzone(op.canzoni[0]);
+    esigiUguale(p.registro.audio[0].src, 'mp3/DJVI%20-%20Back%20On%20Track.mp3', 'la canzone non arriva dal sito');
   });
 
   await prova('pollorun.js: senza aspettare il caricamento non si aprono due giochi, e a motore gia caricato non si scarica di nuovo', () => {

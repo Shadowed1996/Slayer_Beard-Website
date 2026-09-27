@@ -57,10 +57,15 @@
   var MUSICA = leggiCanzoni(ORIGINE ? ORIGINE.getAttribute('data-canzoni') : '');
   var STILE = leggiStile(ORIGINE ? ORIGINE.getAttribute('data-stile') : '');
 
+  var PESI = { stile: 5, pollo: 5, motore: 20, musica: 70 };
+  var ATTESA_BRANO_MS = 90000;
+
   var memoria = '';
   var ultimoTasto = 0;
   var aperto = null;
-  var caricando = false;
+  var carico = null;
+  var attesaMotore = null;
+  var pronti = {};
   var pista = null;
   var branoPista = '';
 
@@ -102,7 +107,7 @@
     try {
       if (branoPista !== voce.file) {
         branoPista = voce.file;
-        p.src = voce.file;
+        p.src = pronti[voce.file] || voce.file;
       }
     } catch (errore) { return; }
     try { p.currentTime = 0; } catch (errore) { }
@@ -156,18 +161,183 @@
   }
 
   function conMotore(fatto) {
-    var restanti = 2;
-    var riuscito = true;
-    function uno() {
-      restanti--;
-      if (restanti === 0) { fatto(riuscito && motorePronto()); }
-    }
-    caricaStile('css/pollorun.css', uno);
-    if (motorePronto()) { uno(); return; }
+    if (motorePronto()) { fatto(true); return; }
+    if (attesaMotore) { attesaMotore.push(fatto); return; }
+    attesaMotore = [fatto];
     caricaScript('js/pollorun-gioco.js', function (ok) {
-      if (!ok) { riuscito = false; }
-      uno();
+      var attesi = attesaMotore;
+      attesaMotore = null;
+      for (var i = 0; i < attesi.length; i++) { attesi[i](ok && motorePronto()); }
     });
+  }
+
+  function dopo(fn, ms) {
+    if (typeof setTimeout === 'function') { setTimeout(fn, ms); } else { fn(); }
+  }
+
+  function primoBrano() {
+    var elenco = MUSICA.canzoni;
+    if (!elenco.length) { return -1; }
+    if (MUSICA.modo === 'fissa') { return MUSICA.fissa % elenco.length; }
+    if (MUSICA.modo === 'caso') { return Math.floor(Math.random() * elenco.length); }
+    return 0;
+  }
+
+  function scaricaBrano(file, suAvanzamento, fatto) {
+    var puo = typeof XMLHttpRequest === 'function' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
+    if (!file || pronti[file] || !puo) { fatto(); return null; }
+    var richiesta = new XMLHttpRequest();
+    var chiuso = false;
+    function chiudiCon() {
+      if (chiuso) { return; }
+      chiuso = true;
+      fatto();
+    }
+    try {
+      richiesta.open('GET', file, true);
+      richiesta.responseType = 'blob';
+      richiesta.timeout = ATTESA_BRANO_MS;
+    } catch (errore) {
+      chiudiCon();
+      return null;
+    }
+    richiesta.onprogress = function (evento) {
+      if (evento && evento.lengthComputable && evento.total > 0) { suAvanzamento(evento.loaded / evento.total); }
+    };
+    richiesta.onload = function () {
+      if (richiesta.status >= 200 && richiesta.status < 300 && richiesta.response) {
+        try { pronti[file] = URL.createObjectURL(richiesta.response); } catch (errore) { }
+      }
+      chiudiCon();
+    };
+    richiesta.onerror = chiudiCon;
+    richiesta.ontimeout = chiudiCon;
+    richiesta.onabort = chiudiCon;
+    try { richiesta.send(); } catch (errore) { chiudiCon(); }
+    return richiesta;
+  }
+
+  function mostraCarico() {
+    var radice = document.createElement('div');
+    radice.className = 'pollorun-carica';
+    radice.setAttribute('role', 'dialog');
+    radice.setAttribute('aria-modal', 'true');
+    radice.setAttribute('aria-label', 'Caricamento di Pollo Run');
+    radice.tabIndex = -1;
+
+    var bottone = document.createElement('button');
+    bottone.type = 'button';
+    bottone.className = 'pollorun-carica__chiudi';
+    bottone.setAttribute('aria-label', 'Annulla il caricamento');
+    bottone.textContent = '×';
+    bottone.addEventListener('click', function () { annulla(); });
+
+    var scena = document.createElement('div');
+    scena.className = 'pollorun-carica__scena';
+
+    if (POLLO) {
+      var pollo = document.createElement('img');
+      pollo.className = 'pollorun-carica__pollo';
+      pollo.alt = '';
+      pollo.src = POLLO;
+      scena.appendChild(pollo);
+      var ombra = document.createElement('span');
+      ombra.className = 'pollorun-carica__ombra';
+      ombra.setAttribute('aria-hidden', 'true');
+      scena.appendChild(ombra);
+    }
+
+    var testo = document.createElement('p');
+    testo.className = 'pollorun-carica__testo';
+    testo.textContent = 'Caricamento in corso';
+
+    var barra = document.createElement('div');
+    barra.className = 'pollorun-carica__barra';
+    barra.setAttribute('role', 'progressbar');
+    barra.setAttribute('aria-label', 'Caricamento di Pollo Run');
+    barra.setAttribute('aria-valuemin', '0');
+    barra.setAttribute('aria-valuemax', '100');
+    barra.setAttribute('aria-valuenow', '0');
+
+    var riempi = document.createElement('div');
+    riempi.className = 'pollorun-carica__riempi';
+    barra.appendChild(riempi);
+
+    var percento = document.createElement('p');
+    percento.className = 'pollorun-carica__percento';
+    percento.setAttribute('aria-hidden', 'true');
+    percento.textContent = '0%';
+
+    scena.appendChild(testo);
+    scena.appendChild(barra);
+    scena.appendChild(percento);
+    radice.appendChild(bottone);
+    radice.appendChild(scena);
+
+    if (document.activeElement && typeof document.activeElement.blur === 'function') { document.activeElement.blur(); }
+    document.body.appendChild(radice);
+    document.documentElement.classList.add(CLASSE);
+    try { radice.focus({ preventScroll: true }); } catch (errore) { }
+
+    return { radice: radice, barra: barra, riempi: riempi, percento: percento, valore: 0 };
+  }
+
+  function segna(stato) {
+    var totale = 0;
+    var pesi = 0;
+    for (var nome in PESI) {
+      if (Object.prototype.hasOwnProperty.call(PESI, nome)) {
+        totale += PESI[nome] * Math.max(0, Math.min(1, stato.parti[nome] || 0));
+        pesi += PESI[nome];
+      }
+    }
+    var valore = Math.floor(totale * 100 / pesi);
+    if (valore >= 100 && !stato.tutto) { valore = 99; }
+    if (valore < stato.vista.valore) { return; }
+    stato.vista.valore = valore;
+    stato.vista.percento.textContent = valore + '%';
+    stato.vista.barra.setAttribute('aria-valuenow', String(valore));
+    if (stato.vista.riempi.style) { stato.vista.riempi.style.width = valore + '%'; }
+  }
+
+  function togliCarico(stato) {
+    if (stato.vista.radice.parentNode) { stato.vista.radice.parentNode.removeChild(stato.vista.radice); }
+    if (!aperto) { document.documentElement.classList.remove(CLASSE); }
+  }
+
+  function annulla() {
+    if (!carico) { return false; }
+    var stato = carico;
+    carico = null;
+    stato.annullato = true;
+    if (stato.richiesta) { try { stato.richiesta.abort(); } catch (errore) { } }
+    togliCarico(stato);
+    return true;
+  }
+
+  function avanza(stato, nome, frazione) {
+    if (stato !== carico || stato.annullato) { return; }
+    stato.parti[nome] = frazione;
+    for (var chiave in PESI) {
+      if (Object.prototype.hasOwnProperty.call(PESI, chiave) && (stato.parti[chiave] || 0) < 1) {
+        segna(stato);
+        return;
+      }
+    }
+    if (stato.tutto) { return; }
+    stato.tutto = true;
+    segna(stato);
+    if (!stato.motoreOk) {
+      carico = null;
+      togliCarico(stato);
+      return;
+    }
+    dopo(function () {
+      if (stato !== carico || stato.annullato) { return; }
+      carico = null;
+      togliCarico(stato);
+      monta(stato.primo);
+    }, 350);
   }
 
   function chiudi() {
@@ -182,7 +352,7 @@
     return true;
   }
 
-  function monta() {
+  function monta(primo) {
     var radice = document.createElement('div');
     radice.className = 'pollorun';
     radice.setAttribute('role', 'dialog');
@@ -217,6 +387,7 @@
       canzoni: MUSICA.canzoni.slice(),
       modo: MUSICA.modo,
       fissa: MUSICA.fissa,
+      primaCanzone: typeof primo === 'number' ? primo : -1,
       stile: STILE,
       sipario: true,
       suCanzone: suCanzone,
@@ -228,12 +399,34 @@
   }
 
   function apri() {
-    if (aperto || caricando) { return false; }
-    caricando = true;
+    if (aperto || carico) { return false; }
+    var primo = primoBrano();
+    var brano = primo >= 0 ? MUSICA.canzoni[primo].file : '';
+    var stato = { vista: null, parti: { stile: 0, pollo: 0, motore: 0, musica: 0 }, tutto: false, annullato: false, motoreOk: false, richiesta: null, primo: primo };
+    carico = stato;
+    stato.vista = mostraCarico();
+
+    caricaStile('css/pollorun.css', function () { avanza(stato, 'stile', 1); });
+
+    if (POLLO && typeof Image === 'function') {
+      var immagine = new Image();
+      immagine.onload = function () { avanza(stato, 'pollo', 1); };
+      immagine.onerror = function () { avanza(stato, 'pollo', 1); };
+      immagine.src = POLLO;
+    } else {
+      avanza(stato, 'pollo', 1);
+    }
+
+    stato.richiesta = scaricaBrano(brano, function (frazione) {
+      avanza(stato, 'musica', Math.min(0.99, frazione));
+    }, function () {
+      stato.richiesta = null;
+      avanza(stato, 'musica', 1);
+    });
+
     conMotore(function (pronto) {
-      caricando = false;
-      if (!pronto || aperto) { return; }
-      monta();
+      stato.motoreOk = !!pronto;
+      avanza(stato, 'motore', 1);
     });
     return true;
   }
@@ -243,6 +436,11 @@
     var tasto = evento.key;
     if (typeof tasto !== 'string') { return; }
     if (aperto) { memoria = ''; return; }
+    if (carico) {
+      memoria = '';
+      if (tasto === 'Escape') { annulla(); }
+      return;
+    }
     if (tasto === 'Escape') {
       memoria = '';
       return;
@@ -268,13 +466,15 @@
   }
 
   document.addEventListener('keydown', suTasto);
-  window.addEventListener('pagehide', function () { chiudi(); });
+  window.addEventListener('pagehide', function () { annulla(); chiudi(); });
 
   window.PolloRunSito = {
     parola: PAROLA,
     canzoni: MUSICA.canzoni,
     apri: apri,
     chiudi: chiudi,
-    aperto: function () { return !!aperto; }
+    annulla: annulla,
+    aperto: function () { return !!aperto; },
+    caricando: function () { return !!carico; }
   };
 }());

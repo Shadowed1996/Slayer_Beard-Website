@@ -238,3 +238,126 @@
 
   .pollo__fumetto[hidden] { translate: none; }
 }
+
+.pollorun-carica {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--fondo) 95%, transparent);
+  backdrop-filter: blur(4px);
+  outline: none;
+  animation: pollorun-carica-entra 200ms ease-out;
+}
+
+.pollorun-carica__scena {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  inline-size: min(360px, 100%);
+  text-align: center;
+}
+
+.pollorun-carica__pollo {
+  display: block;
+  inline-size: 96px;
+  block-size: 96px;
+  object-fit: contain;
+  transform-origin: 50% 60%;
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--viola) 55%, transparent));
+  animation: pollorun-carica-salto 1100ms ease-in-out infinite;
+}
+
+.pollorun-carica__ombra {
+  display: block;
+  inline-size: 60px;
+  block-size: 8px;
+  margin-block-start: -8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ciano) 35%, transparent);
+  animation: pollorun-carica-ombra 1100ms ease-in-out infinite;
+}
+
+.pollorun-carica__testo {
+  margin: 8px 0 0;
+  font: 700 15px/1.2 var(--font-mono, monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--testo);
+}
+
+.pollorun-carica__barra {
+  inline-size: 100%;
+  block-size: 12px;
+  overflow: hidden;
+  border: 1px solid var(--linea-viva, currentColor);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fondo) 70%, transparent);
+}
+
+.pollorun-carica__riempi {
+  inline-size: 0;
+  block-size: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--viola), var(--magenta), var(--ciano));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--ciano) 50%, transparent);
+  transition: width 200ms linear;
+}
+
+.pollorun-carica__percento {
+  margin: 0;
+  font: 400 14px/1 var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  color: var(--testo-medio);
+}
+
+.pollorun-carica__chiudi {
+  position: absolute;
+  inset-block-start: 16px;
+  inset-inline-end: 16px;
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 1px solid var(--linea-viva, currentColor);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--fondo) 80%, transparent);
+  color: var(--testo);
+  font: 400 26px/1 var(--font-mono, monospace);
+  cursor: pointer;
+}
+
+.pollorun-carica__chiudi:hover,
+.pollorun-carica__chiudi:focus-visible {
+  border-color: var(--ciano);
+  color: var(--ciano);
+}
+
+@keyframes pollorun-carica-entra {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pollorun-carica-salto {
+  0% { transform: translateY(0) scale(1.12, 0.88) rotate(0deg); }
+  20% { transform: translateY(0) scale(1, 1) rotate(0deg); }
+  55% { transform: translateY(-38px) scale(0.96, 1.04) rotate(180deg); }
+  85% { transform: translateY(0) scale(1, 1) rotate(360deg); }
+  100% { transform: translateY(0) scale(1.12, 0.88) rotate(360deg); }
+}
+
+@keyframes pollorun-carica-ombra {
+  0%, 20%, 85%, 100% { transform: scale(1); opacity: 1; }
+  55% { transform: scale(0.55); opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pollorun-carica,
+  .pollorun-carica__pollo,
+  .pollorun-carica__ombra { animation: none; }
+  .pollorun-carica__riempi { transition: none; }
+}
