@@ -1,34 +1,3 @@
-/* =====================================================================
-   pannello.css — foglio di base del pannello di amministrazione.
-
-   Il pannello NON dipende dai CSS del sito: ha le sue variabili, qui
-   sotto. I valori vengono dalla stessa famiglia di colori del contratto
-   (viola, ciano, magenta, grafite) ma il fondo e' un gradino piu' chiaro
-   e le superfici sono piatte: cosi' si vede a colpo d'occhio che si sta
-   lavorando dietro le quinte e non guardando il sito.
-
-   Questo e' l'unico foglio del pannello con colori scritti per esteso
-   (CONTRATTO-4 §12): tutti gli altri — guscio, motore, contenuti, stile,
-   parti, impostazioni — usano le variabili --p-* definite qui. Chi ha
-   bisogno di un colore che manca lo chiede, e si aggiunge qui.
-
-   La struttura dell'editor (barra, pannello laterale, anteprima) sta in
-   editor/guscio.css. Qui restano i mattoni comuni.
-
-   Struttura del file:
-     1. variabili
-     2. reset e utilita'
-     3. bottoni
-     4. avvio e accesso
-     5. spia dello stato e comandi Salva / Pubblica
-     6. campi (comuni)
-     7. campi speciali: immagine, orari, elenchi
-     8. media e backup
-     9. dialoghi e avvisi
-    10. schermi stretti e prefers-reduced-motion
-   ===================================================================== */
-
-/* --------------------------------------------------------------- 1. */
 :root {
   --p-fondo:        #0a0a11;
   --p-fondo-2:      #0f0f18;
@@ -44,7 +13,7 @@
   --p-testo:        #eaeaf2;
   --p-testo-medio:  #a9a9be;
   --p-testo-tenue:  #75758c;
-  --p-su-colore:    #ffffff;   /* testo sopra il viola pieno */
+  --p-su-colore:    #ffffff;
 
   --p-viola:        #8b2fff;
   --p-viola-cupo:   #5c1fae;
@@ -59,8 +28,6 @@
   --p-errore-fondo: #3a1420;
   --p-errore-inchiostro: #26060e;
 
-  /* Veli e bordi trasparenti dei colori d'accento: stesse tinte, piu' o
-     meno coprenti. Stanno qui per non riscrivere rgba() nei fogli dei moduli. */
   --p-viola-velo:    rgba(139, 47, 255, .14);
   --p-viola-bordo:   rgba(139, 47, 255, .35);
   --p-ciano-velo:    rgba(34, 224, 255, .12);
@@ -71,8 +38,6 @@
   --p-errore-bordo:  rgba(255, 92, 120, .4);
   --p-bianco-velo:   rgba(255, 255, 255, .72);
 
-  /* Il fondo dietro l'anteprima: nero con una grana di punti, cosi' il
-     telaio del dispositivo stacca anche quando il sito ha il fondo scuro. */
   --p-palco:        #06060a;
   --p-palco-punto:  rgba(255, 255, 255, .05);
   --p-nero:         #000000;
@@ -84,14 +49,9 @@
   --p-raggio-s:     6px;
   --p-passo:        8px;
 
-  /* Durate: ogni transizione del pannello passa da qui. Portarle a 1ms nel
-     blocco del movimento ridotto (in fondo al file) spegne il movimento di
-     tutto senza scavalcare niente con !important, che il contratto §12 non
-     ammette. Le animazioni con @keyframes non passano dai token e vanno
-     fermate a mano: sono elencate una per una la' sotto. */
-  --p-durata-lampo: 120ms;   /* passaggi del mouse sui bottoni */
-  --p-durata:       140ms;   /* comparse brevi, frecce che ruotano */
-  --p-durata-lunga: 200ms;   /* il cassetto del pannello su schermo stretto */
+  --p-durata-lampo: 120ms;
+  --p-durata:       140ms;
+  --p-durata-lunga: 200ms;
 
   --p-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Consolas, monospace;
   --p-font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -101,14 +61,8 @@
   color-scheme: dark;
 }
 
-/* --------------------------------------------------------------- 2. */
 *, *::before, *::after { box-sizing: border-box; }
 
-/* L'attributo hidden deve vincere sempre. Qui dentro molti elementi che si
-   nascondono cosi' (il corpo di una voce chiusa, le schede del pannello,
-   la riga «ripeti la password», l'elenco dei risultati) hanno anche un
-   `display` di classe, e una regola d'autore batte quella del browser:
-   senza !important resterebbero a video. */
 [hidden] { display: none !important; }
 
 html, body { height: 100%; }
@@ -138,7 +92,6 @@ code {
   padding: .1em .4em;
 }
 
-/* Il fuoco si vede sempre, su qualunque fondo. */
 :focus-visible {
   outline: 2px solid var(--p-ciano);
   outline-offset: 2px;
@@ -164,12 +117,6 @@ code {
   color: var(--p-testo-tenue);
 }
 
-/* Le tre viste (avvio, accesso, app) si accendono e si spengono con
-   l'attributo `hidden`, che mostraVista() mette su tutte e tre a ogni
-   cambio: la regola [hidden] qui sopra basta da sola. `data-vista` resta
-   sul <body>, ma serve al JS e agli stili di contorno. */
-
-/* --------------------------------------------------------------- 3. */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -205,7 +152,6 @@ code {
 .btn--solo-icona { padding: 5px; }
 .btn--blocco { width: 100%; justify-content: center; }
 
-/* --------------------------------------------------------------- 4. */
 .avvio {
   min-height: 100%;
   display: flex;
@@ -278,11 +224,9 @@ code {
 }
 #form-accesso { display: flex; flex-direction: column; gap: 14px; }
 
-/* Il modo dell'accesso decide cosa si vede: niente doppioni in HTML. */
 .accesso[data-modo="entra"] [data-solo="crea"],
 .accesso[data-modo="crea"]  [data-solo="entra"] { display: none; }
 
-/* --------------------------------------------------------------- 5. */
 .stato {
   display: inline-flex; align-items: center; gap: 8px;
   font-family: var(--p-mono); font-size: 11px; letter-spacing: .06em;
@@ -322,7 +266,6 @@ code {
 .cmd--pubblica { background: var(--p-viola-cupo); border-color: var(--p-viola); }
 .cmd--pubblica:hover:not(:disabled) { background: var(--p-viola); border-color: var(--p-viola); }
 .cmd--pubblica .cmd__nota { color: var(--p-bianco-velo); }
-/* Quando c'e' roba non salvata, Salva e' la cosa da fare: si illumina. */
 body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--p-allerta); }
 
 .vuoto {
@@ -346,11 +289,8 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
 }
 .spiegazione .ico { color: var(--p-viola); margin-top: 2px; }
 
-/* Il corpo di una vista (libreria, copie di sicurezza): i due moduli lo
-   usano come contenitore e non sanno dove finiscono. */
 .lavoro__corpo { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
-/* --------------------------------------------------------------- 6. */
 .campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .campo__testa { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .campo__etichetta { font-size: 14px; font-weight: 600; color: var(--p-testo); }
@@ -393,15 +333,12 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
 .campo.is-errato .campo__scelta { border-color: var(--p-errore); }
 .campo.is-errato > .campo__testa .campo__etichetta { color: var(--p-errore); }
 
-/* Il campo raggiunto dalla ricerca resta segnato per un paio di secondi:
-   dopo un salto il fuoco da solo non dice dove si e' finiti. */
 .campo.is-trovato {
   outline: 2px solid var(--p-ciano);
   outline-offset: 6px;
   border-radius: 2px;
 }
 
-/* --------------------------------------------------------------- 7. */
 .immagine { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
 .immagine__anteprima {
   width: 118px; height: 88px; flex: none;
@@ -491,7 +428,6 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
 .riga-testo { display: flex; gap: 6px; align-items: center; }
 .riga-testo__num { font-family: var(--p-mono); font-size: 11px; color: var(--p-testo-tenue); width: 20px; flex: none; }
 
-/* --------------------------------------------------------------- 8. */
 .zona {
   border: 1px dashed var(--p-linea-forte);
   border-radius: var(--p-raggio);
@@ -577,7 +513,6 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
 .sondaggi__durata { display: flex; gap: 6px; align-items: center; }
 .sondaggi__durata .campo__scelta { width: auto; }
 
-/* --------------------------------------------------------------- 9. */
 .dialogo {
   border: 1px solid var(--p-linea-forte);
   border-radius: var(--p-raggio);
@@ -646,8 +581,6 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
 }
 @keyframes p-entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .avviso__titolo { font-weight: 600; color: var(--p-testo); }
-/* pre-line: un avviso puo portare un elenco (i controlli di pubblicazione),
-   e gli a capo che ci mette chi lo scrive devono restare a capo. */
 .avviso__testo { color: var(--p-testo-medio); white-space: pre-line; }
 .avviso .ico { margin-top: 2px; }
 .avviso[data-tipo="ok"]       { border-left-color: var(--p-ok); }
@@ -666,7 +599,6 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
 .avviso__chiudi:hover { color: var(--p-testo); }
 @keyframes p-gira { to { transform: rotate(360deg); } }
 
-/* --------------------------------------------------------------- 10. */
 @media (max-width: 560px) {
   .immagine__anteprima { width: 100%; height: 120px; }
   .avvisi { right: 8px; left: 8px; bottom: 8px; width: auto; }
@@ -674,16 +606,7 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
   .dialogo__azioni .btn { width: 100%; justify-content: center; }
 }
 
-/* Movimento ridotto.
-   Il meccanismo principale sono i token: ogni transizione del pannello usa
-   var(--p-durata*), quindi portarli a 1ms spegne tutto in tre righe, senza
-   !important. Le animazioni con @keyframes non passano dai token: si
-   fermano una per una, ripetendo lo stesso selettore che le accende — a
-   parita' di peso vince la regola che viene dopo, e questa e' l'ultima del
-   file. Ogni volta che si aggiunge un @keyframes va aggiunto anche qui
-   (quelli di editor/guscio.css si fermano in fondo a quel file). */
 @media (prefers-reduced-motion: reduce) {
-
   :root {
     --p-durata-lampo: 1ms;
     --p-durata:       1ms;
@@ -698,8 +621,6 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
   .avviso { animation: none; }
   .avviso[data-tipo="attesa"] .ico { animation: none; }
 
-  /* Rete di sicurezza per quello che non passa dai token e non e' elencato
-     qui sopra: non batte le regole di classe, ma non fa danni. */
   *, *::before, *::after {
     animation-duration: 1ms;
     animation-iteration-count: 1;
