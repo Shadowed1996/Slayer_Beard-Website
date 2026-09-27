@@ -1513,7 +1513,9 @@
         var centro = yy - dim * 0.35;
         zone.push({ d: v.d, x0: v.x - larghezzaSeparatore / 2, x1: v.x + v.largo + larghezzaSeparatore / 2, y0: centro - altoZona / 2, y1: centro + altoZona / 2 });
       }
-      if (!tocco) {
+      ctx.font = '600 ' + Math.round(dim * 0.85) + 'px ' + MONO;
+      var suggerimento = cx - larghezzaSeparatore + ctx.measureText('  ←/→').width;
+      if (!tocco && suggerimento <= W - 12 - riservaDestra()) {
         ctx.save();
         ctx.globalAlpha *= 0.5;
         scritta('  ←/→', cx - larghezzaSeparatore, yy, dim * 0.85, '600', MONO, gd ? BIANCO : C.violaChiaro, 'left', false);
