@@ -17,6 +17,9 @@ const SCRYPT = { N: 16384, r: 8, p: 1, lunghezza: 64 };
 
 const sessioni = new Map();
 const tentativi = new Map();
+const letto = { firma: '' };
+const firmaAuth = { stato: '', valore: '' };
+const FORMA_ID = /^[0-9a-f]{64}$/;
 
 function dietroProxy() {
   const dichiarato = String(process.env.SB_DIETRO_PROXY || '').trim().toLowerCase();
@@ -102,9 +105,13 @@ function impostaPassword(password, opzioni) {
     hash: calcolaHash(testo, sale).toString('hex'),
     creataIl: new Date().toISOString()
   }, null, 2) + '\n');
-  const tieni = opzioni && opzioni.tieni ? sessioni.get(opzioni.tieni) : null;
+  firmaAuth.stato = '';
+  caricaDaDisco();
+  const chiave = opzioni && FORMA_ID.test(String(opzioni.tieni || '')) ? impronta(opzioni.tieni) : null;
+  const tieni = chiave ? sessioni.get(chiave) : null;
   sessioni.clear();
-  if (tieni && tieni.scadenza > Date.now()) { sessioni.set(opzioni.tieni, tieni); }
+  if (tieni && tieni.scadenza > Date.now()) { sessioni.set(chiave, { scadenza: tieni.scadenza, password: firmaPassword() }); }
+  salvaSuDisco();
 }
 
 function passwordCorretta(password) {
@@ -120,6 +127,76 @@ function passwordCorretta(password) {
   return crypto.timingSafeEqual(calcolato, atteso);
 }
 
+function statoFile(percorso) {
+  try {
+    const stato = fs.statSync(percorso);
+    return percorso + ':' + stato.mtimeMs + ':' + stato.size;
+  } catch (e) {
+    return percorso + ':assente';
+  }
+}
+
+function impronta(id) {
+  return crypto.createHash('sha256').update('sb-sessione:' + String(id)).digest('hex');
+}
+
+function firmaPassword() {
+  const stato = statoFile(P.auth);
+  if (stato !== firmaAuth.stato) {
+    const dati = leggiAuth();
+    firmaAuth.valore = dati
+      ? crypto.createHash('sha256').update('sb-password:' + dati.sale + ':' + dati.hash).digest('hex').slice(0, 32)
+      : '';
+    firmaAuth.stato = stato;
+  }
+  return firmaAuth.valore;
+}
+
+function caricaDaDisco() {
+  const firma = statoFile(P.sessioni);
+  if (firma === letto.firma) { return; }
+  let grezzo = null;
+  try {
+    grezzo = fs.readFileSync(P.sessioni, 'utf8');
+  } catch (e) {
+    if (e.code !== 'ENOENT') { return; }
+  }
+  let dati = null;
+  if (grezzo !== null) {
+    try { dati = JSON.parse(grezzo); } catch (e) { dati = null; }
+  }
+  const elenco = dati && dati.sessioni && typeof dati.sessioni === 'object' ? dati.sessioni : {};
+  const adesso = Date.now();
+  sessioni.clear();
+  for (const chiave of Object.keys(elenco)) {
+    const voce = elenco[chiave];
+    if (!FORMA_ID.test(chiave) || !voce || typeof voce !== 'object') { continue; }
+    const scadenza = Number(voce.scadenza);
+    if (!Number.isFinite(scadenza) || scadenza <= adesso || scadenza > adesso + DURATA_SESSIONE_MS) { continue; }
+    sessioni.set(chiave, { scadenza: scadenza, password: typeof voce.password === 'string' ? voce.password : '' });
+  }
+  letto.firma = firma;
+}
+
+let avvisatoDisco = false;
+
+function salvaSuDisco() {
+  const elenco = {};
+  for (const [chiave, sessione] of sessioni) {
+    elenco[chiave] = { scadenza: sessione.scadenza, password: sessione.password };
+  }
+  try {
+    scriviAtomico(P.sessioni, JSON.stringify({ sessioni: elenco }) + '\n');
+    letto.firma = statoFile(P.sessioni);
+    avvisatoDisco = false;
+  } catch (e) {
+    if (avvisatoDisco) { return; }
+    avvisatoDisco = true;
+    console.error('  Non riesco a salvare le sessioni del pannello in ' + P.sessioni + ': ' +
+      (e && e.message ? e.message : e) + '. Restano solo in memoria finche il server non si riavvia.');
+  }
+}
+
 function pulisci() {
   const adesso = Date.now();
   for (const [id, sessione] of sessioni) {
@@ -128,9 +205,11 @@ function pulisci() {
 }
 
 function creaSessione() {
+  caricaDaDisco();
   pulisci();
   const id = crypto.randomBytes(32).toString('hex');
-  sessioni.set(id, { scadenza: Date.now() + DURATA_SESSIONE_MS });
+  sessioni.set(impronta(id), { scadenza: Date.now() + DURATA_SESSIONE_MS, password: firmaPassword() });
+  salvaSuDisco();
   return id;
 }
 
@@ -153,16 +232,20 @@ function idSessione(req) {
 
 function autenticato(req) {
   const id = leggiCookie(req)[NOME_COOKIE];
-  if (!id) { return false; }
-  const sessione = sessioni.get(id);
+  if (!id || !FORMA_ID.test(id)) { return false; }
+  caricaDaDisco();
+  const chiave = impronta(id);
+  const sessione = sessioni.get(chiave);
   if (!sessione) { return false; }
-  if (sessione.scadenza <= Date.now()) { sessioni.delete(id); return false; }
-  return true;
+  if (sessione.scadenza <= Date.now()) { sessioni.delete(chiave); return false; }
+  return !!sessione.password && sessione.password === firmaPassword();
 }
 
 function chiudiSessione(req) {
   const id = leggiCookie(req)[NOME_COOKIE];
-  if (id) { sessioni.delete(id); }
+  if (!id || !FORMA_ID.test(id)) { return; }
+  caricaDaDisco();
+  if (sessioni.delete(impronta(id))) { salvaSuDisco(); }
 }
 
 function inHttps(req) {
@@ -238,6 +321,9 @@ function frenoScritture(req) {
 
 function azzeraTutto() {
   sessioni.clear();
+  try { fs.rmSync(P.sessioni, { force: true }); } catch (e) { }
+  letto.firma = '';
+  firmaAuth.stato = '';
   tentativi.clear();
   scritture.clear();
 }

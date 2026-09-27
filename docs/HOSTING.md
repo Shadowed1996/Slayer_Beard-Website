@@ -217,6 +217,10 @@ da nessuno:
 - `chiavi.js` — il Client Secret dell'applicazione Twitch;
 - `twitch-accesso.json` — l'autorizzazione che il canale dà al server.
 
+Nella stessa cartella il programma tiene anche `sessioni.json`, gli accessi
+aperti nel pannello: dentro ci sono solo impronte, non i cookie veri, quindi
+anche letto da qualcuno non fa entrare nessuno.
+
 Senza questa variabile quei file stanno in `httpdocs/server/dati/`, cioè
 **dentro** la cartella che il server web mostra al mondo, e restano al sicuro
 solo finché `.htaccess` (o la configurazione di nginx del capitolo 7) fa il suo
@@ -510,11 +514,15 @@ Il resto — come si modificano testi, immagini, colori e schedule — sta in
 
 ### Le due cose che restano diverse rispetto al computer di casa
 
-- **Le sessioni stanno in memoria.** Se l'applicazione viene riavviata (un
-  **Restart App**, un aggiornamento, un riavvio della macchina) chi era dentro al
-  pannello deve rifare l'accesso. Non è un guasto: è una scelta, perché un
-  archivio delle sessioni su disco sarebbe un'altra cosa da proteggere. Le
-  modifiche salvate non si perdono, solo l'accesso.
+- **Le sessioni stanno su disco, in `sessioni.json`** dentro la cartella dei dati
+  (`SB_DATI`). Passenger spegne l'applicazione quando per qualche minuto nessuno
+  la chiama, e la riaccende alla richiesta dopo: succede soprattutto con il sito
+  **in manutenzione**, perché la pagina di manutenzione non fa domande al server
+  come fa il sito normale. Con le sessioni solo in memoria, a ogni riaccensione il
+  pannello diceva «sessione scaduta». Adesso l'accesso sopravvive ai riavvii
+  (anche a un **Restart App**) e vale anche se Passenger tiene accesi più processi.
+  Nel file ci sono solo impronte, mai i cookie veri; cambiando la password le
+  sessioni aperte si chiudono tutte, tranne quella di chi l'ha cambiata.
 - **`--guarda` non c'è.** Sull'hosting il sito si rigenera quando premi
   **Pubblica**, o quando l'aggiornamento automatico trova qualcosa di nuovo su
   Twitch. Non c'è nessuna sorveglianza dei file, e non serve.
@@ -877,7 +885,7 @@ file in più è una cosa in più da tenere chiusa.
 | **Avviso di sicurezza del browser arrivando con `www`** | il certificato copre `slayerbeard.com` ma non `www.slayerbeard.com`: rifallo spuntando tutti e due (capitolo 8, punto 1) |
 | **`www.slayerbeard.com` non rimanda al sito** | in Plesk `www` non è un alias del dominio, oppure la sezione 2 di `.htaccess` è stata modificata. Il dominio compare in due punti soli del file, tutti e due nella prima metà |
 | **In `robots.txt` manca la riga `Sitemap:`** | dopo aver messo `SB_SITO` non è stata premuta **Pubblica**: quella riga la scrive la pubblicazione, non si mette a mano |
-| **Chi era nel pannello è stato buttato fuori** | c'è stato un **Restart App**: le sessioni stanno in memoria, si rientra con la password e le modifiche salvate ci sono ancora |
+| **Chi era nel pannello è stato buttato fuori** | sono passate 12 ore dall'accesso, oppure la password è stata cambiata, oppure la cartella di `SB_DATI` non è scrivibile (nel `error_log` c'è «Non riesco a salvare le sessioni del pannello»): si rientra con la password e le modifiche salvate ci sono ancora |
 | **«Ultima diretta» e i numeri non si aggiornano** | manca il collegamento con Twitch (`node server/imposta-twitch.js`), oppure `SB_AGGIORNA_MIN` è a `0` |
 
 Dove guardare, in ordine: il **`error_log`** del dominio (Plesk → il dominio →

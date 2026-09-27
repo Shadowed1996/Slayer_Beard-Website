@@ -8382,6 +8382,125 @@ async function proveGiochiDati() {
   });
 }
 
+function sessioneInUnAltroProcesso(biscotto, azione) {
+  const libreria = path.join(__dirname, 'lib', 'autenticazione.js');
+  const codice = [
+    'const auth = require(' + JSON.stringify(libreria) + ');',
+    'const req = { headers: { cookie: ' + JSON.stringify(biscotto) + ' }, socket: { remoteAddress: "127.0.0.1" } };',
+    'if (' + JSON.stringify(azione || '') + ' === "esci") { auth.chiudiSessione(req); }',
+    'console.log(JSON.stringify({ dentro: auth.autenticato(req) }));'
+  ].join('\n');
+  const env = Object.assign({}, process.env, { SB_RADICE: P.radice });
+  delete env.SB_DATI;
+  const esito = spawnSync(process.execPath, ['-e', codice], { env: env, encoding: 'utf8', timeout: 30000 });
+  const righe = String(esito.stdout || '').trim().split(/\r?\n/).filter(Boolean);
+  if (esito.status !== 0 || !righe.length) {
+    throw new Error('il processo di prova non e partito: ' + String(esito.stderr || '').slice(0, 300));
+  }
+  return JSON.parse(righe[righe.length - 1]).dentro;
+}
+
+async function proveSessioniPannello(costruisci, archivio) {
+  apriSezione('15. Il pannello non va in «sessione scaduta» quando il server si riavvia (manutenzione)');
+
+  const auth = require('./lib/autenticazione');
+  const statico = require('./lib/statico');
+  const { creaServer } = require('./server.js');
+  delete process.env.SB_DIETRO_PROXY;
+  auth.azzeraTutto();
+  const server = creaServer();
+  await new Promise((risolvi) => server.listen(0, '127.0.0.1', risolvi));
+  const porta = server.address().port;
+  const entra = async (password) => biscottoDa(await chiama(porta, 'POST', '/api/entra', { json: { password: password || PASSWORD_COLLAUDO } }));
+
+  try {
+    await prova('dopo un riavvio (un processo nuovo, come quando Passenger spegne e riaccende) l accesso vale ancora', async () => {
+      const biscotto = await entra();
+      esigi(biscotto, 'nessun cookie di sessione');
+      esigiUguale((await chiama(porta, 'GET', '/api/contenuti', { biscotto: biscotto })).stato, 200, 'nel processo di partenza');
+      esigiUguale(sessioneInUnAltroProcesso(biscotto), true, 'nel processo nuovo la sessione non c era piu');
+    });
+
+    await prova('sul disco ci sono solo impronte, mai il cookie vero', async () => {
+      const biscotto = await entra();
+      const valore = biscotto.split('=')[1];
+      esigi(fs.existsSync(P.sessioni), 'sessioni.json non e stato scritto');
+      const testo = fs.readFileSync(P.sessioni, 'utf8');
+      esigi(testo.indexOf(valore) === -1, 'il cookie e scritto in chiaro in sessioni.json');
+      const dati = JSON.parse(testo);
+      esigi(Object.keys(dati.sessioni).length > 0, 'nessuna sessione nel file');
+      esigi(Object.keys(dati.sessioni).every((k) => /^[0-9a-f]{64}$/.test(k)), 'una chiave non e un impronta');
+      esigiUguale(path.dirname(P.sessioni), P.dati, 'sessioni.json sta con auth.json');
+      esigiUguale(statico.riservato(P.sessioni), true, 'sessioni.json si scarica dal browser');
+      esigiUguale((await chiama(porta, 'GET', '/server/dati/sessioni.json')).stato, 403, 'GET /server/dati/sessioni.json');
+    });
+
+    await prova('Esci in un processo chiude la sessione anche nell altro', async () => {
+      const biscotto = await entra();
+      esigiUguale(sessioneInUnAltroProcesso(biscotto, 'esci'), false, 'dopo Esci');
+      esigiUguale((await chiama(porta, 'GET', '/api/contenuti', { biscotto: biscotto })).stato, 401, 'il server di partenza la teneva ancora');
+    });
+
+    await prova('cambiare la password chiude le altre sessioni, anche dopo un riavvio, e tiene la propria', async () => {
+      const mia = await entra();
+      const altra = await entra();
+      const nuova = PASSWORD_COLLAUDO + '-nuova';
+      try {
+        const r = await chiama(porta, 'POST', '/api/password', { biscotto: mia, json: { attuale: PASSWORD_COLLAUDO, nuova: nuova } });
+        esigiUguale(r.stato, 200, 'cambio password');
+        esigiUguale((await chiama(porta, 'GET', '/api/contenuti', { biscotto: mia })).stato, 200, 'chi ha cambiato la password e stato buttato fuori');
+        esigiUguale((await chiama(porta, 'GET', '/api/contenuti', { biscotto: altra })).stato, 401, 'l altra sessione e rimasta aperta');
+        esigiUguale(sessioneInUnAltroProcesso(mia), true, 'la propria dopo un riavvio');
+        esigiUguale(sessioneInUnAltroProcesso(altra), false, 'l altra dopo un riavvio');
+      } finally {
+        auth.impostaPassword(PASSWORD_COLLAUDO);
+      }
+    });
+
+    await prova('senza auth.json (password da rifare) le sessioni salvate non valgono piu', async () => {
+      const biscotto = await entra();
+      const daParte = P.auth + '.messo-da-parte';
+      fs.renameSync(P.auth, daParte);
+      try {
+        esigiUguale((await chiama(porta, 'GET', '/api/contenuti', { biscotto: biscotto })).stato, 401, 'senza password');
+        esigiUguale(sessioneInUnAltroProcesso(biscotto), false, 'in un processo nuovo');
+      } finally {
+        fs.renameSync(daParte, P.auth);
+      }
+    });
+
+    await prova('un sessioni.json rovinato o inventato non fa entrare nessuno e non rompe il server', async () => {
+      const inventata = crypto.randomBytes(32).toString('hex');
+      const finta = {};
+      finta[crypto.createHash('sha256').update('sb-sessione:' + inventata).digest('hex')] = { scadenza: Date.now() + 60000, password: 'inventata' };
+      fs.writeFileSync(P.sessioni, JSON.stringify({ sessioni: finta }));
+      esigiUguale((await chiama(porta, 'GET', '/api/contenuti', { biscotto: 'sb_sessione=' + inventata })).stato, 401, 'impronta con la password sbagliata');
+      fs.writeFileSync(P.sessioni, '{ rotto');
+      esigiUguale((await chiama(porta, 'GET', '/api/contenuti', { biscotto: 'sb_sessione=' + inventata })).stato, 401, 'file rotto');
+      const biscotto = await entra();
+      esigiUguale((await chiama(porta, 'GET', '/api/contenuti', { biscotto: biscotto })).stato, 200, 'dopo il file rotto si rientra');
+    });
+
+    await prova('la pagina di manutenzione chiama solo rotte pubbliche, mai quelle del pannello', async () => {
+      const contenuti = JSON.parse(JSON.stringify(archivio.leggi()));
+      contenuti.config.manutenzione = Object.assign({}, contenuti.config.manutenzione, { attiva: true });
+      const pagina = costruisci.anteprimaManutenzione(contenuti);
+      const rotte = Array.from(new Set((pagina.match(/api\/[a-z][a-z/]*/g) || []).map((r) => '/' + r.replace(/\/$/, ''))));
+      esigi(rotte.length > 0, 'nessuna rotta trovata: la prova non guarda niente');
+      for (const rotta of rotte) {
+        for (const metodo of ['GET', 'POST']) {
+          const r = await chiama(porta, metodo, rotta, metodo === 'POST' ? { json: {} } : {});
+          esigi(!(r.dati && typeof r.dati.errore === 'string' && r.dati.errore.indexOf('rientra nel pannello') !== -1),
+            metodo + ' ' + rotta + ' risponde «sessione scaduta» a un visitatore');
+        }
+      }
+    });
+  } finally {
+    await new Promise((risolvi) => server.close(risolvi));
+    auth.azzeraTutto();
+  }
+}
+
 async function esegui() {
   console.log('');
   console.log('  COLLAUDO DEL BACKEND — slayer_beard');
@@ -8426,6 +8545,7 @@ async function esegui() {
     await proveHosting(temporanea);
     await proveUscita(costruisci, archivio);
     await provePannelloEsposto();
+    await proveSessioniPannello(costruisci, archivio);
   } finally {
     percorsi.imposta(RADICE_VERA);
     try { fs.rmSync(temporanea, { recursive: true, force: true }); } catch (e) {}

@@ -20,7 +20,7 @@ try {
   auth.impostaPassword(nuova);
   console.log('');
   console.log('  Password ' + (cambio ? 'aggiornata' : 'creata') + ' in ' + P.auth);
-  console.log('  Riavvia il server perche le sessioni aperte decadano.');
+  console.log('  Le sessioni aperte nel pannello sono chiuse: si rientra con la password nuova.');
   console.log('');
 } catch (errore) {
   console.error('');

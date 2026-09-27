@@ -3,6 +3,7 @@ node_modules/
 .env
 .env.local
 server/dati/auth.json
+server/dati/sessioni.json
 server/dati/chiavi.js
 server/dati/twitch-accesso.json
 server/dati/twitch-diretta.json

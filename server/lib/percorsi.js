@@ -49,6 +49,7 @@ function calcola(radice) {
     server: path.join(radice, 'server'),
     dati: path.join(radice, 'server', 'dati'),
     auth: path.join(radice, 'server', 'dati', 'auth.json'),
+    sessioni: path.join(radice, 'server', 'dati', 'sessioni.json'),
 
     chiavi: path.join(radice, 'server', 'dati', 'chiavi.js'),
     modelloChiavi: path.join(radice, 'server', 'modelli', 'chiavi.esempio.js'),
@@ -94,6 +95,7 @@ function applicaAmbiente(percorsi) {
     assicuraCartellaEsterna(dati, 'SB_DATI');
     percorsi.dati = dati;
     percorsi.auth = path.join(dati, 'auth.json');
+    percorsi.sessioni = path.join(dati, 'sessioni.json');
     percorsi.chiavi = path.join(dati, 'chiavi.js');
     percorsi.accessoTwitch = path.join(dati, 'twitch-accesso.json');
     percorsi.direttaTwitch = path.join(dati, 'twitch-diretta.json');

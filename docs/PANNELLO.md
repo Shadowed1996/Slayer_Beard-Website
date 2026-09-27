@@ -110,7 +110,7 @@ password può stare fuori dalla cartella del sito, dove punta la variabile
 aver acceso `SB_PRIMO_ACCESSO=1`, che poi si spegne subito. I passi, uno per uno,
 sono nel capitolo 6 di [`HOSTING.md`](HOSTING.md).
 
-**Se la sessione scade** (sei rimasto fermo troppo a lungo) il pannello ti riporta
+**Se la sessione scade** (l'accesso dura 12 ore) il pannello ti riporta
 alla password e ti dice che le modifiche in corso sono ancora lì. Rientra e le
 ritrovi come le avevi lasciate. Non ricaricare la pagina prima di essere
 rientrato.
@@ -2365,7 +2365,7 @@ La finestra nera con `node server/server.js` è stata chiusa o il computer è st
 riavviato. Riaprila e premi **Riprova**.
 
 **«La sessione è scaduta»**
-Sei rimasto fermo troppo a lungo. Il pannello ti riporta alla password e ti dice
+Sono passate 12 ore dall'accesso, oppure la password è stata cambiata da un'altra parte. Il pannello ti riporta alla password e ti dice
 che le modifiche in corso sono ancora lì: rientra e le ritrovi come le avevi
 lasciate. Non ricaricare la pagina prima di essere rientrato.
 
