@@ -115,30 +115,6 @@
   transition: opacity 240ms ease;
 }
 
-@media (hover: hover) {
-  .sponsor__logo {
-    filter: grayscale(1) brightness(1.4);
-    opacity: 0.6;
-  }
-
-  .sponsor__logo.is-scuro { filter: brightness(0) invert(1); }
-
-  .sponsor__scritta { opacity: 0.6; }
-
-  .sponsor__link:hover .sponsor__logo,
-  .sponsor__link:focus-visible .sponsor__logo,
-  .sponsor__voce.is-evidenza .sponsor__logo,
-  .sponsor__link:hover .sponsor__scritta,
-  .sponsor__link:focus-visible .sponsor__scritta {
-    filter: none;
-    opacity: 1;
-  }
-
-  .sponsor__link:hover .sponsor__logo.is-scuro,
-  .sponsor__link:focus-visible .sponsor__logo.is-scuro,
-  .sponsor__voce.is-evidenza .sponsor__logo.is-scuro { filter: brightness(0) invert(1); }
-}
-
 .sponsor__nuovo {
   position: absolute;
   inset-block-start: var(--passo);
