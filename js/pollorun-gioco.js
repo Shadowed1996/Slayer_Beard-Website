@@ -749,9 +749,9 @@
     var posto = null;
     var inclinazione = { attiva: false, fase: 'attesa', angolo: 0, testo: '', colore: '', alfaTesto: 0 };
     var pendenza = { quando: -1, massimo: 0, tempo: 0, da: 0, tempoTesto: 0 };
-    var FASI_PENDENZA = { avvisoGiu: 1.3, discesa: 1.2, giu: 3.5, avvisoSu: 1.3, passaggio: 2, su: 3.5, ritorno: 1.3 };
+    var FASI_PENDENZA = { avvisoGiu: 3, discesa: 1.5, giu: 8, avvisoSu: 3, passaggio: 2.5, su: 8, ritorno: 1.5 };
     var DOPO_PENDENZA = { avvisoGiu: 'discesa', discesa: 'giu', giu: 'avvisoSu', avvisoSu: 'passaggio', passaggio: 'su', su: 'ritorno', ritorno: 'finita' };
-    var DURATA_TESTO_PENDENZA = 2.8;
+    var DURATA_TESTO_PENDENZA = 3.5;
 
     function creaMonti(picchi, seme) {
       var r = casuale(seme);
@@ -1216,6 +1216,10 @@
       var da = S.x - (centroPollo() + 60 + margine) / U;
       var a = S.x + (W - centroPollo() + 60 + margine) / U;
       ctx.save();
+      if (inclinazione.angolo) {
+        ctx.shadowColor = gd ? BIANCO : C.ciano;
+        ctx.shadowBlur = U * 0.35 * Math.min(1, Math.abs(inclinazione.angolo) / 0.05);
+      }
       for (var i = 0; i < M.el.length; i++) {
         var e = M.el[i];
         if (e.x1 < da || e.x > a) { continue; }
@@ -2173,7 +2177,7 @@
       var primo = 15;
       var ultimo = durata - totale - 12;
       if (ultimo <= primo) { return; }
-      var base = { facile: 0.12, medio: 0.15, difficile: 0.17, estremo: 0.19 }[difficolta] || 0.15;
+      var base = { facile: 0.07, medio: 0.085, difficile: 0.1, estremo: 0.11 }[difficolta] || 0.085;
       pendenza.quando = primo + Math.random() * (ultimo - primo);
       pendenza.massimo = (base + Math.random() * 0.01) * (ridotto ? 0.25 : 1);
     }
