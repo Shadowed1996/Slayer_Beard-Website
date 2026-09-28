@@ -746,6 +746,11 @@
     var ultimo = 0, acceso = false, attivo = false, idFrame = 0;
     var timerPrecalcolo = 0;
     var posto = null;
+    var inclinazione = { attiva: false, fase: 'attesa', angolo: 0, testo: '', colore: '', alfaTesto: 0 };
+    var pendenza = { quando: -1, massimo: 0, tempo: 0, da: 0, tempoTesto: 0 };
+    var FASI_PENDENZA = { avvisoGiu: 1.3, discesa: 1.2, giu: 3.5, avvisoSu: 1.3, passaggio: 2, su: 3.5, ritorno: 1.3 };
+    var DOPO_PENDENZA = { avvisoGiu: 'discesa', discesa: 'giu', giu: 'avvisoSu', avvisoSu: 'passaggio', passaggio: 'su', su: 'ritorno', ritorno: 'finita' };
+    var DURATA_TESTO_PENDENZA = 2.8;
 
     function creaMonti(picchi, seme) {
       var r = casuale(seme);
@@ -1970,6 +1975,7 @@
           scritta('SPAZIO / ↑ per saltare', W / 2, (gd ? suolo * 0.4 : orizzonte * 0.5), fs, '500', MONO, gd ? BIANCO : C.testo, 'center', gd);
           ctx.globalAlpha = 1;
         }
+        disegnaPendenza();
       }
       if (stato === 'vinto') { if (gd) { disegnaVittoriaGD(); } else { disegnaVittoriaSynth(fs); } }
       if (stato === 'fine') { disegnaFine(fs); }
@@ -2133,6 +2139,119 @@
       return (posto.migliore ? 'NUOVO RECORD · ' : '') + posto.posizione + '° su ' + posto.totale + ' · ' + etichetta(posto.difficolta);
     }
 
+    function azzeraPendenza() {
+      inclinazione.attiva = false;
+      inclinazione.fase = 'attesa';
+      inclinazione.angolo = 0;
+      inclinazione.testo = '';
+      inclinazione.colore = '';
+      inclinazione.alfaTesto = 0;
+      pendenza.quando = -1;
+      pendenza.massimo = 0;
+      pendenza.tempo = 0;
+      pendenza.da = 0;
+      pendenza.tempoTesto = 0;
+    }
+
+    function preparaPendenza(n) {
+      azzeraPendenza();
+      if (n < 3 || !M) { return; }
+      var probabilita = { facile: 0.4, medio: 0.45, difficile: 0.5, estremo: 0.55 }[difficolta] || 0.45;
+      if (Math.random() >= probabilita) { return; }
+      var totale = 0;
+      for (var f in FASI_PENDENZA) { if (FASI_PENDENZA.hasOwnProperty(f)) { totale += FASI_PENDENZA[f]; } }
+      var durata = M.durata || (M.v ? M.lunghezza / M.v : 0);
+      var primo = 15;
+      var ultimo = durata - totale - 12;
+      if (ultimo <= primo) { return; }
+      var base = { facile: 0.12, medio: 0.15, difficile: 0.17, estremo: 0.19 }[difficolta] || 0.15;
+      pendenza.quando = primo + Math.random() * (ultimo - primo);
+      pendenza.massimo = (base + Math.random() * 0.01) * (ridotto ? 0.25 : 1);
+    }
+
+    function morbido(q) {
+      q = Math.max(0, Math.min(1, q));
+      return q * q * (3 - 2 * q);
+    }
+
+    function fasePendenza(fase) {
+      inclinazione.fase = fase;
+      pendenza.tempo = 0;
+      pendenza.da = inclinazione.angolo;
+    }
+
+    function testoPendenza(testo, salita) {
+      inclinazione.testo = testo;
+      inclinazione.colore = gd ? colori.accento : (salita ? C.magenta : C.ciano);
+      inclinazione.alfaTesto = 0;
+      pendenza.tempoTesto = 0;
+    }
+
+    function aggiornaPendenza(dt) {
+      if (stato !== 'corsa') {
+        inclinazione.angolo += -inclinazione.angolo * Math.min(1, dt * 5);
+        if (Math.abs(inclinazione.angolo) < 0.001) { inclinazione.angolo = 0; }
+        inclinazione.alfaTesto = Math.max(0, inclinazione.alfaTesto - dt * 4);
+        if (!inclinazione.alfaTesto) { inclinazione.testo = ''; }
+        inclinazione.attiva = inclinazione.angolo !== 0;
+        return;
+      }
+      var fase = inclinazione.fase;
+      if (fase === 'attesa') {
+        if (pendenza.quando >= 0 && S && M && M.v && S.x / M.v >= pendenza.quando) {
+          inclinazione.attiva = true;
+          fasePendenza('avvisoGiu');
+          testoPendenza('Pronti ? Si scendeee', false);
+        }
+      } else if (FASI_PENDENZA.hasOwnProperty(fase)) {
+        pendenza.tempo += dt;
+        var bersaglio = pendenza.da;
+        if (fase === 'discesa') { bersaglio = -pendenza.massimo; }
+        if (fase === 'passaggio') { bersaglio = pendenza.massimo; }
+        if (fase === 'ritorno') { bersaglio = 0; }
+        inclinazione.angolo = pendenza.da + (bersaglio - pendenza.da) * morbido(pendenza.tempo / FASI_PENDENZA[fase]);
+        if (pendenza.tempo >= FASI_PENDENZA[fase]) {
+          var prossima = DOPO_PENDENZA[fase];
+          if (prossima === 'avvisoSu') { testoPendenza('Pronti ? Si saleee', true); }
+          if (prossima === 'finita') {
+            inclinazione.angolo = 0;
+            inclinazione.attiva = false;
+          }
+          fasePendenza(prossima);
+        }
+      }
+      if (inclinazione.testo) {
+        pendenza.tempoTesto += dt;
+        var tt = pendenza.tempoTesto;
+        inclinazione.alfaTesto = Math.max(0, Math.min(1, tt / 0.3, (DURATA_TESTO_PENDENZA - tt) / 0.5));
+        if (tt >= DURATA_TESTO_PENDENZA) {
+          inclinazione.testo = '';
+          inclinazione.alfaTesto = 0;
+        }
+      }
+    }
+
+    function disegnaPendenza() {
+      if (!inclinazione.testo || inclinazione.alfaTesto <= 0) { return; }
+      var x = W / 2;
+      var y = gd ? suolo * 0.4 : orizzonte * 0.42;
+      var dim = stringi(inclinazione.testo, Math.max(26, U * 0.85), '900', TITOLO, W - 32);
+      var entrata = ridotto ? 1 : 1 + 0.18 * Math.max(0, 1 - pendenza.tempoTesto / 0.3);
+      ctx.save();
+      ctx.globalAlpha = inclinazione.alfaTesto;
+      ctx.translate(x, y);
+      ctx.scale(entrata, entrata);
+      if (gd) {
+        scritta(inclinazione.testo, 0, 0, dim, '900', TITOLO, colori.accento, 'center', true);
+      } else {
+        ctx.shadowColor = inclinazione.colore;
+        ctx.shadowBlur = 14;
+        glitch(inclinazione.testo, 0, 0, dim, ridotto ? 2 : 2 + (Math.random() < 0.12 ? U * 0.05 : 0));
+        ctx.shadowBlur = 0;
+      }
+      ctx.restore();
+    }
+
     function avviaLivello(n) {
       if (n === livello && M && M.n === n && stato !== 'fermo') { tentativo++; } else { tentativo = 1; }
       livello = n;
@@ -2146,6 +2265,7 @@
       scintille = [];
       onde = [];
       frasePagina = null;
+      preparaPendenza(n);
       stato = 'corsa';
       tStato = t;
       tInizioTentativo = t;
@@ -2176,6 +2296,7 @@
       colori = coloriDi(1, 0);
       scintille = [];
       onde = [];
+      azzeraPendenza();
       if (eraInGioco) {
         suonaCanzone(null);
         if (opzioni.suPartita) { opzioni.suPartita(false); }
@@ -2248,6 +2369,7 @@
         }
         if (gd) { colori = coloriDi(livello, M && S ? Math.max(0, Math.min(1, S.x / M.lunghezza)) : 0); }
       }
+      aggiornaPendenza(dt);
       if (stato === 'fine' && t - tStato > RITORNO_FINE) { torna(); }
       for (var k = scintille.length - 1; k >= 0; k--) {
         var s = scintille[k];

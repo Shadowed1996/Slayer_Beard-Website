@@ -15,6 +15,14 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Pollo Run, discesa e salita.** Dal livello 3 in poi, in circa metà dei
+  tentativi (40% in facile, fino al 55% in estremo), a un istante a caso lontano
+  da inizio e fine compare «Pronti ? Si scendeee» e poco dopo la strada si
+  inclina in discesa; più avanti «Pronti ? Si saleee» e la strada passa in
+  salita, poi torna piana. Pendenza fra 0,12 e 0,20 rad secondo la difficoltà,
+  molto ridotta con `prefers-reduced-motion`; lo stato sta in `inclinazione`
+  (`angolo` in radianti, negativo in discesa) e torna a zero se si muore o si
+  vince.
 - **Le canzoni di Pollo Run si scelgono dal pannello.** Nel gruppo
   *Modalità manutenzione*, sotto le frasi di scherno: `config.pollorun.canzoni`
   (elenco di titolo, nome del file nella cartella `mp3`, autore facoltativo; di
