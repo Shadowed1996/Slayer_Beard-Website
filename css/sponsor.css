@@ -12,6 +12,12 @@
   padding-block: clamp(var(--passo-8), 8vh, var(--passo-12));
 }
 
+.saluti + .sponsor { padding-block-start: var(--passo-4); }
+
+.saluti + .sponsor + .chiusura-pagina {
+  padding-block-start: calc(clamp(var(--passo-8), 8vh, var(--passo-12)) - var(--passo-4));
+}
+
 .sponsor__nastro {
   position: relative;
   display: flex;
