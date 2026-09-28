@@ -838,6 +838,7 @@ function costruisciContesto(contenuti, opzioni) {
   const include = (nome) => modello.rendi('{{> parziali/' + nome + '}}', contesto,
     { file: 'modelli/index.html', cartella: P.modelli, cache: cache });
   contesto.sito.corpo = attive.map((voce) => include(voce.id)).join('\n');
+  if (attive.some((voce) => voce.id === 'saluti')) { contesto.sito.corpo += '\n' + include('chiusura'); }
 
   const blocchi = config.disposizione.blocchi;
   if (Object.keys(blocchi).some((riquadro) => blocchi[riquadro].length)) {
