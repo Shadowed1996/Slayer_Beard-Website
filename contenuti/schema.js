@@ -831,7 +831,7 @@ const gruppi = [
           { valore: '24h', etichetta: 'Dopo 1 giorno' },
           { valore: '7g', etichetta: 'Dopo 7 giorni' }
         ],
-        aiuto: 'Il ricordo resta nel browser di ciascun visitatore: nel frattempo può girare tra le pagine e ricaricarle senza rivederla. Chi usa la navigazione in incognito, o blocca i dati dei siti, non la vede proprio.' },
+        aiuto: 'Il ricordo resta nel browser di ciascun visitatore: nel frattempo può girare tra le pagine e ricaricarle senza rivederla. In una finestra in incognito la rivede ogni volta che ne apre una nuova; chi blocca del tutto i dati dei siti non la vede proprio.' },
       { chiave: 'config.ingresso.secondi', etichetta: 'Quanti secondi dura il controllo', tipo: 'numero', min: 1, max: 6, predefinito: 3,
         aiuto: 'Il tempo minimo prima del «via libera». Se la pagina ci mette di più a caricarsi aspetta ancora un poco, ma mai oltre 8 secondi in tutto.' },
       { chiave: 'ingresso.controllo', etichetta: 'Frase sotto al nome del sito', tipo: 'testo', max: 120,
