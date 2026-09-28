@@ -16,8 +16,8 @@ const SCHEDE = ['contenuto', 'stile', 'avanzate'];
 const TIPI_SUL_POSTO = ['testo', 'testolungo', 'ricco'];
 
 const RE_TESTO = /^[a-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
-const RE_IMMAGINE = /^config\.(immagini\.[a-z][A-Za-z0-9]*|sponsor\.copertina|sponsor\.voci\.\d{1,3}\.logo)$/;
-const PAGINE = ['home', 'sponsor'];
+const RE_IMMAGINE = /^config\.(immagini\.[a-z][A-Za-z0-9]*|sponsor\.voci\.\d{1,3}\.logo)$/;
+const PAGINE = ['home'];
 const RE_PARTE = /^[a-z][a-z0-9-]{0,40}$/;
 const RE_BLOCCO = /^[a-z][a-z0-9-]{0,40}\.[a-z][a-z0-9-]{0,40}$/;
 
@@ -1600,7 +1600,7 @@ function impostaPagina(p) {
   st.pagina = p;
   st.ricordo = null;
   if (st.selezione) { st.selezione = null; avvisaIscritti(null); }
-  annuncia(p === 'sponsor' ? 'Stai lavorando sulla pagina degli sponsor.' : 'Stai lavorando sulla home.');
+  annuncia('Stai lavorando sulla home.');
   emetti('sb:pagina', { pagina: p });
   if (montato()) ricarica({ tieniScorrimento: false });
   return true;
@@ -1659,7 +1659,7 @@ function comeHtml(risposta) {
 
 async function chiediAnteprima(inviati) {
   const api = ponte.api;
-  if (api && typeof api.anteprima === 'function') return comeHtml(await api.anteprima({ contenuti: inviati, editor: true, pagina: st.pagina }));
+  if (api && typeof api.anteprima === 'function') return comeHtml(await api.anteprima({ contenuti: inviati, editor: true }));
   if (st.pagina === 'home' && api && typeof api.anteprimaViva === 'function') return comeHtml(await api.anteprimaViva(inviati));
   throw Object.assign(new Error('Il pannello non sa chiedere l\'anteprima al server.'), { stato: 501 });
 }

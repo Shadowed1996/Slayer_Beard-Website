@@ -1438,7 +1438,7 @@
 
     function testoCanzone() {
       if (!canzone || !canzone.titolo) { return ''; }
-      return '♪ ' + canzone.titolo + (canzone.autore ? ' — ' + canzone.autore : '');
+      return '♪ ' + canzone.titolo + (canzone.autore ? ' - ' + canzone.autore : '');
     }
 
     function etichetta(d) {

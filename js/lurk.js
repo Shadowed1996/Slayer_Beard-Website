@@ -719,7 +719,7 @@
 
     const riga = crea('p', 'lurk__diagnosi',
       'Il messaggio in chat non è attivo: ' + perche
-      + ' — Questo avviso lo vedi solo tu, perché il sito sta girando in locale: sul sito '
+      + ' Questo avviso lo vedi solo tu, perché il sito sta girando in locale: sul sito '
       + 'pubblicato non compare a nessuno.');
     nodi.lurk.appendChild(riga);
   }

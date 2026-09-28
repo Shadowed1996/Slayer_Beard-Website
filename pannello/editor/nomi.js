@@ -29,7 +29,7 @@ const SEZIONI = {
   },
   sponsor: {
     nome: 'Gli sponsor',
-    descrizione: 'La striscia di chi sostiene il canale, sotto «Dove mi trovi», e il bottone che porta alla pagina con tutti quanti.'
+    descrizione: 'La striscia di chi sostiene il canale, sotto «Dove mi trovi».'
   },
   saluti: {
     nome: 'Dove mi trovi',
@@ -80,19 +80,7 @@ const PARTI = {
   },
   sponsor: {
     nome: 'Gli sponsor',
-    descrizione: 'Chi sostiene il canale: logo, nome, descrizione, categoria, codice sconto, link e periodo di validità. Aggiungi, togli e riordina qui; il logo si cambia anche cliccandolo nell\'anteprima. Uno sponsor senza link non si vede, e passata la data di fine sparisce da solo.'
-  },
-  'sponsor-apertura': {
-    nome: 'Apertura della pagina sponsor',
-    descrizione: 'La prima schermata di «sponsor.html»: titolo, presentazione, i due bottoni e la foto. Qui si accende e si spegne anche la pagina intera.'
-  },
-  'sponsor-formati': {
-    nome: 'I formati di collaborazione',
-    descrizione: 'Le schede che spiegano come si può collaborare: titolo, spiegazione e icona. Aggiungi, togli e riordina.'
-  },
-  'sponsor-contatto': {
-    nome: 'Contatti per i marchi',
-    descrizione: 'Il riquadro in fondo alla pagina sponsor: presentazione, indirizzo email, oggetto della email, media kit e il polletto.'
+    descrizione: 'Chi sostiene il canale: logo, nome, link e periodo di validità. Aggiungi, togli e riordina qui; il logo si cambia anche cliccandolo nell\'anteprima. Uno sponsor senza link non si vede, e passata la data di fine sparisce da solo.'
   },
   giochi: {
     nome: 'I giochi',
@@ -123,7 +111,6 @@ const BLOCCHI = {
 
   'sponsor.testa': 'Titolo e introduzione',
   'sponsor.striscia': 'Striscia degli sponsor',
-  'sponsor.vai': 'Bottone verso la pagina',
 
   'saluti.social': 'Titolo e social',
   'saluti.contatti': 'Contatti',
@@ -202,23 +189,7 @@ export const REGISTRO_PARTI = Object.freeze({
   listino: Object.freeze({ chiavi: Object.freeze(['config.supporto']) }),
   sponsor: Object.freeze({
     chiavi: Object.freeze([
-      'config.sponsor.voci', 'config.sponsor.mostraPartner', 'sponsor.partnerTesto',
-      'sponsor.partnerVuotoTitolo', 'sponsor.partnerVuotoTesto', 'sponsor.paginaVuota',
-      'sponsor.vaiScheda', 'sponsor.visita', 'sponsor.evidenzaTag', 'sponsor.nuovoTag', 'sponsor.dalEtichetta',
-      'sponsor.codiceEtichetta', 'sponsor.copia', 'sponsor.copiato'
-    ])
-  }),
-  'sponsor-apertura': Object.freeze({
-    chiavi: Object.freeze([
-      'config.sponsor.attivo', 'config.sponsor.copertina', 'sponsor.paginaOcchiello', 'sponsor.paginaTitolo',
-      'sponsor.paginaTesto', 'sponsor.ctaContatto', 'sponsor.ctaCanale', 'sponsor.paginaTorna'
-    ])
-  }),
-  'sponsor-formati': Object.freeze({ chiavi: Object.freeze(['config.sponsor.mostraFormati', 'config.sponsor.formati']) }),
-  'sponsor-contatto': Object.freeze({
-    chiavi: Object.freeze([
-      'sponsor.contattoTesto', 'config.sponsor.email', 'sponsor.contattoOggetto', 'sponsor.contattoBtn',
-      'config.sponsor.mediaKit', 'sponsor.mediaKitBtn', 'config.sponsor.polletto', 'sponsor.copia', 'sponsor.copiato'
+      'config.sponsor.attivo', 'config.sponsor.voci', 'sponsor.visita', 'sponsor.nuovoTag'
     ])
   }),
   giochi: Object.freeze({ gruppo: 'giochi' })

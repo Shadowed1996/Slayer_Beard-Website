@@ -111,31 +111,3 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
-
-.sponsor__vai-riga { margin-block-start: var(--passo-4); }
-
-.sponsor__vai {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--passo);
-  min-block-size: 44px;
-  padding-inline: var(--passo-3);
-  border: 1px solid var(--linea-comando);
-  border-radius: var(--raggio-pill);
-  color: var(--testo);
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  letter-spacing: 0.08em;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: border-color 160ms ease, background-color 160ms ease, gap 160ms ease;
-}
-
-.sponsor__vai:hover,
-.sponsor__vai:focus-visible {
-  border-color: var(--linea-viva);
-  background: var(--pannello-2);
-  gap: var(--passo-2);
-}
-
-.sponsor__vai svg { inline-size: 1.1em; block-size: 1.1em; flex: none; }

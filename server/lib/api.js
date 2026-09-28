@@ -251,9 +251,7 @@ async function rottaAnteprimaDiProva(req, res) {
   const unito = costruisci.pulisciEditor(archivio.unisci(archivio.leggi(), arrivo));
   let html;
   try {
-    const pagina = corpo.pagina === 'sponsor' ? 'sponsor' : '';
-    if (corpo.editor === true) { html = costruisci.anteprimaEditor(unito, pagina); }
-    else { html = pagina ? costruisci.anteprimaSponsor(unito) : costruisci.anteprimaDi(unito); }
+    html = corpo.editor === true ? costruisci.anteprimaEditor(unito) : costruisci.anteprimaDi(unito);
   } catch (err) {
 
     const detto = (err && err.message) || 'errore sconosciuto';
@@ -388,7 +386,7 @@ function rottaElencoBackup(req, res) {
 function rottaRipristina(req, res, id) {
   const esito = backup.ripristina(id);
   const clip = costruisci.allineaClipDopoRipristino();
-  const sponsor = costruisci.allineaSponsorDopoRipristino();
+  const sponsor = costruisci.togliPaginaSponsor();
   const statoSito = costruisci.allineaStatoDopoRipristino();
   json(res, 200, { ok: true, ripristinati: esito.ripristinati, backup: esito.backup, clip: clip, sponsor: sponsor, giochi: costruisci.allineaGiochiDopoRipristino(), statoSito: statoSito });
 }

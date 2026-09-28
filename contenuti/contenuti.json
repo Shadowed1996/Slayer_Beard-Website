@@ -2,10 +2,10 @@
   "versione": 1,
   "aggiornatoIl": "2026-09-24T18:17:28.877Z",
   "testi": {
-    "meta.titolo": "slayer_beard — canale Twitch ufficiale",
+    "meta.titolo": "slayer_beard - canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
     "meta.ogDescrizione": "Quattro dirette a settimana alle 21:00, ITA ed ENG. Qui trovi il player, la settimana e i social.",
-    "meta.ogImmagineAlt": "La mascotte di slayer_beard, un pollo viola con la cresta ciano, sopra una nebulosa e uno skyline notturno.",
+    "meta.ogImmagineAlt": "Il pollo, mascotte di slayer_beard",
     "marchio.nome": "slayer_beard",
     "marchio.ruolo": "Twitch Affiliate · dal 2020",
     "nav.regia": "Regia",
@@ -115,7 +115,7 @@
     "chi.tag5": "ITA / ENG",
     "chi.tag6": "Twitch Affiliate",
     "chi.cta": "Vieni a trovarmi su Twitch",
-    "chi.ritrattoAlt": "Avatar del canale: il pollo viola di slayer_beard in primo piano.",
+    "chi.ritrattoAlt": "Il pollo viola, avatar di slayer_beard",
     "supporto.occhiello": "Supporto",
     "supporto.titolo": "Come dare una mano",
     "supporto.testo": "Seguire è gratis ed è già tanto: il tasto Segui su Twitch non costa niente e mi aiuta davvero. Tutto quello che trovi qui sotto è facoltativo, guardare la diretta non richiede nessuna di queste cose.",
@@ -189,16 +189,8 @@
     "sponsor.occhiello": "Chi sostiene il canale",
     "sponsor.titolo": "Sponsor e partner",
     "sponsor.testo": "Chi mi dà una mano a portare avanti le dirette. Ogni logo porta al loro sito.",
-    "sponsor.vaiBtn": "Tutti gli sponsor",
     "sponsor.visita": "Vai al sito di",
-    "sponsor.evidenzaTag": "In evidenza",
     "sponsor.nuovoTag": "Nuovo partner",
-    "sponsor.dalEtichetta": "Partner dal",
-    "sponsor.vaiScheda": "Vai al sito",
-    "sponsor.paginaTitolo": "Porta il tuo marchio in diretta",
-    "sponsor.paginaTesto": "Un canale Twitch italiano di gaming, con dirette fisse ogni settimana e una chat che partecipa davvero. Qui trovi i modi in cui possiamo collaborare e chi lo fa già.",
-    "sponsor.paginaTorna": "Torna al sito",
-    "sponsor.paginaVuota": "Nessuno sponsor attivo in questo momento.",
     "giochi.occhiello": "Lo storico delle live",
     "giochi.titolo": "I giochi della live",
     "giochi.testo": "Scopri i giochi che ho portato in live: dagli horror ai party game con la chat, dagli shooter ai puzzle game.",
@@ -225,30 +217,7 @@
     "giochi.cercaEtichetta": "Cerca",
     "giochi.cercaSegnaposto": "Nome o tipologia del gioco",
     "giochi.cercaPulisci": "Cancella la ricerca",
-    "giochi.cercaVuoto": "Nessun gioco corrisponde alla ricerca. Prova con un altro nome o togli i filtri.",
-    "sponsor.invitoTitolo": "Collabora con il canale",
-    "sponsor.invitoTesto": "Hai un marchio che parla a chi gioca? Nella pagina dedicata trovi i modi per collaborare e come scrivermi.",
-    "sponsor.invitoBtn": "Scopri come collaborare",
-    "sponsor.paginaOcchiello": "Collaborazioni",
-    "sponsor.ctaContatto": "Proponi una collaborazione",
-    "sponsor.ctaCanale": "Guarda il canale",
-    "sponsor.formatiOcchiello": "Collaborare",
-    "sponsor.formatiTitolo": "Come possiamo lavorare insieme",
-    "sponsor.formatiTesto": "Ogni collaborazione si costruisce insieme: questi sono i formati più richiesti, da combinare come serve al tuo marchio.",
-    "sponsor.partnerOcchiello": "Chi c'è già",
-    "sponsor.partnerTitolo": "Sponsor e partner",
-    "sponsor.partnerTesto": "I marchi che sostengono il canale oggi. Ogni scheda porta al loro sito; dove c'è un codice, è riservato a chi segue le dirette.",
-    "sponsor.partnerVuotoTitolo": "Il primo posto è libero",
-    "sponsor.partnerVuotoTesto": "In questo momento nessun marchio affianca il canale: il primo può essere il tuo.",
-    "sponsor.codiceEtichetta": "Codice sconto",
-    "sponsor.copia": "Copia",
-    "sponsor.copiato": "Copiato",
-    "sponsor.contattoOcchiello": "Contatti",
-    "sponsor.contattoTitolo": "Parliamone",
-    "sponsor.contattoTesto": "Scrivimi due righe su chi sei, cosa proponi e in che periodo: rispondo di persona a ogni proposta seria.",
-    "sponsor.contattoOggetto": "Proposta di collaborazione",
-    "sponsor.contattoBtn": "Scrivimi una email",
-    "sponsor.mediaKitBtn": "Scarica il media kit"
+    "giochi.cercaVuoto": "Nessun gioco corrisponde alla ricerca. Prova con un altro nome o togli i filtri."
   },
   "config": {
     "slayer": {
@@ -870,36 +839,7 @@
     },
     "sponsor": {
       "attivo": false,
-      "voci": [],
-      "invitoHome": false,
-      "copertina": "",
-      "mostraFormati": true,
-      "formati": [
-        {
-          "titolo": "Menzione in diretta",
-          "testo": "Il tuo marchio presentato a voce durante le live, con il link fisso in chat e nel pannello del canale.",
-          "icona": "microfono"
-        },
-        {
-          "titolo": "Prodotto in prova",
-          "testo": "Periferiche, giochi o accessori usati davvero in diretta, con un parere sincero davanti alla chat.",
-          "icona": "controller"
-        },
-        {
-          "titolo": "Codice sconto dedicato",
-          "testo": "Un codice riservato alla community: fa risparmiare chi guarda e ti dice con precisione quanto rende la collaborazione.",
-          "icona": "etichetta"
-        },
-        {
-          "titolo": "Logo sul canale e sul sito",
-          "testo": "Il logo nel pannello di Twitch, nella striscia della home e in questa pagina, con il link al tuo sito.",
-          "icona": "schermo"
-        }
-      ],
-      "mostraPartner": true,
-      "email": "",
-      "mediaKit": "",
-      "polletto": true
+      "voci": []
     },
     "giochi": {
       "attivo": true,

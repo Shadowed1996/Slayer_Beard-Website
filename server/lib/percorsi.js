@@ -32,7 +32,6 @@ function calcola(radice) {
     modelli: path.join(radice, 'modelli'),
     modelloIndex: path.join(radice, 'modelli', 'index.html'),
     modelloClip: path.join(radice, 'modelli', 'clip.html'),
-    modelloSponsor: path.join(radice, 'modelli', 'sponsor.html'),
     modelloGiochi: path.join(radice, 'modelli', 'giochi.html'),
     modelloManutenzione: path.join(radice, 'modelli', 'manutenzione.html'),
     scriptManutenzione: path.join(radice, 'modelli', 'manutenzione-conto.js'),

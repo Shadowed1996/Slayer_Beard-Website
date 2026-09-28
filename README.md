@@ -174,12 +174,13 @@ e il piede ci sono sempre. Il binario ha una voce per ogni sezione accesa, quind
 e resta a sei: la vetrina delle clip sta dentro «diretta» e la striscia degli sponsor non chiede
 una voce, proprio per non arrivare a una settima che sotto i 400 px non ci starebbe. Alle clip si
 arriva dall'invito «Migliori highlights» in fondo a «diretta», agli sponsor scorrendo fino in
-fondo e poi col bottone «Tutti gli sponsor».
+fondo.
 
 Le pagine pubblicate sono tre, e due esistono solo quando hanno qualcosa da dire: **index.html**,
-**clip.html** (se le clip sono accese e ne è arrivata almeno una) e **sponsor.html** (se gli
-sponsor sono accesi e almeno uno è dentro il suo periodo). Quando la condizione cade, la
-pubblicazione le **toglie** dal sito invece di lasciarne online una copia vecchia.
+**clip.html** (se le clip sono accese e ne è arrivata almeno una) e **giochi.html** (se la pagina
+dei giochi è accesa). Quando la condizione cade, la pubblicazione le **toglie** dal sito invece di
+lasciarne online una copia vecchia. Gli sponsor stanno solo nella striscia in home: la vecchia
+**sponsor.html**, se è rimasta sul disco, la pubblicazione la cancella e il server non la serve.
 
 La versione precedente del sito è conservata fuori dal repository, in una cartella locale
 `sito-backup/`: serve solo come riferimento storico, non è collegata a niente.

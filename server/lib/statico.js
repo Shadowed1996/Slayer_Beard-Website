@@ -124,6 +124,7 @@ function servi(req, res, percorsoUrl) {
     errore(res, 403, 'Questa cartella non e accessibile dal browser.');
     return true;
   }
+  if (path.relative(P.radice, assoluto).toLowerCase() === 'sponsor.html') { return false; }
 
   let stato;
   try { stato = fs.statSync(assoluto); } catch (e) { return false; }

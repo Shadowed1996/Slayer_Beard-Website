@@ -152,7 +152,7 @@
     if (!perche) { return; }
     nodi.blocco.appendChild(crea('p', 'account__diagnosi',
       'Il collegamento con Twitch non è attivo: ' + perche
-      + ' — Questo avviso lo vedi solo tu, perché il sito sta girando in locale: sul sito '
+      + ' Questo avviso lo vedi solo tu, perché il sito sta girando in locale: sul sito '
       + 'pubblicato non compare a nessuno.'));
   }
 

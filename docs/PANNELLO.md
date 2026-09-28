@@ -855,7 +855,7 @@ Le sezioni, dall'alto in basso come sono di partenza:
 | **Chi sono** | il racconto, la citazione, le note a margine e il ritratto |
 | **Come dare una mano** | il listino del supporto, il testo di apertura e la riga di chiusura |
 | **Dove mi trovi** | i profili social, l'email con i bottoni per copiarla o scrivere, la riga di chiusura |
-| **Gli sponsor** | la striscia di chi sostiene il canale e il bottone che porta alla pagina «sponsor.html» |
+| **Gli sponsor** | la striscia con i loghi di chi sostiene il canale |
 | **Piede della pagina** | copyright, avvertenza sui marchi e nota finale |
 
 ### Selezionare una sezione
@@ -2012,82 +2012,54 @@ meglio **quadrata** e non troppo piccola (da 96 px in su), in PNG o WebP. Se
 ha lo sfondo trasparente il bottone resta scuro come il resto del sito; se ha
 uno sfondo suo, si vedrà quello. Per tornare alle note basta svuotare il campo.
 
-### Gli sponsor, e la pagina «sponsor.html»
+### Gli sponsor: la striscia in home
 
-La pagina `sponsor.html` è pensata per **chi deve decidere se collaborare con il
-canale**: un marchio la apre, capisce chi sei, vede come si può lavorare insieme
-e chi lo fa già, e trova subito come scriverti. In ordine:
+Gli sponsor stanno **solo in home**, sotto «Dove mi trovi»: una striscia con i
+loghi di chi sostiene il canale, che scorre da sola quando non ci stanno tutti.
+Ogni logo porta al sito dello sponsor. Si accende con **Mostra gli sponsor in
+home** (gruppo **Sponsor** del menu) e compare solo se c'è almeno uno sponsor
+con il link scritto e dentro il suo periodo: con l'interruttore acceso e nessuno
+sponsor attivo, in home non compare niente.
 
-1. **Apertura** — occhiello, titolo grande, presentazione, due bottoni
-   («Proponi una collaborazione» porta giù ai contatti, «Guarda il canale» apre
-   Twitch) e una foto. Senza una foto propria usa il banner della copertina.
-2. **Come possiamo lavorare insieme** — le schede dei formati (menzione in
-   diretta, prodotto in prova, codice sconto, logo sul canale e sul sito), con
-   titolo, spiegazione e icona. Si aggiungono, si tolgono e si riordinano.
-3. **Sponsor e partner** — le schede di chi collabora oggi: logo, nome,
-   categoria, testo, codice sconto con il bottone «Copia» e il link al loro
-   sito. **Senza nessuno sponsor** la sezione dice «Il primo posto è libero» e
-   invita a scrivere.
-4. **Contatti** — la presentazione, l'indirizzo email (vuoto: quello pubblico del
-   sito) con il bottone che apre la posta con l'oggetto già scritto, un link
-   facoltativo al media kit e il polletto accanto.
+Sopra i loghi ci sono occhiello, titolo e una riga di presentazione, che si
+cambiano cliccandoli nell'anteprima come ogni altro testo della home.
 
-Le sezioni 2 e 3 si **accendono e spengono** una per una. In home, sotto
-«Dove mi trovi», resta la **striscia** dei loghi, che compare solo se c'è almeno
-uno sponsor attivo; con «Invito anche senza sponsor» acceso, quando non ce n'è
-nessuno la home mostra al suo posto un invito verso la pagina.
-
-**Si modifica come la home.** In alto nel pannello, accanto a Telefono / Tablet /
-Computer, c'è **Home / Sponsor**: premi *Sponsor* e l'anteprima diventa la
-pagina degli sponsor, anche se è ancora spenta. Clicchi un titolo e lo scrivi,
-clicchi un logo o la foto e *Cambia immagine* apre la libreria (dove puoi
-caricarne una nuova), clicchi una sezione e compaiono tutti i suoi controlli.
-Senza niente selezionato, la colonna a sinistra elenca le parti della pagina con
-i loro interruttori: una parte spenta si riaccende da lì. Tutto si ritrova anche
-nel gruppo **Sponsor e collaborazioni** del menu.
-
-> **Sul logo.** Il riquadro su cui sta è chiaro apposta: i loghi delle aziende
-> sono quasi sempre pensati per il bianco. Carica un PNG, un WebP o un SVG con lo
-> sfondo **trasparente** dalla libreria delle immagini: vale solo un'immagine
-> caricata sul sito, non un indirizzo esterno. Se un logo non ce l'hai, la
-> scheda usa il nome scritto in grande.
-
-Fino al 27 settembre 2026 la pagina aveva anche una sezione **«I numeri del
-canale»** (follower, spettatori medi, ore di diretta…): è stata tolta del tutto.
-Se i contenuti salvati hanno ancora le sue impostazioni o i suoi testi, il sito
-li scarta da solo al primo caricamento; la presentazione in apertura e l'invito
-in home, se non li avevi mai cambiati, passano da soli alla versione senza
-numeri. Quelli che avevi scritto tu restano come sono.
+> **La pagina «sponsor.html» non c'è più (28 settembre 2026).** Con lei sono
+> spariti il bottone «Tutti gli sponsor» nella striscia, l'invito in home quando
+> non c'era nessuno sponsor e il pulsante **Home / Sponsor** in alto nel
+> pannello. Se sul sito vero il file `sponsor.html` è ancora sul disco, la
+> prossima **Pubblica** lo cancella; nel frattempo il server risponde comunque
+> «non trovato» a chi lo chiede. I testi e le impostazioni della pagina salvati
+> nei contenuti (apertura, formati, contatti, email, media kit, descrizione,
+> categoria e codice sconto di ogni sponsor…) il sito li scarta da solo al primo
+> caricamento, senza errori. Gli sponsor dell'elenco restano tutti.
 
 Ogni voce dell'elenco degli sponsor ha:
 
-- **Nome interno** — non si vede sul sito, serve a distinguere le voci fra loro;
-- **Nome**, **Logo** e **Chi sono, in breve** — quello che si legge sulla
-  scheda. In home la striscia mostra soltanto logo e nome;
-- **Categoria** — per esempio *Hardware*: compare come etichetta sulla scheda;
-- **Codice sconto** e **Cosa dà il codice** — vuoti, il riquadro del codice non
-  c'è;
-- **Colore del marchio** — tinge bordo e alone della scheda. Vuoto: il viola;
-- **Link al loro sito** — **vuoto vuol dire che lo sponsor non si vede**. Vale
+- **Nome interno**: non si vede sul sito, serve a distinguere le voci fra loro;
+- **Nome** e **Logo**: senza logo la striscia mostra il nome scritto;
+- **Colore del marchio**: tinge l'etichetta «nuovo» e l'alone del logo. Vuoto:
+  il viola;
+- **Link al loro sito**: **vuoto vuol dire che lo sponsor non si vede**. Vale
   solo un indirizzo `http` o `https`; il link esce con `rel="sponsored"`, come
   Google chiede per le collaborazioni pagate;
-- **Attivo dal** e **Attivo fino al** — il periodo. Vuoti: da subito e per
+- **Attivo dal** e **Attivo fino al**: il periodo. Vuoti: da subito e per
   sempre;
-- **In evidenza** — passa davanti agli altri e prende una scheda larga il doppio.
+- **In evidenza**: passa davanti agli altri nella striscia.
+
+> **Sul logo.** Carica un PNG, un WebP o un SVG con lo sfondo **trasparente**
+> dalla libreria delle immagini: vale solo un'immagine caricata sul sito, non un
+> indirizzo esterno.
 
 > **L'etichetta «nuovo partner» si mette e si toglie da sola**: per trenta
-> giorni dalla data di inizio. Sotto il nome compare anche «Partner dal 2026».
+> giorni dalla data di inizio.
 
 > **Le date fanno il lavoro da sole.** Passata la data di fine, lo sponsor
-> sparisce dal sito **senza bisogno di pubblicare**: la pagina rifà il conto
-> ogni volta che qualcuno la apre. La voce resta nel pannello, e per farla
-> tornare basta cambiare la data.
+> sparisce dal sito **senza bisogno di pubblicare**: la home rifà il conto ogni
+> volta che qualcuno la apre. La voce resta nel pannello, e per farla tornare
+> basta cambiare la data.
 
 Il periodo si legge con l'**orologio italiano**.
-
-Se spegni **Pubblica la pagina degli sponsor**, la pagina **viene tolta** dal
-sito e la striscia sparisce dalla home. Accesa, la pagina resta online anche
-quando non c'è nessuno sponsor: è proprio quando serve di più.
 
 ### Quando qualcosa non va
 

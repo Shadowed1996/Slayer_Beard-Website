@@ -128,6 +128,11 @@ programmi sono nascosti: nel File Manager di Plesk si vedono spuntando
 `.htaccess` non c'è, il sito funziona lo stesso ma **senza le protezioni**: è
 proprio il file che non deve mancare.
 
+**Se in `httpdocs` c'è ancora `sponsor.html`** (la pagina degli sponsor di prima
+del 28 settembre 2026) non serve cancellarla a mano: la prima **Pubblica** dal
+pannello la toglie, e fino ad allora il programma del sito risponde «non trovato» a chi la
+chiede. Gli sponsor adesso stanno solo nella striscia in home.
+
 Il capitolo 10 dice cosa invece **non** deve finire lì dentro, ed è altrettanto
 importante.
 

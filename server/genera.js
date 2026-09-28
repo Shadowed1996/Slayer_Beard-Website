@@ -67,11 +67,8 @@ async function esegui() {
   }
 
   const sponsor = esito.paginaSponsor;
-  if (sponsor && sponsor.stato === 'scritta') {
-    console.log('  scritto   ' + sponsor.file.padEnd(14) + byteLeggibili(sponsor.byte) +
-      '   ' + esito.sponsor + (esito.sponsor === 1 ? ' sponsor' : ' sponsor'));
-  } else if (sponsor && sponsor.stato === 'tolta') {
-    console.log('  tolta     sponsor.html: gli sponsor sono spenti, oppure nessuno e nel suo periodo');
+  if (sponsor && sponsor.stato === 'tolta') {
+    console.log('  tolta     sponsor.html: la pagina degli sponsor non esiste piu, restano i loghi in home');
   } else if (sponsor && sponsor.stato === 'non tolta') {
     console.log('  sponsor.html non si e potuta togliere (' + sponsor.errore + '): va cancellata a mano');
   }

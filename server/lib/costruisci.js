@@ -797,7 +797,7 @@ function costruisciContesto(contenuti, opzioni) {
     }
   });
 
-  contesto.sponsor = sponsorDi(config, testi, adesso, { cache: cache, mancanti: mancanti });
+  contesto.sponsor = sponsorDi(config, testi, adesso);
   for (const campo of schema.campi()) {
     if (campo.chiave.startsWith('sponsor.') && typeof contesto[campo.chiave] !== 'string') { contesto[campo.chiave] = testoSponsor(testi, campo.chiave); }
   }
@@ -810,7 +810,7 @@ function costruisciContesto(contenuti, opzioni) {
     descrizione: presentazioneClip || String(testi['meta.descrizione'] || '')
   };
 
-  contesto.sito.sponsorInHome = !!(attiva.sponsor && (contesto.sponsor.attivo || contesto.sponsor.invito));
+  contesto.sito.sponsorInHome = !!(attiva.sponsor && contesto.sponsor.attivo);
   contesto.sito.slayer = !(config.slayer && config.slayer.attivo === false);
   contesto.sito.pollorun = {
     attivo: !(config.pollorun && config.pollorun.attivo === false),
@@ -821,14 +821,6 @@ function costruisciContesto(contenuti, opzioni) {
     classifica: classificaAttiva(config)
   };
   contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
-
-  const presentazioneSponsor = testoricco.soloTesto(testi['sponsor.paginaTesto'] || '');
-  contesto.sito.paginaSponsor = {
-    url: 'sponsor.html',
-    canonico: config.sitoUrl ? config.sitoUrl + 'sponsor.html' : 'sponsor.html',
-    titolo: (testi['sponsor.paginaTitolo'] || '') + ' · ' + (testi['marchio.nome'] || ''),
-    descrizione: presentazioneSponsor || String(testi['meta.descrizione'] || '')
-  };
 
   const presentazioneGiochi = testoricco.soloTesto(testi['giochi.paginaTesto'] || '');
   contesto.sito.paginaGiochi = {
@@ -1003,20 +995,10 @@ function accountDi(config, testi) {
 
 const SPONSOR_NUOVO_GIORNI = 30;
 const RE_IMMAGINE_LOCALE = /^(img|contenuti\/media)\/[A-Za-z0-9._\/-]+\.(png|jpe?g|webp|svg|gif|avif)$/i;
-const RE_EMAIL_SICURA = /^[^\s@<>"'()\\,;:]+@[^\s@<>"'()\\,;:]+\.[A-Za-z]{2,}$/;
-const ICONA_FORMATO = 'star';
 
 function coloreMarchio(valore) {
   const pulito = String(valore || '').trim();
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(pulito) ? pulito : '';
-}
-
-function dominioDi(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch (e) {
-    return '';
-  }
 }
 
 function urlSicuro(valore) {
@@ -1035,45 +1017,17 @@ function immagineLocale(valore) {
   return testo;
 }
 
-function emailSicura(valore) {
-  const testo = String(valore || '').trim();
-  return testo.length <= 254 && RE_EMAIL_SICURA.test(testo) ? testo : '';
-}
-
 function testoSponsor(testi, chiave) {
   if (typeof testi[chiave] === 'string') { return testi[chiave]; }
   const campo = schema.campo(chiave);
   return campo && typeof campo.predefinito === 'string' ? campo.predefinito : '';
 }
 
-function formatiSponsor(ramo, cache, mancanti) {
-  const grezzi = Array.isArray(ramo.formati) ? ramo.formati : schema.campo('config.sponsor.formati').predefinito;
-  const ammesse = schema.campo('config.sponsor.formati').campi.find((c) => c.chiave === 'icona').opzioni;
-  const fuori = [];
-  grezzi.forEach((voce, indice) => {
-    if (!voce || typeof voce !== 'object') { return; }
-    const titolo = String(voce.titolo || '').trim();
-    if (!titolo) { return; }
-    const icona = ammesse.indexOf(voce.icona) !== -1 ? voce.icona : ICONA_FORMATO;
-    fuori.push({
-      titolo: titolo,
-      testo: String(voce.testo || ''),
-      svg: leggiIcona(icona, cache, mancanti),
-      chiaveTitolo: 'config.sponsor.formati.' + indice + '.titolo',
-      chiaveTesto: 'config.sponsor.formati.' + indice + '.testo'
-    });
-  });
-  return fuori;
-}
-
-function sponsorDi(config, testi, adesso, extra) {
+function sponsorDi(config, testi, adesso) {
   const ramo = (config.sponsor && typeof config.sponsor === 'object') ? config.sponsor : {};
   const grezzi = Array.isArray(ramo.voci) ? ramo.voci : [];
   const ora = Number.isFinite(adesso) ? adesso : Date.now();
   const visita = String(testi['sponsor.visita'] || '').trim();
-  const aggiunte = extra || {};
-  const cache = aggiunte.cache || new Map();
-  const mancanti = aggiunte.mancanti || [];
 
   const voci = [];
   grezzi.forEach((voce, indice) => {
@@ -1089,70 +1043,28 @@ function sponsorDi(config, testi, adesso, extra) {
     if (a && ora >= a.ms) { return; }
 
     const radice = 'config.sponsor.voci.' + indice + '.';
-    const categoria = String(voce.categoria || '').trim();
-    const nuovo = !!(da && ora - da.ms >= 0 && ora - da.ms <= SPONSOR_NUOVO_GIORNI * 86400000);
     voci.push({
       indice: indice,
       nome: nome,
       url: url,
       logo: immagineLocale(voce.logo),
-      testo: String(voce.testo || ''),
-      categoria: categoria,
-      etichette: !!(categoria || voce.evidenza === true || nuovo),
-      codice: String(voce.codice || '').trim(),
-      codiceNota: String(voce.codiceNota || '').trim(),
       evidenza: voce.evidenza === true,
-
-      dominio: dominioDi(url),
-
-      colore: colore,
       stile: colore ? '--marca: ' + colore + ';' : '',
-
-      dalAnno: da ? da.data.slice(0, 4) : '',
-      nuovo: nuovo,
+      nuovo: !!(da && ora - da.ms >= 0 && ora - da.ms <= SPONSOR_NUOVO_GIORNI * 86400000),
       da: da ? da.iso : '',
       a: a ? a.iso : '',
-
       visita: visita ? visita + ' ' + nome : nome,
-
       chiaveNome: radice + 'nome',
-      chiaveTesto: radice + 'testo',
-      chiaveLogo: radice + 'logo',
-      chiaveCategoria: radice + 'categoria',
-      chiaveCodice: radice + 'codice',
-      chiaveCodiceNota: radice + 'codiceNota'
+      chiaveLogo: radice + 'logo'
     });
   });
 
   voci.sort((x, y) => (y.evidenza ? 1 : 0) - (x.evidenza ? 1 : 0) || x.indice - y.indice);
 
-  const pagina = ramo.attivo === true;
-  const formati = formatiSponsor(ramo, cache, mancanti);
-
-  const email = emailSicura(ramo.email) || emailSicura(config.email);
-  const oggetto = String(testoSponsor(testi, 'sponsor.contattoOggetto')).trim();
-  const immagini = (config.immagini && typeof config.immagini === 'object') ? config.immagini : {};
-
   return {
-    attivo: pagina && voci.length > 0,
-    pagina: pagina,
-    invito: pagina && voci.length === 0 && ramo.invitoHome === true,
+    attivo: ramo.attivo === true && voci.length > 0,
     voci: voci,
-    quanti: voci.length,
-    haVoci: voci.length > 0,
-
-    copertina: immagineLocale(ramo.copertina) || immagineLocale(immagini.banner),
-    copertinaPropria: !!immagineLocale(ramo.copertina),
-
-    formati: formati,
-    mostraFormati: ramo.mostraFormati !== false && formati.length > 0,
-
-    mostraPartner: ramo.mostraPartner !== false,
-
-    email: email,
-    mailto: email ? 'mailto:' + email + (oggetto ? '?subject=' + encodeURIComponent(oggetto) : '') : '',
-    mediaKit: urlSicuro(ramo.mediaKit),
-    polletto: ramo.polletto !== false ? immagineLocale(immagini.mascotte) : ''
+    quanti: voci.length
   };
 }
 
@@ -1608,16 +1520,6 @@ function rendi(contenuti, opzioni) {
       { file: 'modelli/clip.html', cartella: P.modelli, cache: cache }));
   }
 
-  let sponsor = null;
-  if (contesto.sponsor.pagina || scelte.forzaSponsor === true) {
-    if (!eFile(P.modelloSponsor)) {
-      throw erroreHttp(500, 'Manca ' + path.relative(P.radice, P.modelloSponsor) +
-        ': e il modello della pagina degli sponsor.');
-    }
-    sponsor = togliCommenti(modello.rendiFile(P.modelloSponsor, contesto,
-      { file: 'modelli/sponsor.html', cartella: P.modelli, cache: cache }));
-  }
-
   let giochi = null;
   if (contesto.giochi.attivo) {
     if (!eFile(P.modelloGiochi)) {
@@ -1633,7 +1535,7 @@ function rendi(contenuti, opzioni) {
   const foglio = tema.css(contenuti.config.tema);
   const manutenzione = manutenzioneAttiva(contenuti.config) ? rendiManutenzione(contenuti, scelte) : null;
 
-  return { html: html, clip: clip, sponsor: sponsor, giochi: giochi, dati: dati, tema: foglio, contesto: contesto, manutenzione: manutenzione };
+  return { html: html, clip: clip, giochi: giochi, dati: dati, tema: foglio, contesto: contesto, manutenzione: manutenzione };
 }
 
 function anteprima() {
@@ -1662,13 +1564,8 @@ function perEditor(html) {
   return pagina;
 }
 
-function anteprimaEditor(contenuti, pagina) {
-  if (pagina === 'sponsor') { return perEditor(rendi(contenuti, { forzaSponsor: true }).sponsor); }
+function anteprimaEditor(contenuti) {
   return perEditor(rendi(contenuti).html);
-}
-
-function anteprimaSponsor(contenuti) {
-  return rendi(contenuti, { forzaSponsor: true }).sponsor;
 }
 
 const FILE_OCCUPATO = new Set(['EPERM', 'EACCES', 'EBUSY']);
@@ -1783,11 +1680,7 @@ function scriviPaginaClip(html) {
   }
 }
 
-function scriviPaginaSponsor(html) {
-  if (html) {
-    scriviGenerato(P.sponsorHtml, html);
-    return { file: 'sponsor.html', stato: 'scritta', byte: Buffer.byteLength(html, 'utf8') };
-  }
+function togliPaginaSponsor() {
   if (!eFile(P.sponsorHtml)) { return { file: 'sponsor.html', stato: 'niente', byte: 0 }; }
   try {
     fs.unlinkSync(P.sponsorHtml);
@@ -1843,23 +1736,6 @@ function allineaClipDopoRipristino() {
   }
 }
 
-function allineaSponsorDopoRipristino() {
-  const leggi = (percorso) => {
-    try { return fs.readFileSync(percorso, 'utf8'); } catch (e) { return ''; }
-  };
-  const home = leggi(P.indexHtml);
-  const prima = leggi(P.sponsorHtml);
-  try {
-    if (home.indexOf(SEGNO_MANUTENZIONE) !== -1) {
-      return home === prima ? null : scriviPaginaSponsor(home);
-    }
-    if (prima.indexOf(SEGNO_MANUTENZIONE) === -1) { return null; }
-    return scriviPaginaSponsor(rendi(archivio.leggi()).sponsor);
-  } catch (e) {
-    return { file: 'sponsor.html', stato: 'non allineata', byte: 0, errore: (e && e.message) ? e.message : String(e) };
-  }
-}
-
 function allineaGiochiDopoRipristino() {
   const leggi = (percorso) => {
     try { return fs.readFileSync(percorso, 'utf8'); } catch (e) { return ''; }
@@ -1905,7 +1781,7 @@ function genera(opzioni) {
   scriviGenerato(P.temaCss, reso.tema);
 
   const paginaClip = scriviPaginaClip(reso.manutenzione || reso.clip);
-  const paginaSponsor = scriviPaginaSponsor(reso.manutenzione || reso.sponsor);
+  const paginaSponsor = togliPaginaSponsor();
   const paginaGiochi = scriviPaginaGiochi(reso.manutenzione || reso.giochi);
 
   const quando = archivio.salva(contenuti);
@@ -1913,7 +1789,6 @@ function genera(opzioni) {
 
   const pagine = [''];
   if (reso.clip) { pagine.push('clip.html'); }
-  if (reso.sponsor) { pagine.push('sponsor.html'); }
   if (reso.giochi) { pagine.push('giochi.html'); }
   const mappa = scriviSitemap(controlli.indirizzoSito(contenuti.config), quando, pagine);
 
@@ -1929,7 +1804,7 @@ function genera(opzioni) {
     statoSito: statoSito,
     manutenzione: {
       attiva: !!reso.manutenzione,
-      pagine: reso.manutenzione ? ['index.html', 'clip.html', 'sponsor.html', 'giochi.html'] : []
+      pagine: reso.manutenzione ? ['index.html', 'clip.html', 'giochi.html'] : []
     },
     scritti: [
       { file: 'index.html', byte: Buffer.byteLength(pagina, 'utf8') },
@@ -1947,7 +1822,7 @@ function genera(opzioni) {
 
 module.exports = {
   genera, anteprima, anteprimaDi, anteprimaEditor, anteprimaManutenzione, inManutenzione,
-  anteprimaSponsor, allineaClipDopoRipristino, allineaSponsorDopoRipristino, allineaGiochiDopoRipristino, allineaStatoDopoRipristino,
+  togliPaginaSponsor, allineaClipDopoRipristino, allineaGiochiDopoRipristino, allineaStatoDopoRipristino,
   fineManutenzione, istanteItaliano, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, sponsorDi, giochiDi, jsonSicuro, chiaviRicche,
