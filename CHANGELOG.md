@@ -15,14 +15,22 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
-- **Pollo Run, discesa e salita.** Dal livello 3 in poi, in circa metà dei
-  tentativi (40% in facile, fino al 55% in estremo), a un istante a caso lontano
-  da inizio e fine compare «Pronti ? Si scendeee» e poco dopo la strada si
-  inclina in discesa; più avanti «Pronti ? Si saleee» e la strada passa in
-  salita, poi torna piana. Pendenza fra 0,12 e 0,20 rad secondo la difficoltà,
-  molto ridotta con `prefers-reduced-motion`; lo stato sta in `inclinazione`
-  (`angolo` in radianti, negativo in discesa) e torna a zero se si muore o si
-  vince.
+- **Pollo Run, discese e salite a tratti.** Dal livello 3 in poi ogni livello
+  ha una serie di tratti in discesa o in salita, separati da tratti in piano,
+  in ordine e lunghezze decisi dal seme del livello (`M.tratti`, sempre gli
+  stessi per lo stesso livello e la stessa difficoltà, diversi da un livello
+  all'altro): facile 1-2 tratti di 3-4,5 s, medio 2-3, difficile 2-4, estremo
+  3-5 di 4-8 s, uno in più ogni sei livelli fino a due. Il cambio è netto
+  (circa 0,25-0,33 s, con un lampo leggero): in discesa il pollo corre più
+  veloce (da +20% in facile a +35% in estremo), in salita più piano (da -18% a
+  -28%), e il mondo ruota di 0,07-0,11 rad, un quarto con
+  `prefers-reduced-motion`. «Pronti ? Si scendeee» e «Pronti ? Si saleee»
+  compaiono 2 s prima di ogni cambio, mai due insieme. Il generatore usa la
+  stessa velocità variabile nella simulazione di fattibilità, sceglie più
+  catene di punte in discesa e più blocchi e scale in salita, e mette un
+  ostacolo subito dopo ogni cambio; i tratti non accorciano il livello di oltre
+  il 5% del tempo, così la classifica resta valida. In discesa la vista si alza
+  un poco perché gli ostacoli davanti restino dentro lo schermo.
 - **Le canzoni di Pollo Run si scelgono dal pannello.** Nel gruppo
   *Modalità manutenzione*, sotto le frasi di scherno: `config.pollorun.canzoni`
   (elenco di titolo, nome del file nella cartella `mp3`, autore facoltativo; di

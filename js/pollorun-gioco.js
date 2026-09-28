@@ -23,6 +23,23 @@
   var TETTO_STATI = 700;
   var TENTATIVI = 8;
   var TEMI = 6;
+  var PENDENZA_DA = 3;
+  var PENDENZA_RAMPA = 0.28;
+  var PENDENZA_AVVISO = 2;
+  var PENDENZA_DOPO = 0.3;
+  var PENDENZA_INIZIO = 14;
+  var PENDENZA_FINE = 6;
+  var PENDENZA_RISPARMIO = 0.05;
+  var PENDENZE = {
+    facile: { quanti: 1, piu: 1, giu: 1.2, su: 0.82, lungo: 3, lungoPiu: 1.5, piano: 5, pianoPiu: 4, angolo: 0.07, quiete: 0.95 },
+    medio: { quanti: 2, piu: 1, giu: 1.28, su: 0.77, lungo: 3.5, lungoPiu: 2.5, piano: 3.5, pianoPiu: 3.5, angolo: 0.08, quiete: 0.88 },
+    difficile: { quanti: 2, piu: 2, giu: 1.32, su: 0.74, lungo: 4, lungoPiu: 3, piano: 3.2, pianoPiu: 2.8, angolo: 0.09, quiete: 0.82 },
+    estremo: { quanti: 3, piu: 2, giu: 1.35, su: 0.72, lungo: 4, lungoPiu: 4, piano: 3, pianoPiu: 2, angolo: 0.1, quiete: 0.76 }
+  };
+  var PREFERITE = {
+    giu: { punta: 1.3, punte: 1.6, catena: 2, catenaMista: 2, bucaPunta: 1.5, romboPunta: 1.5 },
+    su: { blocco: 1.8, piattaforma: 1.6, piattaformaPunte: 1.5, scala: 2, vallata: 1.6, isole: 1.6, scalaPunte: 1.8 }
+  };
 
   function casuale(seme) {
     return function () {
@@ -89,11 +106,45 @@
   }
 
   function velocitaDi(s) {
-    return s.v * s.fr * (s.t < RAMPA_T ? RAMPA_0 + (1 - RAMPA_0) * s.t / RAMPA_T : 1);
+    return s.v * s.fr * (s.fp || 1) * (s.t < RAMPA_T ? RAMPA_0 + (1 - RAMPA_0) * s.t / RAMPA_T : 1);
+  }
+
+  function trattoDi(M, x) {
+    var tratti = M && M.tratti;
+    if (!tratti) { return null; }
+    for (var i = 0; i < tratti.length; i++) {
+      if (x >= tratti[i].x0 && x <= tratti[i].x1) { return tratti[i]; }
+    }
+    return null;
+  }
+
+  function quotaDi(tr, x) {
+    return Math.max(0, Math.min(1, (x - tr.x0) / tr.r, (tr.x1 - x) / tr.r));
+  }
+
+  function fattoreDi(M, x) {
+    var tr = trattoDi(M, x);
+    return tr ? 1 + (tr.f - 1) * quotaDi(tr, x) : 1;
+  }
+
+  function pendenzaDi(M, x) {
+    var tr = trattoDi(M, x);
+    if (!tr) { return 0; }
+    var q = quotaDi(tr, x);
+    return tr.verso * tr.a * q * q * (3 - 2 * q);
+  }
+
+  function avvisoDi(M, x) {
+    var tratti = M && M.tratti;
+    if (!tratti) { return null; }
+    for (var i = 0; i < tratti.length; i++) {
+      if (x >= tratti[i].avviso && x <= tratti[i].x0 + PENDENZA_DOPO * M.v) { return tratti[i]; }
+    }
+    return null;
   }
 
   function nuovoStato(v) {
-    return { x: 0, alt: 0, va: 0, aTerra: true, salto: false, salti: 0, buf: 0, richiesta: false, morto: 0, t: 0, v: v, fr: 1 };
+    return { x: 0, alt: 0, va: 0, aTerra: true, salto: false, salti: 0, buf: 0, richiesta: false, morto: 0, t: 0, v: v, fr: 1, fp: 1 };
   }
 
   function statoIniziale(v) {
@@ -104,11 +155,11 @@
   }
 
   function copia(s) {
-    return { x: s.x, alt: s.alt, va: s.va, aTerra: s.aTerra, salto: s.salto, salti: s.salti, buf: s.buf, richiesta: s.richiesta, morto: s.morto, t: s.t, v: s.v, fr: s.fr };
+    return { x: s.x, alt: s.alt, va: s.va, aTerra: s.aTerra, salto: s.salto, salti: s.salti, buf: s.buf, richiesta: s.richiesta, morto: s.morto, t: s.t, v: s.v, fr: s.fr, fp: s.fp };
   }
 
   function nuovoAttorno() {
-    return { solidi: [], pericoli: [], mx: 0 };
+    return { solidi: [], pericoli: [], mx: 0, fp: 1 };
   }
 
   function primo(elenco, x) {
@@ -128,6 +179,7 @@
     at.solidi.length = 0;
     at.pericoli.length = 0;
     at.mx = mx;
+    at.fp = fattoreDi(M, x);
     for (i = 0; i < M.suoli.length; i++) {
       e = M.suoli[i];
       if (e.x1 >= da && e.x0 <= a) { at.solidi.push(e); }
@@ -161,6 +213,7 @@
     }
     if (s.buf > 0) { s.buf = Math.max(0, s.buf - PASSO); }
     var prima = s.alt;
+    s.fp = at.fp || 1;
     s.t += PASSO;
     if (!s.aTerra) {
       s.va -= G * PASSO;
@@ -217,8 +270,88 @@
   function nuovoMondo(P) {
     return {
       n: P.n, difficolta: P.difficolta, v: P.v, J: P.J, tau: P.tau, mx: P.mx, lunghezza: P.lunghezza, durata: P.durata, tema: P.tema,
-      el: [], solidi: [], pericoli: [], buche: [], suoli: [], lungoS: 0, lungoP: 0, figure: []
+      el: [], solidi: [], pericoli: [], buche: [], suoli: [], lungoS: 0, lungoP: 0, figure: [], tratti: []
     };
+  }
+
+  function creaTratti(P) {
+    var tratti = [];
+    if (P.n < PENDENZA_DA) { return tratti; }
+    var q = PENDENZE[P.difficolta] || PENDENZE.medio;
+    var r = casuale(P.n * 15485863 + DIFFICOLTA.indexOf(P.difficolta) * 7727 + 11);
+    var inizio = PENDENZA_INIZIO;
+    var fine = P.durata - 2 - PENDENZA_FINE;
+    var spazio = fine - inizio;
+    var quanti = Math.max(1, q.quanti + Math.floor(r() * (q.piu + 1)) + Math.min(2, Math.floor((P.n - PENDENZA_DA) / 6)) - (P.n < PENDENZA_DA + 2 ? 1 : 0));
+    while (quanti > 1 && quanti * q.lungo + (quanti - 1) * q.piano > spazio) { quanti--; }
+    if (q.lungo > spazio) { return tratti; }
+    var lunghi = [];
+    var piani = [];
+    var minimo = quanti * q.lungo + (quanti - 1) * q.piano;
+    var totale = 0;
+    var i;
+    for (i = 0; i < quanti; i++) {
+      lunghi.push(q.lungo + r() * q.lungoPiu);
+      totale += lunghi[i];
+      if (i) {
+        piani.push(q.piano + r() * q.pianoPiu);
+        totale += piani[i - 1];
+      }
+    }
+    var riduci = totale > spazio ? (spazio - minimo) / (totale - minimo) : 1;
+    totale = 0;
+    for (i = 0; i < quanti; i++) {
+      lunghi[i] = q.lungo + (lunghi[i] - q.lungo) * riduci;
+      totale += lunghi[i];
+      if (i) {
+        piani[i - 1] = q.piano + (piani[i - 1] - q.piano) * riduci;
+        totale += piani[i - 1];
+      }
+    }
+    var avanzo = Math.max(0, spazio - totale);
+    var pesi = [];
+    var somma = 0;
+    for (i = 0; i <= quanti; i++) {
+      pesi.push(0.2 + r());
+      somma += pesi[i];
+    }
+    var versi = [];
+    var giu = 0;
+    for (i = 0; i < quanti; i++) {
+      versi.push(r() < 0.56 ? -1 : 1);
+      if (versi[i] < 0) { giu++; }
+    }
+    if (!giu) { versi[Math.floor(r() * quanti)] = -1; }
+    var guadagno = function () {
+      var g = 0;
+      for (var k = 0; k < quanti; k++) { g += versi[k] < 0 ? lunghi[k] * (1 - 1 / q.giu) : -lunghi[k] * (1 / q.su - 1); }
+      return g;
+    };
+    while (guadagno() > PENDENZA_RISPARMIO * P.durata) {
+      var piuLungo = -1;
+      for (i = 0; i < quanti; i++) {
+        if (versi[i] < 0 && (piuLungo < 0 || lunghi[i] > lunghi[piuLungo])) { piuLungo = i; }
+      }
+      if (piuLungo < 0) { break; }
+      versi[piuLungo] = 1;
+    }
+    var secondi = inizio + avanzo * pesi[0] / somma;
+    for (i = 0; i < quanti; i++) {
+      if (i) { secondi += piani[i - 1] + avanzo * pesi[i] / somma; }
+      var x0 = secondi * P.v;
+      var x1 = (secondi + lunghi[i]) * P.v;
+      tratti.push({
+        x0: x0,
+        x1: x1,
+        r: PENDENZA_RAMPA * P.v,
+        verso: versi[i],
+        f: versi[i] < 0 ? q.giu : q.su,
+        a: q.angolo + r() * 0.012,
+        avviso: x0 - PENDENZA_AVVISO * P.v
+      });
+      secondi += lunghi[i];
+    }
+    return tratti;
   }
 
   function perX0(a, b) { return a.x0 - b.x0; }
@@ -508,8 +641,20 @@
     var r = casuale(n * 104729 + 7);
     var rSeme = casuale(n * 7919 + 3);
     var M = nuovoMondo(P);
+    M.tratti = creaTratti(P);
+    var rt = casuale(n * 49999 + 5);
+    var cambi = [];
+    var m;
+    for (m = 0; m < M.tratti.length; m++) { cambi.push(M.tratti[m].x0, M.tratti[m].x1); }
+    var prossimoCambio = 0;
     var moltiplicatori = [];
-    for (var m = 0; m < FIGURE.length; m++) { moltiplicatori.push(0.45 + 1.4 * r()); }
+    for (m = 0; m < FIGURE.length; m++) { moltiplicatori.push(0.45 + 1.4 * r()); }
+    var perVerso = { giu: [], su: [] };
+    for (m = 0; m < FIGURE.length; m++) {
+      perVerso.giu.push(moltiplicatori[m] * (PREFERITE.giu[FIGURE[m].nome] || 1));
+      perVerso.su.push(moltiplicatori[m] * (PREFERITE.su[FIGURE[m].nome] || 1));
+    }
+    var quietePendenza = (PENDENZE[P.difficolta] || PENDENZE.medio).quiete;
     var fronte = [statoIniziale(P.v)];
     var limite = P.lunghezza - P.v * 2;
     var fine = P.v * 1.7 - (0.36 + P.v * P.quieteMax);
@@ -520,16 +665,30 @@
       var nl = n + avanzamento;
       var nf = sbloccoDi(profilo, nl);
       var locale = curvaDi(profilo, nl);
-      var mxLocale = P.v * locale.tau * 0.3;
+      while (prossimoCambio < cambi.length && cambi[prossimoCambio] < fine) { prossimoCambio++; }
+      var cambio = prossimoCambio < cambi.length ? cambi[prossimoCambio] : -1;
       var accettata = false;
       for (var scelta = 0; scelta < 6 && !accettata; scelta++) {
         var ripeti = scelta === 0 && ultima && r() < 0.22;
-        var f = ripeti ? ultima : scegli(nf, avanzamento, r, moltiplicatori, ultima && ultima.nome);
+        var guardato = trattoDi(M, fine + P.v);
+        var molt = guardato ? (guardato.verso < 0 ? perVerso.giu : perVerso.su) : moltiplicatori;
+        var f = ripeti ? ultima : scegli(nf, avanzamento, r, molt, ultima && ultima.nome);
         var seme = ripeti ? ultimaSeme : 1 + Math.floor(rSeme() * 2000000000);
         var quiete = (locale.quieteMin + Math.pow(r(), 1 + nl / 8) * (locale.quieteMax - locale.quieteMin)) * (1.35 - 0.75 * avanzamento);
         for (var t = 0; t < TENTATIVI && !accettata; t++) {
           var s = 1 + 0.25 * t;
-          var c = { x: Math.max(fine + (0.36 + P.v * quiete) * s, fronte[0].x + 2 * mxLocale + MEZZO + 0.3, P.v * 1.7), v: P.v, J: P.J, tau: locale.tau, n: nf, s: s, r: casuale(seme) };
+          var x = fine + (0.36 + P.v * fattoreDi(M, fine) * quiete * (trattoDi(M, fine) ? quietePendenza : 1)) * s;
+          var subito = false;
+          if (cambio >= 0 && x > cambio - P.v * 0.2) {
+            var dopoCambio = fattoreDi(M, cambio + P.v);
+            var minimo = fine + (0.36 + P.v * fattoreDi(M, fine) * locale.quieteMin * 0.8) * s;
+            x = Math.max(minimo, cambio + P.v * dopoCambio * (0.3 + 0.45 * rt()) * s);
+            subito = true;
+          }
+          var fx = Math.max(fattoreDi(M, x), fattoreDi(M, fine));
+          var mxLocale = P.v * Math.max(1, fx) * locale.tau * 0.3;
+          var fc = fattoreDi(M, x);
+          var c = { x: Math.max(x, fronte[0].x + 2 * mxLocale + MEZZO + 0.3, P.v * 1.7), v: P.v * fc, J: P.J * fc, tau: locale.tau, n: nf, s: s, r: casuale(seme) };
           var els = f.crea(c);
           if (!els) { continue; }
           var fineFigura = fineDi(els);
@@ -543,6 +702,7 @@
             M.figure.push(f.nome);
             ultima = f;
             ultimaSeme = seme;
+            if (subito) { prossimoCambio++; }
           } else {
             annulla(M, salvato);
           }
@@ -561,8 +721,15 @@
     costanti: {
       G: G, V0: V0, ARIA: ARIA, PASSO: PASSO, MEZZO: MEZZO, CORPO_BASSO: CORPO_BASSO, CORPO_ALTO: CORPO_ALTO, BUFFER: BUFFER,
       CADUTA: CADUTA, TESSERA: TESSERA, PUNTA_L: PUNTA_L, PUNTA_A: PUNTA_A, ROMBO_L: ROMBO_L, ROMBO_A: ROMBO_A, ROMBO_QUOTA: ROMBO_QUOTA,
-      FONDO: FONDO, RAMPA_T: RAMPA_T, RAMPA_0: RAMPA_0, TEMI: TEMI
+      FONDO: FONDO, RAMPA_T: RAMPA_T, RAMPA_0: RAMPA_0, TEMI: TEMI,
+      PENDENZA_DA: PENDENZA_DA, PENDENZA_RAMPA: PENDENZA_RAMPA, PENDENZA_AVVISO: PENDENZA_AVVISO, PENDENZA_DOPO: PENDENZA_DOPO,
+      PENDENZA_RISPARMIO: PENDENZA_RISPARMIO
     },
+    pendenze: PENDENZE,
+    tratto: trattoDi,
+    fattore: fattoreDi,
+    pendenza: pendenzaDi,
+    avviso: avvisoDi,
     parametri: parametri,
     crea: creaLivello,
     difficolta: DIFFICOLTA.slice(),
@@ -747,11 +914,7 @@
     var ultimo = 0, acceso = false, attivo = false, idFrame = 0;
     var timerPrecalcolo = 0;
     var posto = null;
-    var inclinazione = { attiva: false, fase: 'attesa', angolo: 0, testo: '', colore: '', alfaTesto: 0 };
-    var pendenza = { quando: -1, massimo: 0, tempo: 0, da: 0, tempoTesto: 0 };
-    var FASI_PENDENZA = { avvisoGiu: 3, discesa: 1.5, giu: 8, avvisoSu: 3, passaggio: 2.5, su: 8, ritorno: 1.5 };
-    var DOPO_PENDENZA = { avvisoGiu: 'discesa', discesa: 'giu', giu: 'avvisoSu', avvisoSu: 'passaggio', passaggio: 'su', su: 'ritorno', ritorno: 'finita' };
-    var DURATA_TESTO_PENDENZA = 3.5;
+    var inclinazione = { attiva: false, angolo: 0, testo: '', colore: '', alfaTesto: 0, eta: 0, fp: 1, tratto: null };
 
     function creaMonti(picchi, seme) {
       var r = casuale(seme);
@@ -982,7 +1145,12 @@
       sfumatura.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.globalCompositeOperation = 'destination-out';
       ctx.fillStyle = sfumatura;
-      ctx.fillRect(-margine, -margine, W + 2 * margine, H * 0.32 + margine);
+      if (margine) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillRect(0, 0, W, H * 0.32);
+      } else {
+        ctx.fillRect(-margine, -margine, W + 2 * margine, H * 0.32 + margine);
+      }
       ctx.restore();
     }
 
@@ -1987,6 +2155,12 @@
       ctx.restore();
     }
 
+    function spostaVista(giroMondo) {
+      var avanti = Math.min(W - centroPollo(), U * 8) * Math.sin(giroMondo);
+      if (avanti > 0) { return -Math.max(0, Math.min(avanti - (H - suolo) + U * 0.5, suolo - U * 3.3, U * 0.4)); }
+      return Math.max(0, Math.min(U * 2.8 - avanti - suolo, H - suolo - U * 0.3));
+    }
+
     function disegna() {
       if (!W || !H) { return; }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1999,8 +2173,9 @@
       var giroMondo = -inclinazione.angolo;
       margine = 0;
       if (giroMondo) {
-        margine = Math.ceil(Math.abs(Math.sin(giroMondo)) * (W + H) + U);
-        ctx.translate(centroPollo(), suolo);
+        var alza = spostaVista(giroMondo);
+        margine = Math.ceil(Math.abs(Math.sin(giroMondo)) * (W + H) + U + Math.abs(alza));
+        ctx.translate(centroPollo(), suolo + alza);
         ctx.rotate(giroMondo);
         ctx.translate(-centroPollo(), -suolo);
       }
@@ -2154,94 +2329,45 @@
 
     function azzeraPendenza() {
       inclinazione.attiva = false;
-      inclinazione.fase = 'attesa';
       inclinazione.angolo = 0;
       inclinazione.testo = '';
       inclinazione.colore = '';
       inclinazione.alfaTesto = 0;
-      pendenza.quando = -1;
-      pendenza.massimo = 0;
-      pendenza.tempo = 0;
-      pendenza.da = 0;
-      pendenza.tempoTesto = 0;
-    }
-
-    function preparaPendenza(n) {
-      azzeraPendenza();
-      if (n < 3 || !M) { return; }
-      var probabilita = { facile: 0.4, medio: 0.45, difficile: 0.5, estremo: 0.55 }[difficolta] || 0.45;
-      if (Math.random() >= probabilita) { return; }
-      var totale = 0;
-      for (var f in FASI_PENDENZA) { if (FASI_PENDENZA.hasOwnProperty(f)) { totale += FASI_PENDENZA[f]; } }
-      var durata = M.durata || (M.v ? M.lunghezza / M.v : 0);
-      var primo = 15;
-      var ultimo = durata - totale - 12;
-      if (ultimo <= primo) { return; }
-      var base = { facile: 0.07, medio: 0.085, difficile: 0.1, estremo: 0.11 }[difficolta] || 0.085;
-      pendenza.quando = primo + Math.random() * (ultimo - primo);
-      pendenza.massimo = (base + Math.random() * 0.01) * (ridotto ? 0.25 : 1);
-    }
-
-    function morbido(q) {
-      q = Math.max(0, Math.min(1, q));
-      return q * q * (3 - 2 * q);
-    }
-
-    function fasePendenza(fase) {
-      inclinazione.fase = fase;
-      pendenza.tempo = 0;
-      pendenza.da = inclinazione.angolo;
-    }
-
-    function testoPendenza(testo, salita) {
-      inclinazione.testo = testo;
-      inclinazione.colore = gd ? colori.accento : (salita ? C.magenta : C.ciano);
-      inclinazione.alfaTesto = 0;
-      pendenza.tempoTesto = 0;
+      inclinazione.eta = 0;
+      inclinazione.fp = 1;
+      inclinazione.tratto = null;
     }
 
     function aggiornaPendenza(dt) {
-      if (stato !== 'corsa') {
+      if (stato !== 'corsa' || !M || !S) {
         inclinazione.angolo += -inclinazione.angolo * Math.min(1, dt * 5);
         if (Math.abs(inclinazione.angolo) < 0.001) { inclinazione.angolo = 0; }
         inclinazione.alfaTesto = Math.max(0, inclinazione.alfaTesto - dt * 4);
         if (!inclinazione.alfaTesto) { inclinazione.testo = ''; }
         inclinazione.attiva = inclinazione.angolo !== 0;
+        inclinazione.fp = 1;
+        inclinazione.tratto = null;
         return;
       }
-      var fase = inclinazione.fase;
-      if (fase === 'attesa') {
-        if (pendenza.quando >= 0 && S && M && M.v && S.x / M.v >= pendenza.quando) {
-          inclinazione.attiva = true;
-          fasePendenza('avvisoGiu');
-          testoPendenza('Pronti ? Si scendeee', false);
-        }
-      } else if (FASI_PENDENZA.hasOwnProperty(fase)) {
-        pendenza.tempo += dt;
-        var bersaglio = pendenza.da;
-        if (fase === 'discesa') { bersaglio = -pendenza.massimo; }
-        if (fase === 'passaggio') { bersaglio = pendenza.massimo; }
-        if (fase === 'ritorno') { bersaglio = 0; }
-        inclinazione.angolo = pendenza.da + (bersaglio - pendenza.da) * morbido(pendenza.tempo / FASI_PENDENZA[fase]);
-        if (pendenza.tempo >= FASI_PENDENZA[fase]) {
-          var prossima = DOPO_PENDENZA[fase];
-          if (prossima === 'avvisoSu') { testoPendenza('Pronti ? Si saleee', true); }
-          if (prossima === 'finita') {
-            inclinazione.angolo = 0;
-            inclinazione.attiva = false;
-          }
-          fasePendenza(prossima);
-        }
+      inclinazione.angolo = Livelli.pendenza(M, S.x) * (ridotto ? 0.25 : 1);
+      inclinazione.attiva = inclinazione.angolo !== 0;
+      inclinazione.fp = S.fp || 1;
+      var dentro = Livelli.tratto(M, S.x);
+      if (dentro !== inclinazione.tratto) {
+        inclinazione.tratto = dentro;
+        if (!ridotto) { lampo = Math.max(lampo, 0.22); }
       }
-      if (inclinazione.testo) {
-        pendenza.tempoTesto += dt;
-        var tt = pendenza.tempoTesto;
-        inclinazione.alfaTesto = Math.max(0, Math.min(1, tt / 0.3, (DURATA_TESTO_PENDENZA - tt) / 0.5));
-        if (tt >= DURATA_TESTO_PENDENZA) {
-          inclinazione.testo = '';
-          inclinazione.alfaTesto = 0;
-        }
+      var avviso = Livelli.avviso(M, S.x);
+      if (!avviso) {
+        inclinazione.testo = '';
+        inclinazione.alfaTesto = 0;
+        return;
       }
+      var chiude = avviso.x0 + K.PENDENZA_DOPO * M.v;
+      inclinazione.testo = avviso.verso < 0 ? 'Pronti ? Si scendeee' : 'Pronti ? Si saleee';
+      inclinazione.colore = gd ? colori.accento : (avviso.verso > 0 ? C.magenta : C.ciano);
+      inclinazione.eta = (S.x - avviso.avviso) / M.v;
+      inclinazione.alfaTesto = Math.max(0, Math.min(1, inclinazione.eta / 0.25, (chiude - S.x) / (K.PENDENZA_DOPO * M.v)));
     }
 
     function disegnaPendenza() {
@@ -2249,7 +2375,7 @@
       var x = W / 2;
       var y = gd ? suolo * 0.4 : orizzonte * 0.42;
       var dim = stringi(inclinazione.testo, Math.max(26, U * 0.85), '900', TITOLO, W - 32);
-      var entrata = ridotto ? 1 : 1 + 0.18 * Math.max(0, 1 - pendenza.tempoTesto / 0.3);
+      var entrata = ridotto ? 1 : 1 + 0.18 * Math.max(0, 1 - inclinazione.eta / 0.3);
       ctx.save();
       ctx.globalAlpha = inclinazione.alfaTesto;
       ctx.translate(x, y);
@@ -2278,7 +2404,7 @@
       scintille = [];
       onde = [];
       frasePagina = null;
-      preparaPendenza(n);
+      azzeraPendenza();
       stato = 'corsa';
       tStato = t;
       tInizioTentativo = t;

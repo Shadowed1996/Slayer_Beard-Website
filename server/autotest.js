@@ -5242,7 +5242,7 @@ async function proveGiocoPollo(costruisci, archivio) {
   };
 
   const attornoCompleto = (M, x, mx) => {
-    const at = { solidi: [], pericoli: [], mx: mx };
+    const at = { solidi: [], pericoli: [], mx: mx, fp: L.fattore(M, x) };
     for (const e of M.suoli) { if (e.x1 >= x - 1 && e.x0 <= x + 1) { at.solidi.push(e); } }
     for (const e of M.solidi) { if (e.x1 >= x - 1 && e.x0 <= x + 1) { at.solidi.push(e); } }
     for (const e of M.pericoli) { if (e.x1 >= x - 1 && e.x0 <= x + 1) { at.pericoli.push(e); } }
@@ -5536,6 +5536,129 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigi(difficile1.has('piattaformaPunte'), 'a DIFFICILE il livello 1 non anticipa nessuna figura: ' + Array.from(difficile1).join(','));
   });
 
+  await prova('pendenza: i tratti di discesa e salita vengono dal seme del livello, niente nei livelli 1 e 2, sequenze diverse da livello a livello', () => {
+    const altro = caricaMotore().livelli;
+    const sequenze = new Set();
+    const quanti = {};
+    for (const d of DIFFICOLTA) {
+      quanti[d] = 0;
+      for (const n of [1, 2]) { esigiUguale(creaDi(n, d).tratti.length, 0, d + ': tratti al livello ' + n); }
+      for (let n = 3; n <= 20; n++) {
+        const M = creaDi(n, d);
+        esigi(M.tratti.length >= 1, d + ' livello ' + n + ': nessun tratto');
+        quanti[d] += M.tratti.length;
+        esigiUguale(JSON.stringify(altro.crea(n, d).tratti), JSON.stringify(M.tratti), d + ' livello ' + n + ': i tratti cambiano da una volta all altra');
+        sequenze.add(M.tratti.map((t) => (t.verso < 0 ? 'G' : 'S') + Math.round((t.x1 - t.x0) / M.v)).join(''));
+        let prima = null;
+        for (const t of M.tratti) {
+          esigi(t.verso === -1 || t.verso === 1, 'verso sbagliato');
+          esigi(t.x0 >= M.v * 12 && t.x1 <= M.lunghezza - M.v * 6, d + ' livello ' + n + ': tratto troppo vicino alla partenza o al traguardo');
+          esigi((t.x1 - t.x0) / M.v >= 2.9 && (t.x1 - t.x0) / M.v <= 8.1, d + ' livello ' + n + ': tratto lungo ' + ((t.x1 - t.x0) / M.v).toFixed(1) + ' s');
+          esigi(t.a >= 0.07 && t.a <= 0.115, d + ' livello ' + n + ': angolo ' + t.a);
+          esigi(t.verso < 0 ? t.f >= 1.18 && t.f <= 1.36 : t.f >= 0.7 && t.f <= 0.84, d + ' livello ' + n + ': fattore di velocita ' + t.f);
+          esigi(Math.abs(t.avviso - (t.x0 - K.PENDENZA_AVVISO * M.v)) < 1e-9, 'avviso fuori posto');
+          if (prima) { esigi(t.x0 - prima.x1 >= M.v * 2.9, d + ' livello ' + n + ': tratto di piano troppo corto'); }
+          prima = t;
+        }
+      }
+    }
+    esigi(sequenze.size >= 50, 'le sequenze si ripetono: solo ' + sequenze.size + ' diverse');
+    esigi(quanti.facile < quanti.medio && quanti.medio < quanti.difficile && quanti.difficile <= quanti.estremo, 'i tratti non crescono con la difficolta: ' + JSON.stringify(quanti));
+    const sequenzeFacili = DIFFICOLTA.map((d) => creaDi(3, d).tratti.length);
+    esigi(sequenzeFacili[0] <= 2, 'FACILE al livello 3 ha troppi tratti: ' + sequenzeFacili[0]);
+  });
+
+  await prova('pendenza: le scritte di avviso arrivano 2 s prima del cambio e non si accavallano mai', () => {
+    for (const d of DIFFICOLTA) {
+      for (let n = 3; n <= 30; n++) {
+        const M = creaDi(n, d);
+        for (let i = 0; i < M.tratti.length; i++) {
+          const t = M.tratti[i];
+          esigi(L.avviso(M, t.avviso + 0.01) === t, d + ' livello ' + n + ': manca la scritta prima del tratto ' + i);
+          esigi(L.avviso(M, t.x0) === t, d + ' livello ' + n + ': la scritta sparisce prima del cambio');
+          esigi(L.avviso(M, t.avviso - 0.05) !== t, d + ' livello ' + n + ': la scritta arriva troppo presto');
+          if (i) {
+            const p = M.tratti[i - 1];
+            esigi(t.avviso > p.x1, d + ' livello ' + n + ': la scritta del tratto ' + i + ' arriva mentre il tratto prima non e finito');
+            esigi(t.avviso > p.x0 + K.PENDENZA_DOPO * M.v + M.v, d + ' livello ' + n + ': due scritte una sopra l altra');
+          }
+        }
+      }
+    }
+  });
+
+  await prova('pendenza: in discesa il pollo accelera, in salita rallenta, e il cambio dura fra 0,2 e 0,35 s', () => {
+    const M = creaDi(8, 'difficile');
+    const giu = M.tratti.find((t) => t.verso < 0);
+    const su = M.tratti.find((t) => t.verso > 0);
+    esigi(giu && su, 'il livello 8 difficile non ha sia discesa sia salita');
+    const piano = Object.assign(soloTerraPiatta(), { tratti: M.tratti });
+    const s = L.statoIniziale(M.v);
+    const at = L.nuovoAttorno();
+    const tempi = [];
+    let dentroCambio = false;
+    let inizioCambio = 0;
+    let passi = 0;
+    const velocitaA = {};
+    while (s.x < M.tratti[M.tratti.length - 1].x1 + M.v) {
+      L.vicino(piano, s.x, 0, at);
+      L.passo(s, at);
+      passi++;
+      esigiUguale(s.morto, 0, 'il pollo muore su terra piatta');
+      const fermo = s.fp === 1 || M.tratti.some((t) => Math.abs(s.fp - t.f) < 1e-9);
+      if (!fermo && !dentroCambio) { dentroCambio = true; inizioCambio = passi; }
+      if (fermo && dentroCambio) { dentroCambio = false; tempi.push((passi - inizioCambio + 1) * K.PASSO); }
+      for (const [nome, t] of [['giu', giu], ['su', su]]) {
+        if (!velocitaA[nome] && s.x > (t.x0 + t.x1) / 2) { velocitaA[nome] = L.velocitaDi(s); }
+      }
+    }
+    esigi(Math.abs(velocitaA.giu - M.v * giu.f) < 1e-6 && giu.f >= 1.25, 'in discesa la velocita e ' + velocitaA.giu + ' invece di ' + M.v * giu.f);
+    esigi(Math.abs(velocitaA.su - M.v * su.f) < 1e-6 && su.f <= 0.8, 'in salita la velocita e ' + velocitaA.su + ' invece di ' + M.v * su.f);
+    esigiUguale(tempi.length, M.tratti.length * 2, 'cambi di velocita contati');
+    for (const tc of tempi) { esigi(tc >= 0.2 && tc <= 0.35, 'un cambio dura ' + tc.toFixed(3) + ' s'); }
+    for (let x = 0; x < M.lunghezza; x += 0.37) {
+      const a = L.pendenza(M, x);
+      const tr = L.tratto(M, x);
+      esigi(tr ? Math.sign(a) === tr.verso || a === 0 : a === 0, 'pendenza fuori da un tratto o col verso sbagliato a x ' + x);
+      esigi(Math.abs(a) <= 0.115, 'pendenza troppo forte: ' + a);
+    }
+  });
+
+  await prova('pendenza: con la velocita che cambia i livelli 3-15 si finiscono per tutte le difficolta, in un tempo vicino alla durata', () => {
+    for (const d of DIFFICOLTA) {
+      for (let n = 3; n <= 15; n++) {
+        const M = creaDi(n, d);
+        const p = percorsoGiocatore(M, 0, 2, false);
+        esigi(p, d + ': il livello ' + n + ' con i tratti non e superabile');
+        if (!p) { continue; }
+        const secondi = p.passi * K.PASSO;
+        esigi(secondi >= M.durata * 0.9, d + ' livello ' + n + ': si finisce in ' + secondi.toFixed(1) + ' s su ' + M.durata + ', la classifica lo scarterebbe');
+        esigi(secondi <= M.durata * 1.2, d + ' livello ' + n + ': dura troppo, ' + secondi.toFixed(1) + ' s');
+        if (n === 5 || n === 11) { esigi(percorsoGiocatore(M, M.mx, 1, false), d + ': il livello ' + n + ' non e superabile con il margine di sicurezza'); }
+      }
+    }
+  });
+
+  await prova('pendenza: dopo ogni cambio arriva presto un ostacolo, e nei tratti ci sono ostacoli', () => {
+    let cambi = 0;
+    let presto = 0;
+    for (const d of DIFFICOLTA) {
+      for (let n = 3; n <= 12; n++) {
+        const M = creaDi(n, d);
+        for (const t of M.tratti) {
+          esigi(M.el.some((e) => e.x >= t.x0 && e.x <= t.x1), d + ' livello ' + n + ': un tratto senza ostacoli');
+          for (const c of [t.x0, t.x1]) {
+            const dopo = M.el.filter((e) => e.x >= c).map((e) => e.x - c);
+            if (!dopo.length) { continue; }
+            cambi++;
+            if (Math.min.apply(null, dopo) <= M.v * 1.2) { presto++; }
+          }
+        }
+      }
+    }
+    esigi(presto >= cambi * 0.75, 'solo ' + presto + ' cambi su ' + cambi + ' hanno un ostacolo subito dopo');
+  });
+
   const rendiFinta = (casuale, forma) => {
     const registro = { testi: [], scritte: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [], eventi: [], voci: [], ordine: [], contorni: 0 };
     let inAttesa = null;
@@ -5804,6 +5927,44 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigi(viste.every(Boolean), 'una frase manca: ' + JSON.stringify(viste));
     esigi(viste[0] !== viste[1] && viste[2] !== viste[3], 'le frasi si ripetono di seguito: ' + JSON.stringify(viste));
     esigiUguale(new Set(viste.slice(0, 2)).size, 2, 'in due livelli si e ripetuta una frase con solo due a disposizione');
+  });
+
+  await prova('gioco: al livello 3 compaiono «Pronti ? Si scendeee» e «Pronti ? Si saleee» come dicono i tratti, una alla volta, e il livello si finisce', () => {
+    const GIU = 'Pronti ? Si scendeee';
+    const SU = 'Pronti ? Si saleee';
+    for (const nomeStile of ['synthwave', 'geometrydash']) {
+      const h = rendiFinta();
+      h.registro.memoria['sb-pollo-livello'] = '3';
+      h.crea({ stile: nomeStile }).avvia();
+      h.tasto('Enter', 'Enter');
+      const M = creaLivello(3);
+      const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
+      esigi(p, 'nessun percorso per il livello 3');
+      let t = 0;
+      let indice = 0;
+      let esito = null;
+      let prima = '';
+      const viste = [];
+      while (t < 200 && !esito) {
+        while (indice < p.secondi.length && p.secondi[indice] <= t) { h.tasto(' ', 'Space'); indice++; }
+        h.registro.testi = [];
+        const eventiPrima = h.registro.eventi.length;
+        h.frame(1000 / 60);
+        t += 1 / 60;
+        const testi = h.registro.testi.filter((x) => x === GIU || x === SU);
+        const unici = new Set(testi);
+        esigi(unici.size <= 1, nomeStile + ': due scritte diverse insieme');
+        const ora = Array.from(unici)[0] || '';
+        if (ora && ora !== prima) { viste.push({ testo: ora, t: t }); }
+        prima = ora;
+        if (h.registro.testi.join('|').indexOf('COMPLETATO') !== -1) { esito = 'vinto'; }
+        if (h.registro.eventi.slice(eventiPrima).indexOf(null) !== -1) { esito = 'morto'; }
+      }
+      esigiUguale(esito, 'vinto', nomeStile + ': il livello 3 con i tratti non si finisce');
+      esigiUguale(viste.map((v) => v.testo).join(','), M.tratti.map((tr) => (tr.verso < 0 ? GIU : SU)).join(','), nomeStile + ': scritte diverse dai tratti');
+      for (let i = 1; i < viste.length; i++) { esigi(viste[i].t - viste[i - 1].t > 3, nomeStile + ': due scritte troppo vicine'); }
+      esigi(M.tratti.length && viste.length && viste[0].t > 10, nomeStile + ': la prima scritta arriva troppo presto');
+    }
   });
 
   await prova('gioco: la fisica e a passo fisso, quindi il livello si finisce uguale a 60, 144 e 30 fotogrammi al secondo', () => {
