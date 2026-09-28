@@ -5615,7 +5615,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigi(Math.abs(velocitaA.giu - M.v * giu.f) < 1e-6 && giu.f >= 1.25, 'in discesa la velocita e ' + velocitaA.giu + ' invece di ' + M.v * giu.f);
     esigi(Math.abs(velocitaA.su - M.v * su.f) < 1e-6 && su.f <= 0.8, 'in salita la velocita e ' + velocitaA.su + ' invece di ' + M.v * su.f);
     esigiUguale(tempi.length, M.tratti.length * 2, 'cambi di velocita contati');
-    for (const tc of tempi) { esigi(tc >= 0.2 && tc <= 0.35, 'un cambio dura ' + tc.toFixed(3) + ' s'); }
+    for (const tc of tempi) { esigi(tc >= 0.75 && tc <= 1.45, 'un cambio dura ' + tc.toFixed(3) + ' s'); }
     for (let x = 0; x < M.lunghezza; x += 0.37) {
       const a = L.pendenza(M, x);
       const tr = L.tratto(M, x);

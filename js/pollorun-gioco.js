@@ -24,7 +24,7 @@
   var TENTATIVI = 8;
   var TEMI = 6;
   var PENDENZA_DA = 3;
-  var PENDENZA_RAMPA = 0.28;
+  var PENDENZA_RAMPA = 1.1;
   var PENDENZA_AVVISO = 2;
   var PENDENZA_DOPO = 0.3;
   var PENDENZA_INIZIO = 14;
@@ -131,7 +131,7 @@
     var tr = trattoDi(M, x);
     if (!tr) { return 0; }
     var q = quotaDi(tr, x);
-    return tr.verso * tr.a * q * q * (3 - 2 * q);
+    return tr.verso * tr.a * q * q * q * (q * (6 * q - 15) + 10);
   }
 
   function avvisoDi(M, x) {
@@ -2355,7 +2355,7 @@
       var dentro = Livelli.tratto(M, S.x);
       if (dentro !== inclinazione.tratto) {
         inclinazione.tratto = dentro;
-        if (!ridotto) { lampo = Math.max(lampo, 0.22); }
+        if (!ridotto) { lampo = Math.max(lampo, 0.08); }
       }
       var avviso = Livelli.avviso(M, S.x);
       if (!avviso) {
