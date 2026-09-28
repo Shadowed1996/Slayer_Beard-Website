@@ -2082,6 +2082,13 @@
   background-color: var(--linea-forte);
 }
 
+@media (max-width: 640px) {
+  .saluti__chiusura { text-wrap: balance; }
+
+  .saluti__chiusura::before,
+  .saluti__chiusura::after { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nastro__giorno.is-prossima,
   .nastro__giorno.is-in-onda,

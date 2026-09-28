@@ -1,8 +1,8 @@
 :root {
 
-  --sponsor-vetro: var(--vetro-marchio);
-  --sponsor-inchiostro: var(--inchiostro);
-  --sponsor-marchio-h: 72px;
+  --sponsor-vetro: var(--pannello);
+  --sponsor-inchiostro: var(--testo);
+  --sponsor-marchio-h: 52px;
 }
 
 .sponsor {
@@ -66,33 +66,44 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  inline-size: clamp(168px, 22vw, 224px);
-  block-size: 104px;
-  padding: var(--passo-2);
-  border: 1px solid var(--linea-forte);
+  inline-size: clamp(160px, 20vw, 208px);
+  block-size: 96px;
+  padding: var(--passo-2) var(--passo-4);
+  border: 1px solid var(--linea);
   border-radius: var(--raggio);
-  background: var(--sponsor-vetro);
+  background: var(--grad-pannello), var(--sponsor-vetro);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   text-decoration: none;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
 }
 
 .sponsor__link:hover,
 .sponsor__link:focus-visible {
-  border-color: var(--marca, var(--viola));
-  box-shadow: 0 0 0 1px var(--marca, var(--viola)), 0 18px 40px -22px var(--marca, var(--viola));
+  border-color: var(--accento, var(--viola));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 0 1px var(--accento, var(--viola)), 0 18px 40px -20px var(--accento, var(--viola));
   transform: translateY(-2px);
 }
 
 .sponsor__voce.is-evidenza .sponsor__link {
-  border-color: var(--marca, var(--viola));
-  box-shadow: 0 0 24px -6px var(--marca, var(--viola));
+  border-color: var(--linea-viva);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 28px -10px var(--accento, var(--viola));
 }
 
 .sponsor__logo {
   max-inline-size: 100%;
-  max-block-size: 64px;
+  max-block-size: var(--sponsor-marchio-h);
   object-fit: contain;
+  transition: filter 240ms ease, opacity 240ms ease;
 }
+
+.sponsor__logo.is-scuro { filter: brightness(0) invert(1); }
+
+.sponsor__logo.is-grezzo {
+  max-block-size: 64px;
+  border-radius: var(--raggio-s);
+}
+
+.sponsor.is-js .sponsor__logo:not(.is-pronto) { opacity: 0; }
 
 .sponsor__scritta {
   font-family: var(--font-titolo);
@@ -101,6 +112,31 @@
   line-height: 1.1;
   text-align: center;
   color: var(--sponsor-inchiostro);
+  transition: opacity 240ms ease;
+}
+
+@media (hover: hover) {
+  .sponsor__logo {
+    filter: grayscale(1) brightness(1.4);
+    opacity: 0.6;
+  }
+
+  .sponsor__logo.is-scuro { filter: brightness(0) invert(1); }
+
+  .sponsor__scritta { opacity: 0.6; }
+
+  .sponsor__link:hover .sponsor__logo,
+  .sponsor__link:focus-visible .sponsor__logo,
+  .sponsor__voce.is-evidenza .sponsor__logo,
+  .sponsor__link:hover .sponsor__scritta,
+  .sponsor__link:focus-visible .sponsor__scritta {
+    filter: none;
+    opacity: 1;
+  }
+
+  .sponsor__link:hover .sponsor__logo.is-scuro,
+  .sponsor__link:focus-visible .sponsor__logo.is-scuro,
+  .sponsor__voce.is-evidenza .sponsor__logo.is-scuro { filter: brightness(0) invert(1); }
 }
 
 .sponsor__nuovo {
@@ -109,7 +145,7 @@
   inset-inline-end: var(--passo);
   padding: 2px 7px;
   border-radius: var(--raggio-pill);
-  background: var(--marca, var(--viola));
+  background: var(--accento, var(--viola));
   color: var(--su-marca);
   font-family: var(--font-mono);
   font-size: 0.62rem;
