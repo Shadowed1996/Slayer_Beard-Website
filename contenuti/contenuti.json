@@ -217,7 +217,13 @@
     "giochi.cercaEtichetta": "Cerca",
     "giochi.cercaSegnaposto": "Nome o tipologia del gioco",
     "giochi.cercaPulisci": "Cancella la ricerca",
-    "giochi.cercaVuoto": "Nessun gioco corrisponde alla ricerca. Prova con un altro nome o togli i filtri."
+    "giochi.cercaVuoto": "Nessun gioco corrisponde alla ricerca. Prova con un altro nome o togli i filtri.",
+    "ingresso.controllo": "Il pollo sta controllando il tuo browser. Ci vuole solo un attimo.",
+    "ingresso.attesa": "Il pollo annusa i cookie…",
+    "ingresso.riuscita": "Sei umano. Il pollo approva!",
+    "ingresso.nota": "Controlliamo solo che tu non sia un robot travestito da pollo.",
+    "ingresso.marca": "PolloFlare",
+    "ingresso.piede": "Prestazioni e sicurezza a cura del pollo"
   },
   "config": {
     "slayer": {
@@ -856,6 +862,11 @@
       "timer": false,
       "ogniMin": 3,
       "ogniMax": 8
+    },
+    "ingresso": {
+      "attivo": false,
+      "durata": "24h",
+      "secondi": 3
     }
   }
 }

@@ -1,0 +1,269 @@
+.ingresso {
+  display: none;
+}
+
+html.sb-ingresso {
+  overflow: hidden;
+}
+
+html.sb-ingresso .ingresso {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  padding: clamp(24px, 6vh, 64px) clamp(20px, 6vw, 96px) 96px;
+  background:
+    radial-gradient(900px 620px at 15% 0%, rgba(139, 47, 255, 0.16), rgba(139, 47, 255, 0) 70%),
+    radial-gradient(700px 520px at 100% 100%, rgba(34, 224, 255, 0.07), rgba(34, 224, 255, 0) 70%),
+    var(--fondo);
+  color: var(--testo);
+  font-family: var(--font-testo, system-ui, sans-serif);
+  opacity: 1;
+  transition: opacity 480ms ease, visibility 0s linear 480ms;
+}
+
+html.sb-ingresso-esce .ingresso {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.ingresso__foglio {
+  position: relative;
+  z-index: 1;
+  inline-size: min(100%, 640px);
+}
+
+.ingresso__dominio {
+  margin: 0 0 12px;
+  font-family: var(--font-titolo, system-ui, sans-serif);
+  font-size: clamp(1.9rem, 4.4vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.ingresso__testo {
+  margin: 0 0 28px;
+  max-inline-size: 46ch;
+  color: var(--testo-medio);
+  font-size: 1.12rem;
+  line-height: 1.55;
+}
+
+.ingresso__riquadro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  inline-size: min(100%, 400px);
+  min-block-size: 70px;
+  padding: 12px 14px;
+  border: 1px solid var(--linea-forte, rgba(255, 255, 255, 0.15));
+  border-radius: 6px;
+  background: rgba(22, 19, 38, 0.9);
+  box-shadow: 0 16px 40px -24px rgba(0, 0, 0, 0.9);
+}
+
+.ingresso__segno {
+  position: relative;
+  flex: none;
+  inline-size: 30px;
+  block-size: 30px;
+}
+
+.ingresso__segno svg {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+.ingresso__giro circle {
+  stroke: var(--viola-chiaro);
+  stroke-dasharray: 58 80;
+  transform-origin: 50% 50%;
+  animation: ingresso-gira 900ms linear infinite;
+}
+
+.ingresso__spunta {
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 200ms ease, transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ingresso__spunta circle {
+  fill: var(--ok);
+}
+
+.ingresso__spunta path {
+  stroke: var(--fondo);
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  transition: stroke-dashoffset 360ms ease 160ms;
+}
+
+.ingresso__scritte {
+  position: relative;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.ingresso__attesa,
+.ingresso__riuscita {
+  display: block;
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+.ingresso__riuscita {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 50%;
+  color: var(--ok);
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(-20%);
+}
+
+.ingresso__marca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  color: var(--testo-tenue);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ingresso__marca img {
+  inline-size: auto;
+  block-size: 32px;
+  object-fit: contain;
+  object-position: top;
+}
+
+.ingresso__marca b {
+  font-weight: 700;
+}
+
+.ingresso__nota {
+  margin: 28px 0 0;
+  max-inline-size: 52ch;
+  color: var(--testo-tenue);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.ingresso__pollo {
+  position: absolute;
+  z-index: 0;
+  inset-block-end: 0;
+  inset-inline-end: clamp(8px, 7vw, 120px);
+  inline-size: auto;
+  block-size: min(52vh, 460px);
+  transform: translateY(42%) rotate(-6deg);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 0 40px rgba(139, 47, 255, 0.35));
+  transition: transform 620ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: ingresso-sbircia 1.6s ease-in-out infinite;
+}
+
+.ingresso__piede {
+  position: absolute;
+  z-index: 1;
+  inset-inline: clamp(20px, 6vw, 96px);
+  inset-block-end: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin: 0;
+  padding-block-start: 16px;
+  border-block-start: 1px solid var(--linea, rgba(255, 255, 255, 0.07));
+  color: var(--testo-tenue);
+  font-size: 0.8rem;
+}
+
+.ingresso__piede code {
+  font-family: var(--font-mono, monospace);
+  color: var(--testo-medio);
+}
+
+.ingresso.is-riuscito .ingresso__giro {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.ingresso.is-riuscito .ingresso__spunta {
+  opacity: 1;
+  transform: none;
+}
+
+.ingresso.is-riuscito .ingresso__spunta path {
+  stroke-dashoffset: 0;
+}
+
+.ingresso.is-riuscito .ingresso__attesa {
+  opacity: 0;
+  transform: translateY(-40%);
+}
+
+.ingresso.is-riuscito .ingresso__riuscita {
+  opacity: 1;
+  transform: translateY(-50%);
+}
+
+.ingresso.is-riuscito .ingresso__riquadro {
+  border-color: rgba(53, 224, 161, 0.45);
+}
+
+.ingresso.is-riuscito .ingresso__pollo {
+  animation: none;
+  transform: translateY(6%) rotate(0deg);
+}
+
+@keyframes ingresso-gira {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ingresso-sbircia {
+  0%, 100% { transform: translateY(42%) rotate(-6deg); }
+  50% { transform: translateY(36%) rotate(-2deg); }
+}
+
+@media (max-width: 640px) {
+  html.sb-ingresso .ingresso {
+    justify-content: flex-start;
+    padding-block-start: 18vh;
+  }
+
+  .ingresso__pollo {
+    block-size: 34vh;
+    inset-inline-end: 4px;
+  }
+
+  .ingresso__piede {
+    flex-direction: column;
+    inset-block-end: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ingresso__giro circle,
+  .ingresso__pollo {
+    animation: none;
+  }
+
+  .ingresso__pollo,
+  .ingresso__spunta,
+  .ingresso__attesa,
+  .ingresso__riuscita {
+    transition: none;
+  }
+}

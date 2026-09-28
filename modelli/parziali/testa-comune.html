@@ -30,3 +30,5 @@
 {{#se sito.fontUrl}}<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{{sito.fontUrl}}">{{/se}}
+{{#se sito.ingresso.attivo}}<link rel="stylesheet" href="css/ingresso.css">
+<script src="js/ingresso.js" data-durata="{{sito.ingresso.durata}}" data-minimo="{{sito.ingresso.minimo}}"></script>{{/se}}

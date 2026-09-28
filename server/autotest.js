@@ -411,7 +411,7 @@ async function proveSchema(contenutiVeri) {
   await prova('i gruppi seguono l ordine della pagina', () => {
 
     const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'giochi', 'sondaggio', 'settimana', 'chi',
-      'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'manutenzione', 'meteora'];
+      'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'ingresso', 'manutenzione', 'meteora'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
 
