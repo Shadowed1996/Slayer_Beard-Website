@@ -743,6 +743,8 @@
     var attorno = Livelli.nuovoAttorno();
     var resto = 0, angolo = 0, giro = 0, scia = 0;
     var scintille = [], onde = [], lampo = 0, scossa = 0, frase = '', frasePagina = null;
+    var inclinazione = { angolo: 0 };
+    var margine = 0;
     var ultimo = 0, acceso = false, attivo = false, idFrame = 0;
     var timerPrecalcolo = 0;
     var posto = null;
@@ -827,7 +829,7 @@
       cielo.addColorStop(1, tema.cielo);
       ctx.globalAlpha = 0.28;
       ctx.fillStyle = cielo;
-      ctx.fillRect(0, 0, W, orizzonte);
+      ctx.fillRect(-margine, -margine, W + 2 * margine, orizzonte + margine);
       ctx.restore();
     }
 
@@ -854,10 +856,10 @@
       velo.addColorStop(1, C.fondo);
       ctx.globalAlpha = 0.3;
       ctx.fillStyle = velo;
-      ctx.fillRect(0, orizzonte - alto, W, alto);
+      ctx.fillRect(-margine, orizzonte - alto, W + 2 * margine, alto);
       ctx.globalAlpha = 0.14;
       ctx.fillStyle = rete;
-      for (var riga = orizzonte - alto; riga < orizzonte; riga += 5) { ctx.fillRect(0, riga, W, 1); }
+      for (var riga = orizzonte - alto; riga < orizzonte; riga += 5) { ctx.fillRect(-margine, riga, W + 2 * margine, 1); }
       ctx.globalAlpha = 0.4;
       ctx.strokeStyle = rete;
       ctx.lineWidth = 1;
@@ -892,13 +894,13 @@
     function terreno() {
       ctx.save();
       ctx.fillStyle = C.fondo;
-      ctx.fillRect(0, orizzonte, W, H - orizzonte);
+      ctx.fillRect(-margine, orizzonte, W + 2 * margine, H - orizzonte + margine);
       var velo = ctx.createLinearGradient(0, orizzonte, 0, H);
       velo.addColorStop(0, tema.cielo);
       velo.addColorStop(1, C.fondo);
       ctx.globalAlpha = 0.22;
       ctx.fillStyle = velo;
-      ctx.fillRect(0, orizzonte, W, H - orizzonte);
+      ctx.fillRect(-margine, orizzonte, W + 2 * margine, H - orizzonte + margine);
       ctx.globalAlpha = 0.4;
       ctx.strokeStyle = tema.griglia;
       ctx.lineWidth = 1;
@@ -906,8 +908,8 @@
       var fondoY = H - orizzonte;
       for (var j = 1; j <= 8; j++) {
         var riga = orizzonte + Math.pow(j / 8, 1.7) * fondoY;
-        ctx.moveTo(0, riga);
-        ctx.lineTo(W, riga);
+        ctx.moveTo(-margine, riga);
+        ctx.lineTo(W + margine, riga);
       }
       var s2 = U * 2.2;
       var s1 = s2 * 0.12;
@@ -933,8 +935,8 @@
       ctx.stroke();
       ctx.globalAlpha = 1;
       ctx.beginPath();
-      ctx.moveTo(0, orizzonte);
-      ctx.lineTo(W, orizzonte);
+      ctx.moveTo(-margine, orizzonte);
+      ctx.lineTo(W + margine, orizzonte);
       ctx.strokeStyle = tema.orizzonte;
       ctx.lineWidth = 2;
       ctx.shadowColor = tema.orizzonte;
@@ -944,9 +946,9 @@
     }
 
     function quadrati(lato, sposta, alfa, seme) {
-      var righe = Math.ceil(suolo / lato) + 1;
-      var primaColonna = Math.floor(sposta / lato);
-      var colonne = Math.ceil(W / lato) + 2;
+      var righe = Math.ceil((suolo + margine) / lato) + 1;
+      var primaColonna = Math.floor((sposta - margine) / lato);
+      var colonne = Math.ceil((W + 2 * margine) / lato) + 2;
       ctx.fillStyle = BIANCO;
       for (var col = 0; col < colonne; col++) {
         var indice = primaColonna + col;
@@ -967,7 +969,7 @@
       ctx.save();
       ctx.globalAlpha = fondo;
       ctx.fillStyle = gradiente;
-      ctx.fillRect(0, 0, W, H);
+      ctx.fillRect(-margine, -margine, W + 2 * margine, H + 2 * margine);
       quadrati(2.6 * U, deriva * 0.22, 0.07, 11);
       quadrati(4.4 * U, deriva * 0.42, 0.05, 29);
       ctx.globalAlpha = 1;
@@ -976,7 +978,7 @@
       sfumatura.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.globalCompositeOperation = 'destination-out';
       ctx.fillStyle = sfumatura;
-      ctx.fillRect(0, 0, W, H * 0.32);
+      ctx.fillRect(-margine, -margine, W + 2 * margine, H * 0.32 + margine);
       ctx.restore();
     }
 
@@ -991,7 +993,7 @@
     function disegnaSuolo() {
       var segmenti = M ? M.suoli : [{ x0: -1000, x1: 1000 }];
       var buche = M ? M.buche : [];
-      var altezza = H - suolo;
+      var altezza = H - suolo + margine;
       var origine = centroPollo() - deriva;
       var tessera = K.TESSERA * U * 2;
       var passoTacche = K.TESSERA * U * 4;
@@ -1000,8 +1002,8 @@
       var colMuro = gd ? 'rgba(255,255,255,0.75)' : tema.griglia;
       ctx.save();
       for (var b = 0; b < buche.length; b++) {
-        var bx0 = Math.max(-4, sx(buche[b].x0));
-        var bx1 = Math.min(W + 4, sx(buche[b].x1));
+        var bx0 = Math.max(-4 - margine, sx(buche[b].x0));
+        var bx1 = Math.min(W + 4 + margine, sx(buche[b].x1));
         if (bx1 <= bx0) { continue; }
         var abisso = ctx.createLinearGradient(0, suolo, 0, H);
         if (gd) {
@@ -1018,11 +1020,11 @@
       }
       ctx.globalAlpha = 1;
       for (var i = 0; i < segmenti.length; i++) {
-        var x0 = M ? sx(segmenti[i].x0) : 0;
-        var x1 = M ? sx(segmenti[i].x1) : W;
-        if (x1 < -4 || x0 > W + 4) { continue; }
-        x0 = Math.max(-4, x0);
-        x1 = Math.min(W + 4, x1);
+        var x0 = M ? sx(segmenti[i].x0) : -margine;
+        var x1 = M ? sx(segmenti[i].x1) : W + margine;
+        if (x1 < -4 - margine || x0 > W + 4 + margine) { continue; }
+        x0 = Math.max(-4 - margine, x0);
+        x1 = Math.min(W + 4 + margine, x1);
         if (gd) {
           ctx.fillStyle = colori.terra;
           ctx.fillRect(x0, suolo, x1 - x0, altezza + 2);
@@ -1037,7 +1039,7 @@
           ctx.beginPath();
           for (var tx = origine + Math.ceil((x0 - origine) / tessera) * tessera; tx < x1; tx += tessera) {
             ctx.moveTo(tx, suolo + 2);
-            ctx.lineTo(tx, H);
+            ctx.lineTo(tx, H + margine);
           }
           ctx.moveTo(x0, suolo + altezza * 0.55);
           ctx.lineTo(x1, suolo + altezza * 0.55);
@@ -1058,7 +1060,7 @@
           ctx.beginPath();
           for (var ty = origine + Math.ceil((x0 - origine) / passoTacche) * passoTacche; ty < x1; ty += passoTacche) {
             ctx.moveTo(ty, suolo + 2);
-            ctx.lineTo(ty, H);
+            ctx.lineTo(ty, H + margine);
           }
           ctx.stroke();
           ctx.globalAlpha = 1;
@@ -1079,11 +1081,11 @@
           ctx.beginPath();
           if (i > 0 && sx(segmenti[i].x0) >= -4 && sx(segmenti[i].x0) <= W + 4) {
             ctx.moveTo(sx(segmenti[i].x0), suolo);
-            ctx.lineTo(sx(segmenti[i].x0), H);
+            ctx.lineTo(sx(segmenti[i].x0), H + margine);
           }
           if (i < segmenti.length - 1 && sx(segmenti[i].x1) >= -4 && sx(segmenti[i].x1) <= W + 4) {
             ctx.moveTo(sx(segmenti[i].x1), suolo);
-            ctx.lineTo(sx(segmenti[i].x1), H);
+            ctx.lineTo(sx(segmenti[i].x1), H + margine);
           }
           ctx.stroke();
           ctx.shadowBlur = 0;
@@ -1207,8 +1209,8 @@
 
     function disegnaMondo() {
       if (!M) { return; }
-      var da = S.x - (centroPollo() + 60) / U;
-      var a = S.x + (W - centroPollo() + 60) / U;
+      var da = S.x - (centroPollo() + 60 + margine) / U;
+      var a = S.x + (W - centroPollo() + 60 + margine) / U;
       ctx.save();
       for (var i = 0; i < M.el.length; i++) {
         var e = M.el[i];
@@ -1218,7 +1220,7 @@
           for (var n = 0; n < e.n; n++) { punta(x + n * K.PUNTA_L * U, sy(e.base), K.PUNTA_L * U, K.PUNTA_A * U); }
         } else if (e.k === 'b') {
           var cima = sy(e.t);
-          blocco(x, cima, e.w * U, (e.pil ? H + 4 : suolo) - cima);
+          blocco(x, cima, e.w * U, (e.pil ? H + 4 + margine : suolo) - cima);
         } else if (e.k === 'r') {
           if (gd) {
             sega(x + K.ROMBO_L * U / 2, sy(e.base) - K.ROMBO_A * U / 2, K.ROMBO_L * U * 0.52);
@@ -1984,6 +1986,14 @@
       if (scossa > 0) {
         var forza = scossa / 0.35;
         ctx.translate((Math.random() - 0.5) * U * 0.25 * forza, (Math.random() - 0.5) * U * 0.18 * forza);
+      }
+      var giroMondo = -inclinazione.angolo;
+      margine = 0;
+      if (giroMondo) {
+        margine = Math.ceil(Math.abs(Math.sin(giroMondo)) * (W + H) + U);
+        ctx.translate(centroPollo(), suolo);
+        ctx.rotate(giroMondo);
+        ctx.translate(-centroPollo(), -suolo);
       }
       sfondo();
       disegnaSuolo();
