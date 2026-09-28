@@ -743,7 +743,6 @@
     var attorno = Livelli.nuovoAttorno();
     var resto = 0, angolo = 0, giro = 0, scia = 0;
     var scintille = [], onde = [], lampo = 0, scossa = 0, frase = '', frasePagina = null;
-    var inclinazione = { angolo: 0 };
     var margine = 0;
     var ultimo = 0, acceso = false, attivo = false, idFrame = 0;
     var timerPrecalcolo = 0;
