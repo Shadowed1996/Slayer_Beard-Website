@@ -656,7 +656,11 @@
     const RAFFICA_PAUSA = 4000;
     const ATTESA_INSISTENZA = 800;
     const DURATA_GIF = 6500;
+    const BONK_CLIC = 10;
+    const BONK_ATTESA = 10000;
 
+    let serie = 0;
+    let ultimoClic = 0;
     let tempi = [];
     let conta = 0;
     let soglia = gifOgni;
@@ -704,8 +708,8 @@
       nodo.appendChild(riquadro);
       document.body.appendChild(nodo);
 
-      nodo.addEventListener('click', function (e) { if (e.target === nodo) { chiudiGif(); } });
-      chiudi.addEventListener('click', chiudiGif);
+      nodo.addEventListener('click', function (e) { if (e.target === nodo) { chiudiGifCliccando(); } });
+      chiudi.addEventListener('click', chiudiGifCliccando);
       document.addEventListener('keydown', function (e) {
         if (popup.aperto && (e.key === 'Escape' || e.key === 'Esc')) { chiudiGif(); }
       });
@@ -771,6 +775,32 @@
       }, RAFFICA_PAUSA);
     }
 
+    function serieBonk(ora) {
+      if (ora - ultimoClic > BONK_ATTESA) { serie = 0; }
+      ultimoClic = ora;
+      serie++;
+
+      const bonk = window.Bonk;
+      if (serie < BONK_CLIC || !bonk || typeof bonk.colpo !== 'function') { return false; }
+
+      serie = 0;
+      conta = 0;
+      soglia = gifOgni;
+      tempi = [];
+      clearTimeout(timerInsistenza);
+      clearTimeout(spegni);
+      figura.classList.remove('is-parla');
+      let partito = false;
+      try { partito = bonk.colpo(); } catch (e) { }
+      return partito;
+    }
+
+    function chiudiGifCliccando() {
+      if (!popup.aperto) { return; }
+      chiudiGif();
+      serieBonk(Date.now());
+    }
+
     function contaClic() {
       const ora = Date.now();
       if (ora < pausaFino) { return true; }
@@ -782,12 +812,15 @@
         tempi = [];
         conta = 0;
         soglia = gifOgni;
+        serie = 0;
         pausaFino = ora + RAFFICA_PAUSA;
         clearTimeout(timerInsistenza);
         clearTimeout(spegni);
         congela();
         return true;
       }
+
+      if (serieBonk(ora)) { return true; }
 
       conta++;
       clearTimeout(timerInsistenza);

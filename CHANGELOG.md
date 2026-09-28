@@ -15,6 +15,16 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Il bonk di «Chi sono».** Al decimo clic sul pollo del ritratto, a qualsiasi
+  ritmo (la serie riparte dopo 10 secondi fermi o col congelamento dei clic
+  veloci; il clic che chiude la gif conta), il sito si scurisce: compare il cane
+  seduto (`img/bonk/doge.webp`), entra quello con la mazza
+  (`img/bonk/cheems.webp`) e gli dà la mazzata in testa col suono
+  `mp3/Cartoon Funny Bonk - Sound Effect HD.mp3` (partito dal punto del colpo;
+  senza il file suona un bonk sintetizzato), la scritta BONK! e le stelline; poi
+  la frase «Hai rotto le palle di cliccare, È tardi, mena! Menaaah!» con i
+  colori del sito. Sparisce dopo 9 secondi, o con un clic o ESC. Tutto in
+  `js/bonk.js` e `css/bonk.css`; il conteggio sta in `js/sito.js`.
 - **Le canzoni di Pollo Run si scelgono dal pannello.** Nel gruppo
   *Modalità manutenzione*, sotto le frasi di scherno: `config.pollorun.canzoni`
   (elenco di titolo, nome del file nella cartella `mp3`, autore facoltativo; di
