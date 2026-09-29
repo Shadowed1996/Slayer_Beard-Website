@@ -248,6 +248,7 @@ function clipDi(config, testi) {
       anteprima: String((voce && voce.anteprima) || '').trim(),
       durata: durataTesto(voce && voce.durataSec),
       visualizzazioni: numeroTesto(voce && voce.visualizzazioni),
+      parolaViste: parolaViste(voce, testi),
       autore: autore,
 
       firma: autore ? (testi['clip.di'] || '') + ' ' + autore : '',
@@ -257,6 +258,11 @@ function clipDi(config, testi) {
   }
 
   return { attivo: clip.attivo === true && voci.length > 0, voci: voci };
+}
+
+function parolaViste(voce, testi) {
+  const plurale = String(testi['clip.visualizzazioni'] || '');
+  return Number(voce && voce.visualizzazioni) === 1 ? plurale.replace(/i$/, 'e') : plurale;
 }
 
 function clipPaginaDi(config, testi) {
@@ -283,6 +289,7 @@ function clipPaginaDi(config, testi) {
       anteprima: String((voce && voce.anteprima) || '').trim(),
       durata: durataTesto(voce && voce.durataSec),
       visualizzazioni: numeroTesto(voce && voce.visualizzazioni),
+      parolaViste: parolaViste(voce, testi),
       autore: autore,
       firma: autore ? (testi['clip.di'] || '') + ' ' + autore : '',
       quando: dataTesto(voce && voce.creataIl),
@@ -517,6 +524,12 @@ function orariTesto(config) {
   return elencoItaliano(ordinati.map((g, i) => nome(g, i) + ' alle ' + ore[i]));
 }
 
+function indirizzoPieno(config, percorso) {
+  const p = String(percorso || '');
+  if (!p || !config.sitoUrl || /^[a-z][a-z0-9+.-]*:/i.test(p)) { return p; }
+  return config.sitoUrl + p.replace(/^\.?\//, '');
+}
+
 function jsonLdPersona(testi, config, social, urlCanale) {
   const persona = { '@context': 'https://schema.org', '@type': 'Person' };
 
@@ -526,11 +539,10 @@ function jsonLdPersona(testi, config, social, urlCanale) {
   };
 
   metti('name', testi['marchio.nome']);
-  metti('jobTitle', testi['marchio.ruolo']);
 
   metti('description', testi['meta.descrizione']);
   metti('url', urlCanale);
-  metti('image', (config.immagini && config.immagini.avatar) || '');
+  metti('image', indirizzoPieno(config, (config.immagini && config.immagini.avatar) || ''));
   metti('email', config.email);
 
   const visti = new Set();
@@ -665,6 +677,9 @@ function tracceDi(config) {
       cover: String(voce.cover || '').trim(),
       link: String(voce.link || '').trim()
     });
+    const ultima = fuori[fuori.length - 1];
+    if (!ultima.cover) { delete ultima.cover; }
+    if (!ultima.link) { delete ultima.link; }
   }
   return fuori;
 }
@@ -822,6 +837,7 @@ function costruisciContesto(contenuti, opzioni) {
   };
   contesto.sito.ingresso = ingressoDi(config, testi);
   contesto.sito.bugiardino = bugiardinoDi(config, testi);
+  contesto.sito.ogImmagine = indirizzoPieno(config, config.immagini && config.immagini.og);
   contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
 
   const presentazioneGiochi = testoricco.soloTesto(testi['giochi.paginaTesto'] || '');
@@ -1052,7 +1068,7 @@ function sponsorDi(config, testi, adesso) {
       url: url,
       logo: immagineLocale(voce.logo),
       evidenza: voce.evidenza === true,
-      stile: colore ? '--marca: ' + colore + ';' : '',
+      stile: colore && !/^#0{3}(0{3})?$/.test(colore) ? '--marca: ' + colore + ';' : '',
       nuovo: !!(da && ora - da.ms >= 0 && ora - da.ms <= SPONSOR_NUOVO_GIORNI * 86400000),
       da: da ? da.iso : '',
       a: a ? a.iso : '',
@@ -1381,6 +1397,7 @@ function ingressoDi(config, testi) {
     durata: String(DURATE_INGRESSO[scelta]),
     minimo: String(secondi * 1000),
     dominio: dominio,
+    id: crypto.createHash('sha256').update('pollo:' + dominio).digest('hex').slice(0, 16),
     mascotte: String((config.immagini && config.immagini.mascotte) || ''),
     controllo: testoDi('ingresso.controllo'),
     attesa: testoDi('ingresso.attesa'),

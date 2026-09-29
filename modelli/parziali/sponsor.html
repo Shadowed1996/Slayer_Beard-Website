@@ -9,7 +9,7 @@
     <ul class="sponsor__fila" data-sponsor-fila data-sb-parte="sponsor">
       {{#ogni sponsor.voci}}
 
-      <li class="sponsor__voce{{#se evidenza}} is-evidenza{{/se}}" data-da="{{da}}" data-a="{{a}}"{{#se stile}} style="{{stile}}"{{/se}}>
+      <li class="sponsor__voce{{#se evidenza}} is-evidenza{{/se}}"{{#se da}} data-da="{{da}}"{{/se}}{{#se a}} data-a="{{a}}"{{/se}}{{#se stile}} style="{{stile}}"{{/se}}>
         <a class="sponsor__link" href="{{url}}" target="_blank" rel="noopener sponsored" aria-label="{{visita}}">
           {{#se logo}}<img class="sponsor__logo" src="{{logo}}" alt="{{nome}}" loading="lazy" decoding="async">{{/se}}{{^se logo}}<span class="sponsor__scritta">{{nome}}</span>{{/se}}
           {{#se nuovo}}<span class="sponsor__nuovo">{{sponsor.nuovoTag}}</span>{{/se}}
@@ -20,7 +20,7 @@
 
     <ul class="sponsor__fila" data-sponsor-fila-copia aria-hidden="true">
       {{#ogni sponsor.voci}}
-      <li class="sponsor__voce{{#se evidenza}} is-evidenza{{/se}}" data-da="{{da}}" data-a="{{a}}"{{#se stile}} style="{{stile}}"{{/se}}>
+      <li class="sponsor__voce{{#se evidenza}} is-evidenza{{/se}}"{{#se da}} data-da="{{da}}"{{/se}}{{#se a}} data-a="{{a}}"{{/se}}{{#se stile}} style="{{stile}}"{{/se}}>
         <a class="sponsor__link" href="{{url}}" target="_blank" rel="noopener sponsored" tabindex="-1">
           {{#se logo}}<img class="sponsor__logo" src="{{logo}}" alt="" loading="lazy" decoding="async">{{/se}}{{^se logo}}<span class="sponsor__scritta">{{nome}}</span>{{/se}}
           {{#se nuovo}}<span class="sponsor__nuovo">{{sponsor.nuovoTag}}</span>{{/se}}
