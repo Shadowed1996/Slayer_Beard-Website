@@ -170,6 +170,10 @@ const gruppi = [
 
       { chiave: 'config.lurk.oreMax', etichetta: 'Dopo quante ore chiedere «ci sei ancora?»', tipo: 'numero', min: 1, max: 12,
         aiuto: 'Passate queste ore il pannello chiede conferma e, senza risposta, si spegne da solo. Serve a distinguere chi sta guardando da chi se n\'è andato lasciando la pagina aperta: non toglierlo.' },
+      { chiave: 'config.lurk.allarmeSuono', etichetta: 'Suona l\'allarme quando chiede «ci sei ancora?»', tipo: 'interruttore', predefinito: true,
+        aiuto: 'Quando arriva la domanda, il titolo della scheda e l\'icona lampeggiano e il riquadro si illumina, così la domanda si nota anche con la finestra ridotta a icona. Acceso, suona anche un allarme ogni 30 secondi finché qualcuno preme «Sono qui», per 5 minuti al massimo. Poi il lurk si spegne e lo scrive.' },
+      { chiave: 'config.lurk.allarmeFile', etichetta: 'Suono dell\'allarme', tipo: 'testo', max: 120, predefinito: 'allarme-lurk.mp3', facoltativo: true,
+        aiuto: 'Il nome del file dentro la cartella «mp3» del sito, scritto esattamente com\'è, per esempio «allarme-lurk.mp3». Si carica da Plesk, poi Pubblica. Se il file non c\'è, suona una sirena fatta dal browser. Formati: .mp3, .ogg, .wav, .m4a.' },
       { chiave: 'config.lurk.tieniSchermoAcceso', etichetta: 'Offri di tenere acceso lo schermo', tipo: 'interruttore',
         aiuto: 'Acceso, compare un comando in più che impedisce allo schermo di spegnersi. Consuma batteria di chi guarda ed è spento di serie: resta comunque una scelta del visitatore, non parte da solo.' },
 
@@ -183,6 +187,11 @@ const gruppi = [
         aiuto: 'La modalità lurk non si riaccende da sola: si ricorda la scelta e si chiede conferma.' },
       { chiave: 'lurk.ciSei', etichetta: 'Domanda «ci sei ancora?»', tipo: 'testo', max: 80 },
       { chiave: 'lurk.ciSono', etichetta: 'Bottone — «sono qui»', tipo: 'testo', max: 30 },
+      { chiave: 'lurk.titoloAllarme', etichetta: 'Titolo della scheda che lampeggia durante l\'allarme', tipo: 'testo', max: 40, predefinito: '🚨 ALLARME LURK 🚨' },
+      { chiave: 'lurk.spentoAssenza', etichetta: 'Stato: spenta perché nessuno ha risposto', tipo: 'testo', max: 100,
+        predefinito: 'Nessuno ha risposto a «ci sei ancora?»: ho spento la modalità lurk.' },
+      { chiave: 'lurk.titoloSpento', etichetta: 'Titolo della scheda dopo lo spegnimento', tipo: 'testo', max: 40, predefinito: '💤 Lurk spento',
+        aiuto: 'Resta nel titolo della scheda finché chi guarda non ci torna sopra.' },
 
       { chiave: 'lurk.statoSpento', etichetta: 'Stato — spenta', tipo: 'testo', max: 80 },
       { chiave: 'lurk.statoVivo', etichetta: 'Stato — il video sta andando', tipo: 'testo', max: 80 },

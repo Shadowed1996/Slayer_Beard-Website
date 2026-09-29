@@ -42,3 +42,13 @@ Branch: `feat/pollorun-pendenza` (non ancora in main). Prove: `npm run prova`, 4
 - Massimo 2-4 agenti insieme, un solo Chrome headless alla volta.
 - Consegne sul Desktop sempre in zip con l'ora nel nome.
 - Gli output di `npm run genera` (`contenuti/contenuti.json`, `index.html`, `js/dati.js`, `sitemap.xml`, `server/backup/*`, `giochi.html`) non si committano.
+
+# Lurk: allarme del «ci sei ancora?» (29/09/2026)
+
+Branch: `fix/lurk-allarme`, partito da `origin/main`.
+
+- Il problema segnalato: dopo circa 3 ore il lurk si spegneva. Era il controllo `oreMax`: chi aveva la finestra ridotta a icona non vedeva la domanda e dopo 5 minuti il lurk si spegneva in silenzio.
+- Ora, quando arriva la domanda, il titolo della scheda alterna «🚨 ALLARME LURK 🚨» e il titolo normale, l'icona diventa un cerchio rosso, il riquadro pulsa di rosso e suona l'allarme ogni 30 secondi finché qualcuno preme «Sono qui».
+- Il suono è il file `mp3/allarme-lurk.mp3`, che l'utente registrerà e caricherà da Plesk, poi Pubblica. Finché il file non c'è suona una sirena fatta dal browser. Il nome del file e l'interruttore del suono sono nel pannello, gruppo «Modalità lurk».
+- Se nessuno risponde, il lurk scrive «Nessuno ha risposto…» e la scheda resta «💤 Lurk spento» finché chi guarda non ci torna sopra.
+- La sentinella ora gira anche a scheda nascosta, ma solo se il player non è muto: così il video bloccato riparte anche a finestra ridotta a icona.

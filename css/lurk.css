@@ -16,6 +16,18 @@
   background-color: var(--pannello-2);
 }
 
+.lurk.is-allarme {
+  border-color: var(--live);
+  animation: lurk-allarme 1s steps(1, end) infinite;
+}
+
+.lurk.is-allarme .lurk__stato { color: var(--live); font-weight: 700; }
+
+@keyframes lurk-allarme {
+  0%   { box-shadow: 0 0 0 3px var(--live), 0 0 28px var(--live); }
+  50%  { box-shadow: none; }
+}
+
 .lurk__titolo {
   margin: 0;
   font-family: var(--font-mono);
@@ -125,4 +137,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lurk__spia { animation: none; }
+  .lurk.is-allarme { animation: none; box-shadow: 0 0 0 3px var(--live); }
 }

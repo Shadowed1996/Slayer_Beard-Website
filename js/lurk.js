@@ -26,6 +26,15 @@
   const ATTESA_PRESENZA = 300000;
   const DURATA_AVVISO = 7000;
 
+  const ALLARME = (LURK && LURK.allarme) || {};
+  const RIPETI_ALLARME = 30000;
+  const LAMPO = 1000;
+  const ICONA_ALLARME = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
+    + '<circle cx="32" cy="32" r="30" fill="#e5202e"/>'
+    + '<rect x="28" y="12" width="8" height="28" rx="4" fill="#fff"/>'
+    + '<circle cx="32" cy="50" r="5" fill="#fff"/></svg>');
+
   const FRENO_INVIO = 60000;
 
   const MINUTI_INVIO = (function () {
@@ -44,6 +53,9 @@
     ripresa: 'L’avevi lasciata accesa: la riattivo?',
     ciSei: 'Ci sei ancora? Senza risposta spengo la modalità lurk.',
     ciSono: 'Sono qui',
+    titoloAllarme: '🚨 ALLARME LURK 🚨',
+    titoloSpento: '💤 Lurk spento',
+    spentoAssenza: 'Nessuno ha risposto a «ci sei ancora?»: ho spento la modalità lurk.',
     statoSpento: 'Spenta.',
     statoVivo: 'Attiva: il video sta andando.',
     statoFermo: 'Il video si è fermato.',
@@ -125,6 +137,16 @@
 
   let chiestoPresenza = 0;
   let ultimaPresenza = 0;
+
+  let timerLampo = null;
+  let timerSuono = null;
+  let lampoAcceso = false;
+  let titoloBase = '';
+  let iconaBase = '';
+  let titoloCambiato = false;
+  let audioAllarme = null;
+  let contestoAudio = null;
+  let spentoPer = '';
 
   let ultimaFrase = '';
   let fraseProssima = '';
@@ -224,6 +246,11 @@
 
     if (chiestoPresenza) { nodi.statoTesto.textContent = testo('ciSei'); return; }
 
+    if (vivo.salute === 'spento' && spentoPer) {
+      nodi.statoTesto.textContent = testo(spentoPer);
+      return;
+    }
+
     if (vivo.salute === 'spento' && comandiPronti() && !canaleAcceso()) {
       nodi.statoTesto.textContent = testo('statoAttesa');
       return;
@@ -300,9 +327,10 @@
 
   function ciclo() {
     if (!vivo.acceso) { return; }
-    if (document.visibilityState !== 'visible') { return; }
 
     const d = diagnostica();
+
+    if (document.visibilityState !== 'visible' && !(d && d.muto === false)) { return; }
 
     if (!d || d.modalita !== 'sdk') {
       segnaSalute('niente');
@@ -449,6 +477,9 @@
     }
 
     vivo.acceso = true;
+    spentoPer = '';
+    rimettiTitolo();
+    preparaSuono();
     vivo.riavvii = 0;
     vivo.daQuando = Date.now();
     ultimaPresenza = Date.now();
@@ -516,6 +547,8 @@
   }
 
   function spegni() {
+    spentoPer = '';
+    fermaAllarme();
     dimenticaRipresa();
     fermaSentinella();
     clearTimeout(timerRiavvio);
@@ -604,7 +637,7 @@
 
     if (chiestoPresenza) {
 
-      if (ora - chiestoPresenza >= ATTESA_PRESENZA) { spegni(); }
+      if (ora - chiestoPresenza >= ATTESA_PRESENZA) { spegniPerAssenza(); }
       return;
     }
 
@@ -622,16 +655,132 @@
     timerAvviso = null;
     scriviStato();
 
+    avviaAllarme();
+
     if (!nodi.comandi || comandi.presenza) { return; }
     comandi.presenza = bottone(testo('ciSono'), 'btn btn--pieno', rispondiPresenza);
     nodi.comandi.appendChild(comandi.presenza);
+    mostraPannello();
   }
 
   function rispondiPresenza() {
     chiestoPresenza = 0;
     ultimaPresenza = Date.now();
+    fermaAllarme();
     togliBottonePresenza();
     scriviStato();
+  }
+
+  function spegniPerAssenza() {
+    spegni();
+    spentoPer = 'spentoAssenza';
+    scriviStato();
+    if (document.visibilityState !== 'visible') {
+      document.title = testo('titoloSpento');
+      titoloCambiato = true;
+    }
+  }
+
+  function mostraPannello() {
+    if (!nodi.lurk || document.visibilityState !== 'visible') { return; }
+    try { nodi.lurk.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (err) {}
+  }
+
+  function nodoIcona() {
+    return document.querySelector('link[rel~="icon"]');
+  }
+
+  function metteIcona(indirizzo) {
+    const nodo = nodoIcona();
+    if (nodo && indirizzo) { nodo.setAttribute('href', indirizzo); }
+  }
+
+  function rimettiTitolo() {
+    if (!titoloCambiato) { return; }
+    titoloCambiato = false;
+    document.title = titoloBase;
+    metteIcona(iconaBase);
+  }
+
+  function lampeggia() {
+    lampoAcceso = !lampoAcceso;
+    document.title = lampoAcceso ? testo('titoloAllarme') : titoloBase;
+    metteIcona(lampoAcceso ? ICONA_ALLARME : iconaBase);
+    titoloCambiato = true;
+  }
+
+  function preparaSuono() {
+    if (ALLARME.suono !== true) { return; }
+    if (ALLARME.file && !audioAllarme) {
+      try {
+        audioAllarme = new Audio(ALLARME.file);
+        audioAllarme.preload = 'auto';
+      } catch (err) { audioAllarme = null; }
+    }
+    if (!contestoAudio) {
+      const Contesto = window.AudioContext || window.webkitAudioContext;
+      if (Contesto) {
+        try { contestoAudio = new Contesto(); } catch (err) { contestoAudio = null; }
+      }
+    }
+    if (contestoAudio && contestoAudio.state === 'suspended') {
+      try { Promise.resolve(contestoAudio.resume()).then(null, function () {}); } catch (err) {}
+    }
+  }
+
+  function sirena() {
+    const c = contestoAudio;
+    if (!c) { return; }
+    try {
+      if (c.state === 'suspended') { Promise.resolve(c.resume()).then(null, function () {}); }
+      const inizio = c.currentTime + 0.05;
+      const onda = c.createOscillator();
+      const volume = c.createGain();
+      onda.type = 'square';
+      for (let i = 0; i < 8; i++) {
+        onda.frequency.setValueAtTime(i % 2 ? 660 : 880, inizio + i * 0.3);
+      }
+      volume.gain.setValueAtTime(0.0001, inizio);
+      volume.gain.exponentialRampToValueAtTime(0.18, inizio + 0.03);
+      volume.gain.setValueAtTime(0.18, inizio + 2.35);
+      volume.gain.exponentialRampToValueAtTime(0.0001, inizio + 2.4);
+      onda.connect(volume);
+      volume.connect(c.destination);
+      onda.start(inizio);
+      onda.stop(inizio + 2.45);
+    } catch (err) {}
+  }
+
+  function suonaAllarme() {
+    if (ALLARME.suono !== true || !chiestoPresenza) { return; }
+    if (!audioAllarme) { sirena(); return; }
+    try {
+      audioAllarme.currentTime = 0;
+      Promise.resolve(audioAllarme.play()).then(null, sirena);
+    } catch (err) {
+      sirena();
+    }
+  }
+
+  function avviaAllarme() {
+    fermaAllarme();
+    if (nodi.lurk) { nodi.lurk.classList.add('is-allarme'); }
+    lampoAcceso = false;
+    lampeggia();
+    timerLampo = setInterval(lampeggia, LAMPO);
+    suonaAllarme();
+    if (ALLARME.suono === true) { timerSuono = setInterval(suonaAllarme, RIPETI_ALLARME); }
+  }
+
+  function fermaAllarme() {
+    if (timerLampo) { clearInterval(timerLampo); timerLampo = null; }
+    if (timerSuono) { clearInterval(timerSuono); timerSuono = null; }
+    if (audioAllarme) {
+      try { audioAllarme.pause(); } catch (err) {}
+    }
+    if (nodi.lurk) { nodi.lurk.classList.remove('is-allarme'); }
+    lampoAcceso = false;
+    rimettiTitolo();
   }
 
   function togliBottonePresenza() {
@@ -1063,11 +1212,13 @@
 
       if (vuoleSchermo && !presaSchermo) { chiediSchermo(true); }
 
+      if (!chiestoPresenza) { rimettiTitolo(); } else { mostraPannello(); }
+
       tentaRipresa();
 
     });
 
-    window.addEventListener('pagehide', function () { lasciaSchermo(); });
+    window.addEventListener('pagehide', function () { lasciaSchermo(); fermaAllarme(); });
   }
 
   function avvia() {
@@ -1089,6 +1240,10 @@
     });
 
     sospeso = daSessione(CHIAVE_SOSPESO) === '1';
+
+    titoloBase = document.title;
+    const icona = nodoIcona();
+    iconaBase = icona ? (icona.getAttribute('href') || '') : '';
 
     preparaStato();
     nodi.lurk.setAttribute('data-salute', 'spento');

@@ -904,7 +904,8 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     for (const chiave of ['accendi', 'spegni', 'audio', 'ripresa', 'ciSei', 'ciSono',
       'statoSpento', 'statoVivo', 'statoFermo', 'statoRiparto', 'statoBloccato', 'statoAttesa', 'statoResa',
 
-      'schermo', 'chiuso', 'preavviso', 'invito', 'manda', 'inviato']) {
+      'schermo', 'chiuso', 'preavviso', 'invito', 'manda', 'inviato',
+      'titoloAllarme', 'titoloSpento', 'spentoAssenza']) {
       esigi(!!lurk.testi[chiave], 'manca o e vuoto lurk.testi.' + chiave);
     }
   });
@@ -991,6 +992,17 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
       esigiUguale(account.attivo, false, 'atteso spento con ' + JSON.stringify(storto));
       esigiUguale(account.clientId, '', 'client id con ' + JSON.stringify(storto));
       esigiUguale(account.urlRitorno, '', 'url di ritorno con ' + JSON.stringify(storto));
+    }
+  });
+
+  await prova('allarme del «ci sei ancora?»: suono acceso di serie, file solo se esiste davvero in mp3', () => {
+    const acceso = ramo(sana()).allarme;
+    esigi(acceso && typeof acceso === 'object', 'manca il sottoramo allarme');
+    esigiUguale(acceso.suono, true, 'suono di serie');
+    esigiUguale(ramo(sana({ allarmeSuono: false })).allarme.suono, false, 'suono spento');
+    esigiUguale(ramo(undefined).allarme.suono, true, 'ramo config.lurk mancante');
+    for (const nome of ['file-che-non-esiste-davvero.mp3', '../app.js', 'mp3/allarme.mp3', 'allarme.exe', '', null, 42]) {
+      esigiUguale(ramo(sana({ allarmeFile: nome })).allarme.file, '', 'allarmeFile ' + JSON.stringify(nome));
     }
   });
 

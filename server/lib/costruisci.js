@@ -1094,10 +1094,18 @@ function lurkDi(config, testi, account) {
   if (!Number.isFinite(minuti)) { minuti = 10; }
   minuti = Math.min(120, Math.max(2, Math.round(minuti)));
 
+  const nomeAllarme = typeof lurk.allarmeFile === 'string' ? lurk.allarmeFile.trim() : '';
+  const fileAllarme = (nomeAllarme && !convalida.guaioFileAudio(nomeAllarme)
+    && eFile(path.join(P.radice, 'mp3', nomeAllarme))) ? 'mp3/' + encodeURIComponent(nomeAllarme) : '';
+
   return {
     attivo: lurk.attivo === true,
     tieniSchermoAcceso: lurk.tieniSchermoAcceso === true,
     oreMax: ore,
+    allarme: {
+      suono: lurk.allarmeSuono !== false,
+      file: fileAllarme
+    },
     messaggio: {
       attivo: messaggioAttivo,
       motivo: motivo,
@@ -1113,6 +1121,9 @@ function lurkDi(config, testi, account) {
       ripresa: testi['lurk.ripresa'] || '',
       ciSei: testi['lurk.ciSei'] || '',
       ciSono: testi['lurk.ciSono'] || '',
+      titoloAllarme: testi['lurk.titoloAllarme'] || '',
+      titoloSpento: testi['lurk.titoloSpento'] || '',
+      spentoAssenza: testi['lurk.spentoAssenza'] || '',
       statoSpento: testi['lurk.statoSpento'] || '',
       statoVivo: testi['lurk.statoVivo'] || '',
       statoFermo: testi['lurk.statoFermo'] || '',
