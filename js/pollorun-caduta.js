@@ -12,7 +12,11 @@
   var ARRIVO = 1.4;
   var MARGINE = 0.3;
   var AVVISO = 2.6;
+  var INGRESSO = 0.5;
+  var SVANISCE = 0.2;
   var TESTO = 'ATTENTO CHE CADI !';
+  var VENTO = 34;
+  var PIUME = 6;
 
   function casuale(seme) {
     return function () {
@@ -25,39 +29,31 @@
     var estremo = difficolta === 'estremo';
     var k = Math.max(0, (n || 3) - 3);
     return {
-      discesa: (estremo ? 8.2 : 7) + Math.min(2.4, 0.12 * k),
+      discesa: (estremo ? 6 : 5.2) + Math.min(1.4, 0.07 * k),
       laterale: estremo ? 7.6 : 7,
-      varco: estremo ? 1.55 : 1.8,
-      pausaMin: estremo ? 0.52 : 0.64,
-      pausaMax: estremo ? 0.86 : 1.06
+      pochi: 2,
+      tanti: estremo ? 4 : 3,
+      corto: 0.8,
+      lungo: estremo ? 2.3 : 2,
+      sparso: 1.2,
+      pausaMin: estremo ? 0.42 : 0.5,
+      pausaMax: estremo ? 0.72 : 0.85
     };
   }
 
-  function forma(r, m) {
+  function sparsi(r, m, y, limite) {
     var L = LARGO / 2;
-    var tipo = Math.floor(r() * 5);
-    var g = m.varco * (1 + 0.35 * r());
-    if (tipo === 4) {
-      var e = 0.7 + 0.6 * r();
-      var mezzo = LARGO - 2 * e - 2 * g;
-      if (mezzo >= 0.9) {
-        var sposta = (r() - 0.5) * 0.6;
-        return { tipo: 'tre', pezzi: [[-L, -L + e], [-mezzo / 2 + sposta, mezzo / 2 + sposta], [L - e, L]] };
-      }
-      tipo = 0;
+    var quanti = m.pochi + Math.floor(r() * (m.tanti - m.pochi + 1));
+    var gruppo = [];
+    for (var i = 0; i < quanti; i++) {
+      var w = m.corto + r() * (m.lungo - m.corto);
+      var lato = r();
+      var x0 = lato < 0.15 ? -L : (lato < 0.3 ? L - w : -L + r() * (LARGO - w));
+      var yy = Math.min(limite, y + r() * m.sparso);
+      gruppo.push({ t: yy / m.discesa, y: yy, tipo: 'sparso', pezzi: [[x0, x0 + w]] });
     }
-    if (tipo === 0) {
-      var g1 = g * (1 + 0.5 * r());
-      var g2 = g * (1 + 0.5 * r());
-      if (LARGO - g1 - g2 < 1) { g2 = LARGO - g1 - 1; }
-      return { tipo: 'centro', pezzi: [[-L + g1, L - g2]] };
-    }
-    if (tipo === 1) {
-      var c = (r() - 0.5) * (LARGO - g - 2);
-      return { tipo: 'bordi', pezzi: [[-L, c - g / 2], [c + g / 2, L]] };
-    }
-    if (tipo === 2) { return { tipo: 'sinistra', pezzi: [[-L + g, L]] }; }
-    return { tipo: 'destra', pezzi: [[-L, L - g]] };
+    gruppo.sort(function (a, b) { return a.y - b.y; });
+    return gruppo;
   }
 
   function tocca(x, yc, fila) {
@@ -74,22 +70,27 @@
     return { cella: cella, N: Math.floor((LARGO / 2 - RAGGIO) / cella) };
   }
 
-  function attraversa(vivi, passi, fila, m) {
+  function attraversa(vivi, passi, gruppo, m) {
     var g = griglia(m);
     var indice = passi;
-    var fine = Math.ceil((fila.y + SPESSORE + ALTO_POLLO) / m.discesa / PASSO) + 1;
-    var tutta = { y: fila.y, pezzi: [[-1e9, 1e9]] };
+    var fondo = gruppo[gruppo.length - 1].y;
+    var fine = Math.ceil((fondo + SPESSORE + ALTO_POLLO) / m.discesa / PASSO) + 1;
     var corrente = vivi;
     var alcuno = true;
     while (indice < fine && alcuno) {
       indice++;
       var yc = m.discesa * (indice * PASSO);
-      var attiva = tocca(0, yc, tutta);
+      var attive = [];
+      for (var k = 0; k < gruppo.length; k++) {
+        if (yc + ALTO_POLLO > gruppo[k].y && yc - ALTO_POLLO < gruppo[k].y + SPESSORE) { attive.push(gruppo[k]); }
+      }
       var nuovi = [];
       alcuno = false;
       for (var j = 0; j < corrente.length; j++) {
         var vivo = corrente[j] || corrente[j - 1] || corrente[j + 1] ? 1 : 0;
-        if (vivo && attiva && tocca((j - g.N) * g.cella, yc, fila)) { vivo = 0; }
+        for (var q = 0; vivo && q < attive.length; q++) {
+          if (tocca((j - g.N) * g.cella, yc, attive[q])) { vivo = 0; }
+        }
         if (vivo) { alcuno = true; }
         nuovi.push(vivo);
       }
@@ -108,11 +109,12 @@
     return migliore * griglia(m).cella;
   }
 
-  function schema(caduta, difficolta, n) {
+  function schema(caduta, difficolta, n, seme) {
     var m = misure(difficolta, n);
-    var r = casuale(caduta.seme || 1);
+    var r = casuale(seme || caduta.seme || 1);
     var tempo = caduta.durata - TUFFO;
     var ultima = tempo - ARRIVO;
+    var limite = m.discesa * ultima;
     var file = [];
     var insieme = [];
     for (var j = 0; j <= 2 * griglia(m).N; j++) { insieme.push(j === griglia(m).N ? 1 : 0); }
@@ -121,14 +123,13 @@
     while (tr < ultima) {
       var presa = null;
       for (var prova = 0; prova < 14 && !presa; prova++) {
-        var f = forma(r, m);
-        var fila = { t: tr, y: m.discesa * tr, tipo: f.tipo, pezzi: f.pezzi };
-        if (fila.y < m.discesa * passi * PASSO + ALTO_POLLO) { break; }
-        var dopo = attraversa(insieme, passi, fila, m);
-        if (piuLargo(dopo.insieme, m) >= MARGINE) { presa = { fila: fila, dopo: dopo }; }
+        var gruppo = sparsi(r, m, m.discesa * tr, limite);
+        if (gruppo[0].y < m.discesa * passi * PASSO + ALTO_POLLO) { break; }
+        var dopo = attraversa(insieme, passi, gruppo, m);
+        if (piuLargo(dopo.insieme, m) >= MARGINE) { presa = { gruppo: gruppo, dopo: dopo }; }
       }
       if (presa) {
-        file.push(presa.fila);
+        for (var k = 0; k < presa.gruppo.length; k++) { file.push(presa.gruppo[k]); }
         insieme = presa.dopo.insieme;
         passi = presa.dopo.passi;
         tr += m.pausaMin + r() * (m.pausaMax - m.pausaMin);
@@ -140,7 +141,7 @@
   }
 
   function crea(ambiente) {
-    var st = { fase: 'no', M: null, schema: null, chiave: '', tt: 0, tp: 0, passi: 0, px: 0, resto: 0, prossima: 0, tAvviso: -1 };
+    var st = { fase: 'no', M: null, schema: null, tt: 0, tp: 0, passi: 0, px: 0, resto: 0, prossima: 0, tAvviso: -1, xArrivo: 0, alt0: 0, passiUscita: 1, tUscita: 0 };
     var tasti = { sinistra: false, destra: false, lato: 0 };
 
     function azzera() {
@@ -154,11 +155,7 @@
     function prepara(M) {
       azzera();
       if (!M || !M.caduta) { return; }
-      var chiave = M.n + ':' + M.difficolta;
-      if (st.chiave !== chiave || !st.schema) {
-        st.schema = schema(M.caduta, M.difficolta, M.n);
-        st.chiave = chiave;
-      }
+      st.schema = schema(M.caduta, M.difficolta, M.n, 1 + Math.floor(Math.random() * 2000000000));
       st.M = M;
       st.fase = 'attesa';
       st.tt = 0;
@@ -170,7 +167,7 @@
       st.tAvviso = -1;
     }
 
-    function inCorso() { return st.fase === 'tuffo' || st.fase === 'pozzo'; }
+    function inCorso() { return st.fase === 'tuffo' || st.fase === 'pozzo' || st.fase === 'uscita'; }
 
     function entra(S, M) {
       if (st.fase !== 'attesa' || M !== st.M || S.x < M.caduta.x0 + 0.25) { return false; }
@@ -218,25 +215,32 @@
         }
         return '';
       }
-      if (st.fase !== 'pozzo') { return ''; }
+      if (st.fase !== 'pozzo' && st.fase !== 'uscita') { return ''; }
       var sc = st.schema;
       var m = sc.misure;
       var bordo = LARGO / 2 - RAGGIO;
+      var ultimo = Math.round(sc.tempo / PASSO);
+      var soglia = st.fase === 'pozzo' ? passiUscita() : 0;
       st.resto += dt;
       while (st.resto >= PASSO - 1e-9) {
         st.resto -= PASSO;
         st.passi++;
         st.tp = st.passi * PASSO;
-        st.px = Math.max(-bordo, Math.min(bordo, st.px + verso() * m.laterale * PASSO));
-        var yc = m.discesa * st.tp;
-        while (st.prossima < sc.file.length && sc.file[st.prossima].y + SPESSORE < yc - ALTO_POLLO) { st.prossima++; }
-        for (var i = st.prossima; i < sc.file.length && sc.file[i].y < yc + ALTO_POLLO; i++) {
-          if (tocca(st.px, yc, sc.file[i])) {
-            st.fase = 'morto';
-            return 'morto';
+        if (st.fase === 'pozzo') {
+          st.px = Math.max(-bordo, Math.min(bordo, st.px + verso() * m.laterale * PASSO));
+          var yc = m.discesa * st.tp;
+          while (st.prossima < sc.file.length && sc.file[st.prossima].y + SPESSORE < yc - ALTO_POLLO) { st.prossima++; }
+          for (var i = st.prossima; i < sc.file.length && sc.file[i].y < yc + ALTO_POLLO; i++) {
+            if (tocca(st.px, yc, sc.file[i])) {
+              st.fase = 'morto';
+              return 'morto';
+            }
           }
+          if (st.passi >= ultimo - soglia) { esci(S, ultimo); }
+        } else {
+          S.alt = st.alt0 * Math.max(0, (ultimo - st.passi) / st.passiUscita);
         }
-        if (st.passi >= Math.round(sc.tempo / PASSO)) {
+        if (st.passi >= ultimo) {
           atterra(S);
           return 'atterrato';
         }
@@ -244,12 +248,39 @@
       return '';
     }
 
+    function passiUscita() {
+      var a = ambiente();
+      var v = vista(a);
+      var distanza = v.piediY - (v.cy + v.alto / 2);
+      var secondi = distanza / (st.schema.misure.discesa * v.su);
+      return Math.round(Math.max(0.15, Math.min(ARRIVO - 0.1, secondi)) / PASSO);
+    }
+
+    function esci(S, ultimo) {
+      var a = ambiente();
+      var v = vista(a);
+      var c = st.M.caduta;
+      st.xArrivo = v.x;
+      st.passiUscita = Math.max(1, ultimo - st.passi);
+      var piediY = a.piedi ? a.piedi(v.x, v.giroArrivo) : v.piediY;
+      st.alt0 = Math.max(0, (piediY - (v.y + v.alto / 2)) / ((a.U || v.su) * Math.cos(v.giroArrivo)));
+      st.tUscita = st.tp;
+      st.fase = 'uscita';
+      S.x = c.x1;
+      S.alt = st.alt0;
+      S.va = -st.alt0 / (st.passiUscita * PASSO);
+      S.aTerra = false;
+      S.salto = false;
+      S.richiesta = false;
+      tasti.lato = 0;
+    }
+
     function avanzamento(S, M) {
       var c = M.caduta;
       var w = c.x1 - c.x0;
       var totale = M.lunghezza - w + M.v * c.durata;
       var x = S.x;
-      if (st.fase === 'tuffo' || st.fase === 'pozzo' || st.fase === 'morto') { x = c.x0 + M.v * (st.tt + st.tp); } else if (st.fase === 'fatta') { x = S.x - w + M.v * c.durata; }
+      if (st.fase === 'tuffo' || st.fase === 'pozzo' || st.fase === 'uscita' || st.fase === 'morto') { x = c.x0 + M.v * (st.tt + st.tp); } else if (st.fase === 'fatta') { x = S.x - w + M.v * c.durata; }
       return totale > 0 ? x / totale : 0;
     }
 
@@ -281,14 +312,51 @@
     }
 
     function scala(a) {
-      return Math.max(12, Math.min(a.U * 0.8, (a.W - 32) / (LARGO + 1), a.H / 10));
+      var alto = a.polloAlto || a.U;
+      var su = a.gd ? alto / 0.8 : alto / (ALTO_POLLO * 2.2);
+      return Math.max(12, Math.min(su, (a.W - 32) / (LARGO + 1)));
+    }
+
+    function morbido(q) {
+      q = Math.max(0, Math.min(1, q));
+      return q * q * (3 - 2 * q);
+    }
+
+    function angoloArrivo(a) {
+      var tratti = st.M && st.M.tratti;
+      if (!tratti) { return 0; }
+      for (var i = 0; i < tratti.length; i++) {
+        if (tratti[i].caduta) { return -tratti[i].verso * tratti[i].a * (a.ridotto ? 0.25 : 1); }
+      }
+      return 0;
+    }
+
+    function vista(a) {
+      var su = scala(a);
+      var alto = su * (a.gd ? 0.8 : ALTO_POLLO * 2.2);
+      var giroArrivo = angoloArrivo(a);
+      var cx = a.W / 2;
+      var cy = Math.max(alto * 0.6 + 8, a.H * 0.16);
+      var uscita = st.fase === 'uscita';
+      var x = uscita ? st.xArrivo : cx + st.px * su;
+      var piediY = a.piedi ? a.piedi(x, giroArrivo) : (typeof a.suolo === 'number' ? a.suolo : a.H * 0.8);
+      var y = -alto + (cy + alto) * morbido(st.tp / INGRESSO);
+      if (uscita && a.S) {
+        var sopra = a.S.alt * (a.U || su) + alto / 2;
+        x += Math.sin(giroArrivo) * sopra;
+        y = piediY - Math.cos(giroArrivo) * sopra;
+      }
+      return { su: su, alto: alto, cx: cx, cy: cy, giroArrivo: giroArrivo, giro: uscita ? giroArrivo : 0, x: x, y: y, piediY: piediY };
+    }
+
+    function xArrivo() {
+      return st.fase === 'uscita' || st.fase === 'fatta' ? st.xArrivo : null;
     }
 
     function punto() {
       if (st.fase !== 'morto') { return null; }
-      var a = ambiente();
-      var su = scala(a);
-      return { x: a.W / 2 + st.px * su, y: a.H * 0.25 };
+      var v = vista(ambiente());
+      return { x: v.x, y: v.y };
     }
 
     function disegnaBuca() {
@@ -352,15 +420,40 @@
       ctx.shadowBlur = 0;
     }
 
-    function disegnaPolloPozzo(a, x, y, su, morto) {
+    function disegnaPiume(a, x, y, su) {
       var ctx = a.ctx;
-      var dondola = a.ridotto ? 0 : Math.sin(a.t * 9) * 0.08;
+      ctx.save();
+      ctx.fillStyle = a.gd ? a.BIANCO : a.C.ciano;
+      for (var i = 0; i < PIUME; i++) {
+        var fase = (a.t * 1.4 + i / PIUME) % 1;
+        var px = x + Math.sin(i * 2.1 + a.t * 3) * su * 0.5 * (0.4 + fase);
+        var py = y - su * 0.2 - fase * su * 3.2;
+        ctx.save();
+        ctx.globalAlpha = (1 - fase) * 0.7;
+        ctx.translate(px, py);
+        ctx.rotate(a.t * 4 + i);
+        if (a.gd) {
+          ctx.fillRect(-su * 0.06, -su * 0.06, su * 0.12, su * 0.12);
+        } else {
+          ctx.beginPath();
+          ctx.ellipse(0, 0, su * 0.13, su * 0.045, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function disegnaPolloPozzo(a, x, y, su, morto, giro) {
+      var fuori = giro ? 1 : 0;
+      var ctx = a.ctx;
+      var dondola = a.ridotto ? 0 : (Math.sin(a.t * 9) * 0.08 + Math.sin(a.t * 31) * 0.035) * (1 - fuori);
       ctx.save();
       ctx.translate(x, y);
       if (a.gd) {
         if (morto) { ctx.restore(); return; }
         var lato = su * 0.8;
-        ctx.rotate(verso() * 0.2 + dondola);
+        ctx.rotate((verso() * 0.2 + dondola) * (1 - fuori) + giro * fuori);
         var faccia = ctx.createLinearGradient(-lato / 2, -lato / 2, lato / 2, lato / 2);
         faccia.addColorStop(0, a.colori.cubo0);
         faccia.addColorStop(1, a.colori.cubo1);
@@ -377,7 +470,7 @@
       } else {
         var h = su * ALTO_POLLO * 2.2;
         var w = h * a.PROPORZIONE;
-        ctx.rotate(morto ? -0.35 : verso() * 0.25 + dondola);
+        ctx.rotate(morto ? -0.35 : (verso() * 0.25 + dondola) * (1 - fuori) + giro * fuori);
         ctx.shadowColor = morto ? a.C.magenta : a.C.ciano;
         ctx.shadowBlur = 10;
         if (a.polloPronto) {
@@ -391,21 +484,27 @@
     }
 
     function disegnaPozzo() {
-      if (st.fase !== 'pozzo' && st.fase !== 'morto') { return false; }
+      if (st.fase !== 'pozzo' && st.fase !== 'morto' && st.fase !== 'uscita') { return false; }
       var a = ambiente();
+      var alfa = 1;
+      if (st.fase === 'uscita') {
+        alfa = 1 - (st.tp - st.tUscita) / SVANISCE;
+        if (alfa <= 0) { return false; }
+      }
       var ctx = a.ctx;
       var sc = st.schema;
       var m = sc.misure;
-      var su = scala(a);
-      var cx = a.W / 2;
-      var cy = a.H * 0.25;
+      var v = vista(a);
+      var su = v.su;
+      var cx = v.cx;
+      var cy = v.cy;
       var yc = m.discesa * st.tp;
       var sinistra = cx - LARGO / 2 * su;
       var destra = cx + LARGO / 2 * su;
       var sposta = (yc * su) % (su * 1.5);
       var i;
       ctx.save();
-      ctx.globalAlpha = st.fase === 'morto' ? 1 : Math.min(1, st.tp / 0.25);
+      ctx.globalAlpha = st.fase === 'pozzo' ? Math.min(1, st.tp / 0.25) : alfa;
       if (a.gd) {
         var cielo = ctx.createLinearGradient(0, 0, 0, a.H);
         cielo.addColorStop(0, a.colori.cieloAlto);
@@ -415,6 +514,7 @@
         ctx.fillStyle = a.C.fondo;
       }
       ctx.fillRect(0, 0, a.W, a.H);
+      var fondo = ctx.globalAlpha;
       ctx.save();
       ctx.globalAlpha *= a.gd ? 0.12 : 0.3;
       ctx.strokeStyle = a.gd ? a.BIANCO : a.tema.griglia;
@@ -431,17 +531,23 @@
       ctx.fillRect(destra, 0, a.W - destra, a.H);
       if (!a.ridotto) {
         ctx.save();
-        ctx.globalAlpha *= 0.3;
         ctx.strokeStyle = a.gd ? a.BIANCO : a.C.ciano;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (i = 0; i < 14; i++) {
-          var sx = sinistra + ((i * 0.618) % 1) * (destra - sinistra);
-          var sy = a.H - ((i * 137 + yc * su * 1.6) % (a.H + su * 2)) + su;
-          ctx.moveTo(sx, sy);
-          ctx.lineTo(sx, sy + su * 1.2);
+        ctx.lineCap = 'round';
+        var ciclo = a.H + su * 6;
+        for (i = 0; i < VENTO; i++) {
+          var fase = (i * 0.618) % 1;
+          var veloce = 1.4 + ((i * 0.37) % 1) * 1.6;
+          var sx = sinistra + su * 0.2 + fase * (destra - sinistra - su * 0.4);
+          var sy = a.H + su * 3 - ((i * 173 + a.t * veloce * m.discesa * su) % ciclo);
+          var lungo = su * (0.8 + veloce * 0.9);
+          var ondeggia = Math.sin(a.t * 2.3 + i) * su * 0.25;
+          ctx.globalAlpha = fondo * (0.12 + 0.2 * ((i * 0.53) % 1));
+          ctx.lineWidth = i % 5 === 0 ? 3 : 1.5;
+          ctx.beginPath();
+          ctx.moveTo(sx + ondeggia, sy);
+          ctx.quadraticCurveTo(sx + ondeggia * 1.8, sy + lungo / 2, sx, sy + lungo);
+          ctx.stroke();
         }
-        ctx.stroke();
         ctx.restore();
       }
       ctx.strokeStyle = a.gd ? a.BIANCO : a.tema.orizzonte;
@@ -455,6 +561,7 @@
       ctx.lineTo(destra, a.H);
       ctx.stroke();
       ctx.shadowBlur = 0;
+      ctx.globalAlpha = fondo;
       for (i = 0; i < sc.file.length; i++) {
         var f = sc.file[i];
         var y0 = cy + (f.y - yc) * su;
@@ -464,24 +571,8 @@
           blocchetto(a, cx + p[0] * su, y0, (p[1] - p[0]) * su, su);
         }
       }
-      var pavimento = cy + (m.discesa * sc.tempo + ALTO_POLLO - yc) * su;
-      if (pavimento < a.H + su) {
-        ctx.save();
-        ctx.translate(cx, pavimento);
-        ctx.rotate(-0.1);
-        ctx.fillStyle = a.gd ? a.colori.terra : a.C.fondo;
-        ctx.fillRect(-a.W, 0, a.W * 2, a.H * 2);
-        ctx.strokeStyle = a.gd ? a.BIANCO : a.tema.orizzonte;
-        ctx.lineWidth = 3;
-        ctx.shadowColor = a.gd ? a.colori.accento : a.tema.orizzonte;
-        ctx.shadowBlur = 12;
-        ctx.beginPath();
-        ctx.moveTo(-a.W, 0);
-        ctx.lineTo(a.W, 0);
-        ctx.stroke();
-        ctx.restore();
-      }
-      disegnaPolloPozzo(a, cx + st.px * su, cy, su, st.fase === 'morto');
+      if (!a.ridotto && st.fase === 'pozzo') { disegnaPiume(a, v.x, v.y, su); }
+      disegnaPolloPozzo(a, v.x, v.y, su, st.fase === 'morto', v.giro);
       ctx.restore();
       if (st.fase === 'pozzo' && st.tp < 2.6) {
         var fs = Math.max(12, Math.min(22, a.U * 0.26));
@@ -539,6 +630,7 @@
       disegnaBuca: disegnaBuca,
       disegnaPozzo: disegnaPozzo,
       disegnaTesti: disegnaTesti,
+      xArrivo: xArrivo,
       fase: function () { return st.fase; },
       schema: function () { return st.schema; }
     };

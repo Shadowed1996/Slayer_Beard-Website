@@ -137,7 +137,7 @@
   }
 
   function quotaDi(tr, x) {
-    return Math.max(0, Math.min(1, (x - tr.x0) / tr.r, (tr.x1 - x) / tr.r));
+    return Math.max(0, Math.min(1, tr.subito ? 1 : (x - tr.x0) / tr.r, (tr.x1 - x) / tr.r));
   }
 
   function fattoreDi(M, x) {
@@ -379,7 +379,7 @@
     corsa.durata = P.durata - c.durata;
     var q = PENDENZE[P.difficolta] || PENDENZE.medio;
     var r = casuale(c.seme % 2147483646 + 1);
-    var x0 = (c.x0 + c.x1) / 2;
+    var x0 = c.x1;
     var arrivo = {
       x0: x0,
       x1: x0 + (q.lungo + r() * q.lungoPiu) * P.v,
@@ -388,7 +388,8 @@
       f: q.giu,
       a: q.angolo + r() * 0.012,
       avviso: x0 - PENDENZA_AVVISO * P.v,
-      caduta: true
+      caduta: true,
+      subito: true
     };
     var tutti = creaTratti(corsa);
     var tratti = [];
@@ -967,6 +968,8 @@
     var raggiunto = leggiRaggiunto();
 
     var W = 0, H = 0, dpr = 1, U = 40, orizzonte = 0, suolo = 0, polloX = 0;
+    var rientro = { da: 0, x: 0, t: 0 };
+    var RIENTRO = 1.6;
     var stato = 'fermo';
     var t = 0, tStato = 0, tArrivo = 0, tInizioTentativo = 0, deriva = 0, fondo = gd ? 0 : 1;
     var livello = 1, tentativo = 1, durataLivello = 0;
@@ -1018,7 +1021,7 @@
 
     function latoCubo() { return U * LATO_CUBO; }
     function larghezzaGiocatore() { return gd ? latoCubo() : U * PROPORZIONE; }
-    function centroPollo() { return polloX + larghezzaGiocatore() / 2; }
+    function centroPollo() { return polloX + larghezzaGiocatore() / 2 + rientro.x; }
     function sx(x) { return centroPollo() + (x - (S ? S.x : 0)) * U; }
     function sy(alt) { return suolo - alt * U; }
 
@@ -2463,10 +2466,19 @@
       ctx.restore();
     }
 
+    function piediCaduta(x, giroMondo) {
+      var prima = rientro.x;
+      rientro.x = x - polloX - larghezzaGiocatore() / 2;
+      var y = suolo + spostaVista(giroMondo);
+      rientro.x = prima;
+      return y;
+    }
+
     function ambienteCaduta() {
       return {
         ctx: ctx, tela: tela, W: W, H: H, U: U, gd: gd, ridotto: ridotto, tocco: tocco, t: t, S: S, M: M,
         C: C, colori: colori, tema: tema, suolo: suolo, orizzonte: orizzonte, margine: margine,
+        polloAlto: gd ? latoCubo() : U, piedi: piediCaduta,
         pollo: pollo, polloPronto: polloPronto, PROPORZIONE: PROPORZIONE, BIANCO: BIANCO, NERO: NERO, TITOLO: TITOLO, MONO: MONO,
         sx: sx, scritta: scritta, glitch: glitch, stringi: stringi, rettangoloTondo: rettangoloTondo, disegnaScintille: disegnaScintille
       };
@@ -2480,7 +2492,12 @@
     function seguiCaduta(dt) {
       var esito = caduta.aggiorna(dt, S);
       if (esito === 'morto') { schianto(); }
-      if (esito === 'atterrato') { lampo = Math.max(lampo, 0.5); }
+      if (esito === 'atterrato' || caduta.fase() === 'uscita') {
+        var arrivo = caduta.xArrivo();
+        rientro.da = typeof arrivo === 'number' ? arrivo - polloX - larghezzaGiocatore() / 2 : 0;
+        rientro.x = rientro.da;
+        rientro.t = 0;
+      }
     }
 
     function avviaLivello(n) {
@@ -2497,6 +2514,8 @@
       onde = [];
       frasePagina = null;
       azzeraPendenza();
+      rientro.da = 0;
+      rientro.x = 0;
       if (caduta) { caduta.prepara(M); }
       stato = 'corsa';
       tStato = t;
@@ -2569,6 +2588,12 @@
 
     function aggiorna(dt) {
       t += dt;
+      if (rientro.da) {
+        rientro.t += dt;
+        var qr = Math.min(1, rientro.t / RIENTRO);
+        rientro.x = rientro.da * (1 - qr * qr * (3 - 2 * qr));
+        if (qr >= 1) { rientro.da = 0; rientro.x = 0; }
+      }
       lampo = Math.max(0, lampo - dt * 3);
       scossa = Math.max(0, scossa - dt);
       if (gd) {
@@ -2597,7 +2622,7 @@
                 scintilla(centroPollo() - latoCubo() * 0.4, suolo - 3, -U * 3 - Math.random() * U * 2, -Math.random() * U * 1.4, Math.random() < 0.5 ? colori.accento : BIANCO, 0.35, U * 0.08);
               } else {
                 scia = 0.04;
-                scintilla(polloX + larghezzaGiocatore() * 0.25, suolo - 3, -U * 4 - Math.random() * U, -Math.random() * U * 1.5, Math.random() < 0.5 ? C.ciano : C.magenta, 0.4, U * 0.07);
+                scintilla(centroPollo() - larghezzaGiocatore() * 0.25, suolo - 3, -U * 4 - Math.random() * U, -Math.random() * U * 1.5, Math.random() < 0.5 ? C.ciano : C.magenta, 0.4, U * 0.07);
               }
             }
           }
