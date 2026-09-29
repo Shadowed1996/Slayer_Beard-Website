@@ -20,7 +20,7 @@
   const BATTITO = 1000;
   const BUFFERING_MAX = 3;
   const FERMI_MAX = 2;
-  const SESSIONE_BUONA = 60000;
+  const VIVO_ABBASTANZA = 60000;
   const ATTESE = [5000, 15000, 45000, 120000];
 
   const ATTESA_PRESENZA = 300000;
@@ -343,7 +343,7 @@
 
       segnaSalute('vivo');
 
-      if (vivoDa && (Date.now() - vivoDa) > SESSIONE_BUONA) { tentativo = 0; }
+      if (vivoDa && (Date.now() - vivoDa) > VIVO_ABBASTANZA) { tentativo = 0; }
       return;
     }
 

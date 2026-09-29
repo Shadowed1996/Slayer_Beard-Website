@@ -799,6 +799,7 @@
     avviso: avvisoDi,
     parametri: parametri,
     crea: creaLivello,
+    casuale: casuale,
     difficolta: DIFFICOLTA.slice(),
     profili: PROFILI,
     nuovoStato: nuovoStato,
@@ -815,6 +816,7 @@
   'use strict';
 
   var Livelli = window.PolloRun.livelli;
+  var casuale = Livelli.casuale;
   var K = Livelli.costanti;
   var CHIAVE_LIVELLO = 'sb-pollo-livello';
   var CHIAVE_DIFFICOLTA = 'sb-pollo-difficolta';
@@ -879,13 +881,6 @@
     var m = Math.floor(s / 60);
     var r = s % 60;
     return m + ':' + (r < 10 ? '0' : '') + r;
-  }
-
-  function casuale(seme) {
-    return function () {
-      seme = (seme * 16807) % 2147483647;
-      return (seme - 1) / 2147483646;
-    };
   }
 
   function crea(opzioni) {

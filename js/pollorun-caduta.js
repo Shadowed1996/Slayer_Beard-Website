@@ -18,12 +18,7 @@
   var VENTO = 34;
   var PIUME = 6;
 
-  function casuale(seme) {
-    return function () {
-      seme = (seme * 16807) % 2147483647;
-      return (seme - 1) / 2147483646;
-    };
-  }
+  var casuale = window.PolloRun.livelli.casuale;
 
   function misure(difficolta, n) {
     var estremo = difficolta === 'estremo';

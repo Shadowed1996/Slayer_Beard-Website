@@ -6283,7 +6283,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
     esigi(p, 'nessun percorso per il livello ' + n);
     for (const nomeStile of ['synthwave', 'geometrydash']) {
-      const h = rendiFinta();
+      const h = rendiFinta((M.caduta.seme - 0.5) / 2000000000);
       h.registro.memoria['sb-pollo-difficolta'] = 'difficile';
       h.registro.memoria['sb-pollo-livello-difficile'] = String(n);
       h.crea({ stile: nomeStile }).avvia();

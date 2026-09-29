@@ -239,14 +239,6 @@
 
 .player__riquadro-testo--tenue { color: var(--testo-tenue); }
 
-.player__riquadro-oppure {
-  margin: calc(var(--passo) * -1) 0 0;
-  color: var(--testo-tenue);
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  letter-spacing: var(--spazio-etichetta);
-  text-transform: uppercase;
-}
 
 .player__riquadro-btn {
   display: inline-flex;
@@ -267,46 +259,9 @@
 
 .player__riquadro-btn:hover { box-shadow: var(--bagliore-viola); }
 
-.player__comando {
-  display: flex;
-  align-items: stretch;
-  gap: var(--passo);
-  inline-size: 100%;
-  min-inline-size: 0;
-}
 
-.player__comando-testo {
-  flex: 1 1 auto;
-  min-inline-size: 0;
-  padding: var(--passo) var(--passo-2);
-  border: 1px solid var(--linea);
-  border-radius: var(--raggio-s);
-  background-color: var(--fondo);
-  color: var(--viola-chiaro);
-  font-family: var(--font-mono);
-  font-size: var(--t-piccolo);
-  overflow-wrap: anywhere;
-}
 
-.player__comando-copia {
-  flex: none;
-  padding-inline: var(--passo-2);
-  border: 1px solid var(--linea-comando);
-  border-radius: var(--raggio-s);
-  background-color: transparent;
-  color: var(--testo-medio);
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  letter-spacing: var(--spazio-etichetta);
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color var(--durata) var(--curva), border-color var(--durata) var(--curva);
-}
 
-.player__comando-copia:hover {
-  border-color: var(--linea-viva);
-  color: var(--testo);
-}
 
 .player__riquadro--compatto {
   gap: var(--passo);

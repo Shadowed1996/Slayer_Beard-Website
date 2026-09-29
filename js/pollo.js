@@ -21,7 +21,7 @@
   const RIPOSO_MAX = 120000;
 
   const TENTATIVI_MAX = 5;
-  const SESSIONE_BUONA = 60000;
+  const IRC_STABILE = 60000;
   const ATTESA_NASCOSTA = 60000;
   const SOGLIA_SCRIVE = 2000;
 
@@ -190,7 +190,7 @@
       irc.apertaIl = 0;
       if (irc.nostra) { return; }
 
-      if (durata > SESSIONE_BUONA) { irc.tentativi = 0; }
+      if (durata > IRC_STABILE) { irc.tentativi = 0; }
       riprova();
     });
 

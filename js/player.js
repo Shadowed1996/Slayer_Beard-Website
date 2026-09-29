@@ -19,7 +19,6 @@
   };
 
   const ID_PALCO = 'player-palco';
-  const MAX_PARENT = 25;
   const ATTESA_STATO = 15000;
   const ATTESA_SCHELETRO = 10000;
   const ATTESA_IFRAME = 9000;
@@ -108,63 +107,20 @@
     });
   }
 
-  function normalizzaHost(grezzo) {
-    if (typeof grezzo !== 'string') { return ''; }
-    let h = grezzo.trim().toLowerCase();
-    if (!h) { return ''; }
-
-    h = h.replace(/^[a-z][a-z0-9+.\-]*:\/\//, '');
-    h = h.split('/')[0].split('?')[0].split('#')[0];
-    h = h.split('@').pop();
-
-    if (h.charAt(0) === '[') {
-      const fine = h.indexOf(']');
-      h = fine > -1 ? h.slice(1, fine) : h.slice(1);
-    } else {
-      h = h.split(':')[0];
-    }
-
-    if (!h || h === 'null' || h === 'undefined') { return ''; }
-    if (h.indexOf('..') > -1) { return ''; }
-    if (!/^[a-z0-9][a-z0-9.\-]*$/.test(h)) { return ''; }
-    return h;
-  }
-
-  function eIpV4(h) { return /^\d{1,3}(\.\d{1,3}){3}$/.test(h); }
-
-  const ETICHETTA = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
-
-  function parentValido(h) {
-    if (h === 'localhost' || h === '127.0.0.1') { return true; }
-    if (eIpV4(h)) { return false; }
-    if (h.length > 253) { return false; }
-    const parti = h.split('.');
-    if (parti.length < 2) { return false; }
-    return parti.every(function (p) { return ETICHETTA.test(p); });
+  function soloHost(voce) {
+    return String(voce || '').trim().toLowerCase().replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
   }
 
   function costruisciParent() {
     const extra = Array.isArray(TWITCH.domini) ? TWITCH.domini : [];
-    const grezzi = ['localhost', '127.0.0.1', location.hostname].concat(extra);
     const elenco = [];
-
-    function aggiungi(h) {
-      if (h && parentValido(h) && elenco.indexOf(h) === -1 && elenco.length < MAX_PARENT) {
-        elenco.push(h);
-      }
-    }
-
-    grezzi.forEach(function (voce) {
-      const h = normalizzaHost(voce);
-      if (!h) { return; }
-      aggiungi(h);
-      if (h.indexOf('www.') === 0) {
-        aggiungi(h.slice(4));
-      } else if (h.split('.').length === 2 && !eIpV4(h)) {
-        aggiungi('www.' + h);
-      }
+    ['localhost', '127.0.0.1', location.hostname].concat(extra).forEach(function (voce) {
+      const h = soloHost(voce);
+      if (!h || (/^[\d.]+$/.test(h) && h !== '127.0.0.1')) { return; }
+      if (elenco.indexOf(h) === -1) { elenco.push(h); }
+      const gemello = h.indexOf('www.') === 0 ? h.slice(4) : (h.split('.').length === 2 ? 'www.' + h : '');
+      if (gemello && elenco.indexOf(gemello) === -1) { elenco.push(gemello); }
     });
-
     return elenco;
   }
 
@@ -285,7 +241,7 @@
 
   function avvisaVideo() { iscrittiVideo.forEach(informaVideo); }
 
-  const SESSIONE_BUONA = 60000;
+  const PLAY_STABILE = 60000;
 
   function segnaRiproduzione(attiva) {
     const cambiato = stato.riproduce !== attiva;
@@ -298,7 +254,7 @@
   }
 
   function forseAzzeraTentativi() {
-    if (stato.riproduce && stato.ultimoPlay && (Date.now() - stato.ultimoPlay) > SESSIONE_BUONA) {
+    if (stato.riproduce && stato.ultimoPlay && (Date.now() - stato.ultimoPlay) > PLAY_STABILE) {
       stato.tentativi = 0;
     }
   }
@@ -709,90 +665,26 @@
     annunciaChat();
   }
 
-  function copiaNegliAppunti(testo, bottone) {
-    const originale = bottone.textContent;
-    const ripristina = function () {
-      setTimeout(function () { bottone.textContent = originale; }, 1800);
-    };
-    const fatto = function () { bottone.textContent = 'Copiato'; ripristina(); };
-    const storico = function () {
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = testo;
-        ta.setAttribute('readonly', 'readonly');
-        ta.style.position = 'fixed';
-        ta.style.top = '-1000px';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        fatto();
-      } catch (err) {
-        bottone.textContent = 'Seleziona e copia';
-        ripristina();
-      }
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(testo).then(fatto, storico);
-    } else {
-      storico();
-    }
-  }
-
-  function bloccoComando(comando) {
-    const riga = crea('div', 'player__comando');
-    riga.appendChild(crea('code', 'player__comando-testo', comando));
-    const b = crea('button', 'player__comando-copia', 'Copia');
-    b.type = 'button';
-    b.setAttribute('aria-label', 'Copia il comando: ' + comando);
-    b.addEventListener('click', function () { copiaNegliAppunti(comando, b); });
-    riga.appendChild(b);
-    return riga;
-  }
-
   function costruisciAvviso(motivo, compatto) {
     const box = crea('div', 'player__riquadro' + (compatto ? ' player__riquadro--compatto' : ''));
     const cosa = compatto ? 'La chat' : 'Il player';
 
     if (motivo === 'host') {
-      box.appendChild(crea('span', 'player__riquadro-etichetta', 'Indirizzo non autorizzato'));
-      box.appendChild(crea('h3', 'player__riquadro-titolo', cosa + ' non parte da questo indirizzo'));
-      box.appendChild(crea('p', 'player__riquadro-testo',
-        'Twitch autorizza l’incorporamento solo verso un nome di dominio e rifiuta gli indirizzi IP ' +
-        'come ' + (location.hostname || 'questo') + '. Apri il sito da localhost, oppure aggiungi il ' +
-        'dominio pubblico all’elenco dei domini autorizzati dal pannello.'));
-
+      box.appendChild(crea('span', 'player__riquadro-etichetta', 'Indirizzo sbagliato'));
+      box.appendChild(crea('h3', 'player__riquadro-titolo', cosa + ' non parte da qui'));
+      box.appendChild(crea('p', 'player__riquadro-testo', 'Twitch vuole un dominio, non un indirizzo IP. Apri il sito da slayerbeard.com.'));
     } else if (motivo === 'rete') {
-      box.appendChild(crea('span', 'player__riquadro-etichetta', 'Rete assente'));
-      box.appendChild(crea('h3', 'player__riquadro-titolo', cosa + ' non può caricarsi senza connessione'));
-      box.appendChild(crea('p', 'player__riquadro-testo',
-        'Il browser risulta scollegato dalla rete, quindi l’incorporamento di Twitch non si può ' +
-        'scaricare. Quando la connessione torna riparte da solo: non serve ricaricare la pagina.'));
-
+      box.appendChild(crea('span', 'player__riquadro-etichetta', 'Sei offline'));
+      box.appendChild(crea('h3', 'player__riquadro-titolo', 'Niente internet, niente live'));
+      box.appendChild(crea('p', 'player__riquadro-testo', 'Appena torna la connessione riparte da solo.'));
     } else if (motivo === 'bloccato') {
-      box.appendChild(crea('span', 'player__riquadro-etichetta', 'Caricamento bloccato'));
+      box.appendChild(crea('span', 'player__riquadro-etichetta', 'Bloccato'));
       box.appendChild(crea('h3', 'player__riquadro-titolo', cosa + ' non si carica'));
-      box.appendChild(crea('p', 'player__riquadro-testo',
-        'Il componente di Twitch non è arrivato: quasi sempre è un’estensione che blocca la pubblicità, ' +
-        'oppure una rete che filtra i domini di Twitch. Il canale resta guardabile sul sito di Twitch, ' +
-        'e il resto della pagina funziona normalmente.'));
-
+      box.appendChild(crea('p', 'player__riquadro-testo', 'Di solito è colpa di un adblock. Prova a disattivarlo, oppure guarda direttamente su Twitch.'));
     } else {
-      box.appendChild(crea('span', 'player__riquadro-etichetta', 'Anteprima locale'));
-      box.appendChild(crea('h3', 'player__riquadro-titolo', cosa + ' non parte da un file locale'));
-      box.appendChild(crea('p', 'player__riquadro-testo',
-        'Twitch autorizza l’incorporamento solo verso un dominio dichiarato, e con il protocollo ' +
-        'file:// non esiste nessun hostname da autorizzare: serve un piccolo server locale.'));
-
-      if (!compatto) {
-        box.appendChild(bloccoComando('py -m http.server 5173'));
-        box.appendChild(crea('p', 'player__riquadro-oppure', 'oppure, con Node:'));
-        box.appendChild(bloccoComando('npx serve .'));
-        box.appendChild(crea('p', 'player__riquadro-testo player__riquadro-testo--tenue',
-          'Poi apri http://localhost:5173 : player e chat partono da soli.'));
-      }
+      box.appendChild(crea('span', 'player__riquadro-etichetta', 'File locale'));
+      box.appendChild(crea('h3', 'player__riquadro-titolo', cosa + ' non parte aprendo il file'));
+      box.appendChild(crea('p', 'player__riquadro-testo', 'Serve un server, anche locale.'));
     }
 
     box.appendChild(collega(URL_CANALE, 'player__riquadro-btn', 'Apri il canale su Twitch'));
@@ -931,7 +823,7 @@
     }
 
     const parent = costruisciParent();
-    const mioHost = normalizzaHost(location.hostname);
+    const mioHost = soloHost(location.hostname);
     const autorizzato = !mioHost || parent.indexOf(mioHost) > -1;
 
     if (location.protocol === 'file:' || !parent.length || !autorizzato) {
