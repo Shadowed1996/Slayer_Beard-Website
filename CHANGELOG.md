@@ -15,6 +15,15 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Il bugiardino del sito.** In circa una visita su quattro (valore dal pannello,
+  1-20, deciso una volta per scheda) nella home spunta una pillolina viola e
+  bianca in un punto a caso, che salta altrove ogni 7 s e sparisce dopo 30 s.
+  Cliccandola si apre un «foglio illustrativo» con gli indizi sui segreti del
+  sito: i clic sul pollo, SLAYER, POLLORUN, la meteora, lo scroll veloce. Le
+  righe di SLAYER e POLLORUN escono solo se quei segreti sono accesi. Tutti i
+  testi si cambiano dal gruppo «Bugiardino del sito» del pannello; con
+  `?bugiardino` nell indirizzo compare subito. File `js/bugiardino.js`,
+  `css/bugiardino.css`, `modelli/parziali/bugiardino.html`.
 - **Pollo Run, «ATTENTO CHE CADI !».** A difficile ed estremo, dal livello 3,
   circa un livello su due (45% difficile, 55% estremo, deciso dal seme del
   livello e quindi uguale per il gioco e per la classifica) ha una buca nella

@@ -411,7 +411,7 @@ async function proveSchema(contenutiVeri) {
   await prova('i gruppi seguono l ordine della pagina', () => {
 
     const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'giochi', 'sondaggio', 'settimana', 'chi',
-      'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'ingresso', 'manutenzione', 'meteora'];
+      'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'ingresso', 'manutenzione', 'meteora', 'bugiardino'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
 
@@ -1095,7 +1095,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
 
     const soloNostri = script.map((s) => s.src).filter((s) => s.indexOf('js/') === 0);
 
-    const facoltativi = ['js/slayer.js', 'js/pollorun.js', 'js/musica.js', 'js/sponsor.js'];
+    const facoltativi = ['js/slayer.js', 'js/pollorun.js', 'js/musica.js', 'js/sponsor.js', 'js/bugiardino.js'];
     const fissi = soloNostri.filter((s) => facoltativi.indexOf(s) === -1);
     const coda = soloNostri.slice(fissi.length);
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
@@ -5202,6 +5202,80 @@ async function proveSorpresaSlayer(costruisci, archivio) {
     schema.completa(vecchio);
     esigiUguale(vecchio.config.slayer.attivo, true, 'la chiave mancante viene aggiunta accesa');
     esigiUguale(JSON.stringify(schema.verificaCopertura(vecchio)), '[]', 'la copertura si lamenta');
+  });
+
+  await prova('bugiardino: acceso di partenza in home con script, stile e foglio; le voci di slayer e pollorun seguono i loro interruttori; spento sparisce tutto', () => {
+    const campo = schema.campo('config.bugiardino.attivo');
+    esigi(campo && campo.tipo === 'interruttore' && campo.predefinito === true, 'l interruttore deve essere acceso di partenza');
+    const acceso = costruisci.rendi(archivio.leggi()).html;
+    esigiUguale(acceso.split('<script src="js/bugiardino.js" data-ogni="4" defer></script>').length - 1, 1, 'acceso: lo script con la frequenza');
+    esigiUguale(acceso.split('<link rel="stylesheet" href="css/bugiardino.css">').length - 1, 1, 'acceso: il foglio di stile');
+    esigiDentro(acceso, 'id="bugiardino-foglio"', 'acceso: manca il foglio illustrativo');
+    esigiDentro(acceso, 'POLLOSLAYER', 'acceso: manca il nome');
+    esigiDentro(acceso, 'data-bugiardino="slayer"', 'acceso: manca la voce di slayer');
+    esigiDentro(acceso, 'data-bugiardino="pollorun"', 'acceso: manca la voce di pollorun');
+    esigi(acceso.indexOf('—') === -1, 'trattino lungo nella home');
+
+    const senzaSegreti = archivio.leggi();
+    senzaSegreti.config.slayer.attivo = false;
+    senzaSegreti.config.pollorun.attivo = false;
+    const ridotta = costruisci.rendi(senzaSegreti).html;
+    esigiDentro(ridotta, 'id="bugiardino-foglio"', 'senza segreti: il foglio deve restare');
+    esigi(ridotta.indexOf('data-bugiardino="slayer"') === -1 && ridotta.indexOf('data-bugiardino="pollorun"') === -1, 'il foglio parla di segreti spenti');
+
+    const spento = archivio.leggi();
+    spento.config.bugiardino.attivo = false;
+    const vuota = costruisci.rendi(spento).html;
+    esigi(vuota.indexOf('bugiardino') === -1, 'spento: resta qualcosa del bugiardino');
+    esigiUguale(convalida.convalida(spento).length, 0, 'spento: i contenuti non passano la convalida');
+
+    const vecchio = archivio.leggi();
+    delete vecchio.config.bugiardino;
+    delete vecchio.testi['bugiardino.nome'];
+    delete vecchio.testi['bugiardino.sottotitolo'];
+    const ripiego = costruisci.rendi(vecchio).html;
+    esigiDentro(ripiego, 'data-ogni="4"', 'contenuti vecchi: manca la frequenza di partenza');
+    esigiDentro(ripiego, 'POLLOSLAYER', 'contenuti vecchi: manca il nome di partenza');
+
+    const strano = archivio.leggi();
+    strano.config.bugiardino.ogni = 99;
+    esigiDentro(costruisci.rendi(strano).html, 'data-ogni="4"', 'una frequenza fuori scala non torna a quella di partenza');
+  });
+
+  await prova('bugiardino: compare in una visita su N, decide una volta per scheda e con ?bugiardino compare sempre', () => {
+    const codice = fs.readFileSync(path.join(RADICE_VERA, 'js', 'bugiardino.js'), 'utf8');
+    const esegui = (caso, cerca, memoria) => {
+      const ascolti = [];
+      const tempi = [];
+      const finestra = {
+        location: { search: cerca || '' },
+        sessionStorage: {
+          getItem: (k) => (Object.prototype.hasOwnProperty.call(memoria, k) ? memoria[k] : null),
+          setItem: (k, v) => { memoria[k] = String(v); }
+        },
+        matchMedia: () => ({ matches: false })
+      };
+      const documento = {
+        currentScript: { getAttribute: (n) => (n === 'data-ogni' ? '4' : null) },
+        readyState: 'loading',
+        addEventListener: (tipo) => { ascolti.push(tipo); },
+        getElementById: () => null
+      };
+      const M = Object.create(Math);
+      M.random = () => caso;
+      require('node:vm').runInNewContext(codice, { window: finestra, document: documento, Math: M, setTimeout: (f, t) => { tempi.push(t); } });
+      return ascolti.indexOf('DOMContentLoaded') !== -1;
+    };
+    const m1 = {};
+    esigiUguale(esegui(0.9, '', m1), false, 'con 0.9 su 1 ogni 4 non deve comparire');
+    esigiUguale(m1['sb-bugiardino'], 'no', 'la decisione no non viene ricordata');
+    esigiUguale(esegui(0.1, '', m1), false, 'nella stessa scheda ridecide');
+    const m2 = {};
+    esigiUguale(esegui(0.1, '', m2), true, 'con 0.1 su 1 ogni 4 deve comparire');
+    esigiUguale(m2['sb-bugiardino'], 'si', 'la decisione si non viene ricordata');
+    esigiUguale(esegui(0.9, '', { 'sb-bugiardino': 'visto' }), false, 'gia visto in questa scheda, ricompare');
+    esigiUguale(esegui(0.99, '?bugiardino', { 'sb-bugiardino': 'visto' }), true, 'con ?bugiardino deve comparire sempre');
+    esigiUguale(esegui(0.99, '?bugiardinox', {}), false, '?bugiardinox non e ?bugiardino');
   });
 
   await prova('slayer.js: la parola, la durata e la canzone sono quelle scelte, e il codice e pulito', () => {

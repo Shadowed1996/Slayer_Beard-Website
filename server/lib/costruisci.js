@@ -821,6 +821,7 @@ function costruisciContesto(contenuti, opzioni) {
     classifica: classificaAttiva(config)
   };
   contesto.sito.ingresso = ingressoDi(config, testi);
+  contesto.sito.bugiardino = bugiardinoDi(config, testi);
   contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
 
   const presentazioneGiochi = testoricco.soloTesto(testi['giochi.paginaTesto'] || '');
@@ -1387,6 +1388,32 @@ function ingressoDi(config, testi) {
     nota: testoDi('ingresso.nota'),
     marca: testoDi('ingresso.marca'),
     piede: testoDi('ingresso.piede')
+  };
+}
+
+function bugiardinoDi(config, testi) {
+  const ramo = (config && config.bugiardino && typeof config.bugiardino === 'object') ? config.bugiardino : {};
+  const testoDi = (chiave) => (typeof testi[chiave] === 'string' && testi[chiave].trim()
+    ? testi[chiave].trim() : schema.campo(chiave).predefinito);
+  const ogni = Number.isInteger(ramo.ogni) && ramo.ogni >= 1 && ramo.ogni <= 20 ? ramo.ogni : schema.campo('config.bugiardino.ogni').predefinito;
+  return {
+    attivo: ramo.attivo !== false,
+    ogni: String(ogni),
+    nome: testoDi('bugiardino.nome'),
+    sottotitolo: testoDi('bugiardino.sottotitolo'),
+    avviso: testoDi('bugiardino.avviso'),
+    cosa: testoDi('bugiardino.cosa'),
+    pollo: testoDi('bugiardino.pollo'),
+    slayer: testoDi('bugiardino.slayer'),
+    pollorun: testoDi('bugiardino.pollorun'),
+    meteora: testoDi('bugiardino.meteora'),
+    scroll: testoDi('bugiardino.scroll'),
+    contro: testoDi('bugiardino.contro'),
+    comuni: testoDi('bugiardino.comuni'),
+    nonComuni: testoDi('bugiardino.nonComuni'),
+    rari: testoDi('bugiardino.rari'),
+    avvertenze: testoDi('bugiardino.avvertenze'),
+    scadenza: testoDi('bugiardino.scadenza')
   };
 }
 

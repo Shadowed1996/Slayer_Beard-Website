@@ -18,7 +18,8 @@
 <link rel="stylesheet" href="css/cima.css">
 <link rel="stylesheet" href="css/festa.css">
 <link rel="stylesheet" href="css/bonk.css">
-{{#se sito.sponsorInHome}}<link rel="stylesheet" href="css/sponsor.css">
+{{#se sito.bugiardino.attivo}}<link rel="stylesheet" href="css/bugiardino.css">
+{{/se}}{{#se sito.sponsorInHome}}<link rel="stylesheet" href="css/sponsor.css">
 {{/se}}{{#se sito.attiva.sondaggio}}<link rel="stylesheet" href="css/sondaggio.css">
 {{/se}}{{#se sito.musica.attivo}}<link rel="stylesheet" href="css/musica.css">
 {{/se}}{{#se sito.cssDisposizione}}<style id="sb-disposizione">
@@ -41,7 +42,7 @@
 {{> parziali/piede}}
 
 {{#se sito.musica.attivo}}{{> parziali/musica}}
-{{/se}}
+{{/se}}{{> parziali/bugiardino}}
 
 <script src="js/ritorno.js"></script>
 <script src="js/dati.js"></script>
@@ -63,6 +64,7 @@
 {{/se}}{{#se sito.pollorun.attivo}}<script src="js/pollorun.js" data-pollo="{{sito.pollorun.pollo}}"{{#se sito.pollorun.classifica}} data-classifica="1"{{/se}} data-frasi="{{sito.pollorun.frasi}}" data-canzoni="{{sito.pollorun.canzoni}}" data-stile="{{sito.pollorun.stile}}" defer></script>
 {{/se}}{{#se sito.musica.attivo}}<script src="js/musica.js" defer></script>
 {{/se}}{{#se sito.sponsorInHome}}<script src="js/sponsor.js" defer></script>
+{{/se}}{{#se sito.bugiardino.attivo}}<script src="js/bugiardino.js" data-ogni="{{sito.bugiardino.ogni}}" defer></script>
 {{/se}}
 <style id="sb-auguri-stile">
 .sb-aug-scena{position:fixed;inset:0;z-index:59;pointer-events:none;overflow:hidden;contain:strict}

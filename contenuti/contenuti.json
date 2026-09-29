@@ -1,6 +1,6 @@
 {
   "versione": 1,
-  "aggiornatoIl": "2026-09-24T18:17:28.877Z",
+  "aggiornatoIl": "2026-09-29T08:30:43.259Z",
   "testi": {
     "meta.titolo": "slayer_beard - canale Twitch ufficiale",
     "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
@@ -223,7 +223,22 @@
     "ingresso.riuscita": "Sei umano. Il pollo approva!",
     "ingresso.nota": "Controlliamo solo che tu non sia un robot travestito da pollo.",
     "ingresso.marca": "PolloFlare",
-    "ingresso.piede": "Prestazioni e sicurezza a cura del pollo"
+    "ingresso.piede": "Prestazioni e sicurezza a cura del pollo",
+    "bugiardino.nome": "POLLOSLAYER®",
+    "bugiardino.sottotitolo": "Uso ludico. Da assumere durante la live.",
+    "bugiardino.avviso": "Leggere attentamente prima di cliccare il pollo",
+    "bugiardino.cosa": "Un rimedio contro l'attesa della live.",
+    "bugiardino.pollo": "Il pollo in «Chi sono». Cliccare più volte. Contare.",
+    "bugiardino.slayer": "SLAYER, da digitare sulla tastiera, una lettera dopo l'altra. Alzare il volume. Previste precipitazioni.",
+    "bugiardino.pollorun": "POLLORUN, stessa procedura. Nei casi gravi iniziare da FACILE.",
+    "bugiardino.meteora": "Il polletto che ogni tanto attraversa il cielo della pagina. Prenderlo.",
+    "bugiardino.scroll": "Scorrere su e giù, molto in fretta.",
+    "bugiardino.contro": "Riunioni di lavoro con l'audio acceso.",
+    "bugiardino.comuni": "clic compulsivi",
+    "bugiardino.nonComuni": "GAME OVER al livello 1",
+    "bugiardino.rari": "follow",
+    "bugiardino.avvertenze": "Questo foglio non riporta tutti gli effetti. Eventuali scoperte vanno segnalate in chat.",
+    "bugiardino.scadenza": "Scadenza: fine della live."
   },
   "config": {
     "slayer": {
@@ -867,6 +882,10 @@
       "attivo": false,
       "durata": "24h",
       "secondi": 3
+    },
+    "bugiardino": {
+      "attivo": true,
+      "ogni": 4
     }
   }
 }

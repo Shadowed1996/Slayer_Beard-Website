@@ -935,6 +935,34 @@ const gruppi = [
       { chiave: 'config.meteora.ogniMax', etichetta: 'Timer — al più tardi dopo (minuti)', tipo: 'numero', min: 1, max: 120, facoltativo: true, predefinito: 8,
         aiuto: 'Fra questo numero e quello sopra il sito sceglie un momento a caso, diverso per ogni visitatore.' }
     ]
+  },
+
+  {
+    id: 'bugiardino',
+    titolo: 'Bugiardino del sito',
+    descrizione: 'Una pillolina viola e bianca che ogni tanto spunta in un punto a caso della home. Se la clicchi si apre il foglio illustrativo con gli indizi sui segreti del sito. Una riga lasciata vuota torna al testo di partenza. Le righe di SLAYER e POLLORUN escono solo se quei segreti sono accesi.',
+    campi: [
+      { chiave: 'config.bugiardino.attivo', etichetta: 'Fai spuntare il bugiardino', tipo: 'interruttore', predefinito: true,
+        aiuto: 'Spento, la scatolina non compare mai.' },
+      { chiave: 'config.bugiardino.ogni', etichetta: 'Compare in una visita su', tipo: 'numero', min: 1, max: 20, predefinito: 4,
+        aiuto: '1 = a ogni visita, 4 = circa una visita su quattro. Una visita dura finché il visitatore non chiude la scheda. Per vederlo subito apri il sito con ?bugiardino in fondo all indirizzo (per esempio slayerbeard.com/?bugiardino).' },
+      { chiave: 'bugiardino.nome', etichetta: 'Nome del «farmaco»', tipo: 'testo', max: 40, predefinito: 'POLLOSLAYER®' },
+      { chiave: 'bugiardino.sottotitolo', etichetta: 'Riga sotto al nome', tipo: 'testo', max: 120,
+        predefinito: 'Uso ludico. Da assumere durante la live.' },
+      { chiave: 'bugiardino.avviso', etichetta: 'Avviso in cima', tipo: 'testo', max: 80, predefinito: 'Leggere attentamente prima di cliccare il pollo' },
+      { chiave: 'bugiardino.cosa', etichetta: '1. Che cos\'è', tipo: 'testo', max: 200, predefinito: 'Un rimedio contro l\'attesa della live.' },
+      { chiave: 'bugiardino.pollo', etichetta: '2. Come si usa: il pollo di «Chi sono»', tipo: 'testo', max: 200, predefinito: 'Il pollo in «Chi sono». Cliccare più volte. Contare.' },
+      { chiave: 'bugiardino.slayer', etichetta: '2. Come si usa: SLAYER (esce solo se il segreto è acceso)', tipo: 'testo', max: 200, predefinito: 'SLAYER, da digitare sulla tastiera, una lettera dopo l\'altra. Alzare il volume. Previste precipitazioni.' },
+      { chiave: 'bugiardino.pollorun', etichetta: '2. Come si usa: POLLORUN (esce solo se il gioco è acceso)', tipo: 'testo', max: 200, predefinito: 'POLLORUN, stessa procedura. Nei casi gravi iniziare da FACILE.' },
+      { chiave: 'bugiardino.meteora', etichetta: '2. Come si usa: la meteora', tipo: 'testo', max: 200, predefinito: 'Il polletto che ogni tanto attraversa il cielo della pagina. Prenderlo.' },
+      { chiave: 'bugiardino.scroll', etichetta: '2. Come si usa: lo scroll', tipo: 'testo', max: 200, predefinito: 'Scorrere su e giù, molto in fretta.' },
+      { chiave: 'bugiardino.contro', etichetta: '3. Controindicazioni', tipo: 'testo', max: 200, predefinito: 'Riunioni di lavoro con l\'audio acceso.' },
+      { chiave: 'bugiardino.comuni', etichetta: '4. Effetti indesiderati: comuni', tipo: 'testo', max: 80, predefinito: 'clic compulsivi' },
+      { chiave: 'bugiardino.nonComuni', etichetta: '4. Effetti indesiderati: non comuni', tipo: 'testo', max: 80, predefinito: 'GAME OVER al livello 1' },
+      { chiave: 'bugiardino.rari', etichetta: '4. Effetti indesiderati: rari', tipo: 'testo', max: 80, predefinito: 'follow' },
+      { chiave: 'bugiardino.avvertenze', etichetta: '5. Avvertenze', tipo: 'testo', max: 240, predefinito: 'Questo foglio non riporta tutti gli effetti. Eventuali scoperte vanno segnalate in chat.' },
+      { chiave: 'bugiardino.scadenza', etichetta: 'Riga in fondo', tipo: 'testo', max: 80, predefinito: 'Scadenza: fine della live.' }
+    ]
   }
 ];
 
