@@ -571,7 +571,7 @@
       ctx.restore();
       if (st.fase === 'pozzo' && st.tp < 2.6) {
         var fs = Math.max(12, Math.min(22, a.U * 0.26));
-        var aiuto = a.tocco ? 'Tieni premuto a sinistra o a destra' : 'A / D oppure ← → per spostarti';
+        var aiuto = a.tocco ? 'Tieni premuto a sinistra o a destra' : 'A / D o le frecce per spostarti';
         ctx.save();
         ctx.textBaseline = 'alphabetic';
         ctx.globalAlpha = Math.max(0, Math.min(1, (2.6 - st.tp) / 0.5));

@@ -806,7 +806,7 @@ function costruisciContesto(contenuti, opzioni) {
   contesto.sito.paginaClip = {
     url: 'clip.html',
     canonico: config.sitoUrl ? config.sitoUrl + 'clip.html' : 'clip.html',
-    titolo: (testi['clip.paginaTitolo'] || '') + ' · ' + (testi['marchio.nome'] || ''),
+    titolo: (testi['clip.paginaTitolo'] || '') + ' | ' + (testi['marchio.nome'] || ''),
     descrizione: presentazioneClip || String(testi['meta.descrizione'] || '')
   };
 
@@ -828,7 +828,7 @@ function costruisciContesto(contenuti, opzioni) {
   contesto.sito.paginaGiochi = {
     url: 'giochi.html',
     canonico: config.sitoUrl ? config.sitoUrl + 'giochi.html' : 'giochi.html',
-    titolo: (testi['giochi.paginaTitolo'] || '') + ' · ' + (testi['marchio.nome'] || ''),
+    titolo: (testi['giochi.paginaTitolo'] || '') + ' | ' + (testi['marchio.nome'] || ''),
     descrizione: presentazioneGiochi || String(testi['meta.descrizione'] || '')
   };
 
@@ -1348,10 +1348,10 @@ function istanteItaliano(valore) {
 
 function etichettaManutenzione(prima, fine, adesso) {
   const oggi = SBOrari.dataNelFuso(adesso, FUSO_ITALIA);
-  if (fine.data === oggi) { return prima + ' alle ' + fine.ora + ' · mancano'; }
+  if (fine.data === oggi) { return prima + ' alle ' + fine.ora + ', mancano'; }
   const pezzi = fine.data.split('-');
   const giorno = pezzi[2] + '/' + pezzi[1] + (pezzi[0] === oggi.slice(0, 4) ? '' : '/' + pezzi[0]);
-  return prima + ' il ' + giorno + ' alle ' + fine.ora + ' · mancano';
+  return prima + ' il ' + giorno + ' alle ' + fine.ora + ', mancano';
 }
 
 function fineManutenzione(valore) {

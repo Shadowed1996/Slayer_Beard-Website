@@ -299,7 +299,7 @@
       var nome = document.createElement('span');
       nome.className = 'musica__nome';
       nome.textContent = tracce[i].artista
-        ? tracce[i].titolo + ' · ' + tracce[i].artista
+        ? tracce[i].titolo + ' - ' + tracce[i].artista
         : tracce[i].titolo;
 
       bottone.appendChild(numero);

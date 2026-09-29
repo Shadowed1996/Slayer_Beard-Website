@@ -1,0 +1,649 @@
+<!doctype html>
+
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' https://embed.twitch.tv 'sha256-h5DNoJxrrsy4V9fk6jkWgvRejQD5aZxms0VMRHQ/hs0=';
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src 'self' https://fonts.gstatic.com;
+  media-src 'self';
+  img-src 'self' data: https://static-cdn.jtvnw.net https://clips-media-assets2.twitch.tv https://clips-media-assets.twitch.tv;
+  frame-src https://player.twitch.tv https://www.twitch.tv https://embed.twitch.tv;
+  connect-src 'self' https://api.twitch.tv https://id.twitch.tv wss://irc-ws.chat.twitch.tv;
+  base-uri 'self';
+  form-action 'none';
+  object-src 'none'">
+
+<meta name="author" content="slayer_beard">
+
+<link rel="icon" href="img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="img/favicon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="slayer_beard">
+<meta property="og:locale" content="it_IT">
+<meta property="og:image" content="img/og.jpg">
+<meta property="og:image:alt" content="La mascotte di slayer_beard, un pollo viola con la cresta ciano, sopra una nebulosa e uno skyline notturno.">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="img/og.jpg">
+<meta name="twitter:image:alt" content="La mascotte di slayer_beard, un pollo viola con la cresta ciano, sopra una nebulosa e uno skyline notturno.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;family=Manrope:wght@400;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+
+<title>slayer_beard — canale Twitch ufficiale</title>
+<meta name="description" content="Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.">
+<link rel="canonical" href="https://slayerbeard.com/">
+
+<meta property="og:title" content="slayer_beard — canale Twitch ufficiale">
+<meta property="og:description" content="Quattro dirette a settimana alle 21:00, ITA ed ENG. Qui trovi il player, la settimana e i social.">
+<meta property="og:url" content="https://slayerbeard.com/">
+
+<meta name="twitter:title" content="slayer_beard — canale Twitch ufficiale">
+<meta name="twitter:description" content="Quattro dirette a settimana alle 21:00, ITA ed ENG. Qui trovi il player, la settimana e i social.">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "slayer_beard",
+  "jobTitle": "Twitch Affiliate · dal 2020",
+  "description": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
+  "url": "https://www.twitch.tv/slayer_beard",
+  "image": "img/avatar.webp",
+  "email": "slayerbeard@gmail.com",
+  "sameAs": [
+    "https://www.twitch.tv/slayer_beard",
+    "https://www.instagram.com/slayer_beard/",
+    "https://www.tiktok.com/@slayer_beard"
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/tema.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/regia.css">
+<link rel="stylesheet" href="css/diretta.css">
+<link rel="stylesheet" href="css/sezioni.css">
+<link rel="stylesheet" href="css/player.css">
+<link rel="stylesheet" href="css/clip.css">
+<link rel="stylesheet" href="css/pollo.css">
+<link rel="stylesheet" href="css/account.css">
+<link rel="stylesheet" href="css/lurk.css">
+<link rel="stylesheet" href="css/cima.css">
+<link rel="stylesheet" href="css/sondaggio.css">
+</head>
+<body>
+<a class="salta" href="#contenuto">Salta al contenuto</a>
+
+<aside id="binario" class="binario" data-sb-sezione="binario">
+  <a class="binario__marchio" href="#regia">
+    <img class="binario__avatar" src="img/avatar.webp" alt="" aria-hidden="true" width="40" height="40" decoding="async" data-sb-immagine="config.immagini.avatar">
+    <span class="binario__nome" data-sb-testo="marchio.nome">slayer_beard</span>
+  </a>
+
+  <nav class="binario__nav" aria-label="Sezioni">
+    <a class="binario__voce" href="#regia">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo" data-sb-testo="nav.regia">Regia</span>
+    </a>
+    <a class="binario__voce" href="#diretta">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo" data-sb-testo="nav.diretta">Diretta</span>
+    </a>
+    <a class="binario__voce" href="#settimana">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo" data-sb-testo="nav.settimana">Settimana</span>
+    </a>
+    <a class="binario__voce" href="#chi">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo" data-sb-testo="nav.chi">Chi sono</span>
+    </a>
+    <a class="binario__voce" href="#supporto">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo" data-sb-testo="nav.supporto">Supporto</span>
+    </a>
+    <a class="binario__voce" href="#saluti">
+      <span class="binario__punto" aria-hidden="true"></span><span class="binario__testo" data-sb-testo="nav.saluti">Saluti</span>
+    </a>
+  </nav>
+
+  <p class="binario__stato">
+    <span id="spia" class="spia" aria-hidden="true"></span><span id="spia-testo" class="binario__stato-testo" data-sb-testo="deck.statoVerifica">Controllo il canale</span>
+  </p>
+
+  <ul class="binario__social" data-sb-parte="social">
+    
+    <li>
+      <a class="binario__social-voce" href="https://www.twitch.tv/slayer_beard" title="Twitch" aria-label="Twitch" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 3h16v11l-4.5 4.5H12L8.5 22v-3.5H4z"/><path d="M11 8v4"/><path d="M15 8v4"/></svg></a>
+    </li>
+    
+    <li>
+      <a class="binario__social-voce" href="https://www.instagram.com/slayer_beard/" title="Instagram" aria-label="Instagram" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M16.75 7.25h.01"/></svg></a>
+    </li>
+    
+    <li>
+      <a class="binario__social-voce" href="https://www.tiktok.com/@slayer_beard" title="TikTok" aria-label="TikTok" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 3v12.5a4 4 0 1 1-4-4"/><path d="M13 3c.3 3.1 2.6 5.4 6 5.7"/></svg></a>
+    </li>
+    
+  </ul>
+</aside>
+
+<main id="contenuto">
+<section id="regia" class="regia" aria-labelledby="titolo" data-sb-sezione="regia">
+  <div class="regia__sfondo" aria-hidden="true">
+    <img src="img/copertina.webp" alt="" decoding="async" data-sb-immagine="config.immagini.banner">
+  </div>
+
+  <div class="regia__griglia" data-sb-riquadro="regia">
+    <div class="quadro" data-sb-blocco="regia.quadro">
+      <p class="quadro__occhiello" data-sb-testo="deck.occhiello">Canale Twitch · ITA / ENG</p>
+      <h1 id="titolo" class="quadro__titolo" data-sb-testo="deck.titolo">slayer_beard</h1>
+      <p class="quadro__sottotitolo" data-sb-testo="deck.sottotitolo">Porto giochi di vario genere in modo particolare, a volte con integrazioni ed effetti speciali. Quattro sere a settimana, sempre alle 21:00.</p>
+
+      <div class="quadro__stato" role="group" aria-label="Stato del canale" data-sb-parte="stato">
+        <p class="stato__riga">
+          <span id="spia-grande" class="spia" aria-hidden="true"></span><span id="stato-testo" data-sb-testo="deck.statoVerifica">Controllo il canale</span>
+        </p>
+        <dl class="stato__dati">
+          <dt data-sb-testo="deck.etichettaProssima">Prossima diretta</dt>
+          <dd><time id="conto" class="conto" datetime="21:00">Lunedì, mercoledì, venerdì e domenica alle 21:00</time></dd>
+          <dt data-sb-testo="deck.etichettaUltima">Ultima diretta</dt>
+          <dd id="ultima">Little Nightmares 3 w/ @Mobscene93</dd>
+        </dl>
+      </div>
+
+      <div class="quadro__azioni">
+        <a class="btn btn--pieno" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener" data-sb-testo="deck.ctaPrimaria">Guarda su Twitch</a>
+        <a class="btn btn--vuoto" href="#diretta" data-sb-testo="deck.ctaSecondaria">Guarda la diretta</a>
+      </div>
+    </div>
+
+    <ul class="quadro__dati" data-sb-blocco="regia.dati">
+      <li class="dato"><b class="dato__valore" data-follower>3.624</b><span class="dato__etichetta" data-sb-testo="deck.dato1Etichetta">Follower</span></li>
+      <li class="dato"><b class="dato__valore" data-sb-testo="deck.dato2Valore">4</b><span class="dato__etichetta" data-sb-testo="deck.dato2Etichetta">Dirette a settimana</span></li>
+      <li class="dato"><b class="dato__valore" data-sb-testo="deck.dato3Valore">~25</b><span class="dato__etichetta" data-sb-testo="deck.dato3Etichetta">Spettatori medi</span></li>
+      <li class="dato"><b class="dato__valore" data-sb-testo="deck.dato4Valore">2013</b><span class="dato__etichetta" data-sb-testo="deck.dato4Etichetta">Su Twitch dal</span></li>
+    </ul>
+  </div>
+
+  <a class="regia__scorri" href="#diretta">
+    <span data-sb-testo="deck.scorri">Scendi</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v15"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg>
+  </a>
+</section>
+
+<section id="diretta" class="diretta" aria-labelledby="diretta-titolo" data-sb-sezione="diretta">
+  <div class="diretta__testa">
+    <p class="sezione__occhiello" data-sb-testo="diretta.occhiello">In onda</p>
+    <h2 id="diretta-titolo" class="sezione__titolo" data-sb-testo="diretta.titolo">La diretta</h2>
+    <p class="sezione__testo" data-sb-testo="diretta.testo">Il canale è qui dentro, alla larghezza giusta. Se sto trasmettendo il player parte da solo; la chat si apre con il bottone sotto allo schermo.</p>
+
+    <div class="account" data-sb-parte="account">
+      <div id="account" class="account__tessera"></div>
+      <p id="account-nota" class="account__nota" data-sb-testo="account.nota">Il profilo serve al sito, non solo al player: da collegato il sito sa chi sei, ti mostra la diretta aggiornata e la modalità lurk può dire in chat che stai guardando. Il collegamento vive finché resta aperta questa scheda.</p>
+      <p id="account-stato" class="account__stato" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <div class="diretta__scena">
+    <div class="monitor" data-sb-parte="monitor">
+      <div class="monitor__telaio">
+        <div class="monitor__barra">
+          <span class="monitor__punti" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+          </span>
+          <span id="monitor-titolo" class="monitor__titolo">slayer_beard</span>
+          <span id="monitor-badge" class="monitor__badge" hidden>LIVE</span>
+        </div>
+
+        <div class="monitor__schermo">
+          <div id="twitch-embed" class="monitor__video"></div>
+        </div>
+
+        <div id="monitor-lato" class="monitor__lato" hidden>
+          <div id="twitch-chat" class="monitor__chat"></div>
+        </div>
+
+        <div class="monitor__piede">
+          <button id="chat-toggle" type="button" aria-expanded="false" aria-controls="twitch-chat">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11.5a8.5 8.5 0 0 1-12.2 7.6L3 21l1.9-5.8A8.5 8.5 0 1 1 21 11.5z"/></svg>
+            Mostra la chat
+          </button>
+          <p class="monitor__nota" data-sb-testo="deck.notaPlayer">Il player è incorporato da Twitch: se il browser blocca i cookie di terze parti può non partire.</p>
+          <a id="apri-twitch" class="monitor__link" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener">
+            Guarda su Twitch
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4h6v6"/><path d="M20 4 10.5 13.5"/><path d="M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+<div id="pollo" class="pollo" data-stato="riposo" data-sb-parte="pollo">
+  <div id="pollo-fumetto" class="pollo__fumetto" aria-hidden="true" hidden><span class="pollo__testo"></span></div>
+
+  <button id="pollo-bottone" class="pollo__bottone" type="button" aria-label="Apri la chat del canale">
+    <img class="pollo__img" src="img/mascotte.webp" alt="" aria-hidden="true" width="386" height="556" loading="lazy" decoding="async" data-sb-immagine="config.immagini.mascotte">
+  </button>
+
+  <button id="pollo-chiudi" class="pollo__chiudi" type="button" aria-label="Nascondi il pollo"></button>
+</div>
+
+  </div>
+
+<section id="lurk" class="lurk" aria-labelledby="lurk-titolo" data-sb-parte="lurk">
+  <h3 id="lurk-titolo" class="lurk__titolo" data-sb-testo="lurk.titolo">Modalità lurk</h3>
+
+  <p class="lurk__spiegazione" data-sb-testo="lurk.spiegazione">Se resti su questa pagina, ogni tanto controllo che il video stia ancora girando e lo faccio ripartire se il browser lo ferma. <b>Twitch conta uno spettatore finché il video va</b>, anche mutato e anche se la scheda è dietro: non conto io, conta il tuo player.</p>
+
+  <div id="lurk-comandi" class="lurk__comandi"></div>
+
+  <p id="lurk-stato" class="lurk__stato" role="status" aria-live="polite"></p>
+
+  <p id="lurk-conto" class="lurk__conto"></p>
+
+  <p class="lurk__account" data-sb-testo="lurk.notaAccount">Se il tuo browser blocca i cookie di terze parti, da qui risulti come spettatore anonimo: conti per il canale, ma <b>non prendi punti canale né streak</b>. Da questa pagina non posso saperlo. Se ci tieni alla tua streak, guarda direttamente su Twitch.</p>
+  <p class="lurk__mobile" data-sb-testo="lurk.notaMobile">Sul telefono il browser mette in pausa il video appena esci da questa scheda, e da qui non posso rimediare. La modalità lurk vale finché resti su questa pagina.</p>
+</section>
+
+  <p class="diretta__nota" data-sb-testo="diretta.nota">Se lo schermo resta nero è quasi sempre il browser: cookie di terze parti bloccati, oppure un&#39;estensione che ferma gli iframe. In quel caso il canale si apre lo stesso su Twitch.</p>
+</section>
+
+<section id="sondaggio" class="sondaggio" aria-labelledby="sondaggio-titolo" data-sb-sezione="sondaggio">
+  <div class="sondaggio__scheda">
+    <div class="sondaggio__testa">
+      <p class="sezione__occhiello" data-sb-testo="sondaggio.occhiello">Sondaggio</p>
+      <h2 id="sondaggio-titolo" class="sezione__titolo" data-sb-testo="sondaggio.titolo">Dì la tua</h2>
+    </div>
+    <p id="sondaggio-domanda" class="sondaggio__domanda">La domanda del sondaggio aperto compare qui: i sondaggi si creano dal menu del pannello, alla voce «Sondaggi».</p>
+    <p id="sondaggio-stato" class="sondaggio__stato" aria-live="polite"></p>
+    <ul id="sondaggio-risposte" class="sondaggio__risposte"></ul>
+    <p id="sondaggio-errore" class="sondaggio__errore" role="alert" hidden></p>
+    <p id="sondaggio-nota" class="sondaggio__nota" data-sb-testo="sondaggio.nota">Si vota una volta sola, con il proprio account Twitch.</p>
+  </div>
+
+  <dialog id="sondaggio-login" class="sondaggio-login" aria-labelledby="sondaggio-login-titolo" aria-describedby="sondaggio-login-testo">
+    <h3 id="sondaggio-login-titolo" class="sondaggio-login__titolo" data-sb-testo="sondaggio.loginTitolo">Per votare serve Twitch</h3>
+    <p id="sondaggio-login-testo" class="sondaggio-login__testo" data-sb-testo="sondaggio.loginTesto">Possono votare solo gli utenti collegati al sito con il proprio account Twitch: così ogni persona vota una volta sola.</p>
+    <div class="sondaggio-login__azioni">
+      <button type="button" id="sondaggio-login-entra" class="btn btn--pieno" data-sb-testo="sondaggio.loginBtn">Collegati con Twitch</button>
+      <button type="button" id="sondaggio-login-chiudi" class="btn btn--vuoto" data-sb-testo="sondaggio.loginChiudi">Non ora</button>
+    </div>
+  </dialog>
+</section>
+
+<section id="settimana" class="settimana" aria-labelledby="settimana-titolo" data-sb-sezione="settimana" data-sb-riquadro="settimana">
+  <div class="settimana__sfondo con-immagine" aria-hidden="true" style="--fuoco: 50% 50%; --intensita: 0.3">
+    <img class="settimana__sfondo-img" src="img/settimana-sfondo.webp" alt="" loading="lazy" decoding="async">
+  </div>
+
+  <div class="sezione__testa settimana__testa" data-sb-blocco="settimana.testa">
+    <p class="sezione__occhiello" data-sb-testo="settimana.occhiello">Calendario</p>
+    <h2 id="settimana-titolo" class="sezione__titolo" data-sb-testo="settimana.titolo">La settimana</h2>
+    <p class="sezione__testo" data-sb-testo="settimana.testo">Quattro sere a settimana, sempre alle 21:00. Le altre le passo a fare altro.</p>
+  </div>
+
+  <ol id="nastro" class="nastro" aria-label="Lunedì, mercoledì, venerdì e domenica alle 21:00" data-sb-parte="nastro" data-sb-blocco="settimana.nastro">
+    
+    <li class="nastro__giorno is-diretta" data-giorno="1">
+      
+      <span class="nastro__filigrana" aria-hidden="true">Lunedì</span>
+      <div class="nastro__testa">
+        <p class="nastro__targa"><span class="nastro__abbr" aria-hidden="true">LUN</span><span class="nastro__nome">Lunedì</span><span class="nastro__data"></span></p>
+        <p class="nastro__segni"></p>
+      </div>
+      <div class="nastro__corpo">
+
+        <p class="nastro__quando"><span class="nastro__tag">Diretta</span> <span class="nastro__orario"><b class="nastro__ora">21:00</b><span class="nastro__fine"> – 01:00</span></span></p>
+
+      </div>
+    </li>
+    
+    <li class="nastro__giorno" data-giorno="2">
+
+      <div class="nastro__testa">
+        <p class="nastro__targa"><span class="nastro__abbr" aria-hidden="true">MAR</span><span class="nastro__nome">Martedì</span><span class="nastro__data"></span></p>
+        <p class="nastro__segni"></p>
+      </div>
+      <div class="nastro__corpo">
+
+        <p class="nastro__quando"><span class="nastro__tag">Riposo</span></p>
+
+      </div>
+    </li>
+    
+    <li class="nastro__giorno is-diretta" data-giorno="3">
+      
+      <span class="nastro__filigrana" aria-hidden="true">Mercoledì</span>
+      <div class="nastro__testa">
+        <p class="nastro__targa"><span class="nastro__abbr" aria-hidden="true">MER</span><span class="nastro__nome">Mercoledì</span><span class="nastro__data"></span></p>
+        <p class="nastro__segni"></p>
+      </div>
+      <div class="nastro__corpo">
+
+        <p class="nastro__quando"><span class="nastro__tag">Diretta</span> <span class="nastro__orario"><b class="nastro__ora">21:00</b><span class="nastro__fine"> – 01:00</span></span></p>
+
+      </div>
+    </li>
+    
+    <li class="nastro__giorno" data-giorno="4">
+
+      <div class="nastro__testa">
+        <p class="nastro__targa"><span class="nastro__abbr" aria-hidden="true">GIO</span><span class="nastro__nome">Giovedì</span><span class="nastro__data"></span></p>
+        <p class="nastro__segni"></p>
+      </div>
+      <div class="nastro__corpo">
+
+        <p class="nastro__quando"><span class="nastro__tag">Riposo</span></p>
+
+      </div>
+    </li>
+    
+    <li class="nastro__giorno is-diretta" data-giorno="5">
+      
+      <span class="nastro__filigrana" aria-hidden="true">Venerdì</span>
+      <div class="nastro__testa">
+        <p class="nastro__targa"><span class="nastro__abbr" aria-hidden="true">VEN</span><span class="nastro__nome">Venerdì</span><span class="nastro__data"></span></p>
+        <p class="nastro__segni"></p>
+      </div>
+      <div class="nastro__corpo">
+
+        <p class="nastro__quando"><span class="nastro__tag">Diretta</span> <span class="nastro__orario"><b class="nastro__ora">21:00</b><span class="nastro__fine"> – 01:00</span></span></p>
+
+      </div>
+    </li>
+    
+    <li class="nastro__giorno" data-giorno="6">
+
+      <div class="nastro__testa">
+        <p class="nastro__targa"><span class="nastro__abbr" aria-hidden="true">SAB</span><span class="nastro__nome">Sabato</span><span class="nastro__data"></span></p>
+        <p class="nastro__segni"></p>
+      </div>
+      <div class="nastro__corpo">
+
+        <p class="nastro__quando"><span class="nastro__tag">Riposo</span></p>
+
+      </div>
+    </li>
+    
+    <li class="nastro__giorno is-diretta" data-giorno="0">
+      
+      <span class="nastro__filigrana" aria-hidden="true">Domenica</span>
+      <div class="nastro__testa">
+        <p class="nastro__targa"><span class="nastro__abbr" aria-hidden="true">DOM</span><span class="nastro__nome">Domenica</span><span class="nastro__data"></span></p>
+        <p class="nastro__segni"></p>
+      </div>
+      <div class="nastro__corpo">
+
+        <p class="nastro__quando"><span class="nastro__tag">Diretta</span> <span class="nastro__orario"><b class="nastro__ora">21:00</b><span class="nastro__fine"> – 01:00</span></span></p>
+
+      </div>
+    </li>
+    
+  </ol>
+
+  <div class="settimana__piede" data-sb-blocco="settimana.piede">
+    <p class="settimana__nota" data-sb-testo="settimana.nota">Tutti gli orari sono nel fuso italiano (Europe/Rome). Il programma può cambiare: se salta una serata o ne aggiungo una, il canale Twitch resta il riferimento aggiornato.</p>
+    <a class="btn btn--vuoto" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener" data-sb-testo="settimana.cta">Vai al canale</a>
+  </div>
+</section>
+
+<section id="chi" class="chi" aria-labelledby="chi-titolo" data-sb-sezione="chi" data-sb-riquadro="chi">
+  <div class="chi__griglia">
+    <div class="chi__corpo" data-sb-blocco="chi.corpo">
+      <p class="sezione__occhiello" data-sb-testo="chi.occhiello">slayer_beard</p>
+      <h2 id="chi-titolo" class="sezione__titolo" data-sb-testo="chi.titolo">Chi sono</h2>
+
+      <p class="chi__apertura" data-sb-testo="chi.apertura">Sono Michele, in arte slayer_beard. Faccio live da agosto 2020: ho iniziato Twitch per gioco, come sfida personale.</p>
+      <p data-sb-testo="chi.corpo1">Prima di allora mi divertivo a moderare qualche chat su Twitch o a seguire altri canali per puro divertimento. Ora faccio uguale, ma con la consapevolezza di fare streaming pure io!</p>
+      <blockquote class="chi__citazione" data-sb-testo="chi.citazione">Se passi in stream vedrai che non ti annoierai, anzi: avrai sempre il sorriso.</blockquote>
+      <p data-sb-testo="chi.corpo2">Le mie live hanno una schedule che varia nel tempo, ma una cosa che cambia poco è il contenuto che porto in un determinato giorno della settimana! Si va dai giochi di avventura con una bella trama ai giochi che ti danno una challenge personale, dagli horror che mi spaventano, arricchiti con qualche estensione horror, ai giochi che ho voglia di testare con la chat. Tutto questo sempre con divertimento, cazzeggio e risate assicurate!</p>
+
+      <ul class="chi__tag">
+        <li class="tag" data-sb-testo="chi.tag1">Variety streamer</li>
+        <li class="tag" data-sb-testo="chi.tag2">Horror</li>
+        <li class="tag" data-sb-testo="chi.tag3">Co-op</li>
+        <li class="tag" data-sb-testo="chi.tag4">Effetti speciali</li>
+        <li class="tag" data-sb-testo="chi.tag5">ITA / ENG</li>
+        <li class="tag" data-sb-testo="chi.tag6">Twitch Affiliate</li>
+      </ul>
+
+      <a class="btn btn--pieno" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener" data-sb-testo="chi.cta">Vieni a trovarmi su Twitch</a>
+
+      <div id="giochi" class="clip clip--invito" data-sb-parte="giochi">
+        <div class="clip__testa">
+          <p class="sezione__occhiello" data-sb-testo="giochi.occhiello">Lo storico delle live</p>
+          <h3 class="clip__titolo" data-sb-testo="giochi.titolo">I giochi della live</h3>
+          <p class="clip__testo" data-sb-testo="giochi.testo">Tutto quello che è passato in diretta, dagli horror ai party game: copertine, ore giocate e le clip migliori.</p>
+        </div>
+        <a class="clip__vai clip__vai--invito" href="giochi.html">
+          <span class="clip__vai-testo" data-sb-testo="giochi.invito">Vedi tutti i giochi</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <aside class="chi__margine" data-sb-blocco="chi.margine">
+      <div class="nota">
+        <h3 class="nota__titolo" data-sb-testo="chi.nota1Titolo">Lingua</h3>
+        <p class="nota__testo" data-sb-testo="chi.nota1Testo">Italiano e inglese. Spesso tutti e due nella stessa frase, scusate in anticipo.</p>
+      </div>
+      <div class="nota">
+        <h3 class="nota__titolo" data-sb-testo="chi.nota2Titolo">Cosa si gioca</h3>
+        <p class="nota__testo" data-sb-testo="chi.nota2Testo">Horror, co-op e quello che capita. Di solito si decide la sera stessa.</p>
+      </div>
+      <div class="nota">
+        <h3 class="nota__titolo" data-sb-testo="chi.nota3Titolo">Emote</h3>
+        <p class="nota__testo" data-sb-testo="chi.nota3Testo">Iniziano tutte con slayer156: scrivi quello e le trovi al volo.</p>
+      </div>
+    </aside>
+
+    <figure class="chi__ritratto" data-sb-blocco="chi.ritratto">
+      <img src="img/avatar.webp" alt="Avatar del canale: il pollo viola di slayer_beard in primo piano." width="84" height="84" loading="lazy" decoding="async" data-sb-immagine="config.immagini.avatar" data-sb-alt="chi.ritrattoAlt">
+      <figcaption>slayer_beard — Twitch Affiliate · dal 2020</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="supporto" class="supporto" aria-labelledby="supporto-titolo" data-sb-sezione="supporto" data-sb-riquadro="supporto">
+  <div class="sezione__testa" data-sb-blocco="supporto.testa">
+    <p class="sezione__occhiello" data-sb-testo="supporto.occhiello">Supporto</p>
+    <h2 id="supporto-titolo" class="sezione__titolo" data-sb-testo="supporto.titolo">Come dare una mano</h2>
+    <p class="sezione__testo" data-sb-testo="supporto.testo">Seguire è gratis ed è già tanto: il tasto Segui su Twitch non costa niente e mi aiuta davvero. Tutto quello che trovi qui sotto è facoltativo, guardare la diretta non richiede nessuna di queste cose.</p>
+  </div>
+
+  <ol id="listino" class="listino" data-sb-parte="listino" data-sb-blocco="supporto.listino">
+    
+    <li class="listino__riga">
+      <span class="listino__icona"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 3.2 2.75 5.6 6.15.9-4.45 4.35 1.05 6.15L12 17.3l-5.5 2.9 1.05-6.15L3.1 9.7l6.15-.9z"/></svg></span>
+      <div class="listino__corpo">
+        <h3 class="listino__titolo">Abbonamento</h3>
+        <p class="listino__testo">Vale un mese e si può fermare quando vuoi. Sblocca le emote slayer156 e toglie la pubblicità. Al momento siamo in 90.</p>
+      </div>
+      <span class="listino__tag">Da 4,99 €</span>
+      <a class="listino__azione" href="https://www.twitch.tv/subs/slayer_beard" target="_blank" rel="noopener">Abbonati su Twitch</a>
+    </li>
+    
+    <li class="listino__riga">
+      <span class="listino__icona"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 8 3.6 2.6L12 4l5.4 6.6L21 8l-1.8 10H4.8z"/><path d="M4.8 21h14.4"/></svg></span>
+      <div class="listino__corpo">
+        <h3 class="listino__titolo">Abbonamento Prime</h3>
+        <p class="listino__testo">Se hai Amazon Prime, ogni mese hai un abbonamento incluso da usare dove vuoi. Non costa niente in più: se non lo usi, scade e basta.</p>
+      </div>
+      <span class="listino__tag">Incluso</span>
+      <a class="listino__azione" href="https://gaming.amazon.com/" target="_blank" rel="noopener">Attiva il Prime</a>
+    </li>
+    
+    <li class="listino__riga">
+      <span class="listino__icona"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/><path d="m12 21-3-12 3-6 3 6z"/></svg></span>
+      <div class="listino__corpo">
+        <h3 class="listino__titolo">Bits</h3>
+        <p class="listino__testo">Piccole mance durante la diretta: compaiono in chat e le leggo ad alta voce. Anche zero va benissimo.</p>
+      </div>
+      <span class="listino__tag">Quanto vuoi</span>
+      <a class="listino__azione" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener">Manda dei Bits</a>
+    </li>
+    
+    <li class="listino__riga">
+      <span class="listino__icona"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20.8 6a5.4 5.4 0 0 0-7.7 0L12 7.1 10.9 6A5.4 5.4 0 0 0 3.2 13.6L12 21.5l8.8-7.9A5.4 5.4 0 0 0 20.8 6z"/></svg></span>
+      <div class="listino__corpo">
+        <h3 class="listino__titolo">Segui il canale</h3>
+        <p class="listino__testo">Il modo che aiuta di più e non costa niente: ti avvisa quando accendo e mi fa salire nelle liste di Twitch.</p>
+      </div>
+      <span class="listino__tag">Gratis</span>
+      <a class="listino__azione" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener">Segui su Twitch</a>
+    </li>
+    
+  </ol>
+
+  <p class="supporto__chiusura" data-sb-testo="supporto.chiusura" data-sb-blocco="supporto.chiusura">Nessuno di questi passaggi è richiesto. Il canale è aperto, resta aperto, e la chat è la stessa per tutti.</p>
+</section>
+
+<section id="saluti" class="saluti" aria-labelledby="saluti-titolo" data-sb-sezione="saluti" data-sb-riquadro="saluti">
+  <div class="saluti__griglia">
+    <div class="saluti__social" data-sb-blocco="saluti.social">
+      <p class="sezione__occhiello" data-sb-testo="saluti.occhiello">Altrove</p>
+      <h2 id="saluti-titolo" class="sezione__titolo" data-sb-testo="saluti.titolo">Dove mi trovi</h2>
+      <p class="sezione__testo" data-sb-testo="saluti.testo">Stesso nome ovunque: slayer_beard. Non ci sono profili doppi, se ne trovi un altro non sono io.</p>
+
+      <ul id="social" class="social" data-sb-parte="social">
+        
+        <li class="social__riga">
+          <a class="social__voce" href="https://www.twitch.tv/slayer_beard" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 3h16v11l-4.5 4.5H12L8.5 22v-3.5H4z"/><path d="M11 8v4"/><path d="M15 8v4"/></svg><span class="social__nome">Twitch</span><span class="social__handle">twitch.tv/slayer_beard</span></a>
+          <div class="social__conta"><span class="social__conta-voce"><span class="social__conta-etichetta">Iscritti</span> <b class="social__conta-numero" data-follower>3.624</b></span><span class="social__conta-sep" aria-hidden="true">/</span><span class="social__conta-voce"><span class="social__conta-etichetta">Goal</span> <b class="social__conta-numero">5.000</b></span></div>
+        </li>
+        
+        <li class="social__riga">
+          <a class="social__voce" href="https://www.instagram.com/slayer_beard/" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M16.75 7.25h.01"/></svg><span class="social__nome">Instagram</span><span class="social__handle">@slayer_beard</span></a>
+          
+        </li>
+        
+        <li class="social__riga">
+          <a class="social__voce" href="https://www.tiktok.com/@slayer_beard" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 3v12.5a4 4 0 1 1-4-4"/><path d="M13 3c.3 3.1 2.6 5.4 6 5.7"/></svg><span class="social__nome">TikTok</span><span class="social__handle">@slayer_beard</span></a>
+          
+        </li>
+        
+      </ul>
+    </div>
+
+    <div class="contatti" data-sb-blocco="saluti.contatti">
+      <h3 class="contatti__titolo" data-sb-testo="saluti.contattiTitolo">Scrivimi</h3>
+      <p class="contatti__testo" data-sb-testo="saluti.contattiTesto">Per collaborazioni, proposte o segnalazioni, scrivi a questo indirizzo. Leggo tutto, rispondo quando riesco.</p>
+      <p><code id="email" class="contatti__email">slayerbeard@gmail.com</code></p>
+
+      <div class="contatti__azioni">
+        <button id="copia-email" class="btn btn--vuoto" type="button" aria-live="polite">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M15 5.5V4.5A1.5 1.5 0 0 0 13.5 3h-9A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15h1"/></svg>
+          Copia l&#39;email
+        </button>
+        <a id="scrivi-email" class="btn btn--pieno" href="mailto:slayerbeard@gmail.com">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>
+          Scrivi una mail
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <p class="saluti__chiusura" data-sb-testo="saluti.chiusura" data-sb-blocco="saluti.chiusura">Grazie per essere passato. Ci si vede in diretta.</p>
+</section>
+
+</main>
+
+<footer class="piede" data-sb-sezione="piede" data-sb-riquadro="piede">
+  <p class="piede__copy" data-sb-blocco="piede.copy">© 2026 slayer_beard</p>
+  <p class="piede__disclaimer" data-sb-testo="footer.disclaimer" data-sb-blocco="piede.disclaimer">Sito personale, non affiliato a Twitch. Twitch è un marchio di Twitch Interactive, Inc. I nomi e i loghi dei social appartengono ai rispettivi proprietari.</p>
+  <p class="piede__nota" data-sb-testo="footer.nota" data-sb-blocco="piede.nota">Nessun pollo è stato maltrattato durante la costruzione di questo sito.</p>
+</footer>
+
+<script src="js/ritorno.js"></script>
+<script src="js/dati.js"></script>
+<script src="https://embed.twitch.tv/embed/v1.js"></script>
+<script src="js/player.js" defer></script>
+<script src="js/sito.js" defer></script>
+<script src="js/account.js" defer></script>
+<script src="js/canale.js" defer></script>
+<script src="js/lurk.js" defer></script>
+<script src="js/pollo.js" defer></script>
+<script src="js/cima.js" defer></script>
+<script src="js/guardia.js" defer></script>
+<script src="js/sondaggio.js" defer></script>
+
+<style id="sb-auguri-stile">
+/* Auguri del 21/09/2026: tutto quello che segue colpisce SOLO elementi creati da questo blocco
+   (classi sb-aug-*). Senza lo script non esiste nessuno di quegli elementi, quindi non si vede nulla.
+   Lo script si spegne da solo alle 2026-09-22T00:00:00+02:00. */
+.sb-aug-scena{position:fixed;inset:0;z-index:59;pointer-events:none;overflow:hidden;contain:strict}
+.sb-aug-scena *{pointer-events:none}
+.sb-aug-festone{position:absolute;top:0;left:0;right:0;height:22px;display:flex;justify-content:space-around;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.45))}
+.sb-aug-festone::before{content:"";position:absolute;top:2px;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--viola,#8b2fff),var(--ciano,#22e0ff),var(--magenta,#ff2fa0),var(--allerta,#ffc65c),var(--viola,#8b2fff))}
+.sb-aug-bandierina{width:16px;height:20px;margin-top:3px;clip-path:polygon(0 0,100% 0,50% 100%);background:var(--c,#8b2fff);
+  transform-origin:50% 0;animation:sb-aug-oscilla 3.2s ease-in-out infinite alternate;animation-delay:var(--r,0s)}
+.sb-aug-palloncino{position:absolute;bottom:-160px;left:var(--x,50%);width:var(--w,54px);height:calc(var(--w,54px) * 1.22);
+  border-radius:50% 50% 48% 48% / 55% 55% 45% 45%;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.75) 0 6%,rgba(255,255,255,.18) 14%,transparent 34%),var(--c,#8b2fff);
+  box-shadow:inset -6px -10px 18px rgba(0,0,0,.28),0 0 22px color-mix(in srgb,var(--c,#8b2fff) 45%,transparent);
+  opacity:.92;animation:sb-aug-sale var(--d,14s) linear forwards}
+.sb-aug-palloncino::before{content:"";position:absolute;left:50%;bottom:-6px;width:10px;height:8px;transform:translateX(-50%);
+  clip-path:polygon(50% 0,100% 100%,0 100%);background:var(--c,#8b2fff)}
+.sb-aug-palloncino::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:90px;margin-top:2px;
+  background:linear-gradient(rgba(242,240,248,.6),rgba(242,240,248,0))}
+.sb-aug-coriandolo{position:absolute;top:-24px;left:var(--x,50%);width:var(--w,8px);height:calc(var(--w,8px) * 1.6);background:var(--c,#22e0ff);
+  border-radius:2px;animation:sb-aug-cade var(--d,3s) cubic-bezier(.25,.6,.45,1) forwards;animation-delay:var(--r,0s)}
+.sb-aug-coriandolo.is-tondo{border-radius:50%;height:var(--w,8px)}
+.sb-aug-stella{position:absolute;top:-80px;left:var(--x,50%);width:4px;height:70px;border-radius:4px;
+  background:linear-gradient(var(--c,#ff2fa0),transparent);animation:sb-aug-cade var(--d,4s) ease-in forwards;animation-delay:var(--r,0s)}
+
+.sb-aug-velo{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:16px;
+  background:rgba(7,7,12,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:sb-aug-appare .35s ease-out}
+.sb-aug-velo.is-via{animation:sb-aug-sparisce .25s ease-in forwards}
+.sb-aug-carta{position:relative;width:min(440px,100%);padding:40px 28px 30px;text-align:center;border-radius:22px;
+  color:var(--testo,#f2f0f8);font-family:var(--font-testo,system-ui,sans-serif);
+  background:radial-gradient(120% 90% at 50% 0%,rgba(139,47,255,.38),transparent 60%),
+             radial-gradient(90% 70% at 100% 100%,rgba(34,224,255,.18),transparent 60%),#110d1f;
+  border:1px solid rgba(139,47,255,.55);
+  box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 0 40px rgba(139,47,255,.45),0 28px 70px -28px rgba(0,0,0,.85);
+  animation:sb-aug-rimbalza .6s cubic-bezier(.2,1.4,.4,1)}
+.sb-aug-emoji{display:block;font-size:52px;line-height:1;margin-bottom:10px}
+.sb-aug-titolo{margin:0;font-family:var(--font-titolo,system-ui,sans-serif);font-weight:700;font-size:clamp(2.1rem,1.5rem + 3vw,3.1rem);
+  line-height:1.05;letter-spacing:-.01em;color:var(--viola-chiaro,#c5a4ff);
+  background:linear-gradient(98deg,#f2f0f8 0%,#c5a4ff 40%,#ff2fa0 70%,#22e0ff 100%);-webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent}
+.sb-aug-sotto{margin:12px 0 22px;color:var(--testo-medio,#c3bdd6);font-size:1.05rem}
+.sb-aug-evviva{font:inherit;font-weight:600;cursor:pointer;color:#fff;border:0;border-radius:999px;padding:12px 26px;
+  background:linear-gradient(135deg,var(--viola,#8b2fff),var(--magenta,#ff2fa0));box-shadow:0 0 24px rgba(139,47,255,.45);
+  transition:transform .15s ease,box-shadow .15s ease}
+.sb-aug-evviva:hover{transform:translateY(-2px);box-shadow:0 0 32px rgba(255,47,160,.55)}
+.sb-aug-chiudi{position:absolute;top:10px;right:10px;width:40px;height:40px;display:grid;place-items:center;cursor:pointer;
+  font:400 26px/1 system-ui,sans-serif;color:var(--testo-medio,#c3bdd6);background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;transition:background .15s ease,color .15s ease}
+.sb-aug-chiudi:hover{background:rgba(255,255,255,.14);color:var(--testo,#f2f0f8)}
+.sb-aug-chiudi:focus-visible,.sb-aug-evviva:focus-visible{outline:3px solid var(--ciano,#22e0ff);outline-offset:3px}
+
+@keyframes sb-aug-sale{0%{transform:translate3d(0,0,0) rotate(-4deg)}25%{transform:translate3d(18px,-30vh,0) rotate(4deg)}
+  50%{transform:translate3d(-14px,-60vh,0) rotate(-3deg)}75%{transform:translate3d(16px,-90vh,0) rotate(3deg)}
+  100%{transform:translate3d(0,calc(-100vh - 320px),0) rotate(-2deg)}}
+@keyframes sb-aug-cade{0%{transform:translate3d(0,0,0) rotate(0);opacity:1}85%{opacity:1}
+  100%{transform:translate3d(var(--dx,40px),calc(100vh + 120px),0) rotate(var(--rot,540deg));opacity:0}}
+@keyframes sb-aug-oscilla{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+@keyframes sb-aug-appare{from{opacity:0}to{opacity:1}}
+@keyframes sb-aug-sparisce{to{opacity:0}}
+@keyframes sb-aug-rimbalza{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+
+@media (prefers-reduced-motion:reduce){
+  .sb-aug-bandierina,.sb-aug-velo,.sb-aug-velo.is-via,.sb-aug-carta{animation:none}
+  .sb-aug-palloncino,.sb-aug-coriandolo,.sb-aug-stella{display:none}
+  .sb-aug-evviva,.sb-aug-chiudi{transition:none}
+}
+</style>
+<script>/* Auguri 21/09/2026. Si spegne da solo alle 2026-09-22T00:00:00+02:00 (mezzanotte ora italiana). */ (function () { 'use strict'; var SCADENZA = Date.parse('2026-09-22T00:00:00+02:00'); var CHIAVE = 'sb-auguri-visto-20260921'; var COLORI = ['#8b2fff', '#22e0ff', '#ff2fa0', '#ffc65c', '#35e0a1', '#c5a4ff']; function msAllaScadenza(ora) { var resto = SCADENZA - ora; return resto > 0 ? resto : 0; } if (typeof document === 'undefined') { if (typeof globalThis !== 'undefined') { globalThis.__sbAuguri = { msAllaScadenza: msAllaScadenza, SCADENZA: SCADENZA }; } return; } var stile = document.getElementById('sb-auguri-stile'); if (msAllaScadenza(Date.now()) === 0) { if (stile) { stile.parentNode.removeChild(stile); } return; } var ridotto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); var scena = null, velo = null, fuocoPrima = null, timerPalloncini = null, timerScadenza = null, timerControllo = null; var spento = false; function a(arr) { return arr[Math.floor(Math.random() * arr.length)]; } function tra(min, max) { return min + Math.random() * (max - min); } function el(tag, classe) { var e = document.createElement(tag); if (classe) { e.className = classe; } return e; } function via(e) { if (e && e.parentNode) { e.parentNode.removeChild(e); } } function prop(e, nome, valore) { e.style.setProperty(nome, valore); } function festone() { var f = el('div', 'sb-aug-festone'); var n = Math.max(8, Math.min(40, Math.round(window.innerWidth / 38))); for (var i = 0; i < n; i++) { var b = el('span', 'sb-aug-bandierina'); prop(b, '--c', COLORI[i % COLORI.length]); prop(b, '--r', (-tra(0, 3)).toFixed(2) + 's'); f.appendChild(b); } scena.appendChild(f); } function palloncino() { if (spento || ridotto || document.hidden) { return; } if (scena.querySelectorAll('.sb-aug-palloncino').length >= 7) { return; } var p = el('span', 'sb-aug-palloncino'); prop(p, '--x', tra(2, 94).toFixed(1) + '%'); prop(p, '--w', Math.round(tra(38, 62)) + 'px'); prop(p, '--d', tra(11, 18).toFixed(1) + 's'); prop(p, '--c', a(COLORI)); p.addEventListener('animationend', function () { via(p); }); scena.appendChild(p); } function coriandoli(quanti) { if (spento || ridotto) { return; } for (var i = 0; i < quanti; i++) { var stella = Math.random() < 0.18; var c = el('span', stella ? 'sb-aug-stella' : (Math.random() < 0.3 ? 'sb-aug-coriandolo is-tondo' : 'sb-aug-coriandolo')); prop(c, '--x', tra(0, 100).toFixed(1) + '%'); prop(c, '--w', Math.round(tra(6, 11)) + 'px'); prop(c, '--d', tra(2.6, 4.8).toFixed(2) + 's'); prop(c, '--r', tra(0, 0.9).toFixed(2) + 's'); prop(c, '--dx', Math.round(tra(-120, 120)) + 'px'); prop(c, '--rot', Math.round(tra(-900, 900)) + 'deg'); prop(c, '--c', a(COLORI)); c.addEventListener('animationend', function (ev) { via(ev.target); }); scena.appendChild(c); } } function tasto(ev) { if (!velo) { return; } if (ev.key === 'Escape' || ev.key === 'Esc') { ev.preventDefault(); chiudi(false); return; } if (ev.key === 'Tab') { var f = velo.querySelectorAll('button'); if (!f.length) { return; } var primo = f[0], ultimo = f[f.length - 1]; if (ev.shiftKey && document.activeElement === primo) { ev.preventDefault(); ultimo.focus(); } else if (!ev.shiftKey && document.activeElement === ultimo) { ev.preventDefault(); primo.focus(); } else if (!velo.contains(document.activeElement)) { ev.preventDefault(); primo.focus(); } } } function chiudi(festa) { if (!velo) { return; } var v = velo; velo = null; document.removeEventListener('keydown', tasto, true); try { sessionStorage.setItem(CHIAVE, '1'); } catch (e) { } if (festa) { coriandoli(90); } if (ridotto) { via(v); } else { v.className += ' is-via'; setTimeout(function () { via(v); }, 260); } if (fuocoPrima && typeof fuocoPrima.focus === 'function' && document.contains(fuocoPrima)) { try { fuocoPrima.focus({ preventScroll: true }); } catch (e) { } } fuocoPrima = null; } function apri() { var visto = false; try { visto = sessionStorage.getItem(CHIAVE) === '1'; } catch (e) { } if (visto) { return; } fuocoPrima = document.activeElement; velo = el('div', 'sb-aug-velo'); var carta = el('div', 'sb-aug-carta'); carta.setAttribute('role', 'dialog'); carta.setAttribute('aria-modal', 'true'); carta.setAttribute('aria-labelledby', 'sb-aug-titolo'); var x = el('button', 'sb-aug-chiudi'); x.type = 'button'; x.setAttribute('aria-label', 'Chiudi'); x.textContent = '\u00d7'; var emoji = el('span', 'sb-aug-emoji'); emoji.setAttribute('aria-hidden', 'true'); emoji.textContent = '\ud83c\udf88\ud83c\udf82\ud83c\udf89'; var titolo = el('h2', 'sb-aug-titolo'); titolo.id = 'sb-aug-titolo'; titolo.textContent = 'Tanti Auguri!'; var sotto = el('p', 'sb-aug-sotto'); sotto.textContent = 'Oggi si festeggia!'; var ok = el('button', 'sb-aug-evviva'); ok.type = 'button'; ok.textContent = 'Evviva! \ud83e\udd73'; x.addEventListener('click', function () { chiudi(false); }); ok.addEventListener('click', function () { chiudi(true); }); velo.addEventListener('click', function (ev) { if (ev.target === velo) { chiudi(false); } }); carta.appendChild(x); carta.appendChild(emoji); carta.appendChild(titolo); carta.appendChild(sotto); carta.appendChild(ok); velo.appendChild(carta); document.body.appendChild(velo); document.addEventListener('keydown', tasto, true); try { ok.focus({ preventScroll: true }); } catch (e) { ok.focus(); } coriandoli(70); } function spegni() { if (spento) { return; } spento = true; clearInterval(timerPalloncini); clearTimeout(timerScadenza); clearInterval(timerControllo); document.removeEventListener('keydown', tasto, true); document.removeEventListener('visibilitychange', controlla); if (velo) { via(velo); velo = null; } via(scena); scena = null; via(document.getElementById('sb-auguri-stile')); } function controlla() { if (msAllaScadenza(Date.now()) === 0) { spegni(); } } function avvia() { if (msAllaScadenza(Date.now()) === 0) { spegni(); return; } scena = el('div', 'sb-aug-scena'); scena.setAttribute('aria-hidden', 'true'); document.body.appendChild(scena); festone(); if (!ridotto) { for (var i = 0; i < 4; i++) { setTimeout(palloncino, i * 700); } timerPalloncini = setInterval(palloncino, 3500); } apri(); timerScadenza = setTimeout(spegni, Math.min(msAllaScadenza(Date.now()) + 50, 2147483000)); timerControllo = setInterval(controlla, 30000); document.addEventListener('visibilitychange', controlla); } if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', avvia); } else { avvia(); } })();</script>
+
+</body>
+</html>

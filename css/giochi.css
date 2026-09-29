@@ -540,7 +540,7 @@
 }
 
 .gioco-card__numero + .gioco-card__numero::before {
-  content: "·";
+  content: "/";
   margin-inline-end: var(--passo);
   opacity: 0.6;
 }

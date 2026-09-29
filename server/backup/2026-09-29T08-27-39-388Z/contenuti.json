@@ -1,0 +1,878 @@
+{
+  "versione": 1,
+  "aggiornatoIl": "2026-09-29T08:24:16.851Z",
+  "testi": {
+    "meta.titolo": "slayer_beard - canale Twitch ufficiale",
+    "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
+    "meta.ogDescrizione": "Quattro dirette a settimana alle 21:00, ITA ed ENG. Qui trovi il player, la settimana e i social.",
+    "meta.ogImmagineAlt": "Il pollo, mascotte di slayer_beard",
+    "marchio.nome": "slayer_beard",
+    "marchio.ruolo": "Twitch Affiliate · dal 2020",
+    "nav.regia": "Regia",
+    "nav.diretta": "Diretta",
+    "nav.settimana": "Settimana",
+    "nav.chi": "Chi sono",
+    "nav.supporto": "Supporto",
+    "nav.saluti": "Saluti",
+    "nav.vaiAlCanale": "Guarda su Twitch",
+    "deck.occhiello": "Canale Twitch · ITA / ENG",
+    "deck.titolo": "slayer_beard",
+    "deck.sottotitolo": "Porto giochi di vario genere in modo particolare, a volte con integrazioni ed effetti speciali. Quattro sere a settimana, sempre alle 21:00.",
+    "deck.ctaPrimaria": "Guarda su Twitch",
+    "deck.ctaSecondaria": "Guarda la diretta",
+    "deck.statoLive": "In onda adesso",
+    "deck.statoOffline": "Fuori onda",
+    "deck.statoVerifica": "Controllo il canale",
+    "deck.etichettaProssima": "Prossima diretta",
+    "deck.etichettaUltima": "Ultima diretta",
+    "deck.etichettaStato": "Stato del canale",
+    "deck.chatApri": "Mostra la chat",
+    "deck.chatChiudi": "Nascondi la chat",
+    "deck.notaPlayer": "Il player è incorporato da Twitch: se il browser blocca i cookie di terze parti può non partire.",
+    "deck.dato1Etichetta": "Follower",
+    "deck.dato2Valore": "4",
+    "deck.dato2Etichetta": "Dirette a settimana",
+    "deck.dato3Valore": "~25",
+    "deck.dato3Etichetta": "Spettatori medi",
+    "deck.dato4Valore": "2013",
+    "deck.dato4Etichetta": "Su Twitch dal",
+    "deck.scorri": "Scendi",
+    "diretta.occhiello": "In onda",
+    "diretta.titolo": "La diretta",
+    "diretta.nota": "Se lo schermo resta nero è quasi sempre il browser: cookie di terze parti bloccati, oppure un'estensione che ferma gli iframe. In quel caso il canale si apre lo stesso su Twitch.",
+    "account.entra": "Collegati con Twitch",
+    "account.esci": "Scollega e revoca",
+    "account.collegato": "Collegato come {nome}",
+    "account.nota": "Il profilo serve al sito, non solo al player: da collegato il sito sa chi sei, ti mostra la diretta aggiornata e la modalità lurk può dire in chat che stai guardando. Il collegamento vive finché resta aperta questa scheda.",
+    "lurk.titolo": "Modalità lurk",
+    "lurk.spiegazione": "Se resti su questa pagina, ogni tanto controllo che il video stia ancora girando e lo faccio ripartire se il browser lo ferma. <b>Twitch conta uno spettatore finché il video va</b>, anche mutato e anche se la scheda è dietro: non conto io, conta il tuo player.",
+    "lurk.notaAccount": "Se il tuo browser blocca i cookie di terze parti, da qui risulti come spettatore anonimo: conti per il canale, ma <b>non prendi punti canale né streak</b>. Da questa pagina non posso saperlo. Se ci tieni alla tua streak, guarda direttamente su Twitch.",
+    "lurk.notaMobile": "Sul telefono il browser mette in pausa il video appena esci da questa scheda, e da qui non posso rimediare. La modalità lurk vale finché resti su questa pagina.",
+    "lurk.accendi": "Attiva la modalità lurk",
+    "lurk.spegni": "Disattiva",
+    "lurk.audio": "Togli il muto (aiuta a non far sospendere la scheda)",
+    "lurk.schermo": "Tieni acceso lo schermo",
+    "lurk.ripresa": "L'avevi lasciata accesa: la riattivo?",
+    "lurk.statoSpento": "Spenta.",
+    "lurk.statoVivo": "Attiva: il video sta andando.",
+    "lurk.statoFermo": "Il video si è fermato.",
+    "lurk.statoRiparto": "Rimetto in moto il video...",
+    "lurk.statoBloccato": "Il browser ha bloccato la riproduzione: tocca il player per farlo partire.",
+    "lurk.statoAttesa": "Il canale è fuori onda: non c'è niente da tenere vivo.",
+    "lurk.chiuso": "Il canale è andato fuori onda: ho spento la modalità lurk.",
+    "lurk.statoResa": "Non ci riesco più. Ricarica la pagina.",
+    "lurk.statoNiente": "Da qui non posso: non ho i comandi del player.",
+    "lurk.ciSei": "Ci sei ancora? Senza risposta spengo la modalità lurk.",
+    "lurk.ciSono": "Sono qui",
+    "lurk.conto": "Viva da {durata}",
+    "lurk.contoRiavvii": "Viva da {durata} · {riavvii} riavvii",
+    "lurk.preavviso": "Attivando il lurk dirò in chat: «{frase}»",
+    "lurk.invito": "Vuoi dire in chat che stai guardando? Dirò: «{frase}»",
+    "lurk.manda": "Dillo in chat",
+    "lurk.inviato": "Fatto: il messaggio è in chat.",
+    "pollo.etichetta": "Apri la chat del canale",
+    "pollo.nascondi": "Nascondi il pollo",
+    "clip.occhiello": "ARCHIVIO",
+    "clip.titolo": "I momenti migliori",
+    "clip.testo": "Le clip più viste del canale, ritagliate da chi guardava. Si aggiornano da sole a ogni pubblicazione.",
+    "clip.invitoTitolo": "Migliori highlights",
+    "clip.invitoTesto": "I momenti più belli delle live, ritagliati da chi guardava. Tutti in una pagina: il periodo lo scegli tu.",
+    "clip.invitoBottone": "Vai alle clip",
+    "clip.guarda": "Guarda la clip",
+    "clip.visualizzazioni": "visualizzazioni",
+    "clip.di": "clip di",
+    "settimana.occhiello": "Calendario",
+    "settimana.titolo": "La settimana",
+    "settimana.testo": "Quattro sere a settimana, sempre alle 21:00. Le altre le passo a fare altro.",
+    "settimana.nota": "Tutti gli orari sono nel fuso italiano (Europe/Rome). Il programma può cambiare: se salta una serata o ne aggiungo una, il canale Twitch resta il riferimento aggiornato.",
+    "settimana.etichettaOggi": "Oggi",
+    "settimana.etichettaRiposo": "Riposo",
+    "settimana.etichettaProssima": "Prossima",
+    "settimana.etichettaDiretta": "Diretta",
+    "settimana.etichettaInOnda": "In onda",
+    "settimana.etichettaDaTe": "Da te",
+    "settimana.titoloEventi": "Fuori programma",
+    "settimana.etichettaEvento": "Speciale",
+    "settimana.etichettaFino": "Al massimo fino a",
+    "settimana.etichettaSaltata": "Niente live",
+    "settimana.cta": "Vai al canale",
+    "chi.occhiello": "slayer_beard",
+    "chi.titolo": "Chi sono",
+    "chi.apertura": "Sono Michele, in arte slayer_beard. Faccio live da agosto 2020: ho iniziato Twitch per gioco, come sfida personale.",
+    "chi.corpo1": "Prima di allora mi divertivo a moderare qualche chat su Twitch o a seguire altri canali per puro divertimento. Ora faccio uguale, ma con la consapevolezza di fare streaming pure io!",
+    "chi.corpo2": "Le mie live hanno una schedule che varia nel tempo, ma una cosa che cambia poco è il contenuto che porto in un determinato giorno della settimana! Si va dai giochi di avventura con una bella trama ai giochi che ti danno una challenge personale, dagli horror che mi spaventano, arricchiti con qualche estensione horror, ai giochi che ho voglia di testare con la chat. Tutto questo sempre con divertimento, cazzeggio e risate assicurate!",
+    "chi.citazione": "Se passi in stream vedrai che non ti annoierai, anzi: avrai sempre il sorriso.",
+    "chi.nota1Titolo": "Lingua",
+    "chi.nota1Testo": "Italiano e inglese. Spesso tutti e due nella stessa frase, scusate in anticipo.",
+    "chi.nota2Titolo": "Cosa si gioca",
+    "chi.nota2Testo": "Horror, co-op e quello che capita. Di solito si decide la sera stessa.",
+    "chi.nota3Titolo": "Emote",
+    "chi.nota3Testo": "Iniziano tutte con slayer156: scrivi quello e le trovi al volo.",
+    "chi.tag1": "Variety streamer",
+    "chi.tag2": "Horror",
+    "chi.tag3": "Co-op",
+    "chi.tag4": "Effetti speciali",
+    "chi.tag5": "ITA / ENG",
+    "chi.tag6": "Twitch Affiliate",
+    "chi.cta": "Vieni a trovarmi su Twitch",
+    "chi.ritrattoAlt": "Il pollo viola, avatar di slayer_beard",
+    "supporto.occhiello": "Supporto",
+    "supporto.titolo": "Come dare una mano",
+    "supporto.testo": "Seguire è gratis ed è già tanto: il tasto Segui su Twitch non costa niente e mi aiuta davvero. Tutto quello che trovi qui sotto è facoltativo, guardare la diretta non richiede nessuna di queste cose.",
+    "supporto.chiusura": "Nessuno di questi passaggi è richiesto. Il canale è aperto, resta aperto, e la chat è la stessa per tutti.",
+    "saluti.occhiello": "Altrove",
+    "saluti.titolo": "Dove mi trovi",
+    "saluti.testo": "Stesso nome ovunque: slayer_beard. Non ci sono profili doppi, se ne trovi un altro non sono io.",
+    "saluti.contattiTitolo": "Scrivimi",
+    "saluti.contattiTesto": "Per collaborazioni, proposte o segnalazioni, scrivi a questo indirizzo. Leggo tutto, rispondo quando riesco.",
+    "saluti.copiaBtn": "Copia l'email",
+    "saluti.copiaFatto": "Copiata",
+    "saluti.scriviBtn": "Scrivi una mail",
+    "saluti.chiusura": "Grazie per essere passato. Ci si vede in diretta.",
+    "saluti.goalEtichetta": "Goal",
+    "footer.copy": "slayer_beard",
+    "footer.disclaimer": "Sito personale, non affiliato a Twitch. Twitch è un marchio di Twitch Interactive, Inc. I nomi e i loghi dei social appartengono ai rispettivi proprietari.",
+    "footer.nota": "Nessun pollo è stato maltrattato durante la costruzione di questo sito.",
+    "clip.paginaTitolo": "Tutte le clip",
+    "clip.paginaTesto": "Le clip più viste del canale. Scegli il periodo: cambia quello che vedi, non la pagina.",
+    "clip.paginaTorna": "Torna al sito",
+    "clip.filtroEtichetta": "Periodo",
+    "clip.filtro24ore": "24 ore",
+    "clip.filtro3giorni": "3 giorni",
+    "clip.filtro7giorni": "7 giorni",
+    "clip.filtro30giorni": "30 giorni",
+    "clip.vuoto": "Nessuna clip in questo periodo.",
+    "clip.cercaEtichetta": "Cerca",
+    "clip.cercaSegnaposto": "Titolo o autore della clip",
+    "clip.cercaPulisci": "Cancella la ricerca",
+    "clip.cercaUna": "clip trovata",
+    "clip.cercaTante": "clip trovate",
+    "clip.cercaVuoto": "Nessuna clip corrisponde alla ricerca in questo periodo.",
+    "musica.titolo": "In sottofondo",
+    "musica.play": "Fai partire la musica",
+    "musica.pausa": "Metti in pausa",
+    "musica.precedente": "Traccia precedente",
+    "musica.successiva": "Traccia successiva",
+    "musica.avanzamento": "Punto della traccia",
+    "musica.volume": "Volume",
+    "musica.muto": "Togli l'audio",
+    "musica.suono": "Rimetti l'audio",
+    "musica.riduci": "Riduci il lettore",
+    "musica.apri": "Apri il lettore",
+    "musica.errore": "Questa traccia non si carica.",
+    "musica.bloccato": "Premi di nuovo play.",
+    "musica.elenco": "Scegli la traccia",
+    "saluti.referralTitolo": "Referral Amazon",
+    "saluti.referralTesto": "Se entri su Amazon da questo link e compri qualcosa entro 24 ore, a te costa esattamente uguale ma ad Amazon risulta che sei passato di qui, e a me arriva una piccola percentuale. Non serve comprare quello che vedi: vale su tutto il sito.",
+    "saluti.referralBtn": "Apri Amazon",
+    "saluti.referralNota": "In qualità di Affiliato Amazon, ricevo un guadagno dagli acquisti idonei.",
+    "musica.casuale": "Mescola le tracce",
+    "musica.ordine": "Rimetti in ordine",
+    "sondaggio.occhiello": "Sondaggio",
+    "sondaggio.titolo": "Dì la tua",
+    "sondaggio.nota": "Si vota una volta sola, con il proprio account Twitch.",
+    "sondaggio.scadeTra": "Chiude tra",
+    "sondaggio.chiuso": "Sondaggio chiuso: ecco com'è andata.",
+    "sondaggio.votato": "Hai votato: ecco come sta andando.",
+    "sondaggio.voti": "voti",
+    "sondaggio.loginTitolo": "Per votare serve Twitch",
+    "sondaggio.loginTesto": "Possono votare solo gli utenti collegati al sito con il proprio account Twitch: così ogni persona vota una volta sola.",
+    "sondaggio.loginBtn": "Collegati con Twitch",
+    "sondaggio.loginChiudi": "Non ora",
+    "manutenzione.stato": "Fuori onda · Manutenzione",
+    "manutenzione.occhiello": "Stiamo sistemando la regia",
+    "manutenzione.messaggio": "Il sito è in manutenzione e <strong>torna presto</strong>, più bello di prima. Nel frattempo la diretta non si ferma: ci vediamo su Twitch.",
+    "manutenzione.contoPrima": "Si riparte",
+    "manutenzione.contoFinito": "Ci siamo: riaccendiamo la regia…",
+    "manutenzione.bottone": "Guarda su Twitch",
+    "lurk.manutenzione": "Il sito va in manutenzione: ho spento la modalità lurk.",
+    "sponsor.occhiello": "Chi sostiene il canale",
+    "sponsor.titolo": "Sponsor e partner",
+    "sponsor.testo": "Chi mi dà una mano a portare avanti le dirette. Ogni logo porta al loro sito.",
+    "sponsor.visita": "Vai al sito di",
+    "sponsor.nuovoTag": "Nuovo partner",
+    "giochi.occhiello": "Lo storico delle live",
+    "giochi.titolo": "I giochi della live",
+    "giochi.testo": "Scopri i giochi che ho portato in live: dagli horror ai party game con la chat, dagli shooter ai puzzle game.",
+    "giochi.invito": "Vedi tutti i giochi",
+    "giochi.paginaTitolo": "I giochi",
+    "giochi.paginaTesto": "Ogni gioco portato in live sul canale. Filtra per tipologia e ordina come preferisci.",
+    "giochi.paginaTorna": "Torna al sito",
+    "giochi.filtri": "Tipologia",
+    "giochi.tutti": "Tutti",
+    "giochi.ordina": "Ordina per",
+    "giochi.ordinaRecenti": "Giocati di recente",
+    "giochi.ordinaOre": "Più ore in live",
+    "giochi.ordinaNome": "Nome (A-Z)",
+    "giochi.gioco": "gioco",
+    "giochi.giochi": "giochi",
+    "giochi.diretta": "diretta",
+    "giochi.dirette": "dirette",
+    "giochi.ora": "ora",
+    "giochi.ore": "ore",
+    "giochi.clip": "clip",
+    "giochi.ultimaVolta": "Ultima volta",
+    "giochi.clipMigliore": "Clip migliore",
+    "giochi.vuoto": "Nessun gioco di questa tipologia, per ora.",
+    "giochi.cercaEtichetta": "Cerca",
+    "giochi.cercaSegnaposto": "Nome o tipologia del gioco",
+    "giochi.cercaPulisci": "Cancella la ricerca",
+    "giochi.cercaVuoto": "Nessun gioco corrisponde alla ricerca. Prova con un altro nome o togli i filtri.",
+    "ingresso.controllo": "Il pollo sta controllando il tuo browser. Ci vuole solo un attimo.",
+    "ingresso.attesa": "Il pollo annusa i cookie…",
+    "ingresso.riuscita": "Sei umano. Il pollo approva!",
+    "ingresso.nota": "Controlliamo solo che tu non sia un robot travestito da pollo.",
+    "ingresso.marca": "PolloFlare",
+    "ingresso.piede": "Prestazioni e sicurezza a cura del pollo",
+    "bugiardino.nome": "POLLOSLAYER®",
+    "bugiardino.sottotitolo": "Uso ludico. Da assumere durante la live."
+  },
+  "config": {
+    "slayer": {
+      "attivo": true
+    },
+    "pollorun": {
+      "attivo": true,
+      "canzoni": [
+        {
+          "titolo": "Stereo Madness",
+          "file": "ForeverBound - Stereo Madness.mp3",
+          "autore": "ForeverBound"
+        },
+        {
+          "titolo": "Back On Track",
+          "file": "DJVI - Back On Track.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Polargeist",
+          "file": "Step - Polargeist.mp3",
+          "autore": "Step"
+        },
+        {
+          "titolo": "Dry Out",
+          "file": "DJVI - Dry Out.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Base After Base",
+          "file": "DJVI - Base After Base.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Can't Let Go",
+          "file": "DJVI - Can't Let Go.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Jumper",
+          "file": "Waterflame - Jumper.mp3",
+          "autore": "Waterflame"
+        },
+        {
+          "titolo": "Time Machine",
+          "file": "Waterflame - Time Machine.mp3",
+          "autore": "Waterflame"
+        },
+        {
+          "titolo": "Cycles",
+          "file": "DJVI - Cycles.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "xStep",
+          "file": "DJVI - xStep.mp3",
+          "autore": "DJVI"
+        },
+        {
+          "titolo": "Clutterfunk",
+          "file": "Waterflame - Clutterfunk.mp3",
+          "autore": "Waterflame"
+        },
+        {
+          "titolo": "Theory of Everything",
+          "file": "DJVI - Theory of Everything.mp3",
+          "autore": "DJVI"
+        }
+      ],
+      "modo": "ordine",
+      "canzoneFissa": 2,
+      "stile": "synthwave"
+    },
+    "classifica": {
+      "attiva": false,
+      "titolo": "Classifica di Pollo Run",
+      "righe": 10,
+      "difficoltaObs": "medio",
+      "avatar": true,
+      "aggiornaSecondi": 15
+    },
+    "twitch": {
+      "canale": "slayer_beard",
+      "idUtente": "47738247",
+      "direttaCondivisa": false,
+      "domini": [
+        "slayerbeard.com",
+        "www.slayerbeard.com"
+      ]
+    },
+    "sitoUrl": "https://slayerbeard.com",
+    "email": "slayerbeard@gmail.com",
+    "ultimaDiretta": "Little Nightmares 3 w/ @Mobscene93",
+    "orari": {
+      "giorni": [
+        1,
+        3,
+        5,
+        0
+      ],
+      "ora": "21:00",
+      "durataOre": 4,
+      "fuso": "Europe/Rome",
+      "schede": [
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        }
+      ],
+      "eventi": [],
+      "pause": [],
+      "sfondo": {
+        "immagine": "img/settimana-sfondo.webp",
+        "fuoco": {
+          "x": 50,
+          "y": 50
+        },
+        "intensita": 30
+      }
+    },
+    "dati": {
+      "follower": 3624,
+      "abbonati": 90,
+      "spettatoriMedi": 25,
+      "dal": 2013,
+      "lingua": "ITA / ENG",
+      "ruolo": "Twitch Affiliate",
+      "prefissoEmote": "slayer156"
+    },
+    "immagini": {
+      "avatar": "img/avatar.webp",
+      "banner": "img/copertina.webp",
+      "mascotte": "img/mascotte.webp",
+      "og": "img/og.jpg",
+      "favicon": "img/favicon.png"
+    },
+    "tema": {
+      "colori": {
+        "viola": "#8b2fff",
+        "violaCupo": "#4b1391",
+        "violaChiaro": "#c5a4ff",
+        "ciano": "#22e0ff",
+        "magenta": "#ff2fa0",
+        "live": "#ff3d5e",
+        "ok": "#35e0a1",
+        "allerta": "#ffc65c",
+        "fondo": "#07070c",
+        "testo": "#f2f0f8",
+        "testoMedio": "#c3bdd6",
+        "testoTenue": "#9a93b0"
+      },
+      "font": {
+        "titolo": "Space Grotesk",
+        "testo": "Manrope",
+        "mono": "JetBrains Mono"
+      },
+      "forma": {
+        "raggio": 14,
+        "maxLarghezza": 1360,
+        "passo": 8
+      },
+      "sfondo": {
+        "aloni": 100
+      }
+    },
+    "account": {
+      "attivo": true,
+      "clientId": "07tj3erjzmn4y2d91k0sd3ub6uxq6b",
+      "urlRitorno": "https://slayerbeard.com/"
+    },
+    "lurk": {
+      "attivo": true,
+      "tieniSchermoAcceso": false,
+      "oreMax": 3,
+      "messaggioAttivo": true,
+      "minutiFraMessaggi": 10,
+      "frasi": [
+        "Hey! Lurko dal sito.",
+        "Sono in lurk dal sito, buona diretta!",
+        "Lurko dal pollaio: ci sono ma sto zitto.",
+        "In lurk dal sito. Coccodè."
+      ]
+    },
+    "pollo": {
+      "attivo": true,
+      "chatVera": true,
+      "mostraMessaggi": false,
+      "frasi": {
+        "riposo": [
+          "Il pollaio è aperto.",
+          "Becco qualcosa e aspetto.",
+          "Tutto tranquillo, per ora.",
+          "Coccodè."
+        ],
+        "click": [
+          "Coccodè. Ti apro la chat.",
+          "Il pollaio è di qua.",
+          "Chat aperta: scrivi pure.",
+          "Beccato. Ecco la chat."
+        ],
+        "chat": [
+          "{nome} ha scritto in chat!",
+          "{nome} si è fatto sentire.",
+          "C'è {nome} nel pollaio.",
+          "Coccodè, parla {nome}.",
+          "Qualcuno ha scritto nel pollaio.",
+          "Si muove la chat. Coccodè."
+        ],
+        "scrive": [
+          "Ti ascolto...",
+          "Sto leggendo.",
+          "Dimmi pure, sono qui.",
+          "Orecchie dritte."
+        ],
+        "live": [
+          "Siamo in onda!",
+          "Luce accesa, si comincia.",
+          "In onda: il pollaio si riempie."
+        ],
+        "lurk": [
+          "Restiamo accesi, ci penso io.",
+          "Tengo la diretta viva. Coccodè.",
+          "Vai pure, il pollaio resta aperto.",
+          "Sorveglio io lo schermo."
+        ],
+        "offline": [
+          "Fuori onda. Il pollaio dorme.",
+          "Zzz.",
+          "Niente diretta adesso: la settimana è qui sotto.",
+          "Luce spenta. Si riparte la prossima serata."
+        ]
+      }
+    },
+    "chi": {
+      "frasi": [],
+      "gifOgni": 5,
+      "gifRaffica": [
+        {
+          "immagine": "img/pollo-gif/raffica-ufficio.gif",
+          "scritta": "VUOI ROMPERE IL MOUSE?"
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-gatto-gamer.gif",
+          "scritta": "HAI ROTTO."
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-portatile.gif",
+          "scritta": "IL MOUSE HA CHIAMATO IL SINDACATO"
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-gatto-bottone.gif",
+          "scritta": "NON È UN BOTTONE, È UN POLLO"
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-polli-tocco.gif",
+          "scritta": "SMETTILA DI TOCCARMI"
+        }
+      ],
+      "scritteRaffica": [
+        "VUOI ROMPERE IL MOUSE?",
+        "HAI ROTTO.",
+        "PIANO, IL TASTO SINISTRO HA UNA FAMIGLIA",
+        "CALMA, SONO UN POLLO, NON UN PUNCHING BALL"
+      ],
+      "gifInsistenza": [
+        {
+          "immagine": "img/pollo-gif/insistenza-gatto.gif",
+          "scritta": "NON HAI DI MEGLIO DA FARE?"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-cane.gif",
+          "scritta": "ANCORA TU?"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-polli-sguardo.gif",
+          "scritta": "SEMPRE QUI SEI?"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-polli-tavolo.gif",
+          "scritta": "VAI A SEGUIRE LA LIVE, INVECE"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-alice.gif",
+          "scritta": "CI SIAMO ANNOIATI, EH?"
+        }
+      ],
+      "scritteInsistenza": [
+        "NON HAI DI MEGLIO DA FARE?",
+        "SEMPRE QUI SEI?",
+        "VAI A SEGUIRE LA LIVE, INVECE",
+        "IL POLLO TI STA GIUDICANDO"
+      ],
+      "gifScroll": [
+        {
+          "immagine": "img/pollo-gif/scroll-uccello-stordito.gif",
+          "scritta": "TI GIRA LA TESTA?"
+        },
+        {
+          "immagine": "img/pollo-gif/scroll-occhi-spirale.gif",
+          "scritta": "DECIDITI: SU O GIÙ?"
+        },
+        {
+          "immagine": "img/pollo-gif/scroll-vomito.gif",
+          "scritta": "SU E GIÙ, SU E GIÙ… BLEAH"
+        },
+        {
+          "immagine": "img/pollo-gif/scroll-psichedelico.gif",
+          "scritta": "HAI IL MAL DI MARE?"
+        }
+      ],
+      "scritteScroll": [
+        "TI GIRA LA TESTA?",
+        "HAI IL MAL DI MARE?",
+        "DECIDITI: SU O GIÙ?"
+      ]
+    },
+    "clip": {
+      "attivo": true,
+      "quante": 6,
+      "periodo": "30",
+      "voci": [],
+      "quanteArchivio": 12
+    },
+    "social": [
+      {
+        "chiave": "twitch",
+        "nome": "Twitch",
+        "handle": "twitch.tv/slayer_beard",
+        "url": "https://www.twitch.tv/slayer_beard",
+        "icona": "twitch",
+        "contatore": "twitch",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 5000
+      },
+      {
+        "chiave": "instagram",
+        "nome": "Instagram",
+        "handle": "@slayer_beard",
+        "url": "https://www.instagram.com/slayer_beard/",
+        "icona": "instagram",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
+        "chiave": "tiktok",
+        "nome": "TikTok",
+        "handle": "@slayer_beard",
+        "url": "https://www.tiktok.com/@slayer_beard",
+        "icona": "tiktok",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
+        "chiave": "discord",
+        "nome": "Discord",
+        "handle": "Il server della community",
+        "url": "https://discord.gg/6DaQvPNy6",
+        "icona": "discord",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
+        "chiave": "youtube",
+        "nome": "YouTube",
+        "handle": "slayer_beard",
+        "url": "",
+        "icona": "youtube",
+        "contatore": "youtube",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
+        "chiave": "youtubeVod",
+        "nome": "YouTube VOD",
+        "handle": "slayer_beard VOD",
+        "url": "",
+        "icona": "youtube",
+        "contatore": "youtube",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
+        "chiave": "telegram",
+        "nome": "Telegram",
+        "handle": "@slayer_beard",
+        "url": "",
+        "icona": "telegram",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
+        "chiave": "amazonAffiliato",
+        "nome": "Amazon",
+        "handle": "Link affiliato",
+        "url": "",
+        "icona": "amazon",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      }
+    ],
+    "supporto": [
+      {
+        "chiave": "abbonamento",
+        "icona": "star",
+        "titolo": "Abbonamento",
+        "testo": "Vale un mese e si può fermare quando vuoi. Sblocca le emote slayer156 e toglie la pubblicità. Al momento siamo in 90.",
+        "tag": "Da 4,99 €",
+        "cta": "Abbonati su Twitch",
+        "url": "https://www.twitch.tv/subs/slayer_beard"
+      },
+      {
+        "chiave": "prime",
+        "icona": "crown",
+        "titolo": "Abbonamento Prime",
+        "testo": "Se hai Amazon Prime, ogni mese hai un abbonamento incluso da usare dove vuoi. Non costa niente in più: se non lo usi, scade e basta.",
+        "tag": "Incluso",
+        "cta": "Attiva il Prime",
+        "url": "https://gaming.amazon.com/"
+      },
+      {
+        "chiave": "bits",
+        "icona": "gem",
+        "titolo": "Bits",
+        "testo": "Piccole mance durante la diretta: compaiono in chat e le leggo ad alta voce. Anche zero va benissimo.",
+        "tag": "Quanto vuoi",
+        "cta": "Manda dei Bits",
+        "url": "https://www.twitch.tv/slayer_beard"
+      },
+      {
+        "chiave": "segui",
+        "icona": "heart",
+        "titolo": "Segui il canale",
+        "testo": "Il modo che aiuta di più e non costa niente: ti avvisa quando accendo e mi fa salire nelle liste di Twitch.",
+        "tag": "Gratis",
+        "cta": "Segui su Twitch",
+        "url": "https://www.twitch.tv/slayer_beard"
+      },
+      {
+        "chiave": "donazione",
+        "icona": "coffee",
+        "titolo": "Donazione",
+        "testo": "Una tantum, senza abbonarsi. Nessun vantaggio in cambio: è solo un grazie.",
+        "tag": "Facoltativa",
+        "cta": "Fai una donazione",
+        "url": ""
+      },
+      {
+        "chiave": "wishlist",
+        "icona": "amazon-wishlist",
+        "titolo": "Wishlist Amazon",
+        "testo": "La mia lista dei desideri su Amazon: se ti va di fare un regalo, puoi scegliere da lì. È solo un pensiero, non serve.",
+        "tag": "Facoltativa",
+        "cta": "Apri la lista",
+        "url": "https://www.amazon.it/hz/wishlist/ls/314FIIX4ZAKI2?ref_=wl_share"
+      }
+    ],
+    "sezioni": [
+      {
+        "id": "regia",
+        "attiva": true
+      },
+      {
+        "id": "diretta",
+        "attiva": true
+      },
+      {
+        "id": "sondaggio",
+        "attiva": true
+      },
+      {
+        "id": "settimana",
+        "attiva": true
+      },
+      {
+        "id": "chi",
+        "attiva": true
+      },
+      {
+        "id": "supporto",
+        "attiva": true
+      },
+      {
+        "id": "saluti",
+        "attiva": true
+      },
+      {
+        "id": "sponsor",
+        "attiva": true
+      }
+    ],
+    "stili": {},
+    "disposizione": {
+      "blocchi": {}
+    },
+    "musica": {
+      "attivo": false,
+      "aperto": false,
+      "cartella": "mp3",
+      "casuale": false,
+      "icona": ""
+    },
+    "tracce": [],
+    "referral": {
+      "attivo": false,
+      "url": ""
+    },
+    "manutenzione": {
+      "attiva": false,
+      "fine": "",
+      "nastro": [
+        "Lavori in corso",
+        "La regia si sta rifacendo il look",
+        "Torniamo presto",
+        "Intanto: twitch.tv/slayer_beard",
+        "Il pollo sorveglia il cantiere"
+      ],
+      "scherno": [
+        "Bravo, hai ottenuto il coglione d'oro",
+        "Ti senti forte?",
+        "Ti stai divertendo?",
+        "Samminca",
+        "Il pollo corre meglio di te",
+        "Ancora vivo? Strano.",
+        "Ok, adesso si fa sul serio",
+        "Non hai niente di meglio da fare?"
+      ]
+    },
+    "sponsor": {
+      "attivo": false,
+      "voci": []
+    },
+    "giochi": {
+      "attivo": true,
+      "nascosti": [
+        "Just Chatting",
+        "Quattro chiacchiere",
+        "IRL",
+        "Special Events",
+        "Eventi speciali"
+      ],
+      "correzioni": []
+    },
+    "meteora": {
+      "timer": false,
+      "ogniMin": 3,
+      "ogniMax": 8
+    },
+    "ingresso": {
+      "attivo": false,
+      "durata": "24h",
+      "secondi": 3
+    },
+    "bugiardino": {
+      "attivo": true,
+      "ogni": 4
+    }
+  }
+}

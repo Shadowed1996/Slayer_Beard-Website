@@ -6301,7 +6301,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         t += 1 / 60;
         const testi = h.registro.testi.join('|');
         if (avviso < 0 && testi.indexOf('ATTENTO CHE CADI !') !== -1) { avviso = t; }
-        if (pozzo < 0 && testi.indexOf('A / D oppure') !== -1) { pozzo = t; }
+        if (pozzo < 0 && testi.indexOf('A / D o le frecce') !== -1) { pozzo = t; }
         if (h.registro.eventi.slice(eventiPrima).indexOf(null) !== -1) { morto = t; }
       }
       const arrivoBuca = M.caduta.x0 / M.v;
@@ -6314,7 +6314,7 @@ async function proveGiocoPollo(costruisci, archivio) {
       h.tasto(' ', 'Space');
       const dopo = h.testiUltimo();
       esigiDentro(dopo, 'TENTATIVO 2', nomeStile + ': SPAZIO non fa riprovare il livello');
-      esigi(dopo.indexOf('A / D oppure') === -1, nomeStile + ': riprovando si riparte nel pozzo');
+      esigi(dopo.indexOf('A / D o le frecce') === -1, nomeStile + ': riprovando si riparte nel pozzo');
     }
   });
 
@@ -6695,15 +6695,15 @@ async function proveGiocoPollo(costruisci, archivio) {
       esigi(h.testiUltimo().indexOf('° su') === -1, stile + ': compare la posizione di un altro livello');
       gioco.classifica({ posizione: 3, totale: 57, migliore: false, livello: 1, difficolta: 'difficile' });
       const con = h.testiUltimo();
-      esigiDentro(con, '3° su 57 · DIFFICILE', stile + ': la posizione non compare a fine livello');
+      esigiDentro(con, '3° su 57 (DIFFICILE)', stile + ': la posizione non compare a fine livello');
       esigiDentro(con, 'SPAZIO per il livello 2', stile + ': con la posizione sparisce l invito al livello dopo');
-      const riga = ultimaScritta(h, '3° su 57 · DIFFICILE');
+      const riga = ultimaScritta(h, '3° su 57 (DIFFICILE)');
       if (stile === 'geometrydash') {
         const b = scatolaDi(riga);
         esigi(b.x0 >= 0 && b.x1 <= 1200 && b.y0 >= 0 && b.y1 <= 380, stile + ': la posizione esce dallo schermo');
       }
       gioco.classifica({ posizione: 1, totale: 57, migliore: true });
-      esigiDentro(h.testiUltimo(), 'NUOVO RECORD · 1° su 57 · DIFFICILE', stile + ': il record non si vede');
+      esigiDentro(h.testiUltimo(), 'NUOVO RECORD! 1° su 57 (DIFFICILE)', stile + ': il record non si vede');
       h.tasto(' ', 'Space');
       esigi(h.testiUltimo().indexOf('° su') === -1, stile + ': la posizione resta al livello dopo');
     }
@@ -7371,7 +7371,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     });
     const account = accountFinto(true);
     const p = apriGioco({ classifica: true, token: 'tok-123', fetch: rete.fetch, account: account });
-    esigiUguale(testoPillola(p), 'Classifica…', 'mentre chiede chi sei');
+    esigiUguale(testoPillola(p), 'Classifica...', 'mentre chiede chi sei');
     await aspettaRete();
     esigiUguale(rete.chiamate.map((c) => c.metodo + ' ' + c.url + ' ' + c.autorizzazione).join(','), 'GET api/classifica/io Bearer tok-123', 'la prima chiamata');
     esigiUguale(testoPillola(p), 'Classifica: giochi come Mario', 'testo della pillola');
@@ -7409,7 +7409,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     const casi = [
       { rotte: { 'POST api/classifica/partita': { status: 409, dati: { errore: 'Prima il livello precedente.', codice: 'SERVE_PRECEDENTE', serve: 4 } } }, livello: 5, avviso: 'Per entrare in classifica completa prima il livello 4 a questa difficoltà' },
       { rotte: { 'POST api/classifica/partita': { status: 403, dati: { errore: 'Sei fuori dalla classifica.', codice: 'BLOCCATO' } } }, avviso: 'Sei fuori dalla classifica.' },
-      { rotte: { 'POST api/classifica/partita': { status: 429, dati: {} } }, avviso: 'Troppe partite in poco tempo' },
+      { rotte: { 'POST api/classifica/partita': { status: 429, dati: {} } }, avviso: 'Troppe partite di fila' },
       { rotte: { 'POST api/classifica/partita': 'rifiuta' }, avviso: 'La classifica ora non risponde' },
       { rotte: { 'POST api/classifica/partita': 'lancia' }, avviso: '' },
       { rotte: { 'POST api/classifica/partita': { status: 500, rotto: true } }, avviso: 'La classifica ora non risponde' },
@@ -8878,10 +8878,10 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
     await prova('il conto alla rovescia porta l istante con lo scarto giusto di Roma', () => {
       const domani = pagina(accesa({ fine: '2026-09-24T13:30' }));
       esigiDentro(domani, 'data-fine="2026-09-24T13:30:00+02:00"', 'ora legale');
-      esigiDentro(domani, 'Si riparte il 24/09 alle 13:30 · mancano', 'etichetta di un altro giorno');
-      esigiDentro(pagina(accesa({ fine: '2026-09-23T13:30' })), 'Si riparte alle 13:30 · mancano', 'etichetta di oggi');
+      esigiDentro(domani, 'Si riparte il 24/09 alle 13:30, mancano', 'etichetta di un altro giorno');
+      esigiDentro(pagina(accesa({ fine: '2026-09-23T13:30' })), 'Si riparte alle 13:30, mancano', 'etichetta di oggi');
       esigiDentro(pagina(accesa({ fine: '2026-12-01T09:05' })), 'data-fine="2026-12-01T09:05:00+01:00"', 'ora solare');
-      esigiDentro(pagina(accesa({ fine: '2027-01-02T10:00' })), 'Si riparte il 02/01/2027 alle 10:00 · mancano', 'un altro anno');
+      esigiDentro(pagina(accesa({ fine: '2027-01-02T10:00' })), 'Si riparte il 02/01/2027 alle 10:00, mancano', 'un altro anno');
       esigiUguale(Date.parse('2026-09-24T13:30:00+02:00'), Date.UTC(2026, 8, 24, 11, 30), 'istante');
       esigiUguale(costruisci.fineManutenzione('2026-03-29T02:30').iso, '2026-03-29T03:30:00+02:00', 'ora saltata');
       esigiUguale(costruisci.fineManutenzione('2026-10-25T02:30').iso, '2026-10-25T02:30:00+02:00', 'ora doppia');
@@ -8939,7 +8939,7 @@ async function proveManutenzione(contenutiVeri, costruisci, archivio) {
       esigiDentro(html, '>Lavori &quot;grossi&quot;</p>', 'occhiello');
       esigiDentro(html, '<p class="mnt__testo">Torno <em>presto</em>', 'messaggio ricco');
       esigiUguale((html.match(/<script\b/gi) || []).length, 1, 'script in pagina');
-      esigiDentro(html, 'Riapriamo il 24/09 alle 13:30 · mancano', 'etichetta del conto');
+      esigiDentro(html, 'Riapriamo il 24/09 alle 13:30, mancano', 'etichetta del conto');
       esigiDentro(html, 'data-finito="Fatto &quot;quasi&quot; &lt;ok&gt;"', 'scritta finale');
       esigiDentro(html, 'Vieni in &lt;live&gt;', 'bottone');
       esigiDentro(html, '&nbsp;★ Prima &lt;b&gt;frase&lt;/b&gt; &nbsp;·&nbsp; Seconda &amp; ultima &nbsp;', 'nastro');

@@ -86,7 +86,7 @@
       pezzi.push(TESTI.scadeTra + ' ' + durata(Date.parse(s.scadeIl) - Date.now()));
     }
     if (typeof s.totale === 'number') { pezzi.push(s.totale + ' ' + TESTI.voti); }
-    return pezzi.join(' · ');
+    return pezzi.join(', ');
   }
 
   function aggiornaOrologio() {

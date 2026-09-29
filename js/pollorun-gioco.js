@@ -1791,7 +1791,7 @@
     }
 
     function rigaDifficolta(x, fs, contorno) {
-      var separatore = ' · ';
+      var separatore = '  ';
       var fascia = Math.max(20, H - suolo);
       var dim = Math.min(fs, fascia * 0.5);
       var yy = suolo + fascia / 2 + dim * 0.35;
@@ -2191,11 +2191,11 @@
       if (gd) {
         scritta('GAME OVER', gx, gy, grande, '900', TITOLO, BIANCO, 'center', true);
         ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
-        scritta('SPAZIO per riprovare il livello ' + livello + ' · ESC per uscire', gx, gy + fs * 1.7, fs, '700', MONO, BIANCO, 'center', true);
+        scritta('SPAZIO per riprovare il livello ' + livello + ', ESC per uscire', gx, gy + fs * 1.7, fs, '700', MONO, BIANCO, 'center', true);
       } else {
         glitch('GAME OVER', gx, gy, grande, 2);
         ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
-        scritta('SPAZIO per riprovare il livello ' + livello + ' · ESC per uscire', gx, gy + fs * 1.6, fs, '500', MONO, C.testo, 'center', false);
+        scritta('SPAZIO per riprovare il livello ' + livello + ', ESC per uscire', gx, gy + fs * 1.6, fs, '500', MONO, C.testo, 'center', false);
       }
       ctx.globalAlpha = 1;
     }
@@ -2394,7 +2394,7 @@
 
     function testoPosto() {
       if (!posto || stato !== 'vinto' || posto.livello !== livello || posto.difficolta !== difficolta) { return ''; }
-      return (posto.migliore ? 'NUOVO RECORD · ' : '') + posto.posizione + '° su ' + posto.totale + ' · ' + etichetta(posto.difficolta);
+      return (posto.migliore ? 'NUOVO RECORD! ' : '') + posto.posizione + '° su ' + posto.totale + ' (' + etichetta(posto.difficolta) + ')';
     }
 
     function azzeraPendenza() {

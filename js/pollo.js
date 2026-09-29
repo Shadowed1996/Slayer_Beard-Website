@@ -303,7 +303,7 @@
 
     const lettere = Array.from(compatto);
     if (lettere.length <= MAX_TESTO) { return compatto; }
-    return lettere.slice(0, MAX_TESTO - 1).join('') + '…';
+    return lettere.slice(0, MAX_TESTO - 3).join('') + '...';
   }
 
   function reagisci(messaggio) {
@@ -312,7 +312,7 @@
 
     if (POLLO.mostraMessaggi === true) {
       const corpo = ripulisciMessaggio(messaggio.testo);
-      if (corpo) { testo += ' «' + corpo + '»'; }
+      if (corpo) { testo += ' "' + corpo + '"'; }
     }
 
     reazione(testo, 'parla');

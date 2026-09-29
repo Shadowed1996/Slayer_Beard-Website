@@ -1,0 +1,1288 @@
+{
+  "versione": 1,
+  "aggiornatoIl": "2026-09-25T05:43:22.532Z",
+  "testi": {
+    "meta.titolo": "slayer_beard — canale Twitch ufficiale",
+    "meta.descrizione": "Dirette lunedì, mercoledì, venerdì e domenica alle 21:00, in italiano e inglese. Giochi di vario genere, con integrazioni ed effetti speciali.",
+    "meta.ogDescrizione": "Quattro dirette a settimana alle 21:00, ITA ed ENG. Qui trovi il player, la settimana e i social.",
+    "meta.ogImmagineAlt": "La mascotte di slayer_beard, un pollo viola con la cresta ciano, sopra una nebulosa e uno skyline notturno.",
+    "marchio.nome": "slayer_beard",
+    "marchio.ruolo": "Twitch Affiliate · dal 2020",
+    "nav.regia": "Regia",
+    "nav.diretta": "Diretta",
+    "nav.settimana": "Settimana",
+    "nav.chi": "Chi sono",
+    "nav.supporto": "Supporto",
+    "nav.saluti": "Saluti",
+    "nav.vaiAlCanale": "Guarda su Twitch",
+    "deck.occhiello": "Canale Twitch · ITA / ENG",
+    "deck.titolo": "slayer_beard",
+    "deck.sottotitolo": "Porto giochi di vario genere in modo particolare, a volte con integrazioni ed effetti speciali. Quattro sere a settimana, sempre alle 21:00.",
+    "deck.ctaPrimaria": "Guarda su Twitch",
+    "deck.ctaSecondaria": "Guarda la diretta",
+    "deck.statoLive": "In onda adesso",
+    "deck.statoOffline": "Fuori onda",
+    "deck.statoVerifica": "Controllo il canale",
+    "deck.etichettaProssima": "Prossima diretta",
+    "deck.etichettaUltima": "Ultima diretta",
+    "deck.etichettaStato": "Stato del canale",
+    "deck.chatApri": "Mostra la chat",
+    "deck.chatChiudi": "Nascondi la chat",
+    "deck.notaPlayer": "Il player è incorporato da Twitch: se il browser blocca i cookie di terze parti può non partire.",
+    "deck.dato1Etichetta": "Follower",
+    "deck.dato2Valore": "4",
+    "deck.dato2Etichetta": "Dirette a settimana",
+    "deck.dato3Valore": "~40",
+    "deck.dato3Etichetta": "Spettatori medi",
+    "deck.dato4Valore": "2020",
+    "deck.dato4Etichetta": "Su Twitch dal",
+    "deck.scorri": "Scendi",
+    "diretta.occhiello": "In onda",
+    "diretta.titolo": "La diretta",
+    "diretta.nota": "Se lo schermo resta nero è quasi sempre il browser: cookie di terze parti bloccati, oppure un'estensione che ferma gli iframe. In quel caso il canale si apre lo stesso su Twitch.",
+    "account.entra": "Collegati con Twitch",
+    "account.esci": "Scollega e revoca",
+    "account.collegato": "Collegato come {nome}",
+    "account.nota": "Il profilo serve al sito, non solo al player: da collegato il sito sa chi sei, ti mostra la diretta aggiornata e la modalità lurk può dire in chat che stai guardando. Il collegamento vive finché resta aperta questa scheda.",
+    "lurk.titolo": "Modalità lurk",
+    "lurk.spiegazione": "Se resti su questa pagina, ogni tanto controllo che il video stia ancora girando e lo faccio ripartire se il browser lo ferma. <b>Twitch conta uno spettatore finché il video va</b>, anche mutato e anche se la scheda è dietro: non conto io, conta il tuo player.",
+    "lurk.notaAccount": "Se il tuo browser blocca i cookie di terze parti, da qui risulti come spettatore anonimo: conti per il canale, ma <b>non prendi punti canale né streak</b>. Da questa pagina non posso saperlo. Se ci tieni alla tua streak, guarda direttamente su Twitch.",
+    "lurk.notaMobile": "Sul telefono il browser mette in pausa il video appena esci da questa scheda, e da qui non posso rimediare. La modalità lurk vale finché resti su questa pagina.",
+    "lurk.accendi": "Attiva la modalità lurk",
+    "lurk.spegni": "Disattiva",
+    "lurk.audio": "Togli il muto (aiuta a non far sospendere la scheda)",
+    "lurk.schermo": "Tieni acceso lo schermo",
+    "lurk.ripresa": "L'avevi lasciata accesa: la riattivo?",
+    "lurk.statoSpento": "Spenta.",
+    "lurk.statoVivo": "Attiva: il video sta andando.",
+    "lurk.statoFermo": "Il video si è fermato.",
+    "lurk.statoRiparto": "Rimetto in moto il video...",
+    "lurk.statoBloccato": "Il browser ha bloccato la riproduzione: tocca il player per farlo partire.",
+    "lurk.statoAttesa": "Il canale è fuori onda: non c'è niente da tenere vivo.",
+    "lurk.chiuso": "Il canale è andato fuori onda: ho spento la modalità lurk.",
+    "lurk.statoResa": "Non ci riesco più. Ricarica la pagina.",
+    "lurk.statoNiente": "Da qui non posso: non ho i comandi del player.",
+    "lurk.ciSei": "Ci sei ancora? Senza risposta spengo la modalità lurk.",
+    "lurk.ciSono": "Sono qui",
+    "lurk.conto": "Viva da {durata}",
+    "lurk.contoRiavvii": "Viva da {durata} · {riavvii} riavvii",
+    "lurk.preavviso": "Attivando il lurk dirò in chat: «{frase}»",
+    "lurk.invito": "Vuoi dire in chat che stai guardando? Dirò: «{frase}»",
+    "lurk.manda": "Dillo in chat",
+    "lurk.inviato": "Fatto: il messaggio è in chat.",
+    "pollo.etichetta": "Apri la chat del canale",
+    "pollo.nascondi": "Nascondi il pollo",
+    "clip.occhiello": "ARCHIVIO",
+    "clip.titolo": "I momenti migliori",
+    "clip.testo": "Le clip più viste del canale, ritagliate da chi guardava. Si aggiornano da sole a ogni pubblicazione.",
+    "clip.guarda": "Guarda la clip",
+    "clip.visualizzazioni": "visualizzazioni",
+    "clip.di": "clip di",
+    "settimana.occhiello": "Calendario",
+    "settimana.titolo": "La settimana",
+    "settimana.testo": "Quattro sere a settimana, sempre alle 21:00. Le altre le passo a fare altro.",
+    "settimana.nota": "Tutti gli orari sono nel fuso italiano (Europe/Rome). Il programma può cambiare: se salta una serata o ne aggiungo una, il canale Twitch resta il riferimento aggiornato.",
+    "settimana.etichettaOggi": "Oggi",
+    "settimana.etichettaRiposo": "Riposo",
+    "settimana.etichettaProssima": "Prossima",
+    "settimana.etichettaDiretta": "Diretta",
+    "settimana.etichettaInOnda": "In onda",
+    "settimana.etichettaDaTe": "Da te",
+    "settimana.titoloEventi": "Maratona",
+    "settimana.etichettaEvento": "Speciale",
+    "settimana.cta": "Vai al canale",
+    "chi.occhiello": "slayer_beard",
+    "chi.titolo": "Chi sono",
+    "chi.apertura": "Sono Michele, in arte slayer_beard. Faccio live da agosto 2020: ho iniziato Twitch per gioco, come sfida personale.",
+    "chi.corpo1": "Prima di allora mi divertivo a moderare qualche chat su Twitch o a seguire altri canali per puro divertimento. Ora faccio uguale, ma con la consapevolezza di fare streaming pure io!",
+    "chi.corpo2": "Le mie live hanno una schedule che varia nel tempo, ma una cosa che cambia poco è il contenuto che porto in un determinato giorno della settimana! Si va dai giochi di avventura con una bella trama ai giochi che ti danno una challenge personale, dagli horror che mi spaventano, arricchiti con qualche estensione horror, ai giochi che ho voglia di testare con la chat. Tutto questo sempre con divertimento, cazzeggio e risate assicurate!",
+    "chi.citazione": "Se passi in stream vedrai che non ti annoierai, anzi: avrai sempre il sorriso.",
+    "chi.nota1Titolo": "Lingua",
+    "chi.nota1Testo": "In stream si parla solitamente in Italiano, ma all'occasione si parla anche in Inglese!",
+    "chi.nota2Titolo": "Cosa si gioca",
+    "chi.nota2Testo": "La schedule settimanale va in base ai giochi proposti dallo streamer o dalla chat!",
+    "chi.nota3Titolo": "Emote",
+    "chi.nota3Testo": "Se vuoi usare le emote, ricordati di avere l'abbonamento attivo, fidati, non te ne pentirai!",
+    "chi.tag1": "Variety streamer",
+    "chi.tag2": "Horror",
+    "chi.tag3": "Co-op",
+    "chi.tag4": "Effetti speciali",
+    "chi.tag5": "ITA / ENG",
+    "chi.tag6": "Twitch Affiliate",
+    "chi.cta": "Vieni a trovarmi su Twitch",
+    "chi.ritrattoAlt": "Avatar del canale: il pollo viola di slayer_beard in primo piano.",
+    "supporto.occhiello": "Supporto",
+    "supporto.titolo": "Come supportare la stream:",
+    "supporto.testo": "Seguire la streaming è gratis, ma ovviamente ricordati che se vuoi supportare a pieno lo streamer, puoi supportarlo in diversi modi che sono elencati qui in basso!",
+    "supporto.chiusura": "Nessuno di questi passaggi è richiesto. Il canale è aperto, resta aperto, e la chat è la stessa per tutti.",
+    "saluti.occhiello": "Altrove",
+    "saluti.titolo": "Dove mi trovi",
+    "saluti.testo": "Stesso nome ovunque: slayer_beard. Non ci sono profili doppi, se ne trovi un altro non sono io.",
+    "saluti.contattiTitolo": "Scrivimi",
+    "saluti.contattiTesto": "Per collaborazioni, proposte o segnalazioni, scrivi a questo indirizzo. Leggo tutto, rispondo quando riesco.",
+    "saluti.copiaBtn": "Copia l'email",
+    "saluti.copiaFatto": "Copiata",
+    "saluti.scriviBtn": "Scrivi una mail",
+    "saluti.chiusura": "Grazie per essere passato. Ci si vede in diretta.",
+    "footer.copy": "slayer_beard",
+    "footer.disclaimer": "Sito personale, non affiliato a Twitch. Twitch è un marchio di Twitch Interactive, Inc. I nomi e i loghi dei social appartengono ai rispettivi proprietari.",
+    "footer.nota": "Nessun pollo è stato maltrattato durante la costruzione di questo sito.",
+    "clip.paginaTitolo": "Tutte le clip",
+    "clip.paginaTesto": "Le clip più viste del canale. Scegli il periodo: cambia quello che vedi, non la pagina.",
+    "clip.paginaTorna": "Torna al sito",
+    "clip.filtroEtichetta": "Periodo",
+    "clip.filtro24ore": "24 ore",
+    "clip.filtro3giorni": "3 giorni",
+    "clip.filtro7giorni": "7 giorni",
+    "clip.filtro30giorni": "30 giorni",
+    "clip.vuoto": "Nessuna clip in questo periodo.",
+    "clip.invitoTitolo": "Migliori highlights",
+    "clip.invitoTesto": "I momenti più belli delle live, ritagliati da chi guardava. Tutti in una pagina: il periodo lo scegli tu.",
+    "clip.invitoBottone": "Vai alle clip",
+    "saluti.goalEtichetta": "Goal",
+    "settimana.etichettaFino": "Al massimo fino a",
+    "settimana.etichettaSaltata": "Niente live",
+    "musica.titolo": "In sottofondo",
+    "musica.play": "Fai partire la musica",
+    "musica.pausa": "Metti in pausa",
+    "musica.precedente": "Traccia precedente",
+    "musica.successiva": "Traccia successiva",
+    "musica.avanzamento": "Punto della traccia",
+    "musica.volume": "Volume",
+    "musica.muto": "Togli l'audio",
+    "musica.suono": "Rimetti l'audio",
+    "musica.elenco": "Scegli la traccia",
+    "musica.riduci": "Riduci il lettore",
+    "musica.apri": "Apri il lettore",
+    "musica.errore": "Questa traccia non si carica.",
+    "musica.bloccato": "Premi di nuovo play.",
+    "saluti.referralTitolo": "Referral Amazon",
+    "saluti.referralTesto": "Sostieni gratuitamente il canale con Amazon!<strong> </strong>Salva il link qui sotto nei <strong>preferiti del browser</strong> e usalo ogni volta che fai acquisti su Amazon. Entra dal link, aggiungi normalmente i prodotti al carrello e acquista: sosterrai il canale senza costi aggiuntivi!&nbsp;",
+    "saluti.referralBtn": "Apri Amazon",
+    "saluti.referralNota": "In qualità di Affiliato Amazon, ricevo un guadagno dagli acquisti idonei.",
+    "musica.casuale": "Mescola le tracce",
+    "musica.ordine": "Rimetti in ordine",
+    "sondaggio.occhiello": "Sondaggio",
+    "sondaggio.titolo": "Dì la tua",
+    "sondaggio.nota": "Si vota una volta sola, con il proprio account Twitch.",
+    "sondaggio.scadeTra": "Chiude tra",
+    "sondaggio.chiuso": "Sondaggio chiuso: ecco com'è andata.",
+    "sondaggio.votato": "Hai votato: ecco come sta andando.",
+    "sondaggio.voti": "voti",
+    "sondaggio.loginTitolo": "Per votare serve Twitch",
+    "sondaggio.loginTesto": "Possono votare solo gli utenti collegati al sito con il proprio account Twitch: così ogni persona vota una volta sola.",
+    "sondaggio.loginBtn": "Collegati con Twitch",
+    "sondaggio.loginChiudi": "Non ora",
+    "manutenzione.stato": "Manutenzione",
+    "manutenzione.occhiello": "Stiamo sistemando la regia",
+    "manutenzione.messaggio": "Sto applicando il nuovo lettore musica !",
+    "manutenzione.contoPrima": "Si riparte",
+    "manutenzione.contoFinito": "Ci siamo: riaccendiamo la regia…",
+    "manutenzione.bottone": "Guarda su Twitch",
+    "lurk.manutenzione": "Il sito va in manutenzione: ho spento la modalità lurk.",
+    "sponsor.occhiello": "Chi sostiene il canale",
+    "sponsor.titolo": "Sponsor e partner",
+    "sponsor.testo": "Scopri i miei sponsor !",
+    "sponsor.vaiBtn": "Tutti gli sponsor",
+    "sponsor.visita": "Vai al sito di",
+    "sponsor.evidenzaTag": "In evidenza",
+    "sponsor.nuovoTag": "Nuovo partner",
+    "sponsor.dalEtichetta": "Partner dal",
+    "sponsor.vaiScheda": "Vai al sito",
+    "sponsor.paginaTitolo": "Gli sponsor",
+    "sponsor.paginaTesto": "Le realtà che sostengono il canale, divise per categoria. Ogni scheda porta al loro sito.",
+    "sponsor.paginaTorna": "Torna al sito",
+    "sponsor.altri": "Altri",
+    "sponsor.paginaVuota": "Nessuno sponsor attivo in questo momento.",
+    "giochi.occhiello": "Lo storico delle live",
+    "giochi.titolo": "I giochi della live",
+    "giochi.testo": "Scopri i giochi che ho portato in live: dagli horror ai party game con la chat, dagli shooter ai puzzle game.",
+    "giochi.invito": "Vedi tutti i giochi",
+    "giochi.paginaTitolo": "I giochi",
+    "giochi.paginaTesto": "Ogni gioco portato in live sul canale. Filtra per tipologia e ordina come preferisci.",
+    "giochi.paginaTorna": "Torna al sito",
+    "giochi.filtri": "Tipologia",
+    "giochi.tutti": "Tutti",
+    "giochi.ordina": "Ordina per",
+    "giochi.ordinaRecenti": "Giocati di recente",
+    "giochi.ordinaOre": "Più ore in live",
+    "giochi.ordinaNome": "Nome (A-Z)",
+    "giochi.gioco": "gioco",
+    "giochi.giochi": "giochi",
+    "giochi.diretta": "diretta",
+    "giochi.dirette": "dirette",
+    "giochi.ora": "ora",
+    "giochi.ore": "ore",
+    "giochi.clip": "clip",
+    "giochi.ultimaVolta": "Ultima volta",
+    "giochi.clipMigliore": "Clip migliore",
+    "giochi.vuoto": "Nessun gioco di questa tipologia, per ora.",
+    "clip.cercaEtichetta": "Cerca",
+    "clip.cercaSegnaposto": "Titolo o autore della clip",
+    "clip.cercaPulisci": "Cancella la ricerca",
+    "clip.cercaUna": "clip trovata",
+    "clip.cercaTante": "clip trovate",
+    "clip.cercaVuoto": "Nessuna clip corrisponde alla ricerca in questo periodo.",
+    "giochi.cercaEtichetta": "Cerca",
+    "giochi.cercaSegnaposto": "Nome o tipologia del gioco",
+    "giochi.cercaPulisci": "Cancella la ricerca",
+    "giochi.cercaVuoto": "Nessun gioco corrisponde alla ricerca. Prova con un altro nome o togli i filtri."
+  },
+  "config": {
+    "twitch": {
+      "canale": "slayer_beard",
+      "idUtente": "47738247",
+      "domini": [
+        "slayerbeard.com",
+        "www.slayerbeard.com"
+      ],
+      "direttaCondivisa": false
+    },
+    "sitoUrl": "https://slayerbeard.com",
+    "email": "collab@slayerbeard.com",
+    "ultimaDiretta": "🎮 ITA/ENG | [SLAYERFEST #DAY 7] Festeggiamo assieme i 7 anni di Streaming! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+    "orari": {
+      "giorni": [
+        1,
+        3,
+        5,
+        0
+      ],
+      "ora": "21:00",
+      "durataOre": 4,
+      "fuso": "Europe/Rome",
+      "schede": [
+        {
+          "ora": "",
+          "durataOre": 3,
+          "titolo": "",
+          "gioco": "007 first light",
+          "nota": "",
+          "immagine": "contenuti/media/007.webp",
+          "fuoco": {
+            "x": 45,
+            "y": 51
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": 3,
+          "titolo": "",
+          "gioco": "Horizon Zero Dawn",
+          "nota": "",
+          "immagine": "contenuti/media/horizonzerodawn.webp",
+          "fuoco": {
+            "x": 33,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": 3,
+          "titolo": "",
+          "gioco": "Reanimal DLC w/ mobscene93",
+          "nota": "",
+          "immagine": "contenuti/media/reanimalcopertina.jpg",
+          "fuoco": {
+            "x": 41,
+            "y": 60
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": 3,
+          "titolo": "",
+          "gioco": "Fatal Frame 2 + Jumpscares",
+          "nota": "",
+          "immagine": "contenuti/media/fatal-frame-2.jpg",
+          "fuoco": {
+            "x": 15,
+            "y": 55
+          },
+          "velo": 60
+        },
+        {
+          "ora": "",
+          "durataOre": null,
+          "titolo": "",
+          "gioco": "",
+          "nota": "",
+          "immagine": "",
+          "fuoco": {
+            "x": 50,
+            "y": 50
+          },
+          "velo": 60
+        }
+      ],
+      "eventi": [
+        {
+          "data": "2026-09-25",
+          "ora": "11:00",
+          "durataOre": null,
+          "titolo": "SlayerFest | Day 8",
+          "gioco": "",
+          "nota": "",
+          "immagine": "contenuti/media/slayerfest.webp",
+          "fuoco": {
+            "x": 54,
+            "y": 11
+          },
+          "velo": 30,
+          "ultimoGiorno": "2026-10-10"
+        }
+      ],
+      "pause": [
+        {
+          "data": "2026-10-02",
+          "motivo": "MOTIVI FAMIGLIARI"
+        }
+      ],
+      "sfondo": {
+        "immagine": "img/settimana-sfondo.webp",
+        "fuoco": {
+          "x": 50,
+          "y": 50
+        },
+        "intensita": 30
+      }
+    },
+    "dati": {
+      "follower": 3674,
+      "abbonati": 539,
+      "spettatoriMedi": 25,
+      "dal": 2013,
+      "lingua": "ITA / ENG",
+      "ruolo": "Twitch Affiliate",
+      "prefissoEmote": "slayer156"
+    },
+    "immagini": {
+      "avatar": "img/avatar.webp",
+      "banner": "img/copertina.webp",
+      "mascotte": "img/mascotte.webp",
+      "og": "img/og.jpg",
+      "favicon": "img/favicon.png"
+    },
+    "tema": {
+      "colori": {
+        "viola": "#8b2fff",
+        "violaCupo": "#4b1391",
+        "violaChiaro": "#c5a4ff",
+        "ciano": "#22e0ff",
+        "magenta": "#ff2fa0",
+        "live": "#ff3d5e",
+        "ok": "#35e0a1",
+        "allerta": "#ffc65c",
+        "fondo": "#07070c",
+        "testo": "#f2f0f8",
+        "testoMedio": "#c3bdd6",
+        "testoTenue": "#9a93b0"
+      },
+      "font": {
+        "titolo": "Space Grotesk",
+        "testo": "Manrope",
+        "mono": "JetBrains Mono"
+      },
+      "forma": {
+        "raggio": 14,
+        "maxLarghezza": 1360,
+        "passo": 8
+      },
+      "sfondo": {
+        "aloni": 100
+      }
+    },
+    "account": {
+      "attivo": true,
+      "clientId": "pozdfupxu8zx9drrxlexv6it3cczld",
+      "urlRitorno": "https://slayerbeard.com/"
+    },
+    "lurk": {
+      "attivo": false,
+      "tieniSchermoAcceso": false,
+      "oreMax": 3,
+      "messaggioAttivo": true,
+      "frasi": [
+        "[LURK] Sono un gatto matto e si, ti lurko! 👀",
+        "[LURK]  Scusa, quel gabbiano di Mob mi ha rapito! Ci sono dal sito !",
+        "[LURK] Siii ! La gemma del Lurk !",
+        "[LURK] Segnale rilevato: lurker nelle vicinanze!",
+        "[LURK] Pensavo fosse il citofono ! Invece è slay che ha scorreggiato duro!",
+        "[LURK] Lurko lurko lurko lurko, LURKOH!",
+        "[LURK] Arrosticini ? -Lurkeggio da Sito !",
+        "[LURK] Oddio che paura ! L'ha vishto anche lei ? Un lurker dal sito !",
+        "[LURK] Alza le mani 15 secondi che io resto sul sito ",
+        "[LURK] Eja, ti sto lurkando, ascallonisi eh!",
+        "[LURK] Vado a farmi una doccia, puzzo come slayer!",
+        "[LURK] Vado in lurk, non voglio essere scarso come slayer!"
+      ],
+      "minutiFraMessaggi": 10
+    },
+    "pollo": {
+      "attivo": false,
+      "chatVera": true,
+      "mostraMessaggi": false,
+      "frasi": {
+        "riposo": [
+          "Il pollaio è aperto.",
+          "Becco qualcosa e aspetto.",
+          "Tutto tranquillo, per ora.",
+          "Coccodè."
+        ],
+        "click": [
+          "Coccodè. Ti apro la chat.",
+          "Il pollaio è di qua.",
+          "Chat aperta: scrivi pure.",
+          "Beccato. Ecco la chat."
+        ],
+        "chat": [
+          "{nome} ha scritto in chat!",
+          "{nome} si è fatto sentire.",
+          "C'è {nome} nel pollaio.",
+          "Coccodè, parla {nome}.",
+          "Qualcuno ha scritto nel pollaio.",
+          "Si muove la chat. Coccodè."
+        ],
+        "scrive": [
+          "Ti ascolto...",
+          "Sto leggendo.",
+          "Dimmi pure, sono qui.",
+          "Orecchie dritte."
+        ],
+        "live": [
+          "Siamo in onda!",
+          "Luce accesa, si comincia.",
+          "In onda: il pollaio si riempie."
+        ],
+        "lurk": [
+          "Restiamo accesi, ci penso io.",
+          "Tengo la diretta viva. Coccodè.",
+          "Vai pure, il pollaio resta aperto.",
+          "Sorveglio io lo schermo."
+        ],
+        "offline": [
+          "Fuori onda. Il pollaio dorme.",
+          "Zzz.",
+          "Niente diretta adesso: la settimana è qui sotto.",
+          "Luce spenta. Si riparte la prossima serata."
+        ]
+      }
+    },
+    "clip": {
+      "attivo": true,
+      "quante": 6,
+      "periodo": "30",
+      "voci": [
+        {
+          "id": "SpinelessSincereCasetteTBTacoLeft-53cGoEL_68PTm_Nv",
+          "titolo": "🎮 ITA/ENG | [SLAYERFEST #DAY 2] Festeggiamo assieme i 6 anni di Streaming! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/SpinelessSincereCasetteTBTacoLeft-53cGoEL_68PTm_Nv",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/4d16aad7-dd86-469d-b31b-ca43c74e98d7/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 17,
+          "creataIl": "2026-09-19T13:59:54Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "CleanUnusualEggLitFam-QR29mgpVdWaDR3lh",
+          "titolo": "🎮 ITA/ENG | [FATAL FRAME 2 + JUMPSCARES] News succose della SlayerFest + scagazze perpetue! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/CleanUnusualEggLitFam-QR29mgpVdWaDR3lh",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/f6f7ff78-0dc2-49cd-9c55-97053f9373fe/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 13,
+          "creataIl": "2026-09-04T21:46:59Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "FunCulturedOxPeanutButterJellyTime-tTc7CRYBjzQtWA3K",
+          "titolo": "🎮 ITA/ENG | [LITTLE NIGHTMARES 3 DLC] Ci facciamo mancare il DLC con @mobscene93 ? EHEH! ❗️social ❗️schedule ❗️esperar ❗️qlash ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/FunCulturedOxPeanutButterJellyTime-tTc7CRYBjzQtWA3K",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/1dada867-45d9-4708-a467-70e97c1b9043/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 11,
+          "creataIl": "2026-08-26T21:54:20Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "BitterPlacidChickenJKanStyle-kke867xSYtd9xxlb",
+          "titolo": "VAR 3",
+          "url": "https://www.twitch.tv/slayer_beard/clip/BitterPlacidChickenJKanStyle-kke867xSYtd9xxlb",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/79fd8c86-0069-441c-af9d-182abc1f46d4/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 10,
+          "creataIl": "2026-09-19T13:10:12Z",
+          "autore": "simone__90"
+        },
+        {
+          "id": "AltruisticAthleticKangarooUncleNox-6_gngxGmPMHpSXsC",
+          "titolo": "espressioni multiple",
+          "url": "https://www.twitch.tv/slayer_beard/clip/AltruisticAthleticKangarooUncleNox-6_gngxGmPMHpSXsC",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/2cd8aa38-47c1-4c22-86e2-c496052772a3/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 60,
+          "visualizzazioni": 10,
+          "creataIl": "2026-09-20T23:43:46Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "TentativePiercingAlbatrossBlargNaut-ew3iSS9hSC8jpqOY",
+          "titolo": "treno in loop",
+          "url": "https://www.twitch.tv/slayer_beard/clip/TentativePiercingAlbatrossBlargNaut-ew3iSS9hSC8jpqOY",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/4c6d9a99-cc8a-44ee-9be6-0265e60ce482/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 60,
+          "visualizzazioni": 10,
+          "creataIl": "2026-09-19T22:41:46Z",
+          "autore": "slayer_beard"
+        }
+      ],
+      "quanteArchivio": 12,
+      "archivio": [
+        {
+          "id": "SpinelessSincereCasetteTBTacoLeft-53cGoEL_68PTm_Nv",
+          "titolo": "🎮 ITA/ENG | [SLAYERFEST #DAY 2] Festeggiamo assieme i 6 anni di Streaming! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/SpinelessSincereCasetteTBTacoLeft-53cGoEL_68PTm_Nv",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/4d16aad7-dd86-469d-b31b-ca43c74e98d7/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 17,
+          "creataIl": "2026-09-19T13:59:54Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "CleanUnusualEggLitFam-QR29mgpVdWaDR3lh",
+          "titolo": "🎮 ITA/ENG | [FATAL FRAME 2 + JUMPSCARES] News succose della SlayerFest + scagazze perpetue! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/CleanUnusualEggLitFam-QR29mgpVdWaDR3lh",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/f6f7ff78-0dc2-49cd-9c55-97053f9373fe/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 13,
+          "creataIl": "2026-09-04T21:46:59Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "FunCulturedOxPeanutButterJellyTime-tTc7CRYBjzQtWA3K",
+          "titolo": "🎮 ITA/ENG | [LITTLE NIGHTMARES 3 DLC] Ci facciamo mancare il DLC con @mobscene93 ? EHEH! ❗️social ❗️schedule ❗️esperar ❗️qlash ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/FunCulturedOxPeanutButterJellyTime-tTc7CRYBjzQtWA3K",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/1dada867-45d9-4708-a467-70e97c1b9043/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 11,
+          "creataIl": "2026-08-26T21:54:20Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "AltruisticAthleticKangarooUncleNox-6_gngxGmPMHpSXsC",
+          "titolo": "espressioni multiple",
+          "url": "https://www.twitch.tv/slayer_beard/clip/AltruisticAthleticKangarooUncleNox-6_gngxGmPMHpSXsC",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/2cd8aa38-47c1-4c22-86e2-c496052772a3/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 60,
+          "visualizzazioni": 10,
+          "creataIl": "2026-09-20T23:43:46Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "BitterPlacidChickenJKanStyle-kke867xSYtd9xxlb",
+          "titolo": "VAR 3",
+          "url": "https://www.twitch.tv/slayer_beard/clip/BitterPlacidChickenJKanStyle-kke867xSYtd9xxlb",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/79fd8c86-0069-441c-af9d-182abc1f46d4/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 10,
+          "creataIl": "2026-09-19T13:10:12Z",
+          "autore": "simone__90"
+        },
+        {
+          "id": "TentativePiercingAlbatrossBlargNaut-ew3iSS9hSC8jpqOY",
+          "titolo": "treno in loop",
+          "url": "https://www.twitch.tv/slayer_beard/clip/TentativePiercingAlbatrossBlargNaut-ew3iSS9hSC8jpqOY",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/4c6d9a99-cc8a-44ee-9be6-0265e60ce482/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 60,
+          "visualizzazioni": 10,
+          "creataIl": "2026-09-19T22:41:46Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "BumblingMoralBaguetteOSkomodo-jksiko-e-vVK-5R_",
+          "titolo": "Ti SC4550 a te",
+          "url": "https://www.twitch.tv/slayer_beard/clip/BumblingMoralBaguetteOSkomodo-jksiko-e-vVK-5R_",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/a0a0695c-cc0a-4d1a-b8f2-b34a5b95ca83/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 60,
+          "visualizzazioni": 9,
+          "creataIl": "2026-09-20T19:31:24Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "BloodyPiercingMuleYee-Zgyr9Pl2_J7BRWMO",
+          "titolo": "no la banana in bocca no",
+          "url": "https://www.twitch.tv/slayer_beard/clip/BloodyPiercingMuleYee-Zgyr9Pl2_J7BRWMO",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/1f459ce8-67bf-4d2d-ac26-012361d78372/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 9,
+          "creataIl": "2026-09-20T16:30:47Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "CrypticCrowdedPeachKlappa-8A6sjlkxO6ewGOCx",
+          "titolo": "e la banana?",
+          "url": "https://www.twitch.tv/slayer_beard/clip/CrypticCrowdedPeachKlappa-8A6sjlkxO6ewGOCx",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/cd3edff7-5f03-40b2-8b4e-04d84a5bf9f2/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 9,
+          "creataIl": "2026-08-28T21:31:26Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "PleasantDoubtfulMouseANELE-kCtFtoMah3aOQLlg",
+          "titolo": "Jumpscare",
+          "url": "https://www.twitch.tv/slayer_beard/clip/PleasantDoubtfulMouseANELE-kCtFtoMah3aOQLlg",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/414c5654-4c4b-45d0-816c-cd0f5668139e/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 8,
+          "creataIl": "2026-09-20T20:38:33Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "HonorableStormyPangolinPraiseIt-I2JrmAUJYilwHDNF",
+          "titolo": "idea geniale",
+          "url": "https://www.twitch.tv/slayer_beard/clip/HonorableStormyPangolinPraiseIt-I2JrmAUJYilwHDNF",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/69491af1-0e8c-40bf-b070-abbe25b4781c/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 60,
+          "visualizzazioni": 8,
+          "creataIl": "2026-08-28T21:30:10Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "CrepuscularConfidentPotStoneLightning-UTyFKzfsvoLolrAP",
+          "titolo": "minca mia a tui",
+          "url": "https://www.twitch.tv/slayer_beard/clip/CrepuscularConfidentPotStoneLightning-UTyFKzfsvoLolrAP",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/1b9c7673-b2c8-4b54-a443-1168c4170a6d/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 60,
+          "visualizzazioni": 7,
+          "creataIl": "2026-09-23T18:38:49Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "HappyEncouragingArmadilloMrDestructoid-Tr8Db5lSR-r6ft3i",
+          "titolo": "🎮 ITA/ENG | [SLAYERFEST #DAY 4] Festeggiamo assieme i 6 anni di Streaming! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/HappyEncouragingArmadilloMrDestructoid-Tr8Db5lSR-r6ft3i",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/196534f5-2d4e-43c8-bb09-52baab919527/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 7,
+          "creataIl": "2026-09-21T19:58:06Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "CuriousCaringRaccoonVoteNay-_bfpYiZpiN6GiUZI",
+          "titolo": "volo",
+          "url": "https://www.twitch.tv/slayer_beard/clip/CuriousCaringRaccoonVoteNay-_bfpYiZpiN6GiUZI",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/5ce21e3d-652a-4a82-a837-9f4551f4d754/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 6,
+          "creataIl": "2026-09-20T16:14:37Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "OptimisticSmoothMooseAMPTropPunch-lprPihXYPgUOGEOP",
+          "titolo": "Stamattina mi sono svegliato con...",
+          "url": "https://www.twitch.tv/slayer_beard/clip/OptimisticSmoothMooseAMPTropPunch-lprPihXYPgUOGEOP",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/6af1c875-5184-487a-8645-17fa473a4b86/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 5,
+          "visualizzazioni": 5,
+          "creataIl": "2026-09-24T09:12:25Z",
+          "autore": "ManuMonte91"
+        },
+        {
+          "id": "ShyBrainyChowderNerfBlueBlaster-Kks_vkGG4WjuFI0s",
+          "titolo": "la magia di sora lella",
+          "url": "https://www.twitch.tv/slayer_beard/clip/ShyBrainyChowderNerfBlueBlaster-Kks_vkGG4WjuFI0s",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/16f93e67-902a-4837-bfa3-a8cca0426a9e/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 5,
+          "creataIl": "2026-09-23T11:20:19Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "LightObedientPoultryBrokeBack-BPIOl5327m0paQuJ",
+          "titolo": "🎮 ITA/ENG | [SLAYERFEST #DAY 5] Festeggiamo assieme i 6 anni di Streaming! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/LightObedientPoultryBrokeBack-BPIOl5327m0paQuJ",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/5673d032-25fa-4ddf-a370-f26558695674/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 5,
+          "creataIl": "2026-09-22T17:12:51Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "FunSpeedySashimiTriHard-cBHm96t7YIxchTp8",
+          "titolo": "timing",
+          "url": "https://www.twitch.tv/slayer_beard/clip/FunSpeedySashimiTriHard-cBHm96t7YIxchTp8",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/25ce0b00-b82c-4f50-bd36-8237536ce5c1/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 3,
+          "creataIl": "2026-09-22T17:10:55Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "IncredulousEnergeticDotterelMau5-e9K-2qOffhoP-jY-",
+          "titolo": "Alan Wake comico",
+          "url": "https://www.twitch.tv/slayer_beard/clip/IncredulousEnergeticDotterelMau5-e9K-2qOffhoP-jY-",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/19d251b4-b825-4cb5-8d47-87aa5d31c1a2/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 3,
+          "creataIl": "2026-09-23T11:14:39Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "TenuousGleamingToothStrawBeary-2XXkg26R4Sz1dC-I",
+          "titolo": "🎮 ITA/ENG | [SLAYERFEST #DAY 7] Festeggiamo assieme i 6 anni di Streaming! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/TenuousGleamingToothStrawBeary-2XXkg26R4Sz1dC-I",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/1b7555fb-7af3-4fc7-9c47-a34b05c97e64/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 2,
+          "creataIl": "2026-09-24T18:48:51Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "NurturingStormySparrowBuddhaBar-JNFQZotyz8l9uP4a",
+          "titolo": "60",
+          "url": "https://www.twitch.tv/slayer_beard/clip/NurturingStormySparrowBuddhaBar-JNFQZotyz8l9uP4a",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/a1d51e17-3896-491e-bed4-be9d95b74f1e/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 2,
+          "creataIl": "2026-09-24T19:21:23Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "ScaryWanderingGoldfishFUNgineer-aeALvIKhzfJadFdr",
+          "titolo": "NICE...",
+          "url": "https://www.twitch.tv/slayer_beard/clip/ScaryWanderingGoldfishFUNgineer-aeALvIKhzfJadFdr",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/4354bb46-143b-491d-b502-33fbbf885f73/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 2,
+          "creataIl": "2026-09-24T20:15:16Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "NimbleHeadstrongTroutOMGScoots-OcfhdSP0uW_KkXYC",
+          "titolo": "SIGNORA IMPAZZISCE",
+          "url": "https://www.twitch.tv/slayer_beard/clip/NimbleHeadstrongTroutOMGScoots-OcfhdSP0uW_KkXYC",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/d41984fd-7a6f-401f-bb39-d4eedc5d5fad/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 18,
+          "visualizzazioni": 2,
+          "creataIl": "2026-09-24T15:10:13Z",
+          "autore": "simone__90"
+        },
+        {
+          "id": "FamousSmokyAlligatorBudBlast-fImFO7keVyTfaou4",
+          "titolo": "🎮 ITA/ENG | [SLAYERFEST #DAY 6] Festeggiamo assieme i 6 anni di Streaming! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/FamousSmokyAlligatorBudBlast-fImFO7keVyTfaou4",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/dd7869e5-3d00-4670-a29d-31ab38dc04da/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 2,
+          "creataIl": "2026-09-23T20:10:52Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "WildVastZucchiniKappaPride-3IzKmPuplJYgpHFh",
+          "titolo": "🎮 ITA/ENG | [SLAYERFEST #DAY 7] Festeggiamo assieme i 6 anni di Streaming! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/WildVastZucchiniKappaPride-3IzKmPuplJYgpHFh",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/33440ae4-c5de-4c2b-ba23-89a81a7cf999/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 1,
+          "creataIl": "2026-09-24T17:20:58Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "ExquisiteSucculentOstrichKappaRoss-qemIbbSii7E9F6wN",
+          "titolo": "🎮 ITA/ENG | [SLAYERFEST #DAY 7] Festeggiamo assieme i 6 anni di Streaming! ❗️maratona ❗️social ❗️schedule ❗️esperar ❗️dona",
+          "url": "https://www.twitch.tv/slayer_beard/clip/ExquisiteSucculentOstrichKappaRoss-qemIbbSii7E9F6wN",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/900dc051-44af-4e56-8814-859b8ccfd75e/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 1,
+          "creataIl": "2026-09-24T19:34:03Z",
+          "autore": "slayer_beard"
+        },
+        {
+          "id": "EagerCalmCaribouBatChest-R0fari7zyJHji8pR",
+          "titolo": "salayer_villagers",
+          "url": "https://www.twitch.tv/slayer_beard/clip/EagerCalmCaribouBatChest-R0fari7zyJHji8pR",
+          "anteprima": "https://static-cdn.jtvnw.net/twitch-video-assets/twitch-vap-video-assets-prod-us-west-2/31278451-dd7a-468a-bbd6-55ddcb4dc56f/landscape/thumb/thumb-0000000000-480x272.jpg",
+          "durataSec": 30,
+          "visualizzazioni": 1,
+          "creataIl": "2026-09-24T19:37:02Z",
+          "autore": "slayer_beard"
+        }
+      ]
+    },
+    "social": [
+      {
+        "chiave": "twitch",
+        "nome": "Twitch",
+        "handle": "twitch.tv/slayer_beard",
+        "url": "https://www.twitch.tv/slayer_beard",
+        "icona": "twitch",
+        "contatore": "twitch",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 4000
+      },
+      {
+        "chiave": "instagram",
+        "nome": "Instagram",
+        "handle": "@slayer_beard",
+        "url": "https://www.instagram.com/slayer_beard/",
+        "icona": "instagram",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
+        "chiave": "tiktok",
+        "nome": "TikTok",
+        "handle": "@slayer_beard",
+        "url": "https://www.tiktok.com/@slayer_beard",
+        "icona": "tiktok",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
+        "chiave": "discord",
+        "nome": "Discord",
+        "handle": "Il server della community",
+        "url": "https://discord.gg/6DaQvPNy6",
+        "icona": "discord",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      },
+      {
+        "chiave": "youtube",
+        "nome": "YouTube",
+        "handle": "@slayer_beard",
+        "url": "https://www.youtube.com/@slayer_beard/?sub_confirmation=1",
+        "icona": "youtube",
+        "contatore": "youtube",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 1000
+      },
+      {
+        "chiave": "Gruppo Telegram",
+        "nome": "Telegram",
+        "handle": "Entra nel gruppo",
+        "url": "https://t.me/+X3BGW-ik959hMjY8",
+        "icona": "telegram",
+        "contatore": "nessuno",
+        "contatoreEtichetta": "Iscritti",
+        "goal": 0
+      }
+    ],
+    "supporto": [
+      {
+        "chiave": "segui",
+        "icona": "heart",
+        "titolo": "Segui il canale",
+        "testo": "Il modo che aiuta di più e non costa niente: ti avvisa quando accendo e mi fa salire nelle liste di Twitch.",
+        "tag": "Gratis",
+        "cta": "Segui su Twitch",
+        "url": "https://www.twitch.tv/slayer_beard"
+      },
+      {
+        "chiave": "abbonamento",
+        "icona": "star",
+        "titolo": "Abbonamento",
+        "testo": "Vale un mese e si può fermare quando vuoi. Sblocca le emote slayer156 e toglie la pubblicità. Al momento siamo in 90.",
+        "tag": "Da 4,99 €",
+        "cta": "Abbonati su Twitch",
+        "url": "https://www.twitch.tv/subs/slayer_beard"
+      },
+      {
+        "chiave": "prime",
+        "icona": "crown",
+        "titolo": "Abbonamento Prime",
+        "testo": "Se hai Amazon Prime, ogni mese hai un abbonamento incluso da usare dove vuoi. Non costa niente in più: se non lo usi, scade e basta.",
+        "tag": "Incluso",
+        "cta": "Attiva il Prime",
+        "url": "https://gaming.amazon.com/"
+      },
+      {
+        "chiave": "bits",
+        "icona": "gem",
+        "titolo": "Bits",
+        "testo": "Piccole mance durante la diretta: compaiono in chat e le leggo ad alta voce. Anche zero va benissimo.",
+        "tag": "Quanto vuoi",
+        "cta": "Manda dei Bits",
+        "url": "https://www.twitch.tv/slayer_beard"
+      },
+      {
+        "chiave": "donazione",
+        "icona": "coffee",
+        "titolo": "Donazione",
+        "testo": "Una tantum, senza abbonarsi. Nessun vantaggio in cambio: è solo un grazie.",
+        "tag": "Facoltativa",
+        "cta": "Fai una donazione",
+        "url": ""
+      },
+      {
+        "chiave": "wishlist",
+        "icona": "amazon-wishlist",
+        "titolo": "Wishlist Amazon",
+        "testo": "La mia lista dei desideri su Amazon: se ti va di fare un regalo, puoi scegliere da lì. È solo un pensiero, non serve.",
+        "tag": "Facoltativa",
+        "cta": "Apri la lista",
+        "url": "https://www.amazon.it/hz/wishlist/ls/314FIIX4ZAKI2?ref_=wl_share"
+      }
+    ],
+    "sezioni": [
+      {
+        "id": "regia",
+        "attiva": true
+      },
+      {
+        "id": "diretta",
+        "attiva": true
+      },
+      {
+        "id": "sondaggio",
+        "attiva": true
+      },
+      {
+        "id": "settimana",
+        "attiva": true
+      },
+      {
+        "id": "chi",
+        "attiva": true
+      },
+      {
+        "id": "supporto",
+        "attiva": true
+      },
+      {
+        "id": "saluti",
+        "attiva": true
+      },
+      {
+        "id": "sponsor",
+        "attiva": true
+      }
+    ],
+    "stili": {},
+    "disposizione": {
+      "blocchi": {}
+    },
+    "chi": {
+      "frasi": [
+        "Hai mai mangiato cinese? Fidati! Sai Ke Bon",
+        "Come si chiama un cane che corre per strada ? Run-dagio ",
+        "Cosa fa un cane ad un altro cane? WOOF WOOF!",
+        "Sii, la gemma del culooh! ",
+        "Si, cazzo merdah!",
+        "Ma lei è un cojone mi scusi!",
+        "Dai su, non fare la bagassina!",
+        "Facciamo il Fart Of Pain?! ",
+        "Combo di fart? Va bene. Fatto. Ovviamente su Tangia!",
+        "A meno che?! Ti scasso? Si. Ti scasso!"
+      ],
+      "gifOgni": 5,
+      "gifRaffica": [
+        {
+          "immagine": "img/pollo-gif/raffica-ufficio.gif",
+          "scritta": "VUOI ROMPERE IL MOUSE?"
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-gatto-gamer.gif",
+          "scritta": "HAI ROTTO."
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-portatile.gif",
+          "scritta": "IL MOUSE HA CHIAMATO IL SINDACATO"
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-gatto-bottone.gif",
+          "scritta": "NON È UN BOTTONE, È UN POLLO"
+        },
+        {
+          "immagine": "img/pollo-gif/raffica-polli-tocco.gif",
+          "scritta": "SMETTILA DI TOCCARMI"
+        }
+      ],
+      "scritteRaffica": [
+        "VUOI ROMPERE IL MOUSE?",
+        "HAI ROTTO.",
+        "PIANO, IL TASTO SINISTRO HA UNA FAMIGLIA",
+        "CALMA, SONO UN POLLO, NON UN PUNCHING BALL"
+      ],
+      "gifInsistenza": [
+        {
+          "immagine": "img/pollo-gif/insistenza-gatto.gif",
+          "scritta": "NON HAI DI MEGLIO DA FARE?"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-cane.gif",
+          "scritta": "ANCORA TU?"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-polli-sguardo.gif",
+          "scritta": "SEMPRE QUI SEI?"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-polli-tavolo.gif",
+          "scritta": "VAI A SEGUIRE LA LIVE, INVECE"
+        },
+        {
+          "immagine": "img/pollo-gif/insistenza-alice.gif",
+          "scritta": "CI SIAMO ANNOIATI, EH?"
+        }
+      ],
+      "scritteInsistenza": [
+        "NON HAI DI MEGLIO DA FARE?",
+        "SEMPRE QUI SEI?",
+        "VAI A SEGUIRE LA LIVE, INVECE",
+        "IL POLLO TI STA GIUDICANDO"
+      ],
+      "gifScroll": [
+        {
+          "immagine": "img/pollo-gif/scroll-uccello-stordito.gif",
+          "scritta": "TI GIRA LA TESTA?"
+        },
+        {
+          "immagine": "img/pollo-gif/scroll-occhi-spirale.gif",
+          "scritta": "DECIDITI: SU O GIÙ?"
+        },
+        {
+          "immagine": "img/pollo-gif/scroll-vomito.gif",
+          "scritta": "SU E GIÙ, SU E GIÙ… BLEAH"
+        },
+        {
+          "immagine": "img/pollo-gif/scroll-psichedelico.gif",
+          "scritta": "HAI IL MAL DI MARE?"
+        }
+      ],
+      "scritteScroll": [
+        "TI GIRA LA TESTA?",
+        "HAI IL MAL DI MARE?",
+        "DECIDITI: SU O GIÙ?"
+      ]
+    },
+    "iscrittiYoutube": [
+      {
+        "url": "https://www.youtube.com/@slayer_beard/?sub_confirmation=1",
+        "iscritti": 166,
+        "letteIl": "2026-09-24T09:45:39.063Z"
+      }
+    ],
+    "musica": {
+      "attivo": true,
+      "aperto": true,
+      "cartella": "mp3",
+      "casuale": false,
+      "icona": "contenuti/media/logo-spotify.webp"
+    },
+    "tracce": [
+      {
+        "titolo": "ONE TIME (KORDHELL REMIX) - ALRT (Official)",
+        "artista": "ALRT",
+        "file": "ALRT - ONE TIME (KORDHELL REMIX) - ALRT (Official).mp3",
+        "cover": "contenuti/media/artworks-bfhbi2hgazn4-0-t500x500.jpg",
+        "link": ""
+      },
+      {
+        "titolo": " PULL UP.mp3",
+        "artista": "ANGELPLAYA",
+        "file": "ANGELPLAYA - PULL UP.mp3",
+        "cover": "contenuti/media/pull-up-1672707640-lkghqx2hgo.webp",
+        "link": ""
+      },
+      {
+        "titolo": "Skyline",
+        "artista": "Grafix",
+        "file": "Grafix - Skyline (ft. Metrik) - UKF Drum & Bass.mp3",
+        "cover": "contenuti/media/artworks-jvbd5yoa5ce88ki2-g23meg-t500x500.jpg",
+        "link": ""
+      },
+      {
+        "titolo": "Keygen Funk",
+        "artista": "Prey",
+        "file": "Keygen Funk - Prey.mp3",
+        "cover": "contenuti/media/41kzvtmaiol._uxnan_fmjpg_ql85_.jpg",
+        "link": ""
+      },
+      {
+        "titolo": "MONTAGEM",
+        "artista": "ALQUIMIA",
+        "file": "MONTAGEM ALQUIMIA.mp3",
+        "cover": "contenuti/media/61kbikycal._uxnan_fmjpg_ql85_.jpg",
+        "link": ""
+      },
+      {
+        "titolo": "SO TIRED ROCK",
+        "artista": "NUEKI, TOLCHONOV, Ravens Rock ",
+        "file": "NUEKI, TOLCHONOV, Ravens Rock - SO TIRED ROCK (SPED UP).mp3",
+        "cover": "contenuti/media/ab67616d0000b27331ee37e9695b82d072f9fcb8.jpg",
+        "link": ""
+      },
+      {
+        "titolo": "Absolomb",
+        "artista": "Periphery",
+        "file": "Periphery - Absolomb - SUMERIAN.mp3",
+        "cover": "contenuti/media/hq720.jpg",
+        "link": ""
+      },
+      {
+        "titolo": "Facepalm Mute",
+        "artista": "Periphery",
+        "file": "Periphery - Facepalm Mute - SUMERIAN.mp3",
+        "cover": "contenuti/media/hq720.jpg",
+        "link": ""
+      },
+      {
+        "titolo": "PUMP UP THE STEREO (Sped Up)",
+        "artista": "RAIZHELL",
+        "file": "PUMP UP THE STEREO (Sped Up) - RAIZHELL.mp3",
+        "cover": "contenuti/media/ab67616d00001e029ff2f27a5c1dbb6b9a33850e.jpg",
+        "link": ""
+      },
+      {
+        "titolo": "TOMA TAPA [Brazilian Phonk]",
+        "artista": "RAIZHELL",
+        "file": "RAIZHELL - TOMA TAPA [Brazilian Phonk] - Tribal Trap.mp3",
+        "cover": "contenuti/media/artworks-ewbr0yjv4soigxoc-exx1na-t500x500.jpg",
+        "link": ""
+      },
+      {
+        "titolo": "TEKK PRIME",
+        "artista": "Cryprince",
+        "file": "TEKK PRIME - cryprince.mp3",
+        "cover": "contenuti/media/3880x3880bb.webp",
+        "link": ""
+      }
+    ],
+    "referral": {
+      "attivo": true,
+      "url": "https://amzn.to/4hDGNSF"
+    },
+    "manutenzione": {
+      "attiva": false,
+      "fine": "2026-09-25T02:39",
+      "nastro": [
+        "A meno che ...",
+        "Attenti alle farfalle nella tastiera !",
+        "E' scappato il pistilloneddu",
+        "Corri su Twitch !",
+        "Mob mi ha rubato tavoletta ! ",
+        "Ti scasso !"
+      ]
+    },
+    "sponsor": {
+      "attivo": true,
+      "voci": [
+        {
+          "chiave": "TANGIA",
+          "nome": "TANGIA INTERACTIVE STREAMING",
+          "logo": "contenuti/media/header.png",
+          "testo": "",
+          "categoria": "",
+          "colore": "#000000",
+          "url": "https://www.tangia.co/",
+          "da": "",
+          "a": "",
+          "evidenza": false
+        },
+        {
+          "chiave": "TINY BUILD",
+          "nome": "TINY BUILD",
+          "logo": "contenuti/media/tinybuild.svg.webp",
+          "testo": "",
+          "categoria": "",
+          "colore": "#000000",
+          "url": "https://www.tinybuild.com/",
+          "da": "2026-09-23T00:00",
+          "a": "",
+          "evidenza": true
+        },
+        {
+          "chiave": "DEEP SILVER",
+          "nome": "DEEP SILVER ",
+          "logo": "contenuti/media/screenshot-2026-09-23-183050.png",
+          "testo": "",
+          "categoria": "",
+          "colore": "#000000",
+          "url": "https://www.deepsilver.com/it/about",
+          "da": "",
+          "a": "",
+          "evidenza": false
+        },
+        {
+          "chiave": "ESPERAR BREWING",
+          "nome": "ESPERAR BREWING",
+          "logo": "contenuti/media/images-4.png",
+          "testo": "",
+          "categoria": "",
+          "colore": "#000000",
+          "url": "https://esperarbrewing.it/discount/SLAYER10",
+          "da": "",
+          "a": "",
+          "evidenza": false
+        },
+        {
+          "chiave": "THQ NORDIQ",
+          "nome": "THQ NORDIQ",
+          "logo": "contenuti/media/thq-nordic.png",
+          "testo": "",
+          "categoria": "",
+          "colore": "#000000",
+          "url": "https://thqnordic.com/",
+          "da": "",
+          "a": "",
+          "evidenza": false
+        },
+        {
+          "chiave": "NEOWIZ",
+          "nome": "NEOWIZ",
+          "logo": "contenuti/media/neowiz-logo.jpg",
+          "testo": "",
+          "categoria": "",
+          "colore": "#000000",
+          "url": "https://www.neowiz.com/en",
+          "da": "",
+          "a": "",
+          "evidenza": false
+        }
+      ]
+    },
+    "giochi": {
+      "attivo": true,
+      "nascosti": [
+        "Just Chatting",
+        "Quattro chiacchiere",
+        "IRL",
+        "Special Events",
+        "Eventi speciali"
+      ],
+      "correzioni": []
+    }
+  }
+}

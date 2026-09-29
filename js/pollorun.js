@@ -460,7 +460,7 @@
     v.valore.textContent = testo;
     v.scatola.className = 'pollorun__volume' + (muto ? ' is-muto' : '');
     v.muto.setAttribute('aria-pressed', muto ? 'true' : 'false');
-    v.muto.textContent = muto ? 'Riattiva l\u2019audio' : 'Muto';
+    v.muto.textContent = muto ? "Riattiva l'audio" : 'Muto';
     v.regola.setAttribute('aria-label', 'Regola il volume, ora ' + (muto ? 'muto' : testo));
   }
 
@@ -576,7 +576,7 @@
 
     var aiuto = document.createElement('p');
     aiuto.className = 'pollorun__aiuto';
-    aiuto.textContent = 'Tasti: \u2212 e + per il volume, M per il muto';
+    aiuto.textContent = 'Volume con - e +, M per il muto';
 
     pannello.appendChild(etichetta);
     pannello.appendChild(muto);
@@ -650,7 +650,7 @@
     if (esito.codice === 403) { return 'Non puoi entrare in classifica'; }
     if (esito.codice === 409) { return 'Per entrare in classifica completa prima il livello precedente a questa difficoltà'; }
     if (esito.codice === 422) { return 'Questo livello non entra in classifica'; }
-    if (esito.codice === 429) { return 'Troppe partite in poco tempo: riprova fra un po’'; }
+    if (esito.codice === 429) { return "Troppe partite di fila, riprova tra un po'"; }
     return 'La classifica ora non risponde: il gioco continua lo stesso';
   }
 
@@ -683,7 +683,7 @@
       cl.scatola.hidden = false;
       cl.pillola.className = 'pollorun__pillola is-attesa';
       cl.pillola.disabled = true;
-      cl.pillola.textContent = 'Classifica…';
+      cl.pillola.textContent = 'Classifica...';
       return;
     }
     cl.scatola.hidden = !account();

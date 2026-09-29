@@ -469,7 +469,7 @@
         montato = true;
         stato.modalita = 'sdk';
       } catch (err) {
-        console.warn('[player] Twitch.Player non utilizzabile, passo all’iframe manuale:', err);
+        console.warn('Twitch.Player ko, uso iframe', err);
         stato.player = null;
       }
     }

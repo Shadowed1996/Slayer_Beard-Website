@@ -21,7 +21,7 @@
       <div class="nastro__corpo">
         {{#se saltata}}{{#se sostituito}}<p class="nastro__sostituito">{{sostituito}}</p>{{/se}}<p class="nastro__saltata"><span class="nastro__tag">{{settimana.etichettaSaltata}}</span>{{#se motivoSaltata}} <span class="nastro__motivo">{{motivoSaltata}}</span>{{/se}}</p>{{/se}}
         {{^se saltata}}
-        <p class="nastro__quando"><span class="nastro__tag">{{tag}}</span>{{#se diretta}} <span class="nastro__orario"><b class="nastro__ora">{{ora}}</b><span class="nastro__fine"> – {{fine}}</span></span>{{/se}}</p>
+        <p class="nastro__quando"><span class="nastro__tag">{{tag}}</span>{{#se diretta}} <span class="nastro__orario"><b class="nastro__ora">{{ora}}</b><span class="nastro__fine">-{{fine}}</span></span>{{/se}}</p>
         {{#se sostituito}}<p class="nastro__sostituito">{{sostituito}}</p>{{/se}}
         {{#se titolo}}<p class="nastro__titolo">{{titolo}}</p>{{/se}}
         {{#se gioco}}<p class="nastro__gioco">{{gioco}}</p>{{/se}}
@@ -44,7 +44,7 @@
         </div>
         <div class="evento__corpo">
           <h4 class="evento__titolo">{{titolo}}</h4>
-          <p class="evento__quando"><time class="evento__giorno-esteso" datetime="{{inizio}}">{{dataTesto}}</time> <span class="evento__orario"><b class="evento__ora">{{ora}}</b>{{#se fine}}<span class="evento__fine"> – {{fine}}</span>{{/se}}</span></p>
+          <p class="evento__quando"><time class="evento__giorno-esteso" datetime="{{inizio}}">{{dataTesto}}</time> <span class="evento__orario"><b class="evento__ora">{{ora}}</b>{{#se fine}}<span class="evento__fine">-{{fine}}</span>{{/se}}</span></p>
           {{#se ultimoGiornoTesto}}<p class="evento__limite"><span class="evento__tag">{{settimana.etichettaFino}}</span> {{ultimoGiornoTesto}}</p>{{/se}}
           {{#se gioco}}<p class="evento__gioco">{{gioco}}</p>{{/se}}
           {{#se nota}}<p class="evento__nota">{{nota}}</p>{{/se}}

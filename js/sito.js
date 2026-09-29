@@ -519,7 +519,7 @@
     if (!indirizzo) { return; }
 
     const testo = etichetta(bottone, 'js-etichetta');
-    const riposo = frase(TESTI.copiaBtn, testo.textContent) || 'Copia l’email';
+    const riposo = frase(TESTI.copiaBtn, testo.textContent) || "Copia l'email";
     const fatto = frase(TESTI.copiaFatto, 'Copiata');
     let ritorno = null;
 

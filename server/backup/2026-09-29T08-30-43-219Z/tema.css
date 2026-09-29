@@ -1,0 +1,50 @@
+:root {
+  --viola: #8b2fff;
+  --viola-cupo: #4b1391;
+  --viola-chiaro: #c5a4ff;
+  --ciano: #22e0ff;
+  --magenta: #ff2fa0;
+  --live: #ff3d5e;
+  --ok: #35e0a1;
+  --allerta: #ffc65c;
+
+  --testo: #f2f0f8;
+  --testo-medio: #c3bdd6;
+  --testo-tenue: #9a93b0;
+
+  --fondo: #07070c;
+  --fondo-2: #0e0b16;
+  --pannello: rgba(24, 15, 38, 0.72);
+  --pannello-2: rgba(36, 24, 54, 0.78);
+  --velo: rgba(7, 7, 12, 0.78);
+
+  --linea: rgba(255, 255, 255, 0.07);
+  --linea-forte: rgba(255, 255, 255, 0.15);
+  --linea-comando: rgba(255, 255, 255, 0.34);
+  --linea-viva: rgba(139, 47, 255, 0.55);
+
+  --grad-pagina:
+    radial-gradient(1200px 780px at  50% -12%, rgba(139, 47, 255, 0.22), rgba(139, 47, 255, 0) 70%) 0 0 / 100% 100% no-repeat fixed,
+    radial-gradient( 900px 640px at 104%  10%, rgba(34, 224, 255, 0.055), rgba(34, 224, 255, 0) 66%) 0 0 / 100% 100% no-repeat fixed,
+    radial-gradient( 980px 800px at -10%  58%, rgba(255, 47, 160, 0.05), rgba(255, 47, 160, 0) 68%) 0 0 / 100% 100% no-repeat fixed,
+    radial-gradient( 820px 560px at  30% 108%, rgba(75, 19, 145, 0.28), rgba(75, 19, 145, 0) 72%) 0 0 / 100% 100% no-repeat fixed,
+    #07070c;
+
+  --grad-titolo: linear-gradient(98deg, #f2f0f8 0%, #c5a4ff 48%, #22e0ff 100%);
+
+  --grad-pannello: linear-gradient(168deg, rgba(197, 164, 255, 0.1) 0%, rgba(197, 164, 255, 0.02) 38%, rgba(0, 0, 0, 0.12) 100%);
+
+  --bagliore-viola: 0 0 24px rgba(139, 47, 255, 0.45);
+  --bagliore-ciano: 0 0 20px rgba(34, 224, 255, 0.4);
+
+  --raggio: 14px;
+  --raggio-s: 8px;
+  --raggio-g: 22px;
+
+  --font-titolo: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-testo: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, 'SFMono-Regular', monospace;
+
+  --max-larghezza: 1360px;
+  --passo: 8px;
+}

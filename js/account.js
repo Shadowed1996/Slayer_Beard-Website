@@ -473,10 +473,10 @@
       if (r.ok) {
         avviso('Collegamento revocato su Twitch.');
       } else {
-        avviso('Twitch non ha revocato il token (errore ' + r.status + '): toglilo a mano da Impostazioni → Connessioni.');
+        avviso('Twitch non ha revocato il token (errore ' + r.status + '): toglilo a mano da Impostazioni, Connessioni.');
       }
     }, function () {
-      avviso('Non sono riuscito a contattare Twitch: il token resta valido finché non lo togli da Impostazioni → Connessioni.');
+      avviso('Non sono riuscito a contattare Twitch: il token resta valido finché non lo togli da Impostazioni, Connessioni.');
     }).then(function () {
       vivo.occupato = false;
       dimentica('');

@@ -41,25 +41,25 @@
     spegni: 'Disattiva',
     audio: 'Togli il muto',
     schermo: 'Tieni acceso lo schermo',
-    ripresa: 'L’avevi lasciata accesa: la riattivo?',
-    ciSei: 'Ci sei ancora? Senza risposta spengo la modalità lurk.',
+    ripresa: "L'avevi lasciata accesa, la riattivo?",
+    ciSei: 'Ci sei ancora? Se non rispondi spengo il lurk.',
     ciSono: 'Sono qui',
     statoSpento: 'Spenta.',
-    statoVivo: 'Attiva: il video sta andando.',
+    statoVivo: 'Attiva, il video va.',
     statoFermo: 'Il video si è fermato.',
-    statoRiparto: 'Rimetto in moto il video…',
-    statoBloccato: 'Il browser ha bloccato la riproduzione: tocca il player.',
-    statoAttesa: 'Il canale è fuori onda: non c’è niente da tenere vivo.',
-    chiuso: 'Il canale è andato fuori onda: ho spento la modalità lurk.',
-    manutenzione: 'Il sito va in manutenzione: ho spento la modalità lurk.',
-    statoResa: 'Non ci riesco più. Ricarica la pagina.',
-    statoNiente: 'Da qui non posso: non ho i comandi del player.',
-    conto: 'Viva da {durata}',
-    contoRiavvii: 'Viva da {durata} · {riavvii} riavvii',
-    preavviso: 'Col lurk attivo dirò in chat, ogni {minuti} minuti, frasi come: «{frase}»',
-    invito: 'Vuoi dire in chat che stai guardando? Ogni {minuti} minuti dirò frasi come: «{frase}»',
+    statoRiparto: 'Faccio ripartire il video...',
+    statoBloccato: 'Il browser ha fermato il video, tocca il player.',
+    statoAttesa: "Il canale è offline, non c'è niente da tenere acceso.",
+    chiuso: 'Live finita, lurk spento.',
+    manutenzione: 'Sito in manutenzione, lurk spento.',
+    statoResa: 'Niente da fare, ricarica la pagina.',
+    statoNiente: 'Il player qui non risponde.',
+    conto: 'Attiva da {durata}',
+    contoRiavvii: 'Attiva da {durata}, {riavvii} riavvii',
+    preavviso: 'Con il lurk attivo ogni {minuti} minuti scrivo in chat roba tipo "{frase}"',
+    invito: 'Vuoi far sapere in chat che stai guardando? Ogni {minuti} minuti scrivo roba tipo "{frase}"',
     manda: 'Dillo in chat',
-    inviato: 'Fatto: il messaggio è in chat.'
+    inviato: 'Fatto, è in chat.'
   };
 
   const TESTO_DI = {
@@ -74,19 +74,19 @@
   };
 
   const MOTIVI = {
-    msg_duplicate: 'Twitch blocca due messaggi identici di fila: prova con un’altra frase.',
-    msg_followers_only: 'La chat accetta solo chi segue il canale da un po’: segui il canale e riprova.',
-    msg_subs_only: 'La chat è riservata agli abbonati del canale.',
-    msg_slowmode: 'La chat è in modalità lenta: aspetta qualche secondo e riprova.',
-    msg_rejected: 'AutoMod ha messo il messaggio in attesa di un moderatore: potrebbe comparire più tardi.',
-    msg_rejected_mandatory: 'AutoMod ha bloccato il messaggio prima che arrivasse in chat.',
-    msg_channel_suspended: 'Il canale è sospeso: la chat non accetta messaggi.',
-    msg_banned: 'Il tuo account non può scrivere in questa chat.',
-    msg_verified_email: 'Questa chat richiede un indirizzo email verificato sul tuo account Twitch.',
-    msg_requires_verified_phone_number: 'Questa chat richiede un numero di telefono verificato sul tuo account Twitch.',
-    msg_emoteonly: 'La chat accetta solo emote in questo momento.',
-    msg_r9k: 'La chat rifiuta i messaggi già visti: prova con un’altra frase.',
-    msg_channel_blocked_term: 'Il canale ha bloccato una delle parole del messaggio.'
+    msg_duplicate: 'Twitch non prende lo stesso messaggio due volte di fila. Cambia frase.',
+    msg_followers_only: "In chat scrive solo chi segue da un po'. Metti il follow e riprova.",
+    msg_subs_only: 'Chat solo per abbonati.',
+    msg_slowmode: 'Chat lenta, aspetta qualche secondo.',
+    msg_rejected: "AutoMod l'ha fermato, se un mod lo approva esce dopo.",
+    msg_rejected_mandatory: "AutoMod l'ha bloccato.",
+    msg_channel_suspended: 'Canale sospeso, chat chiusa.',
+    msg_banned: 'Con questo account qui non puoi scrivere.',
+    msg_verified_email: "Per scrivere qui serve l'email verificata su Twitch.",
+    msg_requires_verified_phone_number: 'Per scrivere qui serve il telefono verificato su Twitch.',
+    msg_emoteonly: 'Adesso in chat solo emote.',
+    msg_r9k: 'La chat non vuole messaggi già scritti. Cambia frase.',
+    msg_channel_blocked_term: "Nel messaggio c'è una parola bloccata dal canale."
   };
 
   const nodi = {};
@@ -263,8 +263,8 @@
 
     if (ultimoAutomatico && vivo.collegato) {
       const manca = CADENZA_INVIO - (Date.now() - ultimoAutomatico);
-      riga += ' · prossimo messaggio in chat fra ' + durata(Math.max(0, manca));
-      if (erroreInvio) { riga += ' · l’ultimo non è partito: ' + erroreInvio; }
+      riga += ', prossimo messaggio tra ' + durata(Math.max(0, manca));
+      if (erroreInvio) { riga += ". L'ultimo non è partito (" + erroreInvio + ')'; }
     }
     nodi.conto.textContent = riga;
   }
@@ -556,7 +556,7 @@
     try {
       promessa = navigator.wakeLock.request('screen');
     } catch (err) {
-      if (!silenzioso) { avviso('Il browser non ha concesso di tenere acceso lo schermo.'); }
+      if (!silenzioso) { avviso('Il browser non lascia tenere acceso lo schermo.'); }
       return;
     }
 
@@ -570,7 +570,7 @@
       dipingiComandi();
     }, function () {
       presaSchermo = null;
-      if (!silenzioso) { avviso('Il browser non ha concesso di tenere acceso lo schermo.'); }
+      if (!silenzioso) { avviso('Il browser non lascia tenere acceso lo schermo.'); }
       dipingiComandi();
     });
   }
@@ -731,7 +731,7 @@
 
     const A = account();
     if (!A || !A.stato().collegato) {
-      nonPartito('Per dirlo in chat serve il collegamento con Twitch, qui in cima alla sezione.');
+      nonPartito('Prima collegati con Twitch, qui sopra.');
       return;
     }
 
@@ -770,9 +770,9 @@
       });
     }).then(rispostaInvio).then(null, function (err) {
       if (err && err.message === 'scollegato') {
-        nonPartito('Il collegamento con Twitch non è più valido: ricollegati e riprova.');
+        nonPartito('Il collegamento con Twitch non va più, ricollegati.');
       } else {
-        nonPartito('Twitch non ha risposto: controlla la connessione e riprova.');
+        nonPartito('Twitch non risponde, controlla la connessione.');
       }
     }).then(function () {
       inVolo = false;
@@ -787,19 +787,19 @@
 
       const A = account();
       if (A) { A.valida(true); }
-      nonPartito('Il collegamento con Twitch è scaduto: ricollegati e riprova.');
+      nonPartito('Collegamento scaduto, ricollegati.');
       return null;
     }
     if (r.status === 403) {
-      nonPartito('Twitch ha rifiutato la richiesta: manca il permesso di scrivere in chat, oppure il tuo account non può scrivere qui.');
+      nonPartito('Twitch dice di no. Forse manca il permesso per la chat, o qui non puoi scrivere.');
       return null;
     }
     if (r.status === 422) {
-      nonPartito('Twitch non ha accettato il messaggio: è troppo lungo o contiene qualcosa che la chat non ammette.');
+      nonPartito('Messaggio rifiutato, troppo lungo o con qualcosa che la chat non vuole.');
       return null;
     }
     if (r.status === 429) {
-      nonPartito('Troppe richieste in poco tempo: aspetta un minuto e riprova.');
+      nonPartito('Troppi messaggi, aspetta un minuto.');
       return null;
     }
     if (!r.ok) {
@@ -810,7 +810,7 @@
     return r.json().then(function (d) {
       const voce = (d && Array.isArray(d.data)) ? d.data[0] : null;
       if (!voce) {
-        nonPartito('Twitch ha risposto senza dire com’è andata: controlla in chat.');
+        nonPartito('Non so se è arrivato, guarda in chat.');
         return null;
       }
 
@@ -828,7 +828,7 @@
       nonPartito(MOTIVI[codice] || ('Twitch non ha pubblicato il messaggio' + (codice ? ' (' + codice + ')' : '') + '.'));
       return null;
     }, function () {
-      nonPartito('La risposta di Twitch non si è lasciata leggere: controlla in chat.');
+      nonPartito('Risposta strana da Twitch, guarda in chat.');
       return null;
     });
   }
@@ -886,7 +886,7 @@
         const P = player('smuta');
         if (!P) { return; }
 
-        if (!P.smuta()) { avviso('Da qui non riesco a togliere il muto: usa i comandi del player.'); }
+        if (!P.smuta()) { avviso('Il muto toglilo dal player.'); }
       });
       nodi.comandi.appendChild(comandi.audio);
     }
