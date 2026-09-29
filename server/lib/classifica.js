@@ -314,11 +314,8 @@ function caricaMotore() {
   let parametri = null;
   try {
     const testo = fs.readFileSync(dove, 'utf8');
-    const segno = testo.indexOf('PolloRun.livelli');
-    const fine = segno === -1 ? -1 : testo.indexOf('\n}());', segno);
-    if (fine === -1) { throw new Error('non trovo la fine della parte «livelli»'); }
     const contesto = vm.createContext({ window: {} });
-    vm.runInContext(testo.slice(0, fine + '\n}());'.length), contesto, { filename: 'pollorun-gioco.js', timeout: 2000 });
+    vm.runInContext(testo, contesto, { filename: 'pollorun-gioco.js', timeout: 2000 });
     const livelli = contesto.window.PolloRun && contesto.window.PolloRun.livelli;
     if (!livelli || typeof livelli.parametri !== 'function') { throw new Error('manca PolloRun.livelli.parametri'); }
     parametri = livelli.parametri;
