@@ -20,6 +20,7 @@ const giochi = require('./giochi');
 const sondaggi = require('./sondaggi');
 const classifica = require('./classifica');
 const meteora = require('./meteora');
+const pillola = require('./pillola');
 const spettatori = require('./spettatori');
 const schema = require('../../contenuti/schema.js');
 const SBStili = require('../../pannello/condivisi/stili.js');
@@ -28,7 +29,7 @@ const MAX_JSON = 1024 * 1024;
 const MAX_FILE = 4 * 1024 * 1024 + 64 * 1024;
 const MAX_FONT = font.MAX_BYTE + 64 * 1024;
 
-const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra', '/api/sondaggio', '/api/sondaggio/voto', '/api/meteora', '/api/spettatori',
+const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra', '/api/sondaggio', '/api/sondaggio/voto', '/api/meteora', '/api/pillola', '/api/spettatori',
   '/api/classifica', '/api/classifica/io', '/api/classifica/partita', '/api/classifica/livello', '/api/classifica/obs']);
 
 function leggiCorpo(req, massimo) {
@@ -580,6 +581,12 @@ async function gestisci(req, res, percorso) {
   }
   if (percorso === '/api/meteora/lancia') {
     return metodo === 'POST' ? json(res, 200, meteora.lancia()) : metodoNonAmmesso(res, 'POST');
+  }
+  if (percorso === '/api/pillola') {
+    return metodo === 'GET' ? json(res, 200, pillola.stato()) : metodoNonAmmesso(res, 'GET');
+  }
+  if (percorso === '/api/pillola/lancia') {
+    return metodo === 'POST' ? json(res, 200, pillola.lancia()) : metodoNonAmmesso(res, 'POST');
   }
   if (percorso === '/api/sondaggi') {
     if (metodo === 'GET') { return json(res, 200, sondaggi.vistaAdmin()); }

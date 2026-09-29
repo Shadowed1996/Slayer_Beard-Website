@@ -1796,6 +1796,25 @@ async function proveMeteora(costruisci, archivio) {
       esigiUguale(secondo.dati.gia, true, 'segnalato come gia partito');
     });
 
+    await prova('la pillola del bugiardino: rotta pubblica vuota, il lancio vuole la sessione, due lanci ravvicinati valgono uno', async () => {
+      fs.rmSync(percorsi.P.pillola, { force: true });
+      const vuota = await chiama(porta, 'GET', '/api/pillola');
+      esigiUguale(vuota.stato, 200, 'stato');
+      esigiUguale(vuota.dati.id, '', 'id');
+      esigiUguale(vuota.testa['cache-control'], 'no-store', 'cache');
+      esigiUguale((await chiama(porta, 'POST', '/api/pillola/lancia')).stato, 401, 'lancio senza sessione');
+      esigiUguale((await chiama(porta, 'POST', '/api/pillola')).stato, 405, 'la rotta pubblica non si scrive');
+      const entra = await chiama(porta, 'POST', '/api/entra', { json: { password: PASSWORD_COLLAUDO } });
+      const biscotto = biscottoDa(entra);
+      const primo = await chiama(porta, 'POST', '/api/pillola/lancia', { biscotto });
+      esigiUguale(primo.stato, 200, 'stato del lancio');
+      esigi(/^[0-9a-f]{12}$/.test(primo.dati.id), 'id');
+      esigiUguale((await chiama(porta, 'GET', '/api/pillola')).dati.id, primo.dati.id, 'la vede chi visita');
+      const secondo = await chiama(porta, 'POST', '/api/pillola/lancia', { biscotto });
+      esigiUguale(secondo.dati.gia, true, 'segnalato come gia partito');
+      esigi((await chiama(porta, 'GET', '/api/meteora')).dati.id !== primo.dati.id, 'la pillola lancia la meteora');
+    });
+
     await prova('i dati della home portano timer spento, minuti in ordine, icone e suoni dalle cartelle', async () => {
       const contenuti = archivio.leggi();
       contenuti.config.meteora = { ogniMin: 20, ogniMax: 5 };
@@ -1809,6 +1828,7 @@ async function proveMeteora(costruisci, archivio) {
     });
   } finally {
     fs.rmSync(percorsi.P.meteora, { force: true });
+    fs.rmSync(percorsi.P.pillola, { force: true });
     auth.azzeraTutto();
     await new Promise((risolvi) => server.close(risolvi));
   }
@@ -5242,40 +5262,77 @@ async function proveSorpresaSlayer(costruisci, archivio) {
     esigiDentro(costruisci.rendi(strano).html, 'data-ogni="4"', 'una frequenza fuori scala non torna a quella di partenza');
   });
 
-  await prova('bugiardino: compare in una visita su N, decide una volta per scheda e con ?bugiardino compare sempre', () => {
+  const provaBugiardino = (caso, cerca, memoria, risposta) => {
     const codice = fs.readFileSync(path.join(RADICE_VERA, 'js', 'bugiardino.js'), 'utf8');
-    const esegui = (caso, cerca, memoria) => {
-      const ascolti = [];
-      const tempi = [];
-      const finestra = {
-        location: { search: cerca || '' },
-        sessionStorage: {
-          getItem: (k) => (Object.prototype.hasOwnProperty.call(memoria, k) ? memoria[k] : null),
-          setItem: (k, v) => { memoria[k] = String(v); }
-        },
-        matchMedia: () => ({ matches: false })
-      };
-      const documento = {
-        currentScript: { getAttribute: (n) => (n === 'data-ogni' ? '4' : null) },
-        readyState: 'loading',
-        addEventListener: (tipo) => { ascolti.push(tipo); },
-        getElementById: () => null
-      };
-      const M = Object.create(Math);
-      M.random = () => caso;
-      require('node:vm').runInNewContext(codice, { window: finestra, document: documento, Math: M, setTimeout: (f, t) => { tempi.push(t); } });
-      return ascolti.indexOf('DOMContentLoaded') !== -1;
+    const tempi = [];
+    const lista = () => ({ add: () => {}, remove: () => {}, contains: () => false });
+    const nodo = () => ({ hidden: true, style: { setProperty: () => {} }, classList: lista(), addEventListener: () => {}, querySelector: () => nodo(), focus: () => {} });
+    const box = nodo();
+    const foglio = nodo();
+    const finestra = {
+      location: { search: cerca || '' },
+      innerWidth: 1200,
+      innerHeight: 800,
+      sessionStorage: {
+        getItem: (k) => (Object.prototype.hasOwnProperty.call(memoria, k) ? memoria[k] : null),
+        setItem: (k, v) => { memoria[k] = String(v); }
+      },
+      matchMedia: () => ({ matches: false })
     };
+    if (risposta) { finestra.fetch = () => Promise.resolve({ ok: true, status: 200, json: () => risposta }); }
+    const documento = {
+      currentScript: { getAttribute: (n) => (n === 'data-ogni' ? '4' : null) },
+      readyState: 'complete',
+      hidden: false,
+      documentElement: { clientWidth: 1200, clientHeight: 800, classList: lista() },
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      getElementById: (id) => (id === 'bugiardino' ? box : (id === 'bugiardino-foglio' ? foglio : null))
+    };
+    const M = Object.create(Math);
+    M.random = () => caso;
+    require('node:vm').runInNewContext(codice, {
+      window: finestra, document: documento, Math: M, Date: Date, isFinite: isFinite,
+      requestAnimationFrame: () => {}, clearTimeout: () => {},
+      setTimeout: (f, t) => { tempi.push({ f: f, t: t }); }
+    });
+    return { tempi: tempi, box: box, memoria: memoria };
+  };
+
+  await prova('bugiardino: compare in una visita su N, decide una volta per scheda e con ?bugiardino compare sempre', () => {
+    const esce = (caso, cerca, memoria) => provaBugiardino(caso, cerca, memoria).tempi.some((v) => v.t === (cerca && cerca.indexOf('?bugiardino') === 0 && !/bugiardino\w/.test(cerca) ? 1500 : 6000 + caso * 9000));
     const m1 = {};
-    esigiUguale(esegui(0.9, '', m1), false, 'con 0.9 su 1 ogni 4 non deve comparire');
+    esigiUguale(esce(0.9, '', m1), false, 'con 0.9 su 1 ogni 4 non deve comparire');
     esigiUguale(m1['sb-bugiardino'], 'no', 'la decisione no non viene ricordata');
-    esigiUguale(esegui(0.1, '', m1), false, 'nella stessa scheda ridecide');
+    esigiUguale(esce(0.1, '', m1), false, 'nella stessa scheda ridecide');
     const m2 = {};
-    esigiUguale(esegui(0.1, '', m2), true, 'con 0.1 su 1 ogni 4 deve comparire');
+    esigiUguale(esce(0.1, '', m2), true, 'con 0.1 su 1 ogni 4 deve comparire');
     esigiUguale(m2['sb-bugiardino'], 'si', 'la decisione si non viene ricordata');
-    esigiUguale(esegui(0.9, '', { 'sb-bugiardino': 'visto' }), false, 'gia visto in questa scheda, ricompare');
-    esigiUguale(esegui(0.99, '?bugiardino', { 'sb-bugiardino': 'visto' }), true, 'con ?bugiardino deve comparire sempre');
-    esigiUguale(esegui(0.99, '?bugiardinox', {}), false, '?bugiardinox non e ?bugiardino');
+    esigiUguale(esce(0.9, '', { 'sb-bugiardino': 'visto' }), false, 'gia visto in questa scheda, ricompare');
+    esigiUguale(esce(0.99, '?bugiardino', { 'sb-bugiardino': 'visto' }), true, 'con ?bugiardino deve comparire sempre');
+    esigiUguale(esce(0.99, '?bugiardinox', {}), false, '?bugiardinox non e ?bugiardino');
+  });
+
+  await prova('bugiardino: «Fai apparire la pillola» dal pannello la mostra anche a chi non era stato scelto, una volta per lancio e solo se recente', async () => {
+    const adesso = Date.now();
+    const lancio = (id, fa) => ({ id: id, inviataIl: new Date(adesso - fa).toISOString(), adesso: new Date(adesso).toISOString() });
+    const gira = async (memoria, stato) => {
+      const p = provaBugiardino(0.99, '', memoria, stato);
+      const controllo = p.tempi.find((v) => v.t === 2000);
+      esigi(controllo, 'la pagina non controlla i lanci');
+      controllo.f();
+      for (let i = 0; i < 4; i++) { await new Promise((risolvi) => setImmediate(risolvi)); }
+      return p;
+    };
+    const nuovo = await gira({ 'sb-bugiardino': 'no' }, lancio('abc123', 5000));
+    esigiUguale(nuovo.box.hidden, false, 'un lancio recente non fa apparire la pillola');
+    esigiUguale(nuovo.memoria['sb-bugiardino-lancio'], 'abc123', 'il lancio visto non viene ricordato');
+    const visto = await gira({ 'sb-bugiardino': 'no', 'sb-bugiardino-lancio': 'abc123' }, lancio('abc123', 5000));
+    esigiUguale(visto.box.hidden, true, 'lo stesso lancio la rifa apparire');
+    const vecchio = await gira({ 'sb-bugiardino': 'no' }, lancio('def456', 60000));
+    esigiUguale(vecchio.box.hidden, true, 'un lancio di un minuto fa la fa apparire');
+    const nessuno = await gira({ 'sb-bugiardino': 'no' }, { id: '', inviataIl: '', adesso: new Date(adesso).toISOString() });
+    esigiUguale(nessuno.box.hidden, true, 'senza lanci la pillola appare');
   });
 
   await prova('slayer.js: la parola, la durata e la canzone sono quelle scelte, e il codice e pulito', () => {

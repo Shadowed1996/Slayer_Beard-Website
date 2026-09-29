@@ -24,6 +24,11 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   testi si cambiano dal gruppo «Bugiardino del sito» del pannello; con
   `?bugiardino` nell indirizzo compare subito. File `js/bugiardino.js`,
   `css/bugiardino.css`, `modelli/parziali/bugiardino.html`.
+  Nel pannello (voce «Bugiardino del sito» del menu) il tasto «Fai apparire la
+  pillola» la mostra entro 15 s a chi è sulla home, come «Lancia meteora»
+  (`/api/pillola` pubblica, `/api/pillola/lancia` con la sessione, stato in
+  `server/dati/pillola.json`). Nel menu ora c'è anche «Ingresso del sito
+  (PolloFlare)», che prima non si raggiungeva.
 - **Pollo Run, «ATTENTO CHE CADI !».** A difficile ed estremo, dal livello 3,
   circa un livello su due (45% difficile, 55% estremo, deciso dal seme del
   livello e quindi uguale per il gioco e per la classifica) ha una buca nella

@@ -52,6 +52,8 @@ const MENU = [
   { vista: 'meta', nome: 'Google e social', nota: 'Come appare il sito nelle ricerche e nei link condivisi', ico: 'mondo' },
   { vista: 'manutenzione', nome: 'Manutenzione', nota: 'Metti il sito in pausa: i visitatori vedono la pagina di manutenzione', ico: 'attenzione' },
   { vista: 'meteora', nome: 'Meteora col polletto', nota: 'Lancia la meteora a chi è sulla home, o accendi il timer automatico', ico: 'meteora' },
+  { vista: 'bugiardino', nome: 'Bugiardino del sito', nota: 'La pillolina che apre il foglio illustrativo: falla apparire, ogni quanto compare, testi', ico: 'info' },
+  { vista: 'ingresso', nome: 'Ingresso del sito (PolloFlare)', nota: 'La schermata d\'ingresso col pollo di guardia: accendila e cambia i testi', ico: 'chiave' },
   { vista: 'sondaggi', nome: 'Sondaggi', nota: 'Crea un sondaggio per chi è collegato con Twitch e guarda i risultati', ico: 'sondaggio' },
   { vista: 'classifica', nome: 'Classifica di Pollo Run', nota: 'Impostazioni, overlay per OBS, chi è in classifica e nuova stagione', ico: 'coppa' },
   { vista: 'immagini', nome: 'Immagini', nota: 'Carica e gestisci i file', ico: 'immagine' },
@@ -80,6 +82,16 @@ const VISTE = {
     nota: '«Lancia meteora» la fa passare subito sulla home di chi è sul sito, senza pubblicare. Il timer invece vale dopo Salva e Pubblica.',
     gruppo: 'meteora'
   },
+  bugiardino: {
+    titolo: 'Bugiardino del sito',
+    nota: '«Fai apparire la pillola» la mostra subito sulla home di chi è sul sito, senza pubblicare. Frequenza e testi valgono dopo Salva e Pubblica.',
+    gruppo: 'bugiardino'
+  },
+  ingresso: {
+    titolo: 'Ingresso del sito (PolloFlare)',
+    nota: 'Le modifiche valgono dopo Salva e Pubblica.',
+    gruppo: 'ingresso'
+  },
   immagini: {
     titolo: 'Immagini',
     nota: 'I file caricati qui restano sul server. Un\'immagine del sito si cambia anche cliccandola nell\'anteprima.'
@@ -96,7 +108,7 @@ const VISTE = {
   password: { titolo: 'Password', nota: 'La password che serve per entrare in questo pannello.' }
 };
 
-const VISTA_DEL_GRUPPO = { aspetto: 'impostazioni', canale: 'canale', meta: 'meta', manutenzione: 'manutenzione', meteora: 'meteora' };
+const VISTA_DEL_GRUPPO = { aspetto: 'impostazioni', canale: 'canale', meta: 'meta', manutenzione: 'manutenzione', meteora: 'meteora', bugiardino: 'bugiardino', ingresso: 'ingresso' };
 
 const MODULI = [
   { nome: 'motore', file: './motore.js', cosa: 'l\'anteprima modificabile (editor/motore.js)' },
@@ -815,6 +827,7 @@ function disegnaGruppo(scorri, gruppo) {
   if (gruppo.id === 'sondaggio') scorri.prepend(rimandoSondaggi());
   if (gruppo.id === 'manutenzione') scorri.append(anteprimaManutenzione());
   if (gruppo.id === 'meteora') scorri.prepend(lancioMeteora());
+  if (gruppo.id === 'bugiardino') scorri.prepend(lancioPillola());
 }
 
 function campiClassifica() {
@@ -856,6 +869,37 @@ function lancioMeteora() {
     icona('meteora'),
     el('div', {}, [
       el('p', { testo: 'La meteora passa sulla home di chi è sul sito in quel momento (entro 15 secondi). Chi la prende al volo la fa esplodere: pioggia di polletti e un suono a caso della cartella suoni_meteora.' }),
+      el('div', { classe: 'lato__azioni' }, [tasto]),
+      esito
+    ])
+  ]);
+}
+
+function lancioPillola() {
+  const esito = el('p', { classe: 'lancio-meteora__esito', 'aria-live': 'polite' });
+  const tasto = bottone({
+    testo: 'FAI APPARIRE LA PILLOLA', ico: 'info', classe: 'btn btn--primario lancio-meteora__tasto',
+    su: async () => {
+      tasto.disabled = true;
+      esito.textContent = 'Un attimo…';
+      try {
+        const r = await api.lanciaPillola();
+        esito.textContent = r && r.gia
+          ? 'Già mandata un attimo fa: compare a chi è sul sito entro 15 secondi.'
+          : 'Fatto! Compare sulla home di chi è sul sito entro 15 secondi.';
+      } catch (e) {
+        esito.textContent = rottaAssente(e)
+          ? 'Il server non ha ancora questa funzione: carica l\'aggiornamento su Plesk e riavvia l\'app.'
+          : (e instanceof ErroreApi ? e.message : 'Non sono riuscito a mandarla.');
+      } finally {
+        setTimeout(() => { tasto.disabled = false; }, 3000);
+      }
+    }
+  });
+  return el('div', { classe: 'spiegazione' }, [
+    icona('info'),
+    el('div', {}, [
+      el('p', { testo: 'La pillolina compare subito sulla home di chi è sul sito in quel momento (entro 15 secondi), anche a chi l\'ha già vista. Serve che il bugiardino sia acceso e pubblicato.' }),
       el('div', { classe: 'lato__azioni' }, [tasto]),
       esito
     ])

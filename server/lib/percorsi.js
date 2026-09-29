@@ -63,6 +63,7 @@ function calcola(radice) {
     giochiRegistro: path.join(radice, 'server', 'dati', 'giochi-registro.json'),
     sondaggi: path.join(radice, 'server', 'dati', 'sondaggi.json'),
     meteora: path.join(radice, 'server', 'dati', 'meteora.json'),
+    pillola: path.join(radice, 'server', 'dati', 'pillola.json'),
     spettatori: path.join(radice, 'server', 'dati', 'twitch-spettatori.json'),
     backup: path.join(radice, 'server', 'backup'),
     modelloDati: path.join(radice, 'server', 'modelli', 'dati.js.tpl')
@@ -104,6 +105,7 @@ function applicaAmbiente(percorsi) {
     percorsi.giochiRegistro = path.join(dati, 'giochi-registro.json');
     percorsi.sondaggi = path.join(dati, 'sondaggi.json');
     percorsi.meteora = path.join(dati, 'meteora.json');
+    percorsi.pillola = path.join(dati, 'pillola.json');
     percorsi.spettatori = path.join(dati, 'twitch-spettatori.json');
   }
 

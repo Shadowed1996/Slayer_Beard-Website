@@ -3,6 +3,9 @@
 
   var script = document.currentScript;
   var CHIAVE = 'sb-bugiardino';
+  var CHIAVE_LANCIO = 'sb-bugiardino-lancio';
+  var OGNI_QUANTO = 15000;
+  var VALIDA_PER = 45000;
   var ATTESA_MIN = 6000;
   var ATTESA_MAX = 15000;
   var ATTESA_PROVA = 1500;
@@ -40,14 +43,18 @@
     return si;
   }
 
-  function avvia() {
+  function avvia(scelto) {
     var box = document.getElementById('bugiardino');
     var foglio = document.getElementById('bugiardino-foglio');
     if (!box || !foglio) { return; }
     var chiudi = foglio.querySelector('.bugiardino-foglio__chiudi');
     var timerVia = null;
     var timerSalto = null;
+    var timerControllo = null;
     var sopra = false;
+    var fermo = false;
+    var ultimoLancio = '';
+    try { ultimoLancio = (archivio() && archivio().getItem(CHIAVE_LANCIO)) || ''; } catch (e) { ultimoLancio = ''; }
 
     function posto() {
       var largo = window.innerWidth || document.documentElement.clientWidth || 360;
@@ -91,6 +98,7 @@
     }
 
     function mostraBox() {
+      if (!box.hidden && box.classList.contains('is-visibile')) { programmaVia(); return; }
       scrivi('visto');
       posto();
       box.hidden = false;
@@ -131,14 +139,48 @@
     box.addEventListener('focusin', function () { sopra = true; });
     box.addEventListener('focusout', function () { sopra = false; });
 
-    var attesa = forzato ? ATTESA_PROVA : ATTESA_MIN + Math.random() * (ATTESA_MAX - ATTESA_MIN);
-    setTimeout(mostraBox, attesa);
+    function segnaLancio(id) {
+      ultimoLancio = id;
+      var a = archivio();
+      try { if (a) { a.setItem(CHIAVE_LANCIO, id); } } catch (e) { return; }
+    }
+
+    function controlla() {
+      clearTimeout(timerControllo);
+      if (fermo) { return; }
+      if (document.hidden) { timerControllo = setTimeout(controlla, OGNI_QUANTO); return; }
+      window.fetch('/api/pillola?t=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' })
+        .then(function (risposta) {
+          if (risposta.status === 404) { fermo = true; return null; }
+          return risposta.ok ? risposta.json() : null;
+        })
+        .then(function (stato) {
+          if (stato && typeof stato.id === 'string' && stato.id && stato.id !== ultimoLancio) {
+            var eta = Date.parse(stato.adesso) - Date.parse(stato.inviataIl);
+            segnaLancio(stato.id);
+            if (isFinite(eta) && eta >= 0 && eta < VALIDA_PER) { mostraBox(); }
+          }
+          if (!fermo) { timerControllo = setTimeout(controlla, OGNI_QUANTO); }
+        })
+        .catch(function () {
+          timerControllo = setTimeout(controlla, OGNI_QUANTO * 2);
+        });
+    }
+
+    if (scelto) {
+      var attesa = forzato ? ATTESA_PROVA : ATTESA_MIN + Math.random() * (ATTESA_MAX - ATTESA_MIN);
+      setTimeout(mostraBox, attesa);
+    }
+    if (typeof window.fetch === 'function') {
+      timerControllo = setTimeout(controlla, 2000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) { controlla(); } });
+    }
   }
 
-  if (!tocca()) { return; }
+  var scelto = tocca();
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
+    document.addEventListener('DOMContentLoaded', function () { avvia(scelto); }, { once: true });
   } else {
-    avvia();
+    avvia(scelto);
   }
 }());

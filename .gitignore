@@ -8,6 +8,7 @@ server/dati/chiavi.js
 server/dati/twitch-accesso.json
 server/dati/twitch-diretta.json
 server/dati/meteora.json
+server/dati/pillola.json
 server/dati/twitch-spettatori.json
 
 *.log
