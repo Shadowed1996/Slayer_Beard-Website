@@ -23,6 +23,7 @@
       <li class="sponsor__voce{{#se evidenza}} is-evidenza{{/se}}" data-da="{{da}}" data-a="{{a}}"{{#se stile}} style="{{stile}}"{{/se}}>
         <a class="sponsor__link" href="{{url}}" target="_blank" rel="noopener sponsored" tabindex="-1">
           {{#se logo}}<img class="sponsor__logo" src="{{logo}}" alt="" loading="lazy" decoding="async">{{/se}}{{^se logo}}<span class="sponsor__scritta">{{nome}}</span>{{/se}}
+          {{#se nuovo}}<span class="sponsor__nuovo">{{sponsor.nuovoTag}}</span>{{/se}}
         </a>
       </li>
       {{/ogni}}

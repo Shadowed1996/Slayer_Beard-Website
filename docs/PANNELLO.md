@@ -1072,6 +1072,10 @@ Non hanno una voce loro, ma è bene sapere come si comportano.
   **martella** (10 clic in 3 secondi) lo congela per 4 secondi e fa schizzare
   intorno tutte le icone. Gli elenchi «GIF — quando si clicca troppo veloce» per
   ora non vengono usati.
+- **Il bonk**: al **10° clic** sul ritratto (ritmo libero; si riparte da zero
+  dopo 10 secondi fermi) parte la scena del bonk con la frase «Hai rotto le
+  palle di cliccare, È tardi, mena! Menaaah!». Il suono è il file
+  `Cartoon Funny Bonk - Sound Effect HD.mp3` nella cartella `mp3` del server.
 - **Pollo Run**, nella pagina di manutenzione: parte **solo con la barra
   spaziatrice**; un clic sulla pagina fa partire la musica d'attesa. Durante la
   partita suona la canzone del gioco scelta dal pannello (vedi *Le canzoni di

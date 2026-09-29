@@ -815,6 +815,42 @@ const gruppi = [
   },
 
   {
+    id: 'ingresso',
+    titolo: 'Ingresso del sito (il pollo di guardia)',
+    descrizione: 'Una schermata d\'ingresso in stile «controllo del browser»: il pollo verifica che il visitatore sia umano e poi lo fa entrare. Dopo averla vista, ognuno non la rivede per il tempo scelto qui sotto.',
+    campi: [
+      { chiave: 'config.ingresso.attivo', etichetta: 'Mostra la schermata d\'ingresso', tipo: 'interruttore', predefinito: false,
+        aiuto: 'Accesa, chi apre il sito (home, clip e giochi) vede prima il pollo che controlla il browser, poi entra da solo. Non chiede clic e non blocca niente: le pagine si caricano sotto intanto. Spenta, non esiste: il suo script non viene nemmeno caricato. Vale dalla prossima Pubblica.' },
+      { chiave: 'config.ingresso.durata', etichetta: 'Dopo quanto tempo la rivede chi l\'ha già vista', tipo: 'scelta', predefinito: '24h',
+        opzioni: [
+          { valore: 'sessione', etichetta: 'Quando richiude e riapre il browser' },
+          { valore: '30m', etichetta: 'Dopo 30 minuti' },
+          { valore: '1h', etichetta: 'Dopo 1 ora' },
+          { valore: '6h', etichetta: 'Dopo 6 ore' },
+          { valore: '12h', etichetta: 'Dopo 12 ore' },
+          { valore: '24h', etichetta: 'Dopo 1 giorno' },
+          { valore: '7g', etichetta: 'Dopo 7 giorni' }
+        ],
+        aiuto: 'Il ricordo resta nel browser di ciascun visitatore: nel frattempo può girare tra le pagine e ricaricarle senza rivederla. In una finestra in incognito la rivede ogni volta che ne apre una nuova; chi blocca del tutto i dati dei siti non la vede proprio.' },
+      { chiave: 'config.ingresso.secondi', etichetta: 'Quanti secondi dura il controllo', tipo: 'numero', min: 1, max: 6, predefinito: 3,
+        aiuto: 'Il tempo minimo prima del «via libera». Se la pagina ci mette di più a caricarsi aspetta ancora un poco, ma mai oltre 8 secondi in tutto.' },
+      { chiave: 'ingresso.controllo', etichetta: 'Frase sotto al nome del sito', tipo: 'testo', max: 120,
+        predefinito: 'Il pollo sta controllando il tuo browser. Ci vuole solo un attimo.' },
+      { chiave: 'ingresso.attesa', etichetta: 'Scritta nel riquadro durante il controllo', tipo: 'testo', max: 40,
+        predefinito: 'Il pollo annusa i cookie…' },
+      { chiave: 'ingresso.riuscita', etichetta: 'Scritta nel riquadro a controllo finito', tipo: 'testo', max: 40,
+        predefinito: 'Sei umano. Il pollo approva!' },
+      { chiave: 'ingresso.nota', etichetta: 'Frase sotto al riquadro', tipo: 'testo', max: 160,
+        predefinito: 'Controlliamo solo che tu non sia un robot travestito da pollo.' },
+      { chiave: 'ingresso.marca', etichetta: 'Firma nel riquadro', tipo: 'testo', max: 24,
+        predefinito: 'PolloFlare',
+        aiuto: 'Il «marchio» finto nell\'angolo del riquadro, dove di solito c\'è quello del servizio di protezione.' },
+      { chiave: 'ingresso.piede', etichetta: 'Riga in fondo alla schermata', tipo: 'testo', max: 80,
+        predefinito: 'Prestazioni e sicurezza a cura del pollo' }
+    ]
+  },
+
+  {
     id: 'manutenzione',
     titolo: 'Modalità manutenzione',
     descrizione: 'Mette il sito in pausa: al posto delle pagine chi lo apre vede la pagina di manutenzione, con il link a Twitch e ai social. In fondo al gruppo ci sono le frasi e le canzoni di Pollo Run: valgono sia per la pagina di manutenzione sia per il gioco che si apre scrivendo «pollorun» sul sito, anche a manutenzione spenta.',

@@ -1,0 +1,25 @@
+{{#se sito.ingresso.attivo}}<div class="ingresso" id="ingresso" role="status" aria-live="polite">
+  <div class="ingresso__foglio">
+    <p class="ingresso__dominio">{{sito.ingresso.dominio}}</p>
+    <p class="ingresso__testo">{{sito.ingresso.controllo}}</p>
+
+    <div class="ingresso__riquadro">
+      <span class="ingresso__segno" aria-hidden="true">
+        <svg class="ingresso__giro" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12.5" fill="none" stroke-width="3" stroke-linecap="round"/></svg>
+        <svg class="ingresso__spunta" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" /><path d="m10 16.5 4.2 4.2L22.5 12" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="ingresso__scritte">
+        <span class="ingresso__attesa">{{sito.ingresso.attesa}}</span>
+        <span class="ingresso__riuscita">{{sito.ingresso.riuscita}}</span>
+      </span>
+      <span class="ingresso__marca">{{#se sito.ingresso.mascotte}}<img src="{{sito.ingresso.mascotte}}" alt="" width="386" height="556" decoding="async">{{/se}}<b>{{sito.ingresso.marca}}</b></span>
+    </div>
+
+    <p class="ingresso__nota">{{sito.ingresso.nota}}</p>
+  </div>
+
+  {{#se sito.ingresso.mascotte}}<img class="ingresso__pollo" src="{{sito.ingresso.mascotte}}" alt="" width="386" height="556" decoding="async">{{/se}}
+
+  <p class="ingresso__piede"><span>ID pollo: <code data-ingresso-id>0000000000000000</code></span><span>{{sito.ingresso.piede}}</span></p>
+</div>
+{{/se}}

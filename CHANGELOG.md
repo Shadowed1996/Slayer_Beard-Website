@@ -19,12 +19,14 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   circa un livello su due (45% difficile, 55% estremo, deciso dal seme del
   livello e quindi uguale per il gioco e per la classifica) ha una buca nella
   strada. Circa 2,6 s prima compare la scritta «ATTENTO CHE CADI !», poi il
-  pollo ci cade dentro e il gioco passa a un pozzo visto dall'alto: gli
-  ostacoli salgono dal basso, al centro e ai bordi, e si evitano con A e D o
+  pollo ci cade dentro e il gioco passa a un pozzo visto dall'alto, col pollo
+  grande come nella corsa, vento e piume: gli ostacoli, a gruppi di blocchi
+  sparsi a caso e diversi a ogni tentativo, salgono dal basso e si evitano con A e D o
   con le frecce sinistra e destra (sul telefono tenendo premuta la metà
   sinistra o destra dello schermo). Toccarne uno è GAME OVER come sempre. Dopo
-  8-10 s (difficile) o 10-12 s (estremo) il pollo atterra dentro un tratto in
-  discesa, che lo fa correre più veloce, e il livello continua. Ogni pozzo è
+  8-10 s (difficile) o 10-12 s (estremo) il pozzo sfuma e il pollo continua a
+  cadere, alla stessa velocità, sulla strada già inclinata in discesa, che lo
+  fa correre più veloce, e il livello continua. Ogni pozzo è
   generato in modo da avere sempre un passaggio raggiungibile con la velocità
   laterale del pollo. La durata del livello (anche per la classifica) cresce
   della durata della caduta, e la parte di corsa resta lunga come prima. Il
@@ -46,6 +48,16 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
   ostacolo subito dopo ogni cambio; i tratti non accorciano il livello di oltre
   il 5% del tempo, così la classifica resta valida. In discesa la vista si alza
   un poco perché gli ostacoli davanti restino dentro lo schermo.
+- **Il bonk di «Chi sono».** Al decimo clic sul pollo del ritratto, a qualsiasi
+  ritmo (la serie riparte dopo 10 secondi fermi o col congelamento dei clic
+  veloci; il clic che chiude la gif conta), il sito si scurisce: compare il cane
+  seduto (`img/bonk/doge.webp`), entra quello con la mazza
+  (`img/bonk/cheems.webp`) e gli dà la mazzata in testa col suono
+  `mp3/Cartoon Funny Bonk - Sound Effect HD.mp3` (partito dal punto del colpo;
+  senza il file suona un bonk sintetizzato), la scritta BONK! e le stelline; poi
+  la frase «Hai rotto le palle di cliccare, È tardi, mena! Menaaah!» con i
+  colori del sito. Sparisce dopo 9 secondi, o con un clic o ESC. Tutto in
+  `js/bonk.js` e `css/bonk.css`; il conteggio sta in `js/sito.js`.
 - **Le canzoni di Pollo Run si scelgono dal pannello.** Nel gruppo
   *Modalità manutenzione*, sotto le frasi di scherno: `config.pollorun.canzoni`
   (elenco di titolo, nome del file nella cartella `mp3`, autore facoltativo; di

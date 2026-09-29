@@ -411,7 +411,7 @@ async function proveSchema(contenutiVeri) {
   await prova('i gruppi seguono l ordine della pagina', () => {
 
     const atteso = ['meta', 'marchio', 'deck', 'diretta', 'account', 'lurk', 'pollo', 'clip', 'giochi', 'sondaggio', 'settimana', 'chi',
-      'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'manutenzione', 'meteora'];
+      'supporto', 'saluti', 'sponsor', 'piede', 'musica', 'canale', 'aspetto', 'ingresso', 'manutenzione', 'meteora'];
     esigiUguale(schema.gruppi.map((g) => g.id).join(','), atteso.join(','), 'ordine dei gruppi');
   });
 
@@ -1101,7 +1101,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
       'gli script facoltativi non stanno in fondo: ' + soloNostri.join(','));
     esigiUguale(fissi.join(','),
-      'js/ritorno.js,js/dati.js,js/player.js,js/festa.js,js/sito.js,js/meteora.js,js/account.js,js/canale.js,js/spettatori.js,js/lurk.js,js/pollo.js,js/cima.js,js/guardia.js,js/sondaggio.js',
+      'js/ritorno.js,js/dati.js,js/player.js,js/festa.js,js/sito.js,js/bonk.js,js/meteora.js,js/account.js,js/canale.js,js/spettatori.js,js/lurk.js,js/pollo.js,js/cima.js,js/guardia.js,js/sondaggio.js',
       'ordine degli script del sito');
   });
 

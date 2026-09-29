@@ -2051,12 +2051,19 @@
   .referral__vai { transition: none; }
 }
 
+.chiusura-pagina {
+  inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2));
+  margin-inline: auto;
+  padding-inline: var(--margine);
+  padding-block-end: clamp(var(--passo-8), 8vh, var(--passo-12));
+}
+
 .saluti__chiusura {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--passo-2);
-  margin-block-start: var(--passo-8);
+  margin: 0;
   color: var(--testo-tenue);
   font-family: var(--font-mono);
   font-size: var(--t-micro);
@@ -2073,6 +2080,13 @@
   inline-size: min(72px, 10vw);
   block-size: 1px;
   background-color: var(--linea-forte);
+}
+
+@media (max-width: 640px) {
+  .saluti__chiusura { text-wrap: balance; }
+
+  .saluti__chiusura::before,
+  .saluti__chiusura::after { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

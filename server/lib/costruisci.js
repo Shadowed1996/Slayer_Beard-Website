@@ -820,6 +820,7 @@ function costruisciContesto(contenuti, opzioni) {
     stile: stilePolloRun(config),
     classifica: classificaAttiva(config)
   };
+  contesto.sito.ingresso = ingressoDi(config, testi);
   contesto.sito.inviti = !!(contesto.clipPagina.attivo || (contesto.giochi && contesto.giochi.attivo));
 
   const presentazioneGiochi = testoricco.soloTesto(testi['giochi.paginaTesto'] || '');
@@ -838,6 +839,7 @@ function costruisciContesto(contenuti, opzioni) {
   const include = (nome) => modello.rendi('{{> parziali/' + nome + '}}', contesto,
     { file: 'modelli/index.html', cartella: P.modelli, cache: cache });
   contesto.sito.corpo = attive.map((voce) => include(voce.id)).join('\n');
+  if (attive.some((voce) => voce.id === 'saluti')) { contesto.sito.corpo += '\n' + include('chiusura'); }
 
   const blocchi = config.disposizione.blocchi;
   if (Object.keys(blocchi).some((riquadro) => blocchi[riquadro].length)) {
@@ -1361,6 +1363,31 @@ function frasiPolloRun(config) {
     .filter((frase) => typeof frase === 'string' && frase.trim())
     .map((frase) => frase.trim().slice(0, 80));
   return JSON.stringify(scherno.length ? scherno : schema.campo('config.manutenzione.scherno').predefinito);
+}
+
+const DURATE_INGRESSO = { sessione: 'sessione', '30m': 30 * 60000, '1h': 3600000, '6h': 6 * 3600000, '12h': 12 * 3600000, '24h': 24 * 3600000, '7g': 7 * 24 * 3600000 };
+
+function ingressoDi(config, testi) {
+  const ramo = (config && config.ingresso && typeof config.ingresso === 'object') ? config.ingresso : {};
+  const testoDi = (chiave) => (typeof testi[chiave] === 'string' && testi[chiave].trim()
+    ? testi[chiave].trim() : schema.campo(chiave).predefinito);
+  const scelta = Object.prototype.hasOwnProperty.call(DURATE_INGRESSO, ramo.durata) ? ramo.durata : schema.campo('config.ingresso.durata').predefinito;
+  const secondi = Number.isInteger(ramo.secondi) && ramo.secondi >= 1 && ramo.secondi <= 6 ? ramo.secondi : schema.campo('config.ingresso.secondi').predefinito;
+  let dominio = String(testi['marchio.nome'] || '');
+  try { if (config.sitoUrl) { dominio = new URL(config.sitoUrl).hostname.replace(/^www\./, ''); } } catch (e) { dominio = String(testi['marchio.nome'] || ''); }
+  return {
+    attivo: ramo.attivo === true,
+    durata: String(DURATE_INGRESSO[scelta]),
+    minimo: String(secondi * 1000),
+    dominio: dominio,
+    mascotte: String((config.immagini && config.immagini.mascotte) || ''),
+    controllo: testoDi('ingresso.controllo'),
+    attesa: testoDi('ingresso.attesa'),
+    riuscita: testoDi('ingresso.riuscita'),
+    nota: testoDi('ingresso.nota'),
+    marca: testoDi('ingresso.marca'),
+    piede: testoDi('ingresso.piede')
+  };
 }
 
 const MODI_POLLORUN = ['fissa', 'ordine', 'caso'];
