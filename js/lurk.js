@@ -26,8 +26,7 @@
   const ATTESA_PRESENZA = 300000;
   const DURATA_AVVISO = 7000;
 
-  const ALLARME = (LURK && LURK.allarme) || {};
-  const RIPETI_ALLARME = 30000;
+  const NOTIFICA = !!(LURK && LURK.notifica === true);
   const LAMPO = 1000;
   const ICONA_ALLARME = 'data:image/svg+xml,' + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
@@ -56,6 +55,11 @@
     titoloAllarme: '🚨 ALLARME LURK 🚨',
     titoloSpento: '💤 Lurk spento',
     spentoAssenza: 'Nessuno ha risposto a «ci sei ancora?»: ho spento la modalità lurk.',
+    popupCiSei: 'Ci sei ancora?',
+    popupSpiega: 'Clicca qui per restare in lurk: senza risposta entro 5 minuti si spegne.',
+    popupSpento: 'Clicca qui per riattivarla.',
+    riattiva: 'Riattiva la modalità lurk',
+    lasciaSpenta: 'Lascia spenta',
     statoSpento: 'Spenta.',
     statoVivo: 'Attiva: il video sta andando.',
     statoFermo: 'Il video si è fermato.',
@@ -139,13 +143,11 @@
   let ultimaPresenza = 0;
 
   let timerLampo = null;
-  let timerSuono = null;
   let lampoAcceso = false;
   let titoloBase = '';
   let iconaBase = '';
   let titoloCambiato = false;
-  let audioAllarme = null;
-  let contestoAudio = null;
+  let notificaAperta = null;
   let spentoPer = '';
 
   let ultimaFrase = '';
@@ -479,7 +481,9 @@
     vivo.acceso = true;
     spentoPer = '';
     rimettiTitolo();
-    preparaSuono();
+    chiudiPopup();
+    chiudiNotifica();
+    chiediNotifiche();
     vivo.riavvii = 0;
     vivo.daQuando = Date.now();
     ultimaPresenza = Date.now();
@@ -679,6 +683,11 @@
       document.title = testo('titoloSpento');
       titoloCambiato = true;
     }
+    mostraPopup(testo('titoloSpento'), testo('spentoAssenza') + ' ' + testo('popupSpento'), [
+      { etichetta: testo('riattiva'), classe: 'btn btn--pieno', azione: riattiva },
+      { etichetta: testo('lasciaSpenta'), classe: 'btn btn--vuoto', azione: lasciaSpenta }
+    ]);
+    notifica(testo('titoloSpento'), testo('spentoAssenza') + ' ' + testo('popupSpento'), riattiva);
   }
 
   function mostraPannello() {
@@ -709,57 +718,93 @@
     titoloCambiato = true;
   }
 
-  function preparaSuono() {
-    if (ALLARME.suono !== true) { return; }
-    if (ALLARME.file && !audioAllarme) {
-      try {
-        audioAllarme = new Audio(ALLARME.file);
-        audioAllarme.preload = 'auto';
-      } catch (err) { audioAllarme = null; }
-    }
-    if (!contestoAudio) {
-      const Contesto = window.AudioContext || window.webkitAudioContext;
-      if (Contesto) {
-        try { contestoAudio = new Contesto(); } catch (err) { contestoAudio = null; }
-      }
-    }
-    if (contestoAudio && contestoAudio.state === 'suspended') {
-      try { Promise.resolve(contestoAudio.resume()).then(null, function () {}); } catch (err) {}
-    }
+  function notificheDisponibili() {
+    return NOTIFICA && typeof window.Notification === 'function';
   }
 
-  function sirena() {
-    const c = contestoAudio;
-    if (!c) { return; }
+  function chiediNotifiche() {
+    if (!notificheDisponibili() || window.Notification.permission !== 'default') { return; }
     try {
-      if (c.state === 'suspended') { Promise.resolve(c.resume()).then(null, function () {}); }
-      const inizio = c.currentTime + 0.05;
-      const onda = c.createOscillator();
-      const volume = c.createGain();
-      onda.type = 'square';
-      for (let i = 0; i < 8; i++) {
-        onda.frequency.setValueAtTime(i % 2 ? 660 : 880, inizio + i * 0.3);
-      }
-      volume.gain.setValueAtTime(0.0001, inizio);
-      volume.gain.exponentialRampToValueAtTime(0.18, inizio + 0.03);
-      volume.gain.setValueAtTime(0.18, inizio + 2.35);
-      volume.gain.exponentialRampToValueAtTime(0.0001, inizio + 2.4);
-      onda.connect(volume);
-      volume.connect(c.destination);
-      onda.start(inizio);
-      onda.stop(inizio + 2.45);
+      Promise.resolve(window.Notification.requestPermission()).then(null, function () {});
     } catch (err) {}
   }
 
-  function suonaAllarme() {
-    if (ALLARME.suono !== true || !chiestoPresenza) { return; }
-    if (!audioAllarme) { sirena(); return; }
+  function chiudiNotifica() {
+    const n = notificaAperta;
+    notificaAperta = null;
+    if (!n) { return; }
+    try { n.close(); } catch (err) {}
+  }
+
+  function notifica(titolo, corpo, azione) {
+    chiudiNotifica();
+    if (!notificheDisponibili() || window.Notification.permission !== 'granted') { return; }
     try {
-      audioAllarme.currentTime = 0;
-      Promise.resolve(audioAllarme.play()).then(null, sirena);
+      const n = new window.Notification(titolo, {
+        body: corpo,
+        tag: 'sb-lurk',
+        renotify: true,
+        requireInteraction: true,
+        icon: iconaBase || undefined
+      });
+      n.onclick = function () {
+        try { window.focus(); } catch (err) {}
+        chiudiNotifica();
+        azione();
+      };
+      notificaAperta = n;
     } catch (err) {
-      sirena();
+      notificaAperta = null;
     }
+  }
+
+  function chiudiPopup() {
+    if (!nodi.popup) { return; }
+    if (nodi.popup.parentNode) { nodi.popup.parentNode.removeChild(nodi.popup); }
+    nodi.popup = null;
+  }
+
+  function mostraPopup(titolo, spiega, pulsanti) {
+    chiudiPopup();
+    if (!document.body) { return; }
+
+    const fondo = crea('div', 'lurk-avviso', null);
+    fondo.setAttribute('role', 'alertdialog');
+    fondo.setAttribute('aria-modal', 'true');
+    fondo.setAttribute('aria-labelledby', 'lurk-avviso-titolo');
+
+    const scatola = crea('div', 'lurk-avviso__scatola', null);
+    const intestazione = crea('p', 'lurk-avviso__titolo', titolo);
+    intestazione.id = 'lurk-avviso-titolo';
+    scatola.appendChild(intestazione);
+    if (spiega) { scatola.appendChild(crea('p', 'lurk-avviso__testo', spiega)); }
+
+    const riga = crea('div', 'lurk-avviso__comandi', null);
+    pulsanti.forEach(function (p) {
+      riga.appendChild(bottone(p.etichetta, p.classe, p.azione));
+    });
+    scatola.appendChild(riga);
+    fondo.appendChild(scatola);
+    document.body.appendChild(fondo);
+    nodi.popup = fondo;
+
+    const primo = riga.querySelector('button');
+    if (primo) {
+      try { primo.focus({ preventScroll: true }); } catch (err) {}
+    }
+  }
+
+  function riattiva() {
+    chiudiPopup();
+    chiudiNotifica();
+    spentoPer = '';
+    accendi();
+    if (!vivo.acceso) { scriviStato(); }
+  }
+
+  function lasciaSpenta() {
+    chiudiPopup();
+    chiudiNotifica();
   }
 
   function avviaAllarme() {
@@ -768,19 +813,20 @@
     lampoAcceso = false;
     lampeggia();
     timerLampo = setInterval(lampeggia, LAMPO);
-    suonaAllarme();
-    if (ALLARME.suono === true) { timerSuono = setInterval(suonaAllarme, RIPETI_ALLARME); }
+
+    mostraPopup(testo('popupCiSei'), testo('popupSpiega'), [
+      { etichetta: testo('ciSono'), classe: 'btn btn--pieno', azione: rispondiPresenza }
+    ]);
+    notifica(testo('popupCiSei'), testo('popupSpiega'), rispondiPresenza);
   }
 
   function fermaAllarme() {
     if (timerLampo) { clearInterval(timerLampo); timerLampo = null; }
-    if (timerSuono) { clearInterval(timerSuono); timerSuono = null; }
-    if (audioAllarme) {
-      try { audioAllarme.pause(); } catch (err) {}
-    }
     if (nodi.lurk) { nodi.lurk.classList.remove('is-allarme'); }
     lampoAcceso = false;
     rimettiTitolo();
+    chiudiPopup();
+    chiudiNotifica();
   }
 
   function togliBottonePresenza() {

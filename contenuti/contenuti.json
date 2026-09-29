@@ -241,7 +241,12 @@
     "bugiardino.scadenza": "Scadenza: fine della live.",
     "lurk.titoloAllarme": "🚨 ALLARME LURK 🚨",
     "lurk.spentoAssenza": "Nessuno ha risposto a «ci sei ancora?»: ho spento la modalità lurk.",
-    "lurk.titoloSpento": "💤 Lurk spento"
+    "lurk.titoloSpento": "💤 Lurk spento",
+    "lurk.popupCiSei": "Ci sei ancora?",
+    "lurk.popupSpiega": "Clicca qui per restare in lurk: senza risposta entro 5 minuti si spegne.",
+    "lurk.popupSpento": "Clicca qui per riattivarla.",
+    "lurk.riattiva": "Riattiva la modalità lurk",
+    "lurk.lasciaSpenta": "Lascia spenta"
   },
   "config": {
     "slayer": {
@@ -511,8 +516,7 @@
         "Lurko dal pollaio: ci sono ma sto zitto.",
         "In lurk dal sito. Coccodè."
       ],
-      "allarmeSuono": true,
-      "allarmeFile": "allarme-lurk.mp3"
+      "notifica": true
     },
     "pollo": {
       "attivo": true,

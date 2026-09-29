@@ -139,3 +139,55 @@
   .lurk__spia { animation: none; }
   .lurk.is-allarme { animation: none; box-shadow: 0 0 0 3px var(--live); }
 }
+
+.lurk-avviso {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.lurk-avviso__scatola {
+  inline-size: min(420px, 100%);
+  padding: var(--passo-3);
+  border: 2px solid var(--live);
+  border-radius: var(--raggio);
+  background-color: var(--pannello);
+  box-shadow: 0 0 32px var(--live);
+  display: flex;
+  flex-direction: column;
+  gap: var(--passo-2);
+  text-align: center;
+  animation: lurk-avviso-entra 0.25s var(--curva);
+}
+
+.lurk-avviso__titolo {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--live);
+}
+
+.lurk-avviso__testo {
+  margin: 0;
+  color: var(--testo-tenue);
+}
+
+.lurk-avviso__comandi {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--passo-2);
+}
+
+@keyframes lurk-avviso-entra {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lurk-avviso__scatola { animation: none; }
+}

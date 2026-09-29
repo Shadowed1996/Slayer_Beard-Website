@@ -905,7 +905,8 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
       'statoSpento', 'statoVivo', 'statoFermo', 'statoRiparto', 'statoBloccato', 'statoAttesa', 'statoResa',
 
       'schermo', 'chiuso', 'preavviso', 'invito', 'manda', 'inviato',
-      'titoloAllarme', 'titoloSpento', 'spentoAssenza']) {
+      'titoloAllarme', 'titoloSpento', 'spentoAssenza', 'popupCiSei', 'popupSpiega', 'popupSpento',
+      'riattiva', 'lasciaSpenta']) {
       esigi(!!lurk.testi[chiave], 'manca o e vuoto lurk.testi.' + chiave);
     }
   });
@@ -995,15 +996,10 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     }
   });
 
-  await prova('allarme del «ci sei ancora?»: suono acceso di serie, file solo se esiste davvero in mp3', () => {
-    const acceso = ramo(sana()).allarme;
-    esigi(acceso && typeof acceso === 'object', 'manca il sottoramo allarme');
-    esigiUguale(acceso.suono, true, 'suono di serie');
-    esigiUguale(ramo(sana({ allarmeSuono: false })).allarme.suono, false, 'suono spento');
-    esigiUguale(ramo(undefined).allarme.suono, true, 'ramo config.lurk mancante');
-    for (const nome of ['file-che-non-esiste-davvero.mp3', '../app.js', 'mp3/allarme.mp3', 'allarme.exe', '', null, 42]) {
-      esigiUguale(ramo(sana({ allarmeFile: nome })).allarme.file, '', 'allarmeFile ' + JSON.stringify(nome));
-    }
+  await prova('popup di Windows del «ci sei ancora?»: acceso di serie, spento solo se lo si spegne', () => {
+    esigiUguale(ramo(sana()).notifica, true, 'di serie');
+    esigiUguale(ramo(sana({ notifica: false })).notifica, false, 'spento');
+    esigiUguale(ramo(undefined).notifica, true, 'ramo config.lurk mancante');
   });
 
   await prova('oreMax viene riportato dentro 1..12, sempre', () => {
