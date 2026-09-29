@@ -3,8 +3,8 @@
   z-index: calc(var(--z-velo) - 1);
   display: grid;
   place-items: center;
-  inline-size: 64px;
-  block-size: 64px;
+  inline-size: 80px;
+  block-size: 80px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -21,6 +21,7 @@
 .bugiardino.is-visibile {
   opacity: 1;
   scale: 1;
+  animation: bugiardino-vibra 3.2s linear 1.2s infinite;
 }
 
 .bugiardino[hidden] { display: none; }
@@ -32,14 +33,14 @@
 
 .bugiardino__pillola {
   display: block;
-  inline-size: 44px;
-  block-size: 18px;
+  inline-size: 58px;
+  block-size: 24px;
   border-radius: var(--raggio-pill);
   background-image:
     linear-gradient(180deg, color-mix(in srgb, var(--testo) 18%, transparent), transparent 50%),
     linear-gradient(90deg, transparent 0 50%, var(--testo) 50% 100%),
     linear-gradient(118deg, var(--viola-cupo) 0%, var(--viola) 100%);
-  box-shadow: 0 0 14px var(--bagliore-viola), 0 2px 6px var(--velo);
+  box-shadow: 0 0 18px var(--bagliore-viola), 0 2px 6px var(--velo);
   rotate: var(--giro, -20deg);
   animation: bugiardino-galleggia 2.4s ease-in-out infinite;
 }
@@ -200,6 +201,18 @@
 
 html.sb-bugiardino-aperto { overflow: hidden; }
 
+@keyframes bugiardino-vibra {
+  0%, 78%, 100% { translate: 0 0; rotate: 0deg; }
+  80% { translate: -3px 1px; rotate: -9deg; }
+  82% { translate: 3px -1px; rotate: 8deg; }
+  84% { translate: -3px 0; rotate: -7deg; }
+  86% { translate: 3px 1px; rotate: 6deg; }
+  88% { translate: -2px -1px; rotate: -5deg; }
+  90% { translate: 2px 0; rotate: 4deg; }
+  92% { translate: -1px 1px; rotate: -2deg; }
+  94% { translate: 0 0; rotate: 0deg; }
+}
+
 @keyframes bugiardino-galleggia {
   0%, 100% { translate: 0 0; }
   50% { translate: 0 -6px; }
@@ -210,5 +223,6 @@ html.sb-bugiardino-aperto { overflow: hidden; }
   .bugiardino-foglio,
   .bugiardino-foglio__carta { transition: none; }
 
-  .bugiardino__pillola { animation: none; }
+  .bugiardino__pillola,
+  .bugiardino.is-visibile { animation: none; }
 }
