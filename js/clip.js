@@ -18,9 +18,7 @@
 
   function normalizza(testo) {
     var pulito = String(testo || '').toLowerCase();
-    if (typeof pulito.normalize === 'function') {
-      pulito = pulito.normalize('NFD').replace(/[̀-ͯ]/g, '');
-    }
+    pulito = pulito.normalize('NFD').replace(/[̀-ͯ]/g, '');
     return pulito.replace(/\s+/g, ' ').trim();
   }
 

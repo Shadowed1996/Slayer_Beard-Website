@@ -6,7 +6,6 @@
   var CHIAVE = 'sb-guardia-ricaricato';
 
   if (document.querySelector('meta[name="sb-pagina"][content="manutenzione"]')) { return; }
-  if (typeof window.fetch !== 'function') { return; }
   if (location.pathname.indexOf('/api/') === 0) { return; }
 
   var inCorso = false;

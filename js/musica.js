@@ -79,7 +79,7 @@
     try {
       fn(situazione());
     } catch (err) {
-      console.warn('[musica] un iscritto a suStato è andato in errore:', err);
+      console.warn('musica, suStato:', err);
     }
   }
 
@@ -225,7 +225,7 @@
   function analizza(voce) {
     if (!voce || picchi[voce.src] || inAnalisi[voce.src]) { return; }
     var Contesto = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-    if (typeof window.fetch !== 'function' || typeof Contesto !== 'function') { return; }
+    if (!Contesto) { return; }
     inAnalisi[voce.src] = true;
 
     window.fetch(voce.src).then(function (risposta) {
@@ -512,7 +512,7 @@
   }
 
   function collegaDiretta() {
-    if (window.Player && typeof window.Player.suVideo === 'function') {
+    if (window.Player) {
       window.Player.suVideo(function (video) {
         var adesso = !!(video && video.riproduce);
         if (adesso && !videoAndava && suona()) { ferma(); }
@@ -520,7 +520,7 @@
       });
     }
 
-    if (window.Lurk && typeof window.Lurk.suStato === 'function') {
+    if (window.Lurk) {
       window.Lurk.suStato(function (lurk) {
         var adesso = !!(lurk && lurk.acceso);
         if (adesso && !lurkAcceso && suona()) { ferma(); }
@@ -570,7 +570,6 @@
 
     nodi = prendiNodi();
     if (!nodi) { return; }
-    if (typeof nodi.audio.canPlayType !== 'function') { return; }
 
     tracce = dati.tracce;
     testi = dati.testi || {};
@@ -670,9 +669,5 @@
     precedente: function () { if (nodi) { precedente(); } }
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

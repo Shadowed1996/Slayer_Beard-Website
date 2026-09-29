@@ -176,7 +176,7 @@
     try {
       fn({ inOnda: stato.inOnda === true, titolo: stato.titolo }, stato.inOnda === true);
     } catch (err) {
-      console.warn('[player] un iscritto a suStato è andato in errore:', err);
+      console.warn('player: suStato ha fallito', err);
     }
   }
 
@@ -456,7 +456,7 @@
   function montaPlayer() {
     let montato = false;
 
-    if (window.Twitch && typeof window.Twitch.Player === 'function') {
+    if (window.Twitch && window.Twitch.Player) {
       try {
         stato.player = new window.Twitch.Player(ID_PALCO, {
           channel: CANALE,
@@ -559,7 +559,7 @@
   function chiamaPieno(fn, contesto) {
     if (!fn) { return; }
     const esito = fn.call(contesto);
-    if (esito && typeof esito.catch === 'function') {
+    if (esito) {
       esito.catch(function () { });
     }
   }
@@ -995,9 +995,5 @@
     smuta: smuta
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

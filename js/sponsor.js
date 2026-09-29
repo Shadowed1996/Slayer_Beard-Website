@@ -176,9 +176,5 @@
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

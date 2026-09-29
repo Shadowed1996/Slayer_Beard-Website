@@ -135,7 +135,7 @@
     p.volume = volumeAttuale();
     try {
       var promessa = p.play();
-      if (promessa && typeof promessa.catch === 'function') { promessa.catch(function () { }); }
+      if (promessa) { promessa.catch(function () { }); }
     } catch (errore) { }
   }
 
@@ -147,7 +147,7 @@
   function musicaDelSito() {
     var suonava = false;
     var raccogli = true;
-    if (window.Musica && typeof window.Musica.suStato === 'function') {
+    if (window.Musica) {
       try {
         window.Musica.suStato(function (situazione) {
           if (raccogli) { suonava = !!(situazione && situazione.suona); }
@@ -155,7 +155,7 @@
       } catch (errore) { }
     }
     raccogli = false;
-    if (suonava && typeof window.Musica.ferma === 'function') { window.Musica.ferma(); }
+    if (suonava) { window.Musica.ferma(); }
     return suonava;
   }
 
@@ -178,7 +178,7 @@
   }
 
   function motorePronto() {
-    return !!(window.PolloRun && typeof window.PolloRun.crea === 'function');
+    return !!(window.PolloRun && window.PolloRun.crea);
   }
 
   function conMotore(fatto) {
@@ -299,7 +299,7 @@
     radice.appendChild(bottone);
     radice.appendChild(scena);
 
-    if (document.activeElement && typeof document.activeElement.blur === 'function') { document.activeElement.blur(); }
+    if (document.activeElement) { document.activeElement.blur(); }
     document.body.appendChild(radice);
     document.documentElement.classList.add(CLASSE);
     try { radice.focus({ preventScroll: true }); } catch (errore) { }
@@ -409,7 +409,7 @@
     if (stato.radice.parentNode) { stato.radice.parentNode.removeChild(stato.radice); }
     document.documentElement.classList.remove(CLASSE);
     fermaPista();
-    if (stato.musicaSuonava && window.Musica && typeof window.Musica.parti === 'function') { window.Musica.parti(); }
+    if (stato.musicaSuonava && window.Musica) { window.Musica.parti(); }
     return true;
   }
 
@@ -697,7 +697,7 @@
     var token = leggiToken();
     cl.token = token;
     cl.partita = null;
-    if (!token || typeof fetch !== 'function') {
+    if (!token) {
       cl.collegato = false;
       dipingiClassifica(stato);
       return;
@@ -758,7 +758,7 @@
   function suLivello(stato, evento) {
     var cl = stato.classifica;
     if (!cl || cl.spenta || !evento || aperto !== stato) { return; }
-    if (!cl.token || cl.collegato === false || typeof fetch !== 'function') { return; }
+    if (!cl.token || cl.collegato === false) { return; }
     var chiave = evento.livello + ':' + evento.difficolta;
     if (evento.tipo === 'inizio') {
       var partita = { chiave: chiave, gettone: '', fine: null, chiusa: false };
@@ -870,7 +870,7 @@
       chiediChiSei(stato);
     }
     mostraVolume(stato);
-    if (document.activeElement && typeof document.activeElement.blur === 'function') { document.activeElement.blur(); }
+    if (document.activeElement) { document.activeElement.blur(); }
     document.body.appendChild(radice);
     document.documentElement.classList.add(CLASSE);
     stato.musicaSuonava = musicaDelSito();

@@ -160,7 +160,7 @@
   }
 
   function collega() {
-    if (irc.socket || vivo.nascosto || typeof WebSocket !== 'function') { return; }
+    if (irc.socket || vivo.nascosto) { return; }
 
     let socket;
     try {
@@ -321,8 +321,6 @@
   function quandoSiVede(elemento, fai) {
     if (!elemento) { return; }
 
-    if (typeof IntersectionObserver !== 'function') { fai(); return; }
-
     const osservatore = new IntersectionObserver(function (voci) {
       for (let i = 0; i < voci.length; i++) {
         if (voci[i].isIntersecting) {
@@ -370,67 +368,61 @@
     const Player = window.Player;
     if (!Player) { return; }
 
-    if (typeof Player.suStato === 'function') {
-      let prima = true;
+    let primoStato = true;
+    Player.suStato(function (stato) {
+      const acceso = !!(stato && stato.inOnda);
+      const cambiato = acceso !== vivo.inOnda;
+      vivo.inOnda = acceso;
 
-      Player.suStato(function (stato) {
-        const acceso = !!(stato && stato.inOnda);
-        const cambiato = acceso !== vivo.inOnda;
-        vivo.inOnda = acceso;
+      if (nodi.pollo) { nodi.pollo.classList.toggle('is-onda', acceso); }
 
-        if (nodi.pollo) { nodi.pollo.classList.toggle('is-onda', acceso); }
+      if (primoStato) { primoStato = false; segnaStato(statoBase()); return; }
+      if (!cambiato) { return; }
 
-        if (prima) { prima = false; segnaStato(statoBase()); return; }
-        if (!cambiato) { return; }
+      if (acceso) { reazione(pesca(elenco('live')), 'contento'); return; }
 
-        if (acceso) { reazione(pesca(elenco('live')), 'contento'); return; }
+      if (!dettoOffline) {
+        dettoOffline = true;
+        reazione(pesca(elenco('offline')), 'riposo');
+      } else {
+        segnaStato(statoBase());
+      }
+    });
 
-        if (!dettoOffline) {
-          dettoOffline = true;
-          reazione(pesca(elenco('offline')), 'riposo');
-        } else {
-          segnaStato(statoBase());
-        }
-      });
-    }
+    let primaChat = true;
+    let entrato = 0;
+    Player.suChat(function (chat) {
+      const scrive = !!(chat && chat.scrive);
 
-    if (typeof Player.suChat === 'function') {
-      let prima = true;
-      let entrato = 0;
-
-      Player.suChat(function (chat) {
-        const scrive = !!(chat && chat.scrive);
-
-        if (prima) {
-          prima = false;
-          vivo.scrive = scrive;
-          if (scrive) { entrato = Date.now(); }
-          segnaStato(statoBase());
-          return;
-        }
-
-        if (scrive === vivo.scrive) { return; }
+      if (primaChat) {
+        primaChat = false;
         vivo.scrive = scrive;
+        if (scrive) { entrato = Date.now(); }
+        segnaStato(statoBase());
+        return;
+      }
 
-        if (scrive) {
-          entrato = Date.now();
-          reazione(pesca(elenco('scrive')), 'scrive');
-          return;
-        }
+      if (scrive === vivo.scrive) { return; }
+      vivo.scrive = scrive;
 
-        if (entrato && Date.now() - entrato >= SOGLIA_SCRIVE) {
-          reazione(fraseVisitatore(), 'contento');
-        } else {
-          segnaStato(statoBase());
-        }
-        entrato = 0;
-      });
-    }
+      if (scrive) {
+        entrato = Date.now();
+        reazione(pesca(elenco('scrive')), 'scrive');
+        return;
+      }
+
+      if (entrato && Date.now() - entrato >= SOGLIA_SCRIVE) {
+        reazione(fraseVisitatore(), 'contento');
+      } else {
+        segnaStato(statoBase());
+      }
+      entrato = 0;
+    });
   }
 
   function ascoltaLurk() {
     const Lurk = window.Lurk;
-    if (!Lurk || typeof Lurk.suStato !== 'function') { return; }
+    if (!Lurk) { return; }
 
     let prima = true;
     let acceso = false;
@@ -484,7 +476,7 @@
   }
 
   function riposo() {
-    const fermo = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const fermo = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (fermo || !elenco('riposo').length) { return; }
 
     riposoAcceso = true;
@@ -514,8 +506,8 @@
   function parallasse() {
     if (!nodi.pollo) { return; }
 
-    const fermo = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const touch = window.matchMedia && window.matchMedia('(hover: none)').matches;
+    const fermo = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const touch = window.matchMedia('(hover: none)').matches;
     const supportato = window.CSS && window.CSS.supports && window.CSS.supports('translate', '1px 1px');
     if (fermo || touch || !supportato) { return; }
 
@@ -562,18 +554,13 @@
     nodi.bottone = document.getElementById('pollo-bottone');
     nodi.chiudi = document.getElementById('pollo-chiudi');
 
-    [comandi, ascoltaPlayer, ascoltaLurk, parallasse, chatVera, riposo].forEach(function (blocco) {
-      try {
-        blocco();
-      } catch (err) {
-        console.warn('[pollo] blocco non avviato:', err);
-      }
-    });
+    comandi();
+    ascoltaPlayer();
+    ascoltaLurk();
+    parallasse();
+    chatVera();
+    riposo();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

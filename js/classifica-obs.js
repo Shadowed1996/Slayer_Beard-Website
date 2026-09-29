@@ -2,7 +2,7 @@
   'use strict';
 
   var corpo = document.body;
-  if (!corpo || typeof window.fetch !== 'function') { return; }
+  if (!corpo) { return; }
 
   var AVATAR_OK = 'https://static-cdn.jtvnw.net/';
   var api = corpo.getAttribute('data-api') || '';
@@ -12,8 +12,7 @@
   var titolo = document.getElementById('obs-titolo');
   var etag = '';
   var inCorso = false;
-  var quieto = false;
-  try { quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { quieto = false; }
+  var quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (!api || api.charAt(0) !== '/' || api.charAt(1) === '/') { return; }
 

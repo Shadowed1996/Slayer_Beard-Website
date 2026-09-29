@@ -39,7 +39,7 @@
     p.volume = VOLUME;
     try {
       var promessa = p.play();
-      if (promessa && typeof promessa.catch === 'function') { promessa.catch(function () { }); }
+      if (promessa) { promessa.catch(function () { }); }
     } catch (errore) { }
   }
 
@@ -64,7 +64,7 @@
   function musicaDelSito() {
     var suonava = false;
     var raccogli = true;
-    if (window.Musica && typeof window.Musica.suStato === 'function') {
+    if (window.Musica) {
       try {
         window.Musica.suStato(function (situazione) {
           if (raccogli) { suonava = !!(situazione && situazione.suona); }
@@ -72,7 +72,7 @@
       } catch (errore) { }
     }
     raccogli = false;
-    if (suonava && typeof window.Musica.ferma === 'function') { window.Musica.ferma(); }
+    if (suonava) { window.Musica.ferma(); }
     return suonava;
   }
 
@@ -93,13 +93,13 @@
   }
 
   function conFesta(fatto) {
-    if (window.PolloFesta && typeof window.PolloFesta.coro === 'function') { fatto(window.PolloFesta); return; }
+    if (window.PolloFesta) { fatto(window.PolloFesta); return; }
     var inPagina = document.querySelector('script[src="js/festa.js"]');
     if (inPagina) {
       var tentativi = 0;
       var attesa = setInterval(function () {
         tentativi++;
-        if (window.PolloFesta && typeof window.PolloFesta.coro === 'function') {
+        if (window.PolloFesta) {
           clearInterval(attesa);
           fatto(window.PolloFesta);
         } else if (tentativi >= 40) {
@@ -128,7 +128,7 @@
     if (stato.coro) { stato.coro.ferma(); }
     fermaCanzone();
     document.documentElement.classList.remove(CLASSE);
-    if (stato.musicaSuonava && window.Musica && typeof window.Musica.parti === 'function') { window.Musica.parti(); }
+    if (stato.musicaSuonava && window.Musica) { window.Musica.parti(); }
     return true;
   }
 

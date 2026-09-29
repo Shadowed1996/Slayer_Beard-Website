@@ -894,8 +894,8 @@
     if (!ctx) { return { avvia: function () { }, ferma: function () { }, distruggi: function () { }, classifica: function () { return false; } }; }
     var sipario = !!opzioni.sipario;
     var gd = opzioni.stile === 'geometrydash';
-    var ridotto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    var tocco = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    var ridotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var tocco = window.matchMedia('(pointer: coarse)').matches;
 
     var stile = getComputedStyle(document.documentElement);
     function tinta(nome, ripiego) {

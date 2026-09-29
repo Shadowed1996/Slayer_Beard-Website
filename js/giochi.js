@@ -11,9 +11,7 @@
 
   function normalizza(testo) {
     var pulito = String(testo || '').toLowerCase();
-    if (typeof pulito.normalize === 'function') {
-      pulito = pulito.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    }
+    pulito = pulito.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     return pulito.replace(/\s+/g, ' ').trim();
   }
 
@@ -59,7 +57,6 @@
   }
 
   function scriviUrl(stato) {
-    if (!window.history || typeof window.history.replaceState !== 'function') { return; }
     try {
       var parametri = new URLSearchParams();
       var cercato = stato.cerca.replace(/\s+/g, ' ').trim();
@@ -255,9 +252,5 @@
     applica();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

@@ -42,7 +42,7 @@
       try {
         fn(istantanea());
       } catch (err) {
-        console.warn('[canale] un iscritto a suStato è andato in errore:', err);
+        console.warn('canale - errore in un ascoltatore', err);
       }
     });
   }
@@ -221,9 +221,5 @@
     aggiorna: giro
   };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

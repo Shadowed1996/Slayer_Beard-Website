@@ -32,7 +32,8 @@ window.DATI = {
       "3": 4,
       "5": 4
     },
-    "eventi": []
+    "eventi": [],
+    "pause": []
   },
   "email": "slayerbeard@gmail.com",
   "ultimaDiretta": "Little Nightmares 3 w/ @Mobscene93",
@@ -215,7 +216,60 @@ window.DATI = {
         "HAI IL MAL DI MARE?",
         "DECIDITI: SU O GIÙ?"
       ]
-    }
+    },
+    "icona": "icone_slayer/1-anno-72x72.webp",
+    "icone": [
+      "icone_slayer/1-anno-72x72.webp",
+      "icone_slayer/1-anno-e-mezzo-72x72.webp",
+      "icone_slayer/1-mese72x72.webp",
+      "icone_slayer/2-anni-72x72.webp",
+      "icone_slayer/2-anni-e-mezzo-72x72.webp",
+      "icone_slayer/2-mesi-72x72.webp",
+      "icone_slayer/3-anni-72x72.webp",
+      "icone_slayer/3-anni-e-mezzo-72x72.webp",
+      "icone_slayer/3-mesi-72x72.webp",
+      "icone_slayer/6-mesi-72x72.webp",
+      "icone_slayer/9-mesi-72x72.webp",
+      "icone_slayer/72-4-anni%20(1).webp",
+      "icone_slayer/72-4-anni-e-mezzo.webp",
+      "icone_slayer/72-4-anni.webp",
+      "icone_slayer/72-72-5-anni.webp"
+    ]
+  },
+  "meteora": {
+    "timer": false,
+    "ogniMin": 3,
+    "ogniMax": 8,
+    "icona": "icone_slayer/1-anno-72x72.webp",
+    "icone": [
+      "icone_slayer/1-anno-72x72.webp",
+      "icone_slayer/1-anno-e-mezzo-72x72.webp",
+      "icone_slayer/1-mese72x72.webp",
+      "icone_slayer/2-anni-72x72.webp",
+      "icone_slayer/2-anni-e-mezzo-72x72.webp",
+      "icone_slayer/2-mesi-72x72.webp",
+      "icone_slayer/3-anni-72x72.webp",
+      "icone_slayer/3-anni-e-mezzo-72x72.webp",
+      "icone_slayer/3-mesi-72x72.webp",
+      "icone_slayer/6-mesi-72x72.webp",
+      "icone_slayer/9-mesi-72x72.webp",
+      "icone_slayer/72-4-anni%20(1).webp",
+      "icone_slayer/72-4-anni-e-mezzo.webp",
+      "icone_slayer/72-4-anni.webp",
+      "icone_slayer/72-72-5-anni.webp"
+    ],
+    "suoni": [
+      "suoni_meteora/!ah.mp3",
+      "suoni_meteora/!applaudi.mp3",
+      "suoni_meteora/!arabo.mp3",
+      "suoni_meteora/!cadi.wav",
+      "suoni_meteora/!ciao.mp3",
+      "suoni_meteora/!figo.mp3",
+      "suoni_meteora/!gemma.mp3",
+      "suoni_meteora/!ilsignore.mp3",
+      "suoni_meteora/!party.mp3",
+      "suoni_meteora/!rip.mp3"
+    ]
   },
   "account": {
     "attivo": true,

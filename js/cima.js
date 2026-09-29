@@ -27,8 +27,7 @@
   }
 
   function ridotto() {
-    return !!(window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
   function risali() {
@@ -62,7 +61,7 @@
   function avvia() {
     var piede = document.querySelector('footer.piede') ||
                 document.querySelector('footer');
-    if (!piede || typeof IntersectionObserver !== 'function') { return; }
+    if (!piede) { return; }
 
     var bottone = costruisci();
     document.body.appendChild(bottone);
@@ -81,9 +80,5 @@
     osservatore.observe(piede);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia);
-  } else {
-    avvia();
-  }
+  avvia();
 }());

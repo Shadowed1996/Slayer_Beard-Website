@@ -13,7 +13,7 @@
   const SUONO_INIZIO = 0.76;
   const SUONO_FINE = 1900;
 
-  const quieto = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  const quieto = window.matchMedia('(prefers-reduced-motion: reduce)');
   let contesto = null;
   let scena = null;
   let timerFine = null;
@@ -22,7 +22,7 @@
   let timerStop = null;
   let lettore = null;
 
-  function fermo() { return !!(quieto && quieto.matches); }
+  function fermo() { return quieto.matches; }
 
   function stelle() {
     return '<svg class="bonk__stelle" viewBox="0 0 120 40" aria-hidden="true" focusable="false">' +
@@ -106,7 +106,7 @@
         a.pause();
         a.currentTime = SUONO_INIZIO;
         const promessa = a.play();
-        if (promessa && typeof promessa.catch === 'function') {
+        if (promessa) {
           promessa.catch(function () { sintetizza(0); });
         }
         timerStop = setTimeout(function () { try { a.pause(); } catch (e) { } }, SUONO_FINE);

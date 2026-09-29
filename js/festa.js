@@ -11,13 +11,13 @@
   const COLORI = ['var(--ciano, #22e0ff)', 'var(--magenta, #ff2fa0)', 'var(--viola, #8b2fff)', 'var(--allerta, #ffc65c)'];
   const MASSIMO = 280;
 
-  const quieto = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  const quieto = window.matchMedia('(prefers-reduced-motion: reduce)');
   let strato = null;
   let particelle = [];
   let acceso = false;
   let ultimo = 0;
 
-  function fermo() { return !!(quieto && quieto.matches); }
+  function fermo() { return quieto.matches; }
 
   function livello() {
     if (strato && strato.isConnected) { return strato; }

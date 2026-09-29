@@ -95,7 +95,7 @@
 
   function binario() {
     const voci = document.querySelectorAll('.binario__voce[href^="#"]');
-    if (!voci.length || typeof IntersectionObserver !== 'function') { return; }
+    if (!voci.length) { return; }
 
     const mappa = new Map();
     const quote = new Map();
@@ -502,7 +502,7 @@
     });
     window.addEventListener('pagehide', function () { clearInterval(timer); }, { once: true });
 
-    if (window.Player && typeof window.Player.suStato === 'function') {
+    if (window.Player) {
       window.Player.suStato(function (stato) {
         inOnda = !!(stato && stato.inOnda);
         battito();
@@ -781,7 +781,7 @@
       serie++;
 
       const bonk = window.Bonk;
-      if (serie < BONK_CLIC || !bonk || typeof bonk.colpo !== 'function') { return false; }
+      if (serie < BONK_CLIC || !bonk) { return false; }
 
       serie = 0;
       conta = 0;
@@ -898,18 +898,11 @@
   }
 
   function avvia() {
-    [binario, tempo, copiaEmail, ritrattoParlante].forEach(function (blocco) {
-      try {
-        blocco();
-      } catch (err) {
-        console.warn('[sito] blocco non avviato:', err);
-      }
-    });
+    binario();
+    tempo();
+    copiaEmail();
+    ritrattoParlante();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

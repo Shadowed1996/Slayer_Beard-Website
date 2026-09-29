@@ -14,7 +14,7 @@
   };
 
   const sezione = document.getElementById('sondaggio');
-  if (!sezione || typeof window.fetch !== 'function') { return; }
+  if (!sezione) { return; }
   sezione.hidden = true;
 
   const nodi = {
@@ -262,7 +262,7 @@
     if (!document.hidden && attuale) { leggi(); }
   });
 
-  if (window.Account && typeof window.Account.suStato === 'function') {
+  if (window.Account) {
     window.Account.suStato(function (st) {
       const ora = !!(st && st.collegato);
       if (ora === eraCollegato) { return; }

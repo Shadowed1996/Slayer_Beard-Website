@@ -85,7 +85,7 @@
       if (!document.hidden && timer) { forse(); }
     });
     const P = window.Player;
-    if (P && typeof P.suStato === 'function') {
+    if (P) {
       let prima = null;
       P.suStato(function (s) {
         const ora = !!(s && s.inOnda);
@@ -95,9 +95,5 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

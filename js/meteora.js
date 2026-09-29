@@ -31,7 +31,7 @@
   }
 
   function suona() {
-    if (!SUONI.length || typeof window.Audio !== 'function') { return; }
+    if (!SUONI.length) { return; }
     let scelta = Math.floor(Math.random() * SUONI.length);
     if (SUONI.length > 1 && scelta === ultimoSuono) { scelta = (scelta + 1 + Math.floor(Math.random() * (SUONI.length - 1))) % SUONI.length; }
     ultimoSuono = scelta;
@@ -39,7 +39,7 @@
       const audio = new Audio(SUONI[scelta]);
       audio.volume = 0.7;
       const promessa = audio.play();
-      if (promessa && typeof promessa.catch === 'function') { promessa.catch(function () { }); }
+      if (promessa) { promessa.catch(function () { }); }
     } catch (e) { }
   }
 
@@ -204,7 +204,6 @@
 
   function controlla() {
     clearTimeout(timerControllo);
-    if (typeof window.fetch !== 'function') { return; }
     if (document.hidden) { return; }
     fetch('/api/meteora?t=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' })
       .then(function (risposta) {

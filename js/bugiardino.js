@@ -17,7 +17,7 @@
   var ogni = Math.round(Number(script && script.getAttribute('data-ogni')) || 4);
   ogni = Math.max(1, Math.min(20, ogni));
   var forzato = /[?&]bugiardino(?:[=&]|$)/.test(window.location.search || '');
-  var quieto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function archivio() {
     try { return window.sessionStorage; } catch (e) { return null; }
@@ -171,16 +171,9 @@
       var attesa = forzato ? ATTESA_PROVA : ATTESA_MIN + Math.random() * (ATTESA_MAX - ATTESA_MIN);
       setTimeout(mostraBox, attesa);
     }
-    if (typeof window.fetch === 'function') {
-      timerControllo = setTimeout(controlla, 2000);
-      document.addEventListener('visibilitychange', function () { if (!document.hidden) { controlla(); } });
-    }
+    timerControllo = setTimeout(controlla, 2000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) { controlla(); } });
   }
 
-  var scelto = tocca();
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { avvia(scelto); }, { once: true });
-  } else {
-    avvia(scelto);
-  }
+  avvia(tocca());
 }());

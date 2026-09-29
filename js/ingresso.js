@@ -32,7 +32,7 @@
     return;
   }
 
-  var quieto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var quieto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var inizio = Date.now();
   var caricato = document.readyState === 'complete';
   radice.classList.add('sb-ingresso');

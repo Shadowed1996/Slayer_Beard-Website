@@ -286,7 +286,7 @@
     try {
       fn(istantanea());
     } catch (err) {
-      console.warn('[lurk] un iscritto a suStato è andato in errore:', err);
+      console.warn('[lurk] ascoltatore andato in errore', err);
     }
   }
 
@@ -673,7 +673,6 @@
     if (!MESSAGGIO || MESSAGGIO.attivo !== true) { return false; }
     if (!BROADCASTER) { return false; }
     if (!FRASI.length) { return false; }
-    if (typeof fetch !== 'function') { return false; }
     return !!account();
   }
 
@@ -686,27 +685,19 @@
     if (!MESSAGGIO || MESSAGGIO.attivo !== true) {
       const m = String((MESSAGGIO && MESSAGGIO.motivo) || '');
       if (m === 'senzaAccount') {
-        return 'il profilo del sito è spento, e senza un account collegato non c’è nessuno a nome '
-          + 'di cui scrivere in chat. Si accende nel pannello, gruppo «Profilo del sito», dov’è '
-          + 'finito anche il Client ID dell’app Twitch. Poi Pubblica.';
+        return 'profilo spento';
       }
       if (m === 'senzaFrasi') {
-        return 'manca almeno una frase da dire in chat: pannello, gruppo «Modalità lurk» → «Frasi '
-          + 'del messaggio di lurk». Poi Pubblica.';
+        return 'nessuna frase';
       }
-      return 'è spento nel pannello, gruppo «Modalità lurk» → «Permetti di dire in chat che si sta '
-        + 'guardando». Poi Pubblica.';
+      return 'spento dal pannello';
     }
 
     if (!BROADCASTER) {
-      return 'manca l’ID numerico del canale: pannello, gruppo «Canale, contatti e immagini».';
+      return 'manca id canale';
     }
     if (!account()) {
-      return 'il profilo del sito non è disponibile su questa pagina: il motivo lo scrive '
-        + 'js/account.js, nella sua riga di diagnosi qui sopra.';
-    }
-    if (typeof fetch !== 'function') {
-      return 'questo browser non ha quello che serve per parlare con Twitch.';
+      return 'account non disponibile';
     }
     return '';
   }
@@ -998,7 +989,7 @@
       });
     }
 
-    if (window.Canale && typeof window.Canale.suStato === 'function') {
+    if (window.Canale) {
       window.Canale.suStato(function (c) {
         if (!c || typeof c.inOnda !== 'boolean') { return; }
         if (c.inOnda === false && vivo.acceso) { chiudiPerFineDiretta(); return; }
@@ -1122,16 +1113,11 @@
         console.warn('[lurk] il collegamento con Twitch non è partito:', err);
       }
     } else {
-
-      try { scriviDiagnosi(); } catch (err) {}
+      scriviDiagnosi();
     }
 
     tentaRipresa();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());
