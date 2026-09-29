@@ -185,10 +185,14 @@
     if (motorePronto()) { fatto(true); return; }
     if (attesaMotore) { attesaMotore.push(fatto); return; }
     attesaMotore = [fatto];
-    caricaScript('js/pollorun-gioco.js', function (ok) {
+    function avvisa(ok) {
       var attesi = attesaMotore;
       attesaMotore = null;
       for (var i = 0; i < attesi.length; i++) { attesi[i](ok && motorePronto()); }
+    }
+    caricaScript('js/pollorun-gioco.js', function (ok) {
+      if (!ok) { avvisa(false); return; }
+      caricaScript('js/pollorun-caduta.js', function () { avvisa(true); });
     });
   }
 

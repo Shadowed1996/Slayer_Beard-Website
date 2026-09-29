@@ -15,6 +15,21 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **Pollo Run, «ATTENTO CHE CADI !».** A difficile ed estremo, dal livello 3,
+  circa un livello su due (45% difficile, 55% estremo, deciso dal seme del
+  livello e quindi uguale per il gioco e per la classifica) ha una buca nella
+  strada. Circa 2,6 s prima compare la scritta «ATTENTO CHE CADI !», poi il
+  pollo ci cade dentro e il gioco passa a un pozzo visto dall'alto: gli
+  ostacoli salgono dal basso, al centro e ai bordi, e si evitano con A e D o
+  con le frecce sinistra e destra (sul telefono tenendo premuta la metà
+  sinistra o destra dello schermo). Toccarne uno è GAME OVER come sempre. Dopo
+  8-10 s (difficile) o 10-12 s (estremo) il pollo atterra dentro un tratto in
+  discesa, che lo fa correre più veloce, e il livello continua. Ogni pozzo è
+  generato in modo da avere sempre un passaggio raggiungibile con la velocità
+  laterale del pollo. La durata del livello (anche per la classifica) cresce
+  della durata della caduta, e la parte di corsa resta lunga come prima. Il
+  pozzo sta nel file nuovo `js/pollorun-caduta.js`, caricato dopo il motore
+  sul sito e unito al motore nella pagina di manutenzione.
 - **Pollo Run, discese e salite a tratti.** Dal livello 3 in poi ogni livello
   ha una serie di tratti in discesa o in salita, separati da tratti in piano,
   in ordine e lunghezze decisi dal seme del livello (`M.tratti`, sempre gli

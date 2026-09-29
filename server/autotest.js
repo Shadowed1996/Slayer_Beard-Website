@@ -668,6 +668,7 @@ function preparaProgetto(radice) {
   fs.mkdirSync(path.join(radice, 'server', 'modelli'), { recursive: true });
   fs.mkdirSync(path.join(radice, 'js'), { recursive: true });
   fs.copyFileSync(path.join(RADICE_VERA, 'js', 'pollorun-gioco.js'), path.join(radice, 'js', 'pollorun-gioco.js'));
+  fs.copyFileSync(path.join(RADICE_VERA, 'js', 'pollorun-caduta.js'), path.join(radice, 'js', 'pollorun-caduta.js'));
   fs.cpSync(path.join(RADICE_VERA, 'modelli'), path.join(radice, 'modelli'), { recursive: true });
   fs.copyFileSync(path.join(RADICE_VERA, 'contenuti', 'contenuti.json'), path.join(radice, 'contenuti', 'contenuti.json'));
   fs.copyFileSync(path.join(RADICE_VERA, 'server', 'modelli', 'dati.js.tpl'), path.join(radice, 'server', 'modelli', 'dati.js.tpl'));
@@ -5226,6 +5227,7 @@ async function proveGiocoPollo(costruisci, archivio) {
   const fileStile = path.join(RADICE_VERA, 'css', 'pollorun.css');
   const jsGioco = fs.readFileSync(fileGioco, 'utf8');
   const jsSito = fs.readFileSync(fileSito, 'utf8');
+  const jsCaduta = fs.readFileSync(path.join(RADICE_VERA, 'js', 'pollorun-caduta.js'), 'utf8');
 
   const caricaMotore = () => {
     const finestra = {};
@@ -5344,7 +5346,7 @@ async function proveGiocoPollo(costruisci, archivio) {
   };
 
   await prova('pollorun-gioco.js, pollorun.js e pollorun.css: si compilano e non hanno commenti', () => {
-    for (const [nome, testo] of [['pollorun-gioco.js', jsGioco], ['pollorun.js', jsSito]]) {
+    for (const [nome, testo] of [['pollorun-gioco.js', jsGioco], ['pollorun-caduta.js', jsCaduta], ['pollorun.js', jsSito]]) {
       try { new Function(testo); } catch (errore) { throw new Error(nome + ': ' + errore.message); }
       esigi(!/\/\/|\/\*/.test(testo), nome + ' contiene commenti');
     }
@@ -5631,7 +5633,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         const p = percorsoGiocatore(M, 0, 2, false);
         esigi(p, d + ': il livello ' + n + ' con i tratti non e superabile');
         if (!p) { continue; }
-        const secondi = p.passi * K.PASSO;
+        const secondi = p.passi * K.PASSO + (M.caduta ? M.caduta.durata - (M.caduta.x1 - M.caduta.x0) / M.v : 0);
         esigi(secondi >= M.durata * 0.9, d + ' livello ' + n + ': si finisce in ' + secondi.toFixed(1) + ' s su ' + M.durata + ', la classifica lo scarterebbe');
         esigi(secondi <= M.durata * 1.2, d + ' livello ' + n + ': dura troppo, ' + secondi.toFixed(1) + ' s');
         if (n === 5 || n === 11) { esigi(percorsoGiocatore(M, M.mx, 1, false), d + ': il livello ' + n + ' non e superabile con il margine di sicurezza'); }
@@ -5692,7 +5694,7 @@ async function proveGiocoPollo(costruisci, archivio) {
       removeEventListener: (tipo) => { delete registro.ascoltatori[tipo]; }
     };
     const memoria = registro.memoria;
-    vm.runInNewContext(jsGioco, {
+    vm.runInNewContext(jsGioco + ';' + jsCaduta, {
       window: finestra,
       document: documento,
       getComputedStyle: () => ({ getPropertyValue: () => '' }),
@@ -5964,6 +5966,224 @@ async function proveGiocoPollo(costruisci, archivio) {
       esigiUguale(viste.map((v) => v.testo).join(','), M.tratti.map((tr) => (tr.verso < 0 ? GIU : SU)).join(','), nomeStile + ': scritte diverse dai tratti');
       for (let i = 1; i < viste.length; i++) { esigi(viste[i].t - viste[i - 1].t > 3, nomeStile + ': due scritte troppo vicine'); }
       esigi(M.tratti.length && viste.length && viste[0].t > 10, nomeStile + ': la prima scritta arriva troppo presto');
+    }
+  });
+
+  const conCaduta = () => {
+    const finestra = {};
+    vm.runInNewContext(jsGioco + ';' + jsCaduta, { window: finestra, Math: Math });
+    return finestra.PolloRun;
+  };
+  const Pc = conCaduta();
+  const Cd = Pc.caduta;
+  const KC = Cd.costanti;
+  const corsaDi = (n) => Math.min(150, 60 + 4 * (n - 1));
+
+  const stradaNelPozzo = (sc, fermo) => {
+    const m = sc.misure;
+    const cella = m.laterale * KC.PASSO;
+    const N = Math.floor((KC.LARGO / 2 - KC.RAGGIO) / cella);
+    const larghi = 2 * N + 1;
+    let vivi = new Uint8Array(larghi);
+    vivi[N] = 1;
+    const passi = Math.round(sc.tempo / KC.PASSO);
+    const padri = [];
+    for (let k = 1; k <= passi; k++) {
+      const yc = m.discesa * (k * KC.PASSO);
+      const attive = sc.file.filter((f) => yc + KC.ALTO_POLLO > f.y && yc - KC.ALTO_POLLO < f.y + KC.SPESSORE);
+      const nuovi = new Uint8Array(larghi);
+      const padre = new Int8Array(larghi);
+      for (let j = 0; j < larghi; j++) {
+        if (!vivi[j]) { continue; }
+        for (const d of (fermo ? [0] : [0, -1, 1])) {
+          const q = j + d;
+          if (q < 0 || q >= larghi || nuovi[q]) { continue; }
+          const x = (q - N) * cella;
+          if (attive.some((f) => f.pezzi.some((p) => x + KC.RAGGIO > p[0] && x - KC.RAGGIO < p[1]))) { continue; }
+          nuovi[q] = 1;
+          padre[q] = d;
+        }
+      }
+      padri.push(padre);
+      vivi = nuovi;
+      if (!vivi.some((v) => v)) { return null; }
+    }
+    let j = vivi.indexOf(1);
+    const mosse = [];
+    for (let k = padri.length - 1; k >= 0; k--) {
+      mosse.unshift(padri[k][j]);
+      j -= padri[k][j];
+    }
+    return mosse;
+  };
+
+  await prova('caduta: solo a DIFFICILE ed ESTREMO, mai prima del livello 3, decisa dal seme del livello e uguale per il server', () => {
+    const quante = {};
+    for (const d of DIFFICOLTA) {
+      quante[d] = 0;
+      for (let n = 1; n <= 80; n++) {
+        const P = L.parametri(n, d);
+        if (d === 'facile' || d === 'medio' || n < 3) { esigiUguale(P.caduta, null, d + ' livello ' + n + ': caduta dove non deve esserci'); continue; }
+        esigiUguale(JSON.stringify(Pc.livelli.parametri(n, d).caduta), JSON.stringify(P.caduta), d + ' livello ' + n + ': la caduta cambia da una volta all altra');
+        if (P.caduta) { quante[d]++; }
+      }
+    }
+    for (const d of ['difficile', 'estremo']) { esigi(quante[d] >= 78 * 0.3 && quante[d] <= 78 * 0.75, d + ': ' + quante[d] + ' livelli su 78 con la caduta'); }
+    esigiUguale(quante.facile + quante.medio, 0, 'cadute a FACILE o MEDIO');
+    for (const n of [1, 2, 3, 4, 5]) { esigiUguale(creaDi(n, 'estremo').tratti.filter((t) => t.caduta).length, creaDi(n, 'estremo').caduta ? 1 : 0, 'estremo livello ' + n + ': tratto d arrivo sbagliato'); }
+  });
+
+  await prova('caduta: il livello si allunga della caduta, la corsa resta intera, la buca ha strada libera e si atterra in discesa', () => {
+    let viste = 0;
+    for (const d of ['difficile', 'estremo']) {
+      for (let n = 3; n <= 16; n++) {
+        const M = creaDi(n, d);
+        const c = M.caduta;
+        if (!c) { continue; }
+        viste++;
+        const corsa = corsaDi(n);
+        esigi(c.durata >= (d === 'estremo' ? 10 : 8) && c.durata <= (d === 'estremo' ? 12 : 10), d + ' livello ' + n + ': la caduta dura ' + c.durata + ' s');
+        esigi(Math.abs(M.durata - corsa - c.durata) < 1e-9, d + ' livello ' + n + ': la durata non somma corsa e caduta');
+        esigiUguale(M.lunghezza, Math.round(M.v * corsa) + (c.x1 - c.x0), d + ' livello ' + n + ': la corsa si accorcia');
+        esigi(c.x0 >= M.lunghezza * 0.25 && c.x1 <= M.lunghezza * 0.6, d + ' livello ' + n + ': la buca e fuori posto');
+        esigi(M.el.every((e) => e.x1 <= c.x0 - M.v * 1.7 || e.x >= c.x1 + M.v * 1.9), d + ' livello ' + n + ': un ostacolo vicino alla buca o all atterraggio');
+        const arrivo = M.tratti.find((t) => t.caduta);
+        esigi(arrivo && arrivo.verso < 0 && arrivo.x0 <= c.x1 && arrivo.x0 >= c.x0, d + ' livello ' + n + ': non si atterra in un tratto di discesa');
+        esigi(L.fattore(M, c.x1) > 1 && L.pendenza(M, c.x1) < 0 && L.fattore(M, c.x1 + arrivo.r) >= arrivo.f - 1e-9 && arrivo.f > 1.2, d + ' livello ' + n + ': all atterraggio la discesa non spinge');
+      }
+    }
+    esigi(viste >= 6, 'poche cadute controllate: ' + viste);
+  });
+
+  await prova('caduta: ogni pozzo generato si attraversa (risolutore indipendente a griglia), con ostacoli al centro e ai bordi', () => {
+    let schemi = 0;
+    let alCentro = 0;
+    let aiBordi = 0;
+    const prova1 = (c, d, n) => {
+      const sc = Cd.schema(c, d, n);
+      schemi++;
+      esigi(sc.file.length >= 4, d + ' livello ' + n + ': pozzo con solo ' + sc.file.length + ' ostacoli');
+      esigi(stradaNelPozzo(sc, false), d + ' livello ' + n + ' seme ' + c.seme + ': il pozzo non si attraversa');
+      for (const f of sc.file) {
+        if (f.pezzi.some((p) => p[0] < 0 && p[1] > 0)) { alCentro++; }
+        if (f.pezzi.some((p) => p[0] <= -KC.LARGO / 2 + 1e-9 || p[1] >= KC.LARGO / 2 - 1e-9)) { aiBordi++; }
+        esigi(f.y >= sc.misure.discesa * KC.INIZIO - 1e-9 && f.y <= sc.misure.discesa * (sc.tempo - KC.ARRIVO) + 1e-9, 'ostacolo fuori dal pozzo');
+      }
+    };
+    for (const d of ['difficile', 'estremo']) {
+      for (let n = 3; n <= 120; n++) {
+        const c = L.parametri(n, d).caduta;
+        if (c) { prova1(c, d, n); }
+      }
+      const r = (() => { let s = 12345; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; })();
+      for (let i = 0; i < 150; i++) {
+        prova1({ seme: 1 + Math.floor(r() * 2000000000), durata: (d === 'estremo' ? 10 : 8) + 2 * r() }, d, 3 + Math.floor(r() * 60));
+      }
+    }
+    esigi(schemi > 400, 'pochi pozzi provati: ' + schemi);
+    esigi(alCentro > schemi && aiBordi > schemi, 'ostacoli al centro ' + alCentro + ', ai bordi ' + aiBordi);
+  });
+
+  await prova('caduta: nel pozzo A/D e frecce spostano il pollo, un ostacolo uccide, SPAZIO non fa danni e si atterra all inizio della discesa', () => {
+    const ambiente = () => ({ W: 1200, H: 700, U: 90, tela: { getBoundingClientRect: () => ({ left: 0, width: 1200 }) } });
+    let provati = 0;
+    let morti = 0;
+    for (const d of ['difficile', 'estremo']) {
+      for (let n = 3; n <= 20 && provati < 6; n++) {
+        const M = creaDi(n, d);
+        if (!M.caduta) { continue; }
+        const c = M.caduta;
+        for (const guida of [true, false]) {
+          const g = Cd.crea(ambiente);
+          g.prepara(M);
+          const S = L.statoIniziale(M.v);
+          S.x = c.x0 - 1;
+          esigi(!g.entra(S, M), 'entra prima della buca');
+          S.x = c.x0 + 0.3;
+          esigi(g.entra(S, M), 'non entra nella buca');
+          esigi(g.inCorso(), 'la caduta non e in corso');
+          let q0 = g.avanzamento(S, M);
+          let giri = 0;
+          while (g.fase() === 'tuffo' && giri++ < 1000) { S.richiesta = true; g.aggiorna(KC.PASSO, S); }
+          esigiUguale(g.fase(), 'pozzo', 'il tuffo non porta nel pozzo');
+          const sc = g.schema();
+          const mosse = guida ? stradaNelPozzo(sc, false) : null;
+          let esito = '';
+          let k = 0;
+          let prima = q0;
+          while (!esito && k < 5000) {
+            const m = mosse ? mosse[k] : 0;
+            g.tasto({ key: 'ArrowLeft' }, m < 0);
+            g.tasto({ key: 'd' }, m > 0);
+            S.richiesta = true;
+            esito = g.aggiorna(KC.PASSO, S);
+            const q = g.avanzamento(S, M);
+            esigi(q >= prima - 1e-9, 'la barra torna indietro');
+            prima = q;
+            k++;
+          }
+          if (guida) {
+            esigiUguale(esito, 'atterrato', d + ' livello ' + n + ': seguendo la strada non si atterra');
+            esigiUguale(S.x, c.x1, 'non atterra dove finisce la buca');
+            esigi(S.aTerra && S.alt === 0 && !S.richiesta && S.buf === 0, 'atterra con un salto in canna');
+            esigi(Math.abs(g.avanzamento(S, M) - (c.x0 + M.v * c.durata) / (M.lunghezza - (c.x1 - c.x0) + M.v * c.durata)) < 0.01, 'la barra salta all atterraggio');
+            esigiUguale(g.fase(), 'fatta', 'fase dopo l atterraggio');
+            esigi(!g.inCorso(), 'la caduta resta in corso');
+          } else if (esito === 'morto') {
+            morti++;
+            esigi(g.punto(), 'nessun punto per lo schianto');
+          }
+          esigi(Math.abs(k * KC.PASSO - (esito === 'atterrato' ? sc.tempo : k * KC.PASSO)) < 0.02, 'il pozzo non dura quanto deve');
+        }
+        provati++;
+      }
+    }
+    esigi(provati >= 4, 'livelli con caduta provati: ' + provati);
+    esigi(morti >= 1, 'stando fermi non si muore mai');
+    const g = Cd.crea(ambiente);
+    esigiUguale(g.tasto({ key: 'ArrowLeft', preventDefault: () => {} }, true), false, 'fuori dal pozzo la freccia sinistra viene rubata');
+  });
+
+  await prova('gioco: a DIFFICILE compare «ATTENTO CHE CADI !» prima della buca, nel pozzo c e l aiuto, e un ostacolo porta a GAME OVER con SPAZIO per riprovare', () => {
+    let n = 3;
+    while (n < 60 && !(creaDi(n, 'difficile').caduta && !stradaNelPozzo(Cd.schema(creaDi(n, 'difficile').caduta, 'difficile', n), true))) { n++; }
+    const M = creaDi(n, 'difficile');
+    esigi(M.caduta, 'nessun livello difficile con una caduta mortale da fermi');
+    const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
+    esigi(p, 'nessun percorso per il livello ' + n);
+    for (const nomeStile of ['synthwave', 'geometrydash']) {
+      const h = rendiFinta();
+      h.registro.memoria['sb-pollo-difficolta'] = 'difficile';
+      h.registro.memoria['sb-pollo-livello-difficile'] = String(n);
+      h.crea({ stile: nomeStile }).avvia();
+      h.tasto('Enter', 'Enter');
+      let t = 0;
+      let indice = 0;
+      let avviso = -1;
+      let pozzo = -1;
+      let morto = -1;
+      while (t < 200 && morto < 0) {
+        while (indice < p.secondi.length && p.secondi[indice] <= t) { h.tasto(' ', 'Space'); indice++; }
+        h.registro.testi = [];
+        const eventiPrima = h.registro.eventi.length;
+        h.frame(1000 / 60);
+        t += 1 / 60;
+        const testi = h.registro.testi.join('|');
+        if (avviso < 0 && testi.indexOf('ATTENTO CHE CADI !') !== -1) { avviso = t; }
+        if (pozzo < 0 && testi.indexOf('A / D oppure') !== -1) { pozzo = t; }
+        if (h.registro.eventi.slice(eventiPrima).indexOf(null) !== -1) { morto = t; }
+      }
+      const arrivoBuca = M.caduta.x0 / M.v;
+      esigi(avviso > 0 && avviso < pozzo, nomeStile + ': manca «ATTENTO CHE CADI !» prima del pozzo');
+      esigi(pozzo - avviso > 1.5 && pozzo - avviso < 4.5, nomeStile + ': la scritta arriva ' + (pozzo - avviso).toFixed(2) + ' s prima del pozzo');
+      esigi(Math.abs(pozzo - arrivoBuca) < 2.5, nomeStile + ': il pozzo arriva a ' + pozzo.toFixed(1) + ' s invece di circa ' + arrivoBuca.toFixed(1));
+      esigi(morto > pozzo && morto < pozzo + M.caduta.durata, nomeStile + ': fermi nel pozzo non si muore');
+      h.attendi(1);
+      esigiDentro(h.testiUltimo(), 'GAME OVER', nomeStile + ': manca GAME OVER dopo il pozzo');
+      h.tasto(' ', 'Space');
+      const dopo = h.testiUltimo();
+      esigiDentro(dopo, 'TENTATIVO 2', nomeStile + ': SPAZIO non fa riprovare il livello');
+      esigi(dopo.indexOf('A / D oppure') === -1, nomeStile + ': riprovando si riparte nel pozzo');
     }
   });
 
@@ -6364,7 +6584,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     gioco.avvia();
     gioco.avvia();
     const conAscolto = Object.keys(h.registro.ascoltatori).sort().join(',');
-    esigiUguale(conAscolto, 'keydown,pointerdown,visibilitychange,w:resize', 'ascoltatori');
+    esigiUguale(conAscolto, 'keydown,keyup,pointercancel,pointerdown,pointerup,visibilitychange,w:resize', 'ascoltatori');
     h.tasto(' ', 'Space');
     gioco.ferma();
     esigiUguale(h.registro.eventi[h.registro.eventi.length - 1], null, 'fermando il gioco la canzone non si ferma');
@@ -6589,7 +6809,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiUguale(p.corpo.children[0].className, 'pollorun-carica', 'riscrivendo la parola non riparte');
     trovaNodo(p.corpo.children[0], 'pollorun-carica__chiudi').attrs['@click']();
     esigiUguale(p.corpo.children.length, 0, 'la X non toglie il preloader');
-    esigiUguale(p.registro.appesi.filter((n) => n.tag === 'script').length, 1, 'il motore si riscarica');
+    esigiUguale(p.registro.appesi.filter((n) => n.tag === 'script' && n.src === 'js/pollorun-gioco.js').length, 1, 'il motore si riscarica');
   });
 
   await prova('pollorun.js: se la canzone non si scarica il gioco parte lo stesso e la canzone arriva dal sito', () => {
@@ -6618,7 +6838,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigi(!p.classi.has('is-pollorun'), 'la pagina resta bloccata');
     esigiUguale(p.registro.ferma, 1, 'il gioco non viene fermato');
     p.scrivi('pollorun');
-    esigiUguale(p.registro.appesi.length, 2, 'la seconda volta ricarica stile o motore');
+    esigiUguale(p.registro.appesi.filter((n) => n.src !== 'js/pollorun-caduta.js').length, 2, 'la seconda volta ricarica stile o motore');
     p.carica();
     esigiUguale(p.corpo.children.length, 1, 'non si riapre');
     esigiUguale(p.registro.crea.length, 2, 'non ricrea il gioco');

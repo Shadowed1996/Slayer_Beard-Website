@@ -36,6 +36,7 @@ function calcola(radice) {
     modelloManutenzione: path.join(radice, 'modelli', 'manutenzione.html'),
     scriptManutenzione: path.join(radice, 'modelli', 'manutenzione-conto.js'),
     scriptPolloRun: path.join(radice, 'js', 'pollorun-gioco.js'),
+    scriptCadutaPolloRun: path.join(radice, 'js', 'pollorun-caduta.js'),
     parziali: path.join(radice, 'modelli', 'parziali'),
     icone: path.join(radice, 'modelli', 'icone'),
 
