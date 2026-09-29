@@ -1,7 +1,7 @@
 .clip {
-  margin-block-start: var(--passo-4);
-  padding-block-start: var(--passo-3);
-  border-block-start: 1px solid var(--linea);
+  margin-top: var(--passo-4);
+  padding-top: var(--passo-3);
+  border-top: 1px solid var(--linea);
 
   scroll-margin-block-start: var(--passo-3);
 }
@@ -12,8 +12,8 @@
   gap: var(--passo);
 
   align-self: flex-start;
-  margin-block-start: var(--passo-2);
-  min-block-size: 44px;
+  margin-top: var(--passo-2);
+  min-height: 44px;
   padding-inline: var(--passo-3);
   border: 1px solid var(--linea-comando);
   border-radius: var(--raggio-pill);
@@ -29,8 +29,8 @@
 }
 
 .clip__vai svg {
-  inline-size: 1.15em;
-  block-size: 1.15em;
+  width: 1.15em;
+  height: 1.15em;
   flex: none;
 }
 
@@ -43,13 +43,13 @@
 .diretta__testa .clip__vai { display: none; }
 
 .clip__testa {
-  margin-block-end: var(--passo-3);
-  max-inline-size: 62ch;
+  margin-bottom: var(--passo-3);
+  max-width: 62ch;
 }
 
-.clip--invito .clip__testa { margin-block-end: var(--passo-2); }
+.clip--invito .clip__testa { margin-bottom: var(--passo-2); }
 .clip__vai--invito {
-  margin-block-start: 0;
+  margin-top: 0;
   border-color: var(--ciano);
   color: var(--ciano);
 }
@@ -64,7 +64,7 @@
 }
 
 .clip__testo {
-  margin-block-start: var(--passo);
+  margin-top: var(--passo);
   color: var(--testo-medio);
 }
 
@@ -112,20 +112,20 @@
   display: block;
   aspect-ratio: 16 / 9;
   background: var(--fondo-2);
-  border-block-end: 1px solid var(--linea);
+  border-bottom: 1px solid var(--linea);
 }
 
 .clip__immagine {
-  inline-size: 100%;
-  block-size: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   display: block;
 }
 
 .clip__durata {
   position: absolute;
-  inset-block-end: 6px;
-  inset-inline-end: 6px;
+  bottom: 6px;
+  right: 6px;
   padding: 2px 6px;
   border-radius: var(--raggio-s);
   background: var(--velo);
@@ -160,7 +160,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px var(--passo);
-  margin-block-start: auto;
+  margin-top: auto;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.03em;
@@ -175,20 +175,16 @@
 }
 
 .clip__tutte {
-  margin-block-start: var(--passo-3);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .clip__card { transition: none; }
+  margin-top: var(--passo-3);
 }
 
 .pagina-clip {
-  padding-block-end: 0;
+  padding-bottom: 0;
 }
 
 .clip-pagina__testa,
 .clip-pagina__corpo {
-  inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2));
+  width: min(100%, calc(var(--max-larghezza) + var(--margine) * 2));
   margin-inline: auto;
   padding-inline: var(--margine);
 }
@@ -201,8 +197,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--passo);
-  min-block-size: 44px;
-  margin-block-end: var(--passo-2);
+  min-height: 44px;
+  margin-bottom: var(--passo-2);
   color: var(--testo-tenue);
   font-family: var(--font-mono);
   font-size: var(--t-micro);
@@ -213,8 +209,8 @@
 }
 
 .clip-pagina__torna svg {
-  inline-size: 1.1em;
-  block-size: 1.1em;
+  width: 1.1em;
+  height: 1.1em;
   flex: none;
 }
 
@@ -230,15 +226,15 @@
 }
 
 .clip-pagina__corpo {
-  padding-block-end: var(--passo-8);
+  padding-bottom: var(--passo-8);
 }
 
 .clip-comandi {
   display: grid;
   gap: var(--passo-3);
-  margin-block-end: var(--passo-3);
-  padding-block-end: var(--passo-3);
-  border-block-end: 1px solid var(--linea);
+  margin-bottom: var(--passo-3);
+  padding-bottom: var(--passo-3);
+  border-bottom: 1px solid var(--linea);
 }
 
 .clip-comandi[hidden] { display: none; }
@@ -256,7 +252,7 @@
 
 .clip-comandi__etichetta {
   display: block;
-  margin-block-end: var(--passo);
+  margin-bottom: var(--passo);
   color: var(--testo-tenue);
   font-family: var(--font-mono);
   font-size: var(--t-micro);
@@ -272,16 +268,16 @@
 
 .clip-cerca__icona {
   position: absolute;
-  inset-inline-start: var(--passo-2);
-  inline-size: 1.15rem;
-  block-size: 1.15rem;
+  left: var(--passo-2);
+  width: 1.15rem;
+  height: 1.15rem;
   color: var(--testo-tenue);
   pointer-events: none;
 }
 
 .clip-cerca__input {
-  inline-size: 100%;
-  min-block-size: 44px;
+  width: 100%;
+  min-height: 44px;
   padding-block: 0;
   padding-inline: calc(var(--passo-2) + 1.15rem + var(--passo)) 44px;
   border: 1px solid var(--linea-comando);
@@ -321,11 +317,11 @@
 
 .clip-cerca__pulisci {
   position: absolute;
-  inset-inline-end: 4px;
+  right: 4px;
   display: grid;
   place-items: center;
-  inline-size: 36px;
-  block-size: 36px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -338,8 +334,8 @@
 .clip-cerca__pulisci[hidden] { display: none; }
 
 .clip-cerca__pulisci svg {
-  inline-size: 1.1rem;
-  block-size: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .clip-cerca__pulisci:hover {
@@ -368,7 +364,7 @@
 }
 
 .clip-periodi__bottone {
-  min-block-size: 44px;
+  min-height: 44px;
   padding-inline: var(--passo-3);
   border: 1px solid var(--linea-comando);
   border-radius: var(--raggio-pill);
@@ -410,17 +406,10 @@
 
 .clip__voce[hidden] { display: none; }
 
-@media (prefers-reduced-motion: reduce) {
-  .clip-periodi__bottone,
-  .clip-cerca__input,
-  .clip-cerca__pulisci,
-  .clip-pagina__torna { transition: none; }
-}
-
 .inviti {
   display: grid;
   gap: var(--passo-3);
-  margin-block-start: var(--passo-4);
+  margin-top: var(--passo-4);
 }
 
 @media (min-width: 900px) {
@@ -428,9 +417,9 @@
 }
 
 .inviti .clip {
-  margin-block-start: 0;
-  padding-block-start: 0;
-  border-block-start: 0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .invito {
@@ -453,8 +442,8 @@
   content: "";
   position: absolute;
   inset-block: 0;
-  inset-inline-start: 0;
-  inline-size: 3px;
+  left: 0;
+  width: 3px;
   background: linear-gradient(180deg, var(--ciano), var(--viola));
 }
 
@@ -468,7 +457,7 @@
 
 .invito .sezione__occhiello { margin: 0; }
 
-.invito__testa { max-inline-size: 62ch; }
+.invito__testa { max-width: 62ch; }
 
 .invito__titolo {
   margin: var(--passo) 0 0;

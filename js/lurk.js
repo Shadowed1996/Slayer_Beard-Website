@@ -325,14 +325,12 @@
     }
 
     if (d.riproduce) {
-
       buffering = (d.playback === 'Buffering') ? buffering + 1 : 0;
 
       if (typeof d.tempo === 'number') {
         if (ultimoTempo !== null && d.tempo <= ultimoTempo) { fermi++; } else { fermi = 0; }
         ultimoTempo = d.tempo;
       } else {
-
         fermi = 0;
         ultimoTempo = null;
       }
@@ -348,7 +346,6 @@
     }
 
     if (d.fermo) { concludiFermo(); return; }
-
   }
 
   function concludiFermo() {
@@ -427,7 +424,6 @@
       fermaSentinella();
       return;
     }
-
   }
 
   function accendi() {
@@ -603,7 +599,6 @@
     const ora = Date.now();
 
     if (chiestoPresenza) {
-
       if (ora - chiestoPresenza >= ATTESA_PRESENZA) { spegni(); }
       return;
     }
@@ -641,7 +636,6 @@
   }
 
   function canaleAcceso() {
-
     const daTwitch = statoDaTwitch();
     if (daTwitch !== null) { return daTwitch; }
 
@@ -668,7 +662,6 @@
   }
 
   function bAttivo() {
-
     if (inManutenzione) { return false; }
     if (!MESSAGGIO || MESSAGGIO.attivo !== true) { return false; }
     if (!BROADCASTER) { return false; }
@@ -784,7 +777,6 @@
     if (!r) { return null; }
 
     if (r.status === 401) {
-
       const A = account();
       if (A) { A.valida(true); }
       nonPartito('Collegamento scaduto, ricollegati.');
@@ -873,7 +865,6 @@
   }
 
   function costruisciComandi() {
-
     if (comandiPronti()) {
       comandi.toggle = bottone(testo('accendi'), 'btn btn--vuoto', commuta);
       comandi.toggle.id = 'lurk-toggle';
@@ -915,7 +906,6 @@
       comandi.manda.hidden = true;
       nodi.comandi.appendChild(comandi.manda);
     }
-
   }
 
   function etichettaEntra() {
@@ -960,7 +950,6 @@
   }
 
   window.Lurk = {
-
     suStato: function (fn) {
       if (typeof fn !== 'function') { return; }
       iscritti.push(fn);
@@ -976,7 +965,6 @@
 
     if (typeof P.suStato === 'function') {
       P.suStato(function (stato) {
-
         const acceso = !!(stato && stato.inOnda);
         if (acceso === inOnda) { return; }
         inOnda = acceso;
@@ -1055,7 +1043,6 @@
       if (vuoleSchermo && !presaSchermo) { chiediSchermo(true); }
 
       tentaRipresa();
-
     });
 
     window.addEventListener('pagehide', function () { lasciaSchermo(); });
@@ -1098,7 +1085,6 @@
     if (!comandiPronti()) {
       segnaSalute('niente');
     } else if (daLocale(CHIAVE_ACCESO) === '1') {
-
       if (nodi.statoTesto) { nodi.statoTesto.textContent = testo('ripresa'); }
     } else {
       scriviStato();
@@ -1106,7 +1092,6 @@
 
     if (bAttivo()) {
       try {
-
         preparaFrase();
         ascoltaAccount();
       } catch (err) {

@@ -718,35 +718,6 @@ body:has(.musica:not([hidden])) :where(.cima) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .musica__riquadro,
-  .musica__btn,
-  .musica__riduci,
-  .musica__etichette,
-  .musica__voce,
-  .musica__apri {
-    transition: none;
-  }
-
-  .musica.is-suona .musica__vinile {
-    animation: none;
-  }
-
-  .musica__vinile,
-  .musica__pochette,
-  .musica__tinta {
-    transition: none;
-  }
-
-  .musica__titolo.is-lunga {
-    animation: none;
-  }
-
-  .musica.is-suona .musica__apri::after {
-    animation: none;
-    opacity: 0.6;
-  }
-
-  .musica__livello:hover::-webkit-slider-thumb {
-    scale: 1;
-  }
+  .musica.is-suona .musica__apri::after { opacity: 0.6; }
+  .musica__livello:hover::-webkit-slider-thumb { scale: 1; }
 }

@@ -192,8 +192,3 @@ button.sondaggio__voce:disabled {
 }
 
 .sondaggio-login__azioni .btn { flex: 1 1 auto; white-space: normal; text-align: center; }
-
-@media (prefers-reduced-motion: reduce) {
-  .sondaggio__barra,
-  button.sondaggio__voce { transition: none; }
-}

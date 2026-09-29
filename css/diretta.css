@@ -1,5 +1,5 @@
 .diretta {
-  inline-size: min(100%, calc(var(--max-larghezza) + var(--margine) * 2));
+  width: min(100%, calc(var(--max-larghezza) + var(--margine) * 2));
   margin-inline: auto;
   padding-inline: var(--margine);
   padding-block: clamp(var(--passo-6), 7vh, var(--passo-12));
@@ -9,12 +9,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--passo-2);
-  max-inline-size: 62ch;
-  margin-block-end: var(--passo-4);
+  max-width: 62ch;
+  margin-bottom: var(--passo-4);
 }
 
 @media (min-width: 900px) {
-  .diretta__testa { margin-block-end: var(--passo-6); }
+  .diretta__testa { margin-bottom: var(--passo-6); }
 }
 
 .diretta__scena {
@@ -26,18 +26,18 @@
 
 @media (min-width: 1100px) {
   .diretta__scena {
-    padding-inline-end: calc(var(--pollo-larghezza) + var(--passo-3));
+    padding-right: calc(var(--pollo-larghezza) + var(--passo-3));
   }
 
   .diretta__scena:has(> .pollo[hidden]),
   .diretta__scena:not(:has(> .pollo)) {
-    padding-inline-end: 0;
+    padding-right: 0;
   }
 }
 
 .monitor {
   position: relative;
-  min-inline-size: 0;
+  min-width: 0;
 }
 
 .monitor::before {
@@ -73,25 +73,25 @@
   content: "";
   position: absolute;
   z-index: 2;
-  inline-size: 20px;
-  block-size: 20px;
+  width: 20px;
+  height: 20px;
   border: 1px solid color-mix(in srgb, var(--ciano) 55%, transparent);
   pointer-events: none;
 }
 
 .monitor__telaio::before {
-  inset-block-start: 9px;
-  inset-inline-start: 9px;
-  border-inline-end-width: 0;
-  border-block-end-width: 0;
+  top: 9px;
+  left: 9px;
+  border-right-width: 0;
+  border-bottom-width: 0;
   border-start-start-radius: 6px;
 }
 
 .monitor__telaio::after {
-  inset-block-end: 9px;
-  inset-inline-end: 9px;
-  border-inline-start-width: 0;
-  border-block-start-width: 0;
+  bottom: 9px;
+  right: 9px;
+  border-left-width: 0;
+  border-top-width: 0;
   border-end-end-radius: 6px;
 }
 
@@ -100,7 +100,7 @@
   align-items: center;
   gap: var(--passo-2);
   padding: calc(var(--passo) * 1.25) var(--passo-2);
-  border-block-end: 1px solid var(--linea);
+  border-bottom: 1px solid var(--linea);
   background-color: color-mix(in srgb, var(--fondo-2) 72%, transparent);
 }
 
@@ -108,19 +108,19 @@
   display: flex;
   flex: none;
   gap: 5px;
-  margin-inline-start: var(--passo-2);
+  margin-left: var(--passo-2);
   color: var(--testo-tenue);
   opacity: 0.65;
 }
 
 .monitor__punti svg {
-  inline-size: 13px;
-  block-size: 13px;
+  width: 13px;
+  height: 13px;
 }
 
 .monitor__titolo {
   flex: 1 1 auto;
-  min-inline-size: 0;
+  min-width: 0;
   color: var(--testo-medio);
   font-family: var(--font-mono);
   font-size: var(--t-micro);
@@ -152,8 +152,8 @@
 
 .monitor__badge::before {
   content: "";
-  inline-size: 6px;
-  block-size: 6px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background-color: currentColor;
   animation: monitor-batte 2.2s var(--curva) infinite;
@@ -166,7 +166,7 @@
 
 .monitor__schermo {
   position: relative;
-  min-inline-size: 0;
+  min-width: 0;
   aspect-ratio: 16 / 9;
   background-color: var(--fondo);
   background-image: radial-gradient(
@@ -185,13 +185,13 @@
 .monitor__lato:not([hidden]) { display: block; }
 
 .monitor__lato {
-  min-inline-size: 0;
-  border-block-start: 1px solid var(--linea);
+  min-width: 0;
+  border-top: 1px solid var(--linea);
 }
 
 .monitor__chat {
-  block-size: 100%;
-  min-block-size: clamp(280px, 46vh, 460px);
+  height: 100%;
+  min-height: clamp(280px, 46vh, 460px);
 }
 
 @media (min-width: 1000px) {
@@ -205,12 +205,12 @@
   }
 
   .monitor__telaio:has(.monitor__lato:not([hidden])) .monitor__lato {
-    border-block-start: 0;
-    border-inline-start: 1px solid var(--linea);
+    border-top: 0;
+    border-left: 1px solid var(--linea);
   }
 
   .monitor__telaio:has(.monitor__lato:not([hidden])) .monitor__chat {
-    min-block-size: 0;
+    min-height: 0;
   }
 }
 
@@ -220,7 +220,7 @@
   align-items: center;
   gap: var(--passo-2);
   padding: var(--passo-2) var(--passo-3);
-  border-block-start: 1px solid var(--linea);
+  border-top: 1px solid var(--linea);
 }
 
 .monitor__piede > button {
@@ -229,7 +229,7 @@
   justify-content: center;
   gap: var(--passo);
   flex: none;
-  min-block-size: 44px;
+  min-height: 44px;
   padding-inline: var(--passo-3);
   border: 1px solid var(--linea-comando);
   border-radius: var(--raggio-pill);
@@ -249,8 +249,8 @@
 }
 
 .monitor__piede > button svg {
-  inline-size: 1.15em;
-  block-size: 1.15em;
+  width: 1.15em;
+  height: 1.15em;
   flex: none;
 }
 
@@ -266,7 +266,7 @@
 
 .monitor__nota {
   flex: 1 1 16ch;
-  min-inline-size: 0;
+  min-width: 0;
   margin: 0;
   color: var(--testo-tenue);
   font-size: var(--t-micro);
@@ -290,8 +290,8 @@
 }
 
 .monitor__link svg {
-  inline-size: 1.05em;
-  block-size: 1.05em;
+  width: 1.05em;
+  height: 1.05em;
   flex: none;
 }
 
@@ -301,8 +301,8 @@
   display: flex;
   align-items: baseline;
   gap: var(--passo-2);
-  margin-block-start: var(--passo-3);
-  max-inline-size: 78ch;
+  margin-top: var(--passo-3);
+  max-width: 78ch;
   color: var(--testo-tenue);
   font-size: var(--t-piccolo);
 }
@@ -310,8 +310,8 @@
 .diretta__nota::before {
   content: "";
   flex: none;
-  inline-size: var(--passo-3);
-  block-size: 1px;
+  width: var(--passo-3);
+  height: 1px;
   transform: translateY(-0.35em);
   background-color: color-mix(in srgb, var(--ciano) 70%, transparent);
 }
@@ -334,8 +334,8 @@
 }
 
 .monitor__spettatori svg {
-  inline-size: 14px;
-  block-size: 14px;
+  width: 14px;
+  height: 14px;
 }
 
 .monitor__spettatori b { font-weight: 600; }
@@ -345,9 +345,4 @@
 @keyframes spettatori-guizza {
   0%   { color: var(--testo); text-shadow: 0 0 10px var(--ciano); }
   100% { color: inherit; text-shadow: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .monitor__badge::before { animation: none; }
-  .monitor__spettatori.is-cambiato b { animation: none; }
 }

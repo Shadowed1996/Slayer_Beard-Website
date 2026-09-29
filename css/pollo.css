@@ -226,16 +226,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pollo__img,
-  .pollo__bottone::after {
-    animation: none;
-  }
-
   .pollo__bottone:hover,
-  .pollo__bottone:active {
-    translate: none;
-  }
-
+  .pollo__bottone:active { translate: none; }
   .pollo__fumetto[hidden] { translate: none; }
 }
 
@@ -353,11 +345,4 @@
 @keyframes pollorun-carica-ombra {
   0%, 20%, 85%, 100% { transform: scale(1); opacity: 1; }
   55% { transform: scale(0.55); opacity: 0.45; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pollorun-carica,
-  .pollorun-carica__pollo,
-  .pollorun-carica__ombra { animation: none; }
-  .pollorun-carica__riempi { transition: none; }
 }

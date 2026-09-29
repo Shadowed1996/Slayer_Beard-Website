@@ -15,7 +15,7 @@
   scale: 0.4;
   transition:
     opacity var(--durata) var(--curva),
-    scale var(--durata-lunga) cubic-bezier(0.34, 1.56, 0.64, 1);
+    scale var(--durata-lunga) var(--rimbalzo);
 }
 
 .bugiardino.is-visibile {
@@ -86,8 +86,8 @@
   translate: 0 40px;
   rotate: 2deg;
   transition:
-    translate var(--durata-lunga) cubic-bezier(0.34, 1.56, 0.64, 1),
-    rotate var(--durata-lunga) cubic-bezier(0.34, 1.56, 0.64, 1);
+    translate var(--durata-lunga) var(--rimbalzo),
+    rotate var(--durata-lunga) var(--rimbalzo);
 }
 
 .bugiardino-foglio.is-aperto .bugiardino-foglio__carta {
@@ -203,12 +203,4 @@ html.sb-bugiardino-aperto { overflow: hidden; }
 @keyframes bugiardino-galleggia {
   0%, 100% { translate: 0 0; }
   50% { translate: 0 -6px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bugiardino,
-  .bugiardino-foglio,
-  .bugiardino-foglio__carta { transition: none; }
-
-  .bugiardino__pillola { animation: none; }
 }

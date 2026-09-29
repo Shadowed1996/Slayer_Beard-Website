@@ -474,7 +474,6 @@
       if (!conto) { return; }
 
       if (inOnda) {
-
         if (conto.textContent !== statoLive) { conto.textContent = statoLive; }
         if (stato.prossima) {
           const iso = istanteIso(stato.prossima.ts);
@@ -484,7 +483,6 @@
       }
 
       if (!stato.prossima) {
-
         return;
       }
 
@@ -547,7 +545,6 @@
         document.body.removeChild(ta);
         segnala(riuscito ? fatto : indirizzo);
       } catch (err) {
-
         segnala(indirizzo);
       }
     }

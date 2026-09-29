@@ -97,17 +97,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cima {
-    transform: none;
-    transition: opacity var(--durata-lampo) linear,
-                visibility 0s linear var(--durata-lampo);
-  }
-
-  .cima.is-visibile {
-    transform: none;
-  }
-
-  .cima:active {
-    transform: none;
-  }
+  .cima { transform: none; transition: opacity var(--durata-lampo) linear,
+                visibility 0s linear var(--durata-lampo); }
+  .cima.is-visibile { transform: none; }
+  .cima:active { transform: none; }
 }

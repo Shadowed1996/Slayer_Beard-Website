@@ -1,12 +1,12 @@
 :where(.player__contenitore) {
   position: relative;
-  min-block-size: min(240px, 45vw);
+  min-height: min(240px, 45vw);
 }
 
 :where(.chat__contenitore) {
   position: relative;
-  block-size: 100%;
-  min-block-size: 0;
+  height: 100%;
+  min-height: 0;
 }
 
 .player__contenitore {
@@ -26,8 +26,8 @@
   position: absolute;
   inset: 0;
   display: block;
-  inline-size: 100% !important;
-  block-size: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
   border: 0;
 }
 
@@ -68,13 +68,13 @@
 .player__scheletro::after {
   content: "";
   position: absolute;
-  inset-block-start: 50%;
-  inset-inline-start: 50%;
+  top: 50%;
+  left: 50%;
   translate: -50% -50%;
-  inline-size: 34px;
-  block-size: 34px;
+  width: 34px;
+  height: 34px;
   border: 2px solid color-mix(in srgb, var(--viola-chiaro) 22%, transparent);
-  border-block-start-color: var(--ciano);
+  border-top-color: var(--ciano);
   border-radius: 50%;
   animation: player-anello 1.1s linear infinite;
 }
@@ -96,8 +96,8 @@
 
 @container player-schermo (min-width: 640px) {
   .player__scheletro::after {
-    inline-size: 52px;
-    block-size: 52px;
+    width: 52px;
+    height: 52px;
     border-width: 3px;
   }
 }
@@ -105,12 +105,12 @@
 .player__pieno {
   position: absolute;
   z-index: var(--z-velo);
-  inset-block-start: var(--passo-2);
-  inset-inline-end: var(--passo-2);
+  top: var(--passo-2);
+  right: var(--passo-2);
   display: inline-flex;
   align-items: center;
   gap: var(--passo);
-  min-block-size: 36px;
+  min-height: 36px;
   padding-inline: var(--passo-2);
   border: 1px solid var(--linea-comando);
   border-radius: var(--raggio-pill);
@@ -140,8 +140,8 @@
 .player__pieno:focus-visible { outline-offset: -3px; }
 
 .player__pieno-icona {
-  inline-size: 10px;
-  block-size: 10px;
+  width: 10px;
+  height: 10px;
   flex: none;
   border: 1px solid currentColor;
   border-radius: 2px;
@@ -149,21 +149,21 @@
 
 @container player-schermo (min-width: 720px) {
   .player__pieno {
-    min-block-size: 40px;
+    min-height: 40px;
     font-size: var(--t-piccolo);
     letter-spacing: 0.12em;
   }
 
   .player__pieno-icona {
-    inline-size: 12px;
-    block-size: 12px;
+    width: 12px;
+    height: 12px;
   }
 }
 
 .player__contenitore.is-pieno .player__pieno {
-  inset-block-start: var(--passo-3);
-  inset-inline-end: var(--passo-3);
-  min-block-size: 44px;
+  top: var(--passo-3);
+  right: var(--passo-3);
+  min-height: 44px;
   font-size: var(--t-piccolo);
 }
 
@@ -184,7 +184,7 @@
   display: grid;
   justify-items: start;
   gap: var(--passo-2);
-  inline-size: min(100%, 46ch);
+  width: min(100%, 46ch);
   padding: var(--passo-3);
   border: 1px solid var(--linea-forte);
   border-radius: var(--raggio);
@@ -197,7 +197,7 @@
 @container player-schermo (min-width: 640px) {
   .player__riquadro {
     gap: var(--passo-3);
-    inline-size: min(100%, 54ch);
+    width: min(100%, 54ch);
     padding: var(--passo-4);
   }
 }
@@ -239,12 +239,11 @@
 
 .player__riquadro-testo--tenue { color: var(--testo-tenue); }
 
-
 .player__riquadro-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-block-size: 44px;
+  min-height: 44px;
   padding-inline: var(--passo-3);
   border: 1px solid var(--linea-viva);
   border-radius: var(--raggio-pill);
@@ -258,10 +257,6 @@
 }
 
 .player__riquadro-btn:hover { box-shadow: var(--bagliore-viola); }
-
-
-
-
 
 .player__riquadro--compatto {
   gap: var(--passo);
@@ -286,14 +281,14 @@
   gap: var(--passo-2);
   flex: none;
   padding: var(--passo) var(--passo-2);
-  border-block-end: 1px solid var(--linea);
+  border-bottom: 1px solid var(--linea);
   background-color: var(--pannello);
 }
 
 .chat__titolo {
   display: none;
   flex: 1 1 auto;
-  min-inline-size: 0;
+  min-width: 0;
   color: var(--testo-tenue);
   font-family: var(--font-mono);
   font-size: var(--t-micro);
@@ -330,8 +325,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  inline-size: 28px;
-  block-size: 28px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--linea);
   border-radius: var(--raggio-s);
   background-color: transparent;
@@ -353,16 +348,11 @@
 .chat__telaio {
   position: relative;
   flex: 1 1 auto;
-  min-block-size: 0;
+  min-height: 0;
   background-color: var(--fondo);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .player__scheletro,
-  .chat__scheletro {
-    animation: none;
-    background-position: 50% 0;
-  }
-
-  .player__scheletro::after { animation: none; }
+  .chat__scheletro { background-position: 50% 0; }
 }

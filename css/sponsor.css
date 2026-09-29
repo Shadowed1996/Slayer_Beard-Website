@@ -1,5 +1,4 @@
 :root {
-
   --sponsor-vetro: var(--pannello);
   --sponsor-inchiostro: var(--testo);
   --sponsor-marchio-h: 52px;
@@ -54,7 +53,6 @@ ul.sponsor__fila {
 @media (prefers-reduced-motion: reduce) {
   .sponsor__nastro { overflow-x: auto; scrollbar-width: none; }
   .sponsor__nastro::-webkit-scrollbar { display: none; }
-  ul.sponsor__fila { animation: none; }
   [data-sponsor-fila-copia] { display: none; }
 }
 

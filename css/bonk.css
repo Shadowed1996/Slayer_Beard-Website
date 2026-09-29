@@ -37,8 +37,8 @@
   inline-size: 24.3%;
   transform-origin: 50% 100%;
   animation:
-    bonk-appare 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
-    bonk-schiaccia 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 2500ms both;
+    bonk-appare 380ms var(--rimbalzo) both,
+    bonk-schiaccia 700ms var(--rimbalzo) 2500ms both;
 }
 
 .bonk__stelle {
@@ -83,7 +83,7 @@
   opacity: 0;
   rotate: -10deg;
   pointer-events: none;
-  animation: bonk-scritta 1500ms cubic-bezier(0.34, 1.56, 0.64, 1) 2500ms both;
+  animation: bonk-scritta 1500ms var(--rimbalzo) 2500ms both;
 }
 
 .bonk__frase {
@@ -99,7 +99,7 @@
   text-align: center;
   text-wrap: balance;
   opacity: 0;
-  animation: bonk-frase 520ms cubic-bezier(0.34, 1.56, 0.64, 1) 3300ms both;
+  animation: bonk-frase 520ms var(--rimbalzo) 3300ms both;
 }
 
 .bonk__riga {
@@ -190,15 +190,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bonk,
-  .bonk.is-via,
-  .bonk__palco,
-  .bonk__vittima,
-  .bonk__carnefice,
-  .bonk__riga--mena { animation: none; }
-
-  .bonk__braccio { animation: none; rotate: 3deg; }
-  .bonk__stelle { animation: none; opacity: 1; }
-  .bonk__botta { animation: none; opacity: 1; }
-  .bonk__frase { animation: none; opacity: 1; }
+  .bonk__braccio { rotate: 3deg; }
+  .bonk__stelle { opacity: 1; }
+  .bonk__botta { opacity: 1; }
+  .bonk__frase { opacity: 1; }
 }

@@ -280,13 +280,3 @@ html.is-pollorun {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .pollorun { animation: none; }
-  .pollorun__chiudi,
-  .pollorun__regola,
-  .pollorun__muto,
-  .pollorun__avviso,
-  .pollorun__pillola,
-  .pollorun__classifica-avviso { transition: none; }
-}

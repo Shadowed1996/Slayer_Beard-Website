@@ -135,10 +135,3 @@
   from { opacity: 1; scale: 1; }
   to   { opacity: 0; scale: .2; translate: var(--sx, 0) var(--sy, 20px); }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .festa__lampo,
-  .meteora__alone,
-  .meteora__icona,
-  .meteora__scintilla { animation: none; }
-}
