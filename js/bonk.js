@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const FRASI = ['Hai rotto le palle di cliccare.', 'Entra in live.', 'Menah ! Menaah'];
+  const FRASI = ['Hai rotto le palle di cliccare. Entra in live.', 'Menah ! Menaah'];
   const ARRIVO = 900;
   const VELOCE = 250;
   const TROPPI = 10;
