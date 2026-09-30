@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const FRASI = ['Hai rotto le palle di cliccare !', 'Entra in live !', 'MENA ! MENAAAH !'];
+  const FRASI = ['Hai rotto le palle di cliccare.', 'Entra in live.', 'Menah ! Menaah'];
   const ARRIVO = 900;
   const VELOCE = 250;
   const TROPPI = 10;
@@ -188,7 +188,6 @@
     s.esploso = true;
     botto();
     s.velo.classList.add('is-esploso');
-    s.aiuto.hidden = true;
     if (!fermo()) {
       for (let i = 0; i < PEZZI; i++) {
         const pezzo = document.createElement('span');
@@ -213,7 +212,6 @@
     const intervallo = s.ultimo ? ora - s.ultimo : Infinity;
     s.ultimo = ora;
     s.veloci = intervallo < VELOCE ? s.veloci + 1 : 0;
-    s.aiuto.hidden = true;
 
     const foga = Math.max(0, Math.min(1, (700 - Math.min(700, intervallo)) / 550));
     s.velo.style.setProperty('--foga', foga.toFixed(2));
@@ -274,10 +272,6 @@
     palco.appendChild(botta);
     palco.appendChild(lampo);
 
-    const aiuto = document.createElement('p');
-    aiuto.className = 'bonk__aiuto';
-    aiuto.textContent = 'Clicca per il BONK!';
-
     const frase = document.createElement('p');
     frase.className = 'bonk__frase';
     frase.setAttribute('role', 'alert');
@@ -291,10 +285,9 @@
 
     velo.appendChild(chiudi);
     velo.appendChild(palco);
-    velo.appendChild(aiuto);
     velo.appendChild(frase);
 
-    const s = { velo: velo, palco: palco, vittima: vittima, braccio: braccio, botta: botta, aiuto: aiuto, frase: frase, pronto: false, esploso: false, ultimo: 0, veloci: 0 };
+    const s = { velo: velo, palco: palco, vittima: vittima, braccio: braccio, botta: botta, frase: frase, pronto: false, esploso: false, ultimo: 0, veloci: 0 };
 
     chiudi.addEventListener('click', function (e) {
       e.stopPropagation();

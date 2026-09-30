@@ -149,17 +149,6 @@
 .bonk.is-esploso .bonk__palco { animation: bonk-trema 600ms linear both; }
 .bonk.is-esploso .bonk__botta { animation: none; opacity: 0; }
 
-.bonk__aiuto {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--t-piccolo);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--testo-tenue);
-  animation: bonk-frase 400ms var(--rimbalzo) 900ms both;
-}
-
-.bonk__aiuto[hidden],
 .bonk__frase[hidden] { display: none; }
 
 .bonk__frase {
