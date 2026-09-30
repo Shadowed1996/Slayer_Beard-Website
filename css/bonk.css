@@ -1,4 +1,5 @@
 .bonk {
+  --foga: 0;
   position: fixed;
   inset: 0;
   z-index: 9100;
@@ -10,17 +11,42 @@
   background: var(--velo);
   backdrop-filter: blur(4px);
   cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   animation: bonk-dentro 260ms var(--curva) both;
 }
 
 .bonk.is-via { animation: bonk-fuori 400ms ease both; }
 
+.bonk__chiudi {
+  position: absolute;
+  inset-block-start: var(--passo-2);
+  inset-inline-end: var(--passo-2);
+  inline-size: 40px;
+  block-size: 40px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--linea-forte);
+  border-radius: 50%;
+  background-color: var(--pannello);
+  color: var(--testo);
+  font: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bonk__chiudi:hover,
+.bonk__chiudi:focus-visible { border-color: var(--linea-viva); outline: 2px solid var(--ciano); outline-offset: 2px; }
+
 .bonk__palco {
   position: relative;
   inline-size: min(720px, calc(100vw - 32px));
   aspect-ratio: 16 / 10;
-  animation: bonk-trema 420ms linear 2500ms both;
 }
+
+.bonk__palco.is-trema { animation: bonk-trema calc(220ms + var(--foga) * 160ms) linear 110ms both; }
 
 .bonk__cane {
   display: block;
@@ -31,15 +57,16 @@
 }
 
 .bonk__vittima {
+  --doge: none;
   position: absolute;
   inset-block-end: 0;
   inset-inline-start: 63%;
   inline-size: 24.3%;
   transform-origin: 50% 100%;
-  animation:
-    bonk-appare 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
-    bonk-schiaccia 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 2500ms both;
+  animation: bonk-appare 380ms var(--rimbalzo) both;
 }
+
+.bonk__vittima.is-colpita { animation: bonk-schiaccia 420ms var(--rimbalzo) 110ms both; }
 
 .bonk__stelle {
   position: absolute;
@@ -47,13 +74,14 @@
   inset-inline-start: -4%;
   inline-size: 75%;
   opacity: 0;
-  animation: bonk-stelle 1600ms linear 2520ms both;
 }
+
+.bonk__vittima.is-colpita .bonk__stelle { animation: bonk-stelle 900ms linear 120ms both; }
 
 .bonk__carnefice {
   position: absolute;
   inset: 0;
-  animation: bonk-arriva 520ms var(--curva) 1500ms both;
+  animation: bonk-arriva 800ms var(--curva) 100ms both;
 }
 
 .bonk__braccio {
@@ -62,17 +90,18 @@
   inset-inline-start: 11%;
   inline-size: 58%;
   transform-origin: 30% 100%;
-  animation: bonk-mazzata 1100ms linear 2000ms both;
 }
+
+.bonk__braccio.is-colpo { animation: bonk-mazzata 260ms linear both; }
 
 .bonk__botta {
   position: absolute;
-  inset-inline-start: 72%;
+  inset-inline-start: calc(72% + var(--sposta, 0%));
   inset-block-start: 22%;
   translate: -50% -50%;
   padding: 0.15em 0.4em;
   font-family: var(--font-titolo);
-  font-size: clamp(1.8rem, 1rem + 5vw, 3.6rem);
+  font-size: calc(clamp(1.8rem, 1rem + 5vw, 3.6rem) * (1 + var(--foga) * 0.8));
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1;
@@ -81,10 +110,46 @@
   paint-order: stroke fill;
   text-shadow: 0 0 22px rgba(255, 198, 92, 0.65), 4px 4px 0 var(--magenta);
   opacity: 0;
-  rotate: -10deg;
+  rotate: var(--gira, -10deg);
   pointer-events: none;
-  animation: bonk-scritta 1500ms cubic-bezier(0.34, 1.56, 0.64, 1) 2500ms both;
 }
+
+.bonk__botta.is-colpo { animation: bonk-scritta 700ms var(--rimbalzo) 110ms both; }
+
+.bonk__lampo {
+  position: absolute;
+  inset-inline-start: 75%;
+  inset-block-end: 30%;
+  inline-size: 10%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  translate: -50% 50%;
+  background: radial-gradient(circle, var(--testo) 0%, var(--allerta) 35%, var(--magenta) 60%, transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bonk__pezzo {
+  position: absolute;
+  inset-inline-start: 40%;
+  inset-block-start: 40%;
+  inline-size: 22%;
+  aspect-ratio: 1;
+  border-radius: 20%;
+  background-image: var(--doge);
+  background-size: 450%;
+  background-position: var(--sx) var(--sy);
+  animation: bonk-pezzo 1100ms cubic-bezier(0.2, 0.7, 0.4, 1) both;
+}
+
+.bonk.is-esploso .bonk__vittima { animation: none; }
+.bonk.is-esploso .bonk__vittima > .bonk__cane,
+.bonk.is-esploso .bonk__stelle { animation: bonk-sparisce 220ms ease-out both; }
+.bonk.is-esploso .bonk__lampo { animation: bonk-lampo 650ms ease-out both; }
+.bonk.is-esploso .bonk__palco { animation: bonk-trema 600ms linear both; }
+.bonk.is-esploso .bonk__botta { animation: none; opacity: 0; }
+
+.bonk__frase[hidden] { display: none; }
 
 .bonk__frase {
   display: grid;
@@ -98,8 +163,7 @@
   line-height: 1.1;
   text-align: center;
   text-wrap: balance;
-  opacity: 0;
-  animation: bonk-frase 520ms cubic-bezier(0.34, 1.56, 0.64, 1) 3300ms both;
+  animation: bonk-frase 520ms var(--rimbalzo) 350ms both;
 }
 
 .bonk__riga {
@@ -117,7 +181,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   filter: drop-shadow(0 0 18px rgba(255, 47, 160, 0.75));
-  animation: bonk-mena 900ms ease-in-out 3900ms infinite;
+  animation: bonk-mena 900ms ease-in-out 900ms infinite;
 }
 
 @keyframes bonk-dentro {
@@ -142,32 +206,32 @@
 
 @keyframes bonk-mazzata {
   0%   { rotate: 0deg; animation-timing-function: ease-out; }
-  32%  { rotate: -12deg; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+  30%  { rotate: -12deg; animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
   45%  { rotate: 3deg; animation-timing-function: ease-out; }
-  62%  { rotate: -5deg; animation-timing-function: ease-in-out; }
-  100% { rotate: -2deg; }
+  70%  { rotate: -4deg; animation-timing-function: ease-in-out; }
+  100% { rotate: 0deg; }
 }
 
 @keyframes bonk-schiaccia {
   0%   { scale: 1 1; }
   18%  { scale: 1.16 0.72; }
   55%  { scale: 0.96 1.05; }
-  100% { scale: 1.04 0.94; }
+  100% { scale: 1 1; }
 }
 
 @keyframes bonk-stelle {
   0%   { opacity: 0; translate: 0 6px; }
-  10%  { opacity: 1; translate: 0 0; }
-  80%  { opacity: 1; }
+  15%  { opacity: 1; translate: 0 0; }
+  70%  { opacity: 1; }
   100% { opacity: 0; translate: 0 -8px; }
 }
 
 @keyframes bonk-trema {
   0%, 100% { translate: 0 0; }
-  15% { translate: -9px 5px; }
-  30% { translate: 8px -6px; }
-  45% { translate: -6px -3px; }
-  60% { translate: 5px 4px; }
+  15% { translate: calc(-6px - var(--foga) * 8px) calc(3px + var(--foga) * 4px); }
+  30% { translate: calc(5px + var(--foga) * 8px) calc(-4px - var(--foga) * 4px); }
+  45% { translate: calc(-4px - var(--foga) * 5px) -2px; }
+  60% { translate: calc(3px + var(--foga) * 4px) 3px; }
   80% { translate: -2px 1px; }
 }
 
@@ -175,8 +239,25 @@
   0%   { opacity: 0; scale: 0.2; }
   25%  { opacity: 1; scale: 1.25; }
   45%  { scale: 1; }
-  80%  { opacity: 1; }
+  75%  { opacity: 1; }
   100% { opacity: 0; scale: 1.1; }
+}
+
+@keyframes bonk-sparisce {
+  from { opacity: 1; scale: 1; }
+  to   { opacity: 0; scale: 1.5; }
+}
+
+@keyframes bonk-lampo {
+  0%   { opacity: 0; scale: 0.2; }
+  15%  { opacity: 1; scale: 6; }
+  100% { opacity: 0; scale: 9; }
+}
+
+@keyframes bonk-pezzo {
+  from { opacity: 1; translate: 0 0; rotate: 0deg; }
+  70%  { opacity: 1; }
+  to   { opacity: 0; translate: var(--dx) calc(var(--dy) + 120px); rotate: var(--giro); }
 }
 
 @keyframes bonk-frase {
@@ -190,15 +271,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bonk,
-  .bonk.is-via,
-  .bonk__palco,
-  .bonk__vittima,
-  .bonk__carnefice,
-  .bonk__riga--mena { animation: none; }
-
-  .bonk__braccio { animation: none; rotate: 3deg; }
-  .bonk__stelle { animation: none; opacity: 1; }
-  .bonk__botta { animation: none; opacity: 1; }
-  .bonk__frase { animation: none; opacity: 1; }
+  .bonk.is-esploso .bonk__vittima { visibility: hidden; }
+  .bonk__frase { opacity: 1; }
 }
