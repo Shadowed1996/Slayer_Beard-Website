@@ -746,6 +746,23 @@ function togli(corpo) {
   return vistaGestione();
 }
 
+function riporta(corpo) {
+  const difficolta = leggiDifficolta(corpo.difficolta, false);
+  if (!difficolta) { throw erroreHttp(400, 'Difficoltà sconosciuta: sono facile, medio, difficile o estremo.', { codice: 'DATI_NON_VALIDI' }); }
+  const id = idDa(corpo.id);
+  if (!intero(corpo.livello, 1, MAX_LIVELLO)) { throw erroreHttp(400, 'Serve il livello (numero intero da 1) a cui riportarlo.', { codice: 'DATI_NON_VALIDI' }); }
+  const d = carica();
+  const voce = d.voci[difficolta].find((v) => v.id === id);
+  if (!voce) { throw erroreHttp(404, 'Questo giocatore non è nella classifica ' + difficolta + '.', { codice: 'DATI_NON_VALIDI' }); }
+  if (corpo.livello >= voce.livello) {
+    throw erroreHttp(400, 'Il livello deve essere più basso di quello che ha adesso (' + voce.livello + ').', { codice: 'DATI_NON_VALIDI' });
+  }
+  voce.livello = corpo.livello;
+  voce.quando = new Date(adesso()).toISOString();
+  salva();
+  return vistaGestione();
+}
+
 function blocca(corpo) {
   const id = idDa(corpo.id);
   if (typeof corpo.blocca !== 'boolean') { throw erroreHttp(400, 'Serve «blocca»: true per bloccare, false per sbloccare.', { codice: 'DATI_NON_VALIDI' }); }
@@ -789,7 +806,7 @@ function dimentica() {
 
 module.exports = {
   rottaElenco, rottaIo, rottaPartita, rottaLivello, rottaObs,
-  vistaGestione, togli, blocca, nuovaStagione,
+  vistaGestione, togli, riporta, blocca, nuovaStagione,
   durataLivello, impostazioni, verifica, firma,
   sostituisciOrologio, sostituisciProfilo, dimentica, percorsoDati, percorsoChiave,
   DIFFICOLTA, GETTONE_MS, QUOTA_DURATA, LIMITI, CSP_OBS

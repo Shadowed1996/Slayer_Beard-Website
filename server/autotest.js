@@ -8340,6 +8340,19 @@ async function proveClassifica(costruisci, archivio) {
       esigiUguale(r.dati.serve, 1, 'serve');
     });
 
+    await prova('riporta al livello: il record scende e per risalire si rifanno i livelli dopo', async () => {
+      for (const n of [1, 2, 3]) { await completa('tokenbruno000002', n, 'difficile'); }
+      esigiUguale((await gestisci('/api/classifica/riporta', { difficolta: 'difficile', id: '202', livello: 3 })).stato, 400, 'non piu basso');
+      esigiUguale((await gestisci('/api/classifica/riporta', { difficolta: 'difficile', id: '202', livello: 0 })).stato, 400, 'livello zero');
+      esigiUguale((await gestisci('/api/classifica/riporta', { difficolta: 'estremo', id: '202', livello: 1 })).stato, 404, 'non in classifica');
+      const g = await gestisci('/api/classifica/riporta', { difficolta: 'difficile', id: '202', livello: 1 });
+      esigiUguale(g.stato, 200, 'riportato');
+      esigiUguale(g.dati.voci.difficile.find((v) => v.id === '202').livello, 1, 'ora al livello 1');
+      esigiUguale((await partita('tokenbruno000002', { livello: 3, difficolta: 'difficile' })).dati.serve, 2, 'serve il 2');
+      await completa('tokenbruno000002', 2, 'difficile');
+      esigiUguale((await pubblica('difficile')).righe.find((x) => x.login === 'bruno').livello, 2, 'risale rifacendo il 2');
+    });
+
     await prova('ordinamento: livello piu alto, a parita chi ci e arrivato prima; rigiocare un livello basso non peggiora', async () => {
       await completa('tokenanna0000001', 3, 'medio');
       for (const n of [1, 2, 3]) { await completa('tokenbruno000002', n, 'medio'); }

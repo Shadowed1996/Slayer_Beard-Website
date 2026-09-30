@@ -1,6 +1,6 @@
 import { api, ErroreApi, rottaAssente } from './api.js';
 import { el, bottone, svuota, formattaData, copiaTesto } from './dom.js';
-import { avviso, conferma } from './avvisi.js';
+import { avviso, conferma, apriDialogo } from './avvisi.js';
 
 export const DIFFICOLTA = ['facile', 'medio', 'difficile', 'estremo'];
 const NOMI = { facile: 'Facile', medio: 'Medio', difficile: 'Difficile', estremo: 'Estremo', tutte: 'Tutte e quattro' };
@@ -110,6 +110,45 @@ export function creaClassifica({ impostazioni = null } = {}) {
     }
   }
 
+  async function riporta(d, voce) {
+    const attuale = Number(voce.livello) || 0;
+    if (attuale <= 1) {
+      avviso(nomeDi(voce) + ' è al livello 1: per fargli rifare il livello 1 usa «Togli».', { tipo: 'info' });
+      return;
+    }
+    const campo = el('input', {
+      type: 'number', classe: 'campo__input', id: 'classifica-riporta-livello',
+      min: '1', max: String(attuale - 1), step: '1', value: String(attuale - 1), inputmode: 'numeric'
+    });
+    const ok = await apriDialogo({
+      titolo: 'Riportare ' + nomeDi(voce) + ' a un livello più basso?',
+      ico: 'attenzione',
+      contenuto: [
+        'Adesso in ' + NOMI[d] + ' è al livello ' + attuale + '. Scegli il livello a cui riportarlo: per risalire dovrà rifare da collegato i livelli dopo quello.',
+        el('div', { classe: 'campo' }, [
+          el('label', { classe: 'campo__etichetta', for: 'classifica-riporta-livello', testo: 'Riporta al livello' }),
+          campo
+        ])
+      ],
+      bottoni: [
+        { testo: 'Annulla', valore: false },
+        { testo: 'Riporta', valore: true, primario: true }
+      ]
+    });
+    if (!ok) return;
+    const n = Number(campo.value);
+    if (!Number.isInteger(n) || n < 1 || n >= attuale) {
+      avviso('Il livello deve essere un numero intero da 1 a ' + (attuale - 1) + '.', { tipo: 'errore' });
+      return;
+    }
+    try {
+      mostraTutto(await api.classificaRiporta({ difficolta: d, id: voce.id, livello: n }));
+      avviso(nomeDi(voce) + ' riportato al livello ' + n + ' in ' + NOMI[d] + ': per risalire deve rifare il livello ' + (n + 1) + '.', { tipo: 'ok' });
+    } catch (e) {
+      avviso(messaggio(e, 'Non sono riuscito a riportarlo indietro.'), { tipo: 'errore' });
+    }
+  }
+
   async function blocca(voce, si) {
     if (si) {
       const ok = await conferma({
@@ -138,6 +177,7 @@ export function creaClassifica({ impostazioni = null } = {}) {
         el('span', { classe: 'classifica__meta', testo: 'livello ' + voce.livello + (voce.quando ? ' · ' + formattaData(voce.quando) : '') + (voce.tentativi ? ' · ' + voce.tentativi + (voce.tentativi === 1 ? ' tentativo' : ' tentativi') : '') })
       ]),
       el('span', { classe: 'classifica__azioni' }, [
+        bottone({ testo: 'Riporta al livello…', ico: 'indietro', classe: 'btn btn--minimo', su: () => riporta(d, voce) }),
         bottone({ testo: 'Togli', ico: 'cestino', classe: 'btn btn--minimo', su: () => togli(d, voce) }),
         bottone({ testo: bloccato ? 'Sblocca' : 'Blocca', ico: bloccato ? 'ok' : 'attenzione', classe: 'btn btn--minimo', su: () => blocca(voce, !bloccato) })
       ])
