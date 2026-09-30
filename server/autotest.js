@@ -8340,17 +8340,32 @@ async function proveClassifica(costruisci, archivio) {
       esigiUguale(r.dati.serve, 1, 'serve');
     });
 
-    await prova('riporta al livello: il record scende e per risalire si rifanno i livelli dopo', async () => {
-      for (const n of [1, 2, 3]) { await completa('tokenbruno000002', n, 'difficile'); }
-      esigiUguale((await gestisci('/api/classifica/riporta', { difficolta: 'difficile', id: '202', livello: 3 })).stato, 400, 'non piu basso');
-      esigiUguale((await gestisci('/api/classifica/riporta', { difficolta: 'difficile', id: '202', livello: 0 })).stato, 400, 'livello zero');
-      esigiUguale((await gestisci('/api/classifica/riporta', { difficolta: 'estremo', id: '202', livello: 1 })).stato, 404, 'non in classifica');
-      const g = await gestisci('/api/classifica/riporta', { difficolta: 'difficile', id: '202', livello: 1 });
-      esigiUguale(g.stato, 200, 'riportato');
-      esigiUguale(g.dati.voci.difficile.find((v) => v.id === '202').livello, 1, 'ora al livello 1');
-      esigiUguale((await partita('tokenbruno000002', { livello: 3, difficolta: 'difficile' })).dati.serve, 2, 'serve il 2');
-      await completa('tokenbruno000002', 2, 'difficile');
-      esigiUguale((await pubblica('difficile')).righe.find((x) => x.login === 'bruno').livello, 2, 'risale rifacendo il 2');
+    await prova('imposta livello: si alza, si abbassa e si aggiunge chi non c e ancora', async () => {
+      classifica.sostituisciCerca(async (login) => (login === 'zeta' ? { id: '909', login: 'zeta', display_name: 'Zeta', profile_image_url: '' } : null));
+      try {
+        for (const n of [1, 2, 3]) { await completa('tokenbruno000002', n, 'difficile'); }
+        esigiUguale((await gestisci('/api/classifica/imposta', { difficolta: 'difficile', id: '202', livello: 3 })).stato, 400, 'stesso livello');
+        esigiUguale((await gestisci('/api/classifica/imposta', { difficolta: 'difficile', id: '202', livello: 0 })).stato, 400, 'livello zero');
+        esigiUguale((await gestisci('/api/classifica/imposta', { difficolta: 'difficile', id: '777', livello: 2 })).stato, 404, 'id sconosciuto');
+        esigiUguale((await gestisci('/api/classifica/imposta', { difficolta: 'difficile', login: 'nessuno', livello: 2 })).stato, 404, 'nome sconosciuto su Twitch');
+        esigiUguale((await gestisci('/api/classifica/imposta', { difficolta: 'difficile', login: 'no spazi', livello: 2 })).stato, 400, 'nome storto');
+        const giu = await gestisci('/api/classifica/imposta', { difficolta: 'difficile', id: '202', livello: 1 });
+        esigiUguale(giu.stato, 200, 'abbassato');
+        esigiUguale(giu.dati.voci.difficile.find((v) => v.id === '202').livello, 1, 'ora al livello 1');
+        esigiUguale((await partita('tokenbruno000002', { livello: 3, difficolta: 'difficile' })).dati.serve, 2, 'serve il 2');
+        const su = await gestisci('/api/classifica/imposta', { difficolta: 'estremo', id: '202', livello: 4 });
+        esigiUguale(su.stato, 200, 'aggiunto in estremo da chi e gia noto');
+        esigiUguale(su.dati.voci.estremo.find((v) => v.id === '202').login, 'bruno', 'con il suo nome');
+        await completa('tokenbruno000002', 5, 'estremo');
+        const nuovo = await gestisci('/api/classifica/imposta', { difficolta: 'estremo', login: '@Zeta', livello: 4 });
+        esigiUguale(nuovo.stato, 200, 'aggiunto col nome Twitch');
+        esigiUguale(nuovo.dati.voci.estremo.find((v) => v.id === '909').nome, 'Zeta', 'nome da Twitch');
+        esigiUguale((await gestisci('/api/classifica/imposta', { difficolta: 'estremo', login: 'zeta', livello: 6 })).stato, 200, 'poi si ritrova dal nome');
+      } finally {
+        classifica.sostituisciCerca(null);
+        await gestisci('/api/classifica/togli', { difficolta: 'estremo', id: '202' });
+        await gestisci('/api/classifica/togli', { difficolta: 'estremo', id: '909' });
+      }
     });
 
     await prova('ordinamento: livello piu alto, a parita chi ci e arrivato prima; rigiocare un livello basso non peggiora', async () => {

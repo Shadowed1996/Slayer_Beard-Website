@@ -13,6 +13,7 @@ const chiavi = require('./chiavi');
 const sondaggi = require('./sondaggi');
 const modello = require('./modello');
 const auth = require('./autenticazione');
+const twitch = require('./twitch');
 const { json, erroreHttp } = require('./risposte');
 
 const DIFFICOLTA = ['facile', 'medio', 'difficile', 'estremo'];
@@ -58,6 +59,7 @@ const CSP_OBS = [
 
 let orologio = Date.now;
 let profiloSostituito = null;
+let cercaSostituito = null;
 let stato = null;
 let caricatoDa = null;
 let firmaLetta = null;
@@ -73,6 +75,10 @@ function adesso() {
 
 function sostituisciOrologio(fn) {
   orologio = typeof fn === 'function' ? fn : Date.now;
+}
+
+function sostituisciCerca(fn) {
+  cercaSostituito = typeof fn === 'function' ? fn : null;
 }
 
 function sostituisciProfilo(fn) {
@@ -746,19 +752,66 @@ function togli(corpo) {
   return vistaGestione();
 }
 
-function riporta(corpo) {
+function voceNota(d, id, login) {
+  for (const x of DIFFICOLTA) {
+    const v = d.voci[x].find((w) => (id && w.id === id) || (login && w.login === login));
+    if (v) { return v; }
+  }
+  const b = d.bloccati.find((w) => (id && w.id === id) || (login && w.login === login));
+  return b ? { id: b.id, login: b.login, nome: b.nome, avatar: '' } : null;
+}
+
+async function cercaSuTwitch(login) {
+  let grezzo = null;
+  try {
+    if (cercaSostituito) { grezzo = await cercaSostituito(login); }
+    else {
+      if (!twitch.configurato()) {
+        throw erroreHttp(503, 'Per aggiungere un giocatore nuovo servono le chiavi Twitch del sito (Client ID e Client Secret).', { codice: 'TWITCH_NON_CONFIGURATO' });
+      }
+      const risposta = await twitch.helix('/users?login=' + encodeURIComponent(login));
+      grezzo = risposta && Array.isArray(risposta.data) ? risposta.data[0] || null : null;
+    }
+  } catch (e) {
+    if (e.stato) { throw e; }
+    throw erroreHttp(502, 'Twitch ora non risponde: riprova fra poco.', { codice: 'TWITCH_NON_RISPONDE' });
+  }
+  if (!oggetto(grezzo) || !ID_RE.test(String(grezzo.id || ''))) {
+    throw erroreHttp(404, 'Su Twitch non esiste nessun utente «' + login + '».', { codice: 'DATI_NON_VALIDI' });
+  }
+  return {
+    id: String(grezzo.id),
+    login: String(grezzo.login || login).toLowerCase(),
+    nome: testoPulito(grezzo.display_name, 40),
+    avatar: avatarPulito(grezzo.profile_image_url)
+  };
+}
+
+async function imposta(corpo) {
   const difficolta = leggiDifficolta(corpo.difficolta, false);
   if (!difficolta) { throw erroreHttp(400, 'Difficoltà sconosciuta: sono facile, medio, difficile o estremo.', { codice: 'DATI_NON_VALIDI' }); }
-  const id = idDa(corpo.id);
-  if (!intero(corpo.livello, 1, MAX_LIVELLO)) { throw erroreHttp(400, 'Serve il livello (numero intero da 1) a cui riportarlo.', { codice: 'DATI_NON_VALIDI' }); }
-  const d = carica();
-  const voce = d.voci[difficolta].find((v) => v.id === id);
-  if (!voce) { throw erroreHttp(404, 'Questo giocatore non è nella classifica ' + difficolta + '.', { codice: 'DATI_NON_VALIDI' }); }
-  if (corpo.livello >= voce.livello) {
-    throw erroreHttp(400, 'Il livello deve essere più basso di quello che ha adesso (' + voce.livello + ').', { codice: 'DATI_NON_VALIDI' });
+  if (!intero(corpo.livello, 1, MAX_LIVELLO)) { throw erroreHttp(400, 'Serve il livello: un numero intero da 1 a ' + MAX_LIVELLO + '.', { codice: 'DATI_NON_VALIDI' }); }
+  const conId = corpo.id !== undefined && corpo.id !== null && corpo.id !== '';
+  const id = conId ? idDa(corpo.id) : '';
+  const login = conId ? '' : String(corpo.login || '').trim().replace(/^@/, '').toLowerCase();
+  if (!conId && !LOGIN_RE.test(login)) { throw erroreHttp(400, 'Serve il nome Twitch del giocatore (lettere, numeri e _).', { codice: 'DATI_NON_VALIDI' }); }
+  let d = carica();
+  let chi = voceNota(d, id, login);
+  if (!chi && conId) { throw erroreHttp(404, 'Non conosco questo giocatore: aggiungilo col suo nome Twitch.', { codice: 'DATI_NON_VALIDI' }); }
+  if (!chi) { chi = await cercaSuTwitch(login); }
+  d = carica();
+  const voce = d.voci[difficolta].find((v) => v.id === chi.id);
+  const quando = new Date(adesso()).toISOString();
+  if (voce) {
+    if (voce.livello === corpo.livello) {
+      throw erroreHttp(400, 'È già al livello ' + voce.livello + ' in questa classifica.', { codice: 'DATI_NON_VALIDI' });
+    }
+    voce.livello = corpo.livello;
+    voce.quando = quando;
+  } else {
+    if (d.voci[difficolta].length >= MAX_VOCI) { throw erroreHttp(409, 'Questa classifica è piena.', { codice: 'PIENA' }); }
+    d.voci[difficolta].push({ id: chi.id, login: chi.login || '', nome: chi.nome || '', avatar: chi.avatar || '', livello: corpo.livello, quando: quando, tentativi: 1, partite: 0 });
   }
-  voce.livello = corpo.livello;
-  voce.quando = new Date(adesso()).toISOString();
   salva();
   return vistaGestione();
 }
@@ -806,7 +859,7 @@ function dimentica() {
 
 module.exports = {
   rottaElenco, rottaIo, rottaPartita, rottaLivello, rottaObs,
-  vistaGestione, togli, riporta, blocca, nuovaStagione,
+  vistaGestione, togli, imposta, blocca, nuovaStagione, sostituisciCerca,
   durataLivello, impostazioni, verifica, firma,
   sostituisciOrologio, sostituisciProfilo, dimentica, percorsoDati, percorsoChiave,
   DIFFICOLTA, GETTONE_MS, QUOTA_DURATA, LIMITI, CSP_OBS

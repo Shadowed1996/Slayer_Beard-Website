@@ -463,10 +463,10 @@ async function rottaClassifica(req, res, percorso, metodo) {
     if (metodo !== 'GET') { return metodoNonAmmesso(res, 'GET'); }
     return json(res, 200, classifica.vistaGestione());
   }
-  const azioni = { '/api/classifica/togli': classifica.togli, '/api/classifica/riporta': classifica.riporta, '/api/classifica/blocca': classifica.blocca, '/api/classifica/stagione': classifica.nuovaStagione };
+  const azioni = { '/api/classifica/togli': classifica.togli, '/api/classifica/imposta': classifica.imposta, '/api/classifica/blocca': classifica.blocca, '/api/classifica/stagione': classifica.nuovaStagione };
   if (Object.prototype.hasOwnProperty.call(azioni, percorso)) {
     if (metodo !== 'POST') { return metodoNonAmmesso(res, 'POST'); }
-    return conCodice(res, async () => json(res, 200, azioni[percorso](await leggiJson(req))));
+    return conCodice(res, async () => json(res, 200, await azioni[percorso](await leggiJson(req))));
   }
   errore(res, 404, 'Questa rotta non esiste.');
 }

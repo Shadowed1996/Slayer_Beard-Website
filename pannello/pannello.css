@@ -563,6 +563,7 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
 .classifica__nome { font-size: 14px; font-weight: 600; color: var(--p-testo); overflow-wrap: anywhere; }
 .classifica__meta { font-family: var(--p-mono); font-size: 11px; color: var(--p-testo-tenue); overflow-wrap: anywhere; }
 .classifica__azioni { display: flex; gap: 4px; margin-left: auto; }
+.classifica__aggiungi { display: flex; justify-content: flex-end; margin: 0 0 8px; }
 
 .dialogo {
   border: 1px solid var(--p-linea-forte);

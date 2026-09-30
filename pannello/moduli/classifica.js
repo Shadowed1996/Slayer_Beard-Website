@@ -110,42 +110,71 @@ export function creaClassifica({ impostazioni = null } = {}) {
     }
   }
 
-  async function riporta(d, voce) {
-    const attuale = Number(voce.livello) || 0;
-    if (attuale <= 1) {
-      avviso(nomeDi(voce) + ' è al livello 1: per fargli rifare il livello 1 usa «Togli».', { tipo: 'info' });
-      return;
-    }
-    const campo = el('input', {
-      type: 'number', classe: 'campo__input', id: 'classifica-riporta-livello',
-      min: '1', max: String(attuale - 1), step: '1', value: String(attuale - 1), inputmode: 'numeric'
-    });
+  async function chiediLivello({ titolo, testo, conNome, livello }) {
+    const nome = conNome ? el('input', { type: 'text', classe: 'campo__input', id: 'classifica-imposta-nome', maxlength: '25', spellcheck: 'false', autocomplete: 'off', placeholder: 'es. ManuMonte91' }) : null;
+    const campo = el('input', { type: 'number', classe: 'campo__input', id: 'classifica-imposta-livello', min: '1', max: '9999', step: '1', value: String(livello), inputmode: 'numeric' });
     const ok = await apriDialogo({
-      titolo: 'Riportare ' + nomeDi(voce) + ' a un livello più basso?',
+      titolo: titolo,
       ico: 'attenzione',
       contenuto: [
-        'Adesso in ' + NOMI[d] + ' è al livello ' + attuale + '. Scegli il livello a cui riportarlo: per risalire dovrà rifare da collegato i livelli dopo quello.',
-        el('div', { classe: 'campo' }, [
-          el('label', { classe: 'campo__etichetta', for: 'classifica-riporta-livello', testo: 'Riporta al livello' }),
-          campo
-        ])
+        testo,
+        nome ? el('div', { classe: 'campo' }, [el('label', { classe: 'campo__etichetta', for: 'classifica-imposta-nome', testo: 'Nome Twitch' }), nome]) : null,
+        el('div', { classe: 'campo' }, [el('label', { classe: 'campo__etichetta', for: 'classifica-imposta-livello', testo: 'Livello completato' }), campo])
       ],
       bottoni: [
         { testo: 'Annulla', valore: false },
-        { testo: 'Riporta', valore: true, primario: true }
+        { testo: 'Imposta', valore: true, primario: true }
       ]
     });
-    if (!ok) return;
+    if (!ok) return null;
     const n = Number(campo.value);
-    if (!Number.isInteger(n) || n < 1 || n >= attuale) {
-      avviso('Il livello deve essere un numero intero da 1 a ' + (attuale - 1) + '.', { tipo: 'errore' });
-      return;
+    if (!Number.isInteger(n) || n < 1 || n > 9999) {
+      avviso('Il livello deve essere un numero intero da 1 in su.', { tipo: 'errore' });
+      return null;
     }
+    const login = nome ? nome.value.trim().replace(/^@/, '') : '';
+    if (nome && !/^[A-Za-z0-9_]{1,25}$/.test(login)) {
+      avviso('Scrivi il nome Twitch del giocatore: solo lettere, numeri e _.', { tipo: 'errore' });
+      return null;
+    }
+    return { livello: n, login: login };
+  }
+
+  function spiega(n) {
+    return 'Ora vale come se avesse completato il livello ' + n + ': in gioco il prossimo che entra in classifica è il ' + (n + 1) + '.';
+  }
+
+  async function imposta(d, voce) {
+    const attuale = Number(voce.livello) || 1;
+    const scelta = await chiediLivello({
+      titolo: 'Impostare il livello di ' + nomeDi(voce) + '?',
+      testo: 'Adesso in ' + NOMI[d] + ' ha completato il livello ' + attuale + '. Puoi alzarlo o abbassarlo: il nuovo livello vale come se l\'avesse completato lui.',
+      conNome: false,
+      livello: attuale
+    });
+    if (!scelta) return;
+    if (scelta.livello === attuale) { avviso('È già al livello ' + attuale + '.', { tipo: 'info' }); return; }
     try {
-      mostraTutto(await api.classificaRiporta({ difficolta: d, id: voce.id, livello: n }));
-      avviso(nomeDi(voce) + ' riportato al livello ' + n + ' in ' + NOMI[d] + ': per risalire deve rifare il livello ' + (n + 1) + '.', { tipo: 'ok' });
+      mostraTutto(await api.classificaImposta({ difficolta: d, id: voce.id, livello: scelta.livello }));
+      avviso(nomeDi(voce) + ' ora è al livello ' + scelta.livello + ' in ' + NOMI[d] + '. ' + spiega(scelta.livello), { tipo: 'ok' });
     } catch (e) {
-      avviso(messaggio(e, 'Non sono riuscito a riportarlo indietro.'), { tipo: 'errore' });
+      avviso(messaggio(e, 'Non sono riuscito a cambiare il livello.'), { tipo: 'errore' });
+    }
+  }
+
+  async function aggiungi(d) {
+    const scelta = await chiediLivello({
+      titolo: 'Aggiungere un giocatore alla classifica ' + NOMI[d] + '?',
+      testo: 'Per chi ha giocato senza essere collegato, o prima che la classifica fosse accesa. Scrivi il suo nome Twitch e l\'ultimo livello che ha completato.',
+      conNome: true,
+      livello: 1
+    });
+    if (!scelta) return;
+    try {
+      mostraTutto(await api.classificaImposta({ difficolta: d, login: scelta.login, livello: scelta.livello }));
+      avviso(scelta.login + ' ora è al livello ' + scelta.livello + ' in ' + NOMI[d] + '. ' + spiega(scelta.livello), { tipo: 'ok' });
+    } catch (e) {
+      avviso(messaggio(e, 'Non sono riuscito ad aggiungerlo.'), { tipo: 'errore' });
     }
   }
 
@@ -177,7 +206,7 @@ export function creaClassifica({ impostazioni = null } = {}) {
         el('span', { classe: 'classifica__meta', testo: 'livello ' + voce.livello + (voce.quando ? ' · ' + formattaData(voce.quando) : '') + (voce.tentativi ? ' · ' + voce.tentativi + (voce.tentativi === 1 ? ' tentativo' : ' tentativi') : '') })
       ]),
       el('span', { classe: 'classifica__azioni' }, [
-        bottone({ testo: 'Riporta al livello…', ico: 'indietro', classe: 'btn btn--minimo', su: () => riporta(d, voce) }),
+        bottone({ testo: 'Imposta livello…', ico: 'regola', classe: 'btn btn--minimo', su: () => imposta(d, voce) }),
         bottone({ testo: 'Togli', ico: 'cestino', classe: 'btn btn--minimo', su: () => togli(d, voce) }),
         bottone({ testo: bloccato ? 'Sblocca' : 'Blocca', ico: bloccato ? 'ok' : 'attenzione', classe: 'btn btn--minimo', su: () => blocca(voce, !bloccato) })
       ])
@@ -193,6 +222,9 @@ export function creaClassifica({ impostazioni = null } = {}) {
       for (const b of schede.children) b.setAttribute('aria-selected', String(b.dataset.difficolta === d));
       const elenco = Array.isArray(voci[d]) ? voci[d] : [];
       svuota(corpo);
+      corpo.append(el('p', { classe: 'classifica__aggiungi' }, [
+        bottone({ testo: 'Aggiungi giocatore a ' + NOMI[d] + '…', ico: 'piu', classe: 'btn btn--minimo', su: () => aggiungi(d) })
+      ]));
       if (!elenco.length) {
         corpo.append(el('p', { classe: 'vuoto', testo: 'Ancora nessuno in classifica a ' + NOMI[d] + '.' }));
         return;
