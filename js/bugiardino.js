@@ -12,7 +12,7 @@
   var RESTA = 30000;
   var USCITA = 400;
   var SALTO = 7000;
-  var LATO = 80;
+  var LATO = 112;
 
   var ogni = Math.round(Number(script && script.getAttribute('data-ogni')) || 4);
   ogni = Math.max(1, Math.min(20, ogni));

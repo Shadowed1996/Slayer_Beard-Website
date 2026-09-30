@@ -3,8 +3,8 @@
   z-index: calc(var(--z-velo) - 1);
   display: grid;
   place-items: center;
-  inline-size: 80px;
-  block-size: 80px;
+  inline-size: 112px;
+  block-size: 112px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -33,21 +33,21 @@
 
 .bugiardino__pillola {
   display: block;
-  inline-size: 58px;
-  block-size: 24px;
+  inline-size: 84px;
+  block-size: 34px;
   border-radius: var(--raggio-pill);
   background-image:
     linear-gradient(180deg, color-mix(in srgb, var(--testo) 18%, transparent), transparent 50%),
     linear-gradient(90deg, transparent 0 50%, var(--testo) 50% 100%),
     linear-gradient(118deg, var(--viola-cupo) 0%, var(--viola) 100%);
-  box-shadow: 0 0 18px var(--bagliore-viola), 0 2px 6px var(--velo);
+  box-shadow: 0 0 24px var(--bagliore-viola), 0 3px 8px var(--velo);
   rotate: var(--giro, -20deg);
   animation: bugiardino-galleggia 2.4s ease-in-out infinite;
 }
 
 .bugiardino:hover .bugiardino__pillola,
 .bugiardino:focus-visible .bugiardino__pillola {
-  box-shadow: 0 0 22px var(--bagliore-viola), 0 0 10px var(--bagliore-ciano);
+  box-shadow: 0 0 30px var(--bagliore-viola), 0 0 14px var(--bagliore-ciano);
   scale: 1.15;
 }
 
