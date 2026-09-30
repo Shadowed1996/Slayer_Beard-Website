@@ -42,3 +42,15 @@ Branch: `feat/pollorun-pendenza` (non ancora in main). Prove: `npm run prova`, 4
 - Massimo 2-4 agenti insieme, un solo Chrome headless alla volta.
 - Consegne sul Desktop sempre in zip con l'ora nel nome.
 - Gli output di `npm run genera` (`contenuti/contenuti.json`, `index.html`, `js/dati.js`, `sitemap.xml`, `server/backup/*`, `giochi.html`) non si committano.
+
+# Lurk: allarme del «ci sei ancora?» (29/09/2026)
+
+Branch: `fix/lurk-allarme`, partito da `origin/main`. Non pushato.
+
+- Il problema segnalato: dopo circa 3 ore il lurk si spegneva. Era il controllo `oreMax`: chi aveva la finestra ridotta a icona non vedeva la domanda e dopo 5 minuti il lurk si spegneva in silenzio. Il controllo resta (sul sito l'utente l'ha messo a 5 ore).
+- Ora, quando arriva la domanda: il titolo della scheda alterna «🚨 ALLARME LURK 🚨» e il titolo normale, l'icona diventa un cerchio rosso, il riquadro pulsa di rosso e sulla pagina compare il popup «Ci sei ancora?» con «Sono qui».
+- Esce anche la notifica di Windows (in basso a destra, visibile col browser ridotto a icona), se chi guarda ha dato il permesso quando ha premuto «Attiva». Cliccarla vale come «Sono qui».
+- Se nessuno risponde entro 5 minuti: il lurk si spegne, il popup diventa «💤 Lurk spento» con «Riattiva la modalità lurk» e «Lascia spenta», e anche la notifica di Windows cliccata lo riattiva.
+- Niente suono: l'utente non lo vuole.
+- La sentinella ora gira anche a scheda nascosta, ma solo se il player non è muto: così il video bloccato riparte anche a finestra ridotta a icona.
+- Nel pannello, gruppo «Modalità lurk»: interruttore del popup di Windows e i testi dei popup.

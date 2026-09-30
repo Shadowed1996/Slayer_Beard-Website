@@ -238,7 +238,15 @@
     "bugiardino.nonComuni": "GAME OVER al livello 1",
     "bugiardino.rari": "follow",
     "bugiardino.avvertenze": "Questo foglio non riporta tutti gli effetti. Eventuali scoperte vanno segnalate in chat.",
-    "bugiardino.scadenza": "Scadenza: fine della live."
+    "bugiardino.scadenza": "Scadenza: fine della live.",
+    "lurk.titoloAllarme": "🚨 ALLARME LURK 🚨",
+    "lurk.spentoAssenza": "Nessuno ha risposto a «ci sei ancora?»: ho spento la modalità lurk.",
+    "lurk.titoloSpento": "💤 Lurk spento",
+    "lurk.popupCiSei": "Ci sei ancora?",
+    "lurk.popupSpiega": "Clicca qui per restare in lurk: senza risposta entro 5 minuti si spegne.",
+    "lurk.popupSpento": "Clicca qui per riattivarla.",
+    "lurk.riattiva": "Riattiva la modalità lurk",
+    "lurk.lasciaSpenta": "Lascia spenta"
   },
   "config": {
     "slayer": {
@@ -507,7 +515,8 @@
         "Sono in lurk dal sito, buona diretta!",
         "Lurko dal pollaio: ci sono ma sto zitto.",
         "In lurk dal sito. Coccodè."
-      ]
+      ],
+      "notifica": true
     },
     "pollo": {
       "attivo": true,

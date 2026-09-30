@@ -207,6 +207,17 @@
     }
   }
 
+  function mutoDelVideo() {
+    if (stato.modalita !== 'sdk' || !stato.player) { return null; }
+    try {
+      if (typeof stato.player.getMuted !== 'function') { return null; }
+      const m = stato.player.getMuted();
+      return typeof m === 'boolean' ? m : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
   function riproduzione() {
     if (stato.modalita !== 'sdk' || !stato.player) { return null; }
     try {
@@ -227,7 +238,8 @@
       finito: stato.finito === true,
       modalita: stato.modalita,
       playback: playback,
-      tempo: tempoDelVideo()
+      tempo: tempoDelVideo(),
+      muto: mutoDelVideo()
     };
   }
 

@@ -904,7 +904,9 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     for (const chiave of ['accendi', 'spegni', 'audio', 'ripresa', 'ciSei', 'ciSono',
       'statoSpento', 'statoVivo', 'statoFermo', 'statoRiparto', 'statoBloccato', 'statoAttesa', 'statoResa',
 
-      'schermo', 'chiuso', 'preavviso', 'invito', 'manda', 'inviato']) {
+      'schermo', 'chiuso', 'preavviso', 'invito', 'manda', 'inviato',
+      'titoloAllarme', 'titoloSpento', 'spentoAssenza', 'popupCiSei', 'popupSpiega', 'popupSpento',
+      'riattiva', 'lasciaSpenta']) {
       esigi(!!lurk.testi[chiave], 'manca o e vuoto lurk.testi.' + chiave);
     }
   });
@@ -992,6 +994,12 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
       esigiUguale(account.clientId, '', 'client id con ' + JSON.stringify(storto));
       esigiUguale(account.urlRitorno, '', 'url di ritorno con ' + JSON.stringify(storto));
     }
+  });
+
+  await prova('popup di Windows del «ci sei ancora?»: acceso di serie, spento solo se lo si spegne', () => {
+    esigiUguale(ramo(sana()).notifica, true, 'di serie');
+    esigiUguale(ramo(sana({ notifica: false })).notifica, false, 'spento');
+    esigiUguale(ramo(undefined).notifica, true, 'ramo config.lurk mancante');
   });
 
   await prova('oreMax viene riportato dentro 1..12, sempre', () => {
