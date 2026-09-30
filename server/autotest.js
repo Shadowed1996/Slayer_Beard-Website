@@ -6181,7 +6181,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         if (!c) { continue; }
         viste++;
         const corsa = corsaDi(n);
-        esigi(c.durata >= (d === 'estremo' ? 10 : 8) && c.durata <= (d === 'estremo' ? 12 : 10), d + ' livello ' + n + ': la caduta dura ' + c.durata + ' s');
+        esigi(c.durata >= (d === 'estremo' ? 12 : 10) && c.durata <= (d === 'estremo' ? 14 : 12), d + ' livello ' + n + ': la caduta dura ' + c.durata + ' s');
         esigi(Math.abs(M.durata - corsa - c.durata) < 1e-9, d + ' livello ' + n + ': la durata non somma corsa e caduta');
         esigiUguale(M.lunghezza, Math.round(M.v * corsa) + (c.x1 - c.x0), d + ' livello ' + n + ': la corsa si accorcia');
         esigi(c.x0 >= M.lunghezza * 0.25 && c.x1 <= M.lunghezza * 0.6, d + ' livello ' + n + ': la buca e fuori posto');
@@ -6309,7 +6309,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         t += 1 / 60;
         const testi = h.registro.testi.join('|');
         if (avviso < 0 && testi.indexOf('ATTENTO CHE CADI !') !== -1) { avviso = t; }
-        if (pozzo < 0 && testi.indexOf('A / D oppure') !== -1) { pozzo = t; }
+        if (pozzo < 0 && testi.indexOf('A / D o le frecce') !== -1) { pozzo = t; }
         if (h.registro.eventi.slice(eventiPrima).indexOf(null) !== -1) { morto = t; }
       }
       const arrivoBuca = M.caduta.x0 / M.v;
@@ -6322,7 +6322,7 @@ async function proveGiocoPollo(costruisci, archivio) {
       h.tasto(' ', 'Space');
       const dopo = h.testiUltimo();
       esigiDentro(dopo, 'TENTATIVO 2', nomeStile + ': SPAZIO non fa riprovare il livello');
-      esigi(dopo.indexOf('A / D oppure') === -1, nomeStile + ': riprovando si riparte nel pozzo');
+      esigi(dopo.indexOf('A / D o le frecce') === -1, nomeStile + ': riprovando si riparte nel pozzo');
     }
   });
 
@@ -6703,15 +6703,15 @@ async function proveGiocoPollo(costruisci, archivio) {
       esigi(h.testiUltimo().indexOf('° su') === -1, stile + ': compare la posizione di un altro livello');
       gioco.classifica({ posizione: 3, totale: 57, migliore: false, livello: 1, difficolta: 'difficile' });
       const con = h.testiUltimo();
-      esigiDentro(con, '3° su 57 · DIFFICILE', stile + ': la posizione non compare a fine livello');
+      esigiDentro(con, '3° su 57 (DIFFICILE)', stile + ': la posizione non compare a fine livello');
       esigiDentro(con, 'SPAZIO per il livello 2', stile + ': con la posizione sparisce l invito al livello dopo');
-      const riga = ultimaScritta(h, '3° su 57 · DIFFICILE');
+      const riga = ultimaScritta(h, '3° su 57 (DIFFICILE)');
       if (stile === 'geometrydash') {
         const b = scatolaDi(riga);
         esigi(b.x0 >= 0 && b.x1 <= 1200 && b.y0 >= 0 && b.y1 <= 380, stile + ': la posizione esce dallo schermo');
       }
       gioco.classifica({ posizione: 1, totale: 57, migliore: true });
-      esigiDentro(h.testiUltimo(), 'NUOVO RECORD · 1° su 57 · DIFFICILE', stile + ': il record non si vede');
+      esigiDentro(h.testiUltimo(), 'NUOVO RECORD! 1° su 57 (DIFFICILE)', stile + ': il record non si vede');
       h.tasto(' ', 'Space');
       esigi(h.testiUltimo().indexOf('° su') === -1, stile + ': la posizione resta al livello dopo');
     }
@@ -7379,7 +7379,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     });
     const account = accountFinto(true);
     const p = apriGioco({ classifica: true, token: 'tok-123', fetch: rete.fetch, account: account });
-    esigiUguale(testoPillola(p), 'Classifica…', 'mentre chiede chi sei');
+    esigiUguale(testoPillola(p), 'Classifica...', 'mentre chiede chi sei');
     await aspettaRete();
     esigiUguale(rete.chiamate.map((c) => c.metodo + ' ' + c.url + ' ' + c.autorizzazione).join(','), 'GET api/classifica/io Bearer tok-123', 'la prima chiamata');
     esigiUguale(testoPillola(p), 'Classifica: giochi come Mario', 'testo della pillola');
@@ -7417,7 +7417,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     const casi = [
       { rotte: { 'POST api/classifica/partita': { status: 409, dati: { errore: 'Prima il livello precedente.', codice: 'SERVE_PRECEDENTE', serve: 4 } } }, livello: 5, avviso: 'Per entrare in classifica completa prima il livello 4 a questa difficoltà' },
       { rotte: { 'POST api/classifica/partita': { status: 403, dati: { errore: 'Sei fuori dalla classifica.', codice: 'BLOCCATO' } } }, avviso: 'Sei fuori dalla classifica.' },
-      { rotte: { 'POST api/classifica/partita': { status: 429, dati: {} } }, avviso: 'Troppe partite in poco tempo' },
+      { rotte: { 'POST api/classifica/partita': { status: 429, dati: {} } }, avviso: 'Troppe partite di fila' },
       { rotte: { 'POST api/classifica/partita': 'rifiuta' }, avviso: 'La classifica ora non risponde' },
       { rotte: { 'POST api/classifica/partita': 'lancia' }, avviso: '' },
       { rotte: { 'POST api/classifica/partita': { status: 500, rotto: true } }, avviso: 'La classifica ora non risponde' },
