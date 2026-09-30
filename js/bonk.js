@@ -7,6 +7,7 @@
   const TROPPI = 10;
   const ATTESA = 7000;
   const DOPO_BOTTO = 9000;
+  const SORDO = 2500;
   const USCITA = 400;
   const PEZZI = 16;
 
@@ -185,7 +186,7 @@
   }
 
   function esplodi(s) {
-    s.esploso = true;
+    s.esploso = Date.now();
     botto();
     s.velo.classList.add('is-esploso');
     if (!fermo()) {
@@ -287,14 +288,14 @@
     velo.appendChild(palco);
     velo.appendChild(frase);
 
-    const s = { velo: velo, palco: palco, vittima: vittima, braccio: braccio, botta: botta, frase: frase, pronto: false, esploso: false, ultimo: 0, veloci: 0 };
+    const s = { velo: velo, palco: palco, vittima: vittima, braccio: braccio, botta: botta, frase: frase, pronto: false, esploso: 0, ultimo: 0, veloci: 0 };
 
     chiudi.addEventListener('click', function (e) {
       e.stopPropagation();
       via();
     });
     velo.addEventListener('click', function () {
-      if (s.esploso) { via(); return; }
+      if (s.esploso) { if (Date.now() - s.esploso > SORDO) { via(); } return; }
       if (s.pronto) { colpisci(s); }
     });
     document.addEventListener('keydown', tasto, true);
