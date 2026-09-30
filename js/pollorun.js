@@ -182,7 +182,7 @@
   }
 
   function conMotore(fatto) {
-    if (motorePronto()) { fatto(true); return; }
+    if (motorePronto() && (!CLASSIFICA || window.PolloRunPodio)) { fatto(true); return; }
     if (attesaMotore) { attesaMotore.push(fatto); return; }
     attesaMotore = [fatto];
     function avvisa(ok) {
@@ -190,9 +190,16 @@
       attesaMotore = null;
       for (var i = 0; i < attesi.length; i++) { attesi[i](ok && motorePronto()); }
     }
+    if (motorePronto()) {
+      caricaScript('js/pollorun-podio.js', function () { avvisa(true); });
+      return;
+    }
     caricaScript('js/pollorun-gioco.js', function (ok) {
       if (!ok) { avvisa(false); return; }
-      caricaScript('js/pollorun-caduta.js', function () { avvisa(true); });
+      caricaScript('js/pollorun-caduta.js', function () {
+        if (!CLASSIFICA) { avvisa(true); return; }
+        caricaScript('js/pollorun-podio.js', function () { avvisa(true); });
+      });
     });
   }
 
@@ -405,6 +412,7 @@
     if (!aperto) { return false; }
     var stato = aperto;
     aperto = null;
+    if (stato.podio) { stato.podio.togli(); }
     try { stato.gioco.ferma(); } catch (errore) { }
     if (stato.radice.parentNode) { stato.radice.parentNode.removeChild(stato.radice); }
     document.documentElement.classList.remove(CLASSE);
@@ -668,6 +676,7 @@
   function dipingiClassifica(stato) {
     var cl = stato.classifica;
     if (!cl) { return; }
+    if (stato.podio) { stato.podio.bottone.parentNode.hidden = cl.spenta; }
     if (cl.spenta) {
       cl.scatola.hidden = true;
       return;
@@ -697,6 +706,7 @@
     var token = leggiToken();
     cl.token = token;
     cl.partita = null;
+    cl.io = null;
     if (!token) {
       cl.collegato = false;
       dipingiClassifica(stato);
@@ -717,6 +727,7 @@
       var dati = esito.dati || {};
       cl.collegato = esito.codice === 200 && dati.collegato === true;
       cl.nome = cl.collegato ? String(dati.nome || dati.login || '').slice(0, 40) : '';
+      cl.io = cl.collegato && typeof dati.login === 'string' ? { login: dati.login, migliori: dati.migliori && typeof dati.migliori === 'object' ? dati.migliori : {} } : null;
       dipingiClassifica(stato);
     });
   }
@@ -726,6 +737,7 @@
     cl.collegato = false;
     cl.nome = '';
     cl.partita = null;
+    cl.io = null;
     dipingiClassifica(stato);
   }
 
@@ -747,6 +759,10 @@
       if (aperto !== stato) { return; }
       if (esito.codice !== 200) { gestisciErrore(stato, esito); return; }
       var dati = esito.dati || {};
+      var fatta = dati.difficolta || evento.difficolta;
+      var cl = stato.classifica;
+      if (cl.io && Number(dati.livello) > (Number(cl.io.migliori[fatta]) || 0)) { cl.io.migliori[fatta] = Number(dati.livello); }
+      if (stato.podio) { stato.podio.scordati(fatta); }
       if (stato.gioco && typeof stato.gioco.classifica === 'function') {
         try {
           stato.gioco.classifica({ posizione: dati.posizione, totale: dati.totale, migliore: dati.migliore === true, livello: dati.livello || evento.livello, difficolta: dati.difficolta || evento.difficolta });
@@ -816,7 +832,7 @@
       try { a.entra(); } catch (errore) { }
       try { stato.radice.focus({ preventScroll: true }); } catch (errore) { }
     });
-    stato.classifica = { scatola: scatola, pillola: pillola, avviso: avviso, giro: 0, chiesto: 0, token: '', collegato: false, nome: '', partita: null, spenta: false };
+    stato.classifica = { scatola: scatola, pillola: pillola, avviso: avviso, giro: 0, chiesto: 0, token: '', collegato: false, nome: '', partita: null, spenta: false, io: null };
     var a = account();
     if (a && typeof a.suStato === 'function' && !ascoltoAccount) {
       ascoltoAccount = true;
@@ -831,6 +847,21 @@
       } catch (errore) { }
       pronto = true;
     }
+    return scatola;
+  }
+
+  function creaPodio(stato) {
+    if (!window.PolloRunPodio || typeof window.PolloRunPodio.crea !== 'function') { return null; }
+    var scatola = document.createElement('div');
+    scatola.className = 'pollorun__podio';
+    stato.podio = window.PolloRunPodio.crea({
+      dentro: stato.radice,
+      fuoco: stato.radice,
+      conTesto: true,
+      gioco: function () { return stato.gioco; },
+      io: function () { return stato.classifica ? stato.classifica.io : null; }
+    });
+    scatola.appendChild(stato.podio.bottone);
     return scatola;
   }
 
@@ -854,7 +885,7 @@
     tela.setAttribute('aria-hidden', 'true');
 
     var livello = limita(livelloSalvato());
-    var stato = { radice: radice, gioco: null, musicaSuonava: false, volume: null, livello: livello, udibile: livello > 0 ? livello : VOLUME_BASE, classifica: null };
+    var stato = { radice: radice, gioco: null, musicaSuonava: false, volume: null, livello: livello, udibile: livello > 0 ? livello : VOLUME_BASE, classifica: null, podio: null };
     var volume = creaVolume(stato);
 
     radice.appendChild(bottone);
@@ -864,6 +895,11 @@
 
     aperto = stato;
     if (CLASSIFICA) {
+      var podio = creaPodio(stato);
+      if (podio) {
+        radice.appendChild(podio);
+        ingombro.push(podio);
+      }
       var classifica = creaClassifica(stato);
       radice.appendChild(classifica);
       ingombro.push(classifica);
@@ -902,7 +938,10 @@
     carico = stato;
     stato.vista = mostraCarico();
 
-    caricaStile('css/pollorun.css', function () { avanza(stato, 'stile', 1); });
+    caricaStile('css/pollorun.css', function () {
+      if (!CLASSIFICA) { avanza(stato, 'stile', 1); return; }
+      caricaStile('css/pollorun-podio.css', function () { avanza(stato, 'stile', 1); });
+    });
 
     if (POLLO && typeof Image === 'function') {
       var immagine = new Image();

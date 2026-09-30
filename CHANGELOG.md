@@ -15,6 +15,12 @@ per le tre fasi documentate in [`CONTRATTO.md`](CONTRATTO.md),
 
 ### Aggiunto
 
+- **La classifica di Pollo Run dentro il gioco.** Con la classifica accesa, in
+  alto a sinistra nel gioco c'è il bottone «Classifica» (nella pagina di
+  manutenzione è il tondo con la coppa, accanto al volume). Apre i primi 50 per
+  Facile, Medio, Difficile ed Estremo, parte dalla difficoltà scelta, evidenzia
+  la tua riga e dice a che posto sei. Mentre è aperta la partita si ferma; Esc
+  o × la chiudono e si torna al gioco.
 - **Il bugiardino del sito.** In circa una visita su quattro (valore dal pannello,
   1-20, deciso una volta per scheda) nella home spunta una pillolina viola e
   bianca in un punto a caso, che salta altrove ogni 7 s e sparisce dopo 30 s.

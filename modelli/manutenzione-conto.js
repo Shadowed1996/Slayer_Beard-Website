@@ -52,8 +52,9 @@
     s.textOverflow = 'ellipsis';
     s.pointerEvents = 'none';
     document.body.appendChild(nota);
-    var cl = { nota: nota, token: token, collegato: token ? null : false, nome: '', partita: null, spenta: false, giro: 0, gioco: null };
+    var cl = { nota: nota, token: token, collegato: token ? null : false, nome: '', partita: null, spenta: false, giro: 0, gioco: null, io: null, podio: null };
     function dipingi(testo, allerta) {
+      if (cl.podio) { cl.podio.bottone.hidden = cl.spenta; }
       if (cl.spenta) { nota.hidden = true; return; }
       nota.hidden = false;
       s.whiteSpace = allerta ? 'normal' : 'nowrap';
@@ -92,7 +93,7 @@
     function errore(esito) {
       var dati = esito.dati || {};
       if (esito.codice === 404) { cl.spenta = true; normale(); return; }
-      if (esito.codice === 401) { cl.collegato = false; cl.nome = ''; cl.partita = null; }
+      if (esito.codice === 401) { cl.collegato = false; cl.nome = ''; cl.partita = null; cl.io = null; }
       if (esito.codice === 409 && dati.codice === 'SERVE_PRECEDENTE' && Number(dati.serve) >= 1) { avvisa('Per entrare in classifica completa prima il livello ' + Math.floor(Number(dati.serve)) + ' a questa difficoltà'); return; }
       if (typeof dati.errore === 'string' && dati.errore.trim()) { avvisa(dati.errore.trim().slice(0, 160)); return; }
       if (esito.codice === 401) { avvisa('Accesso scaduto: collegati di nuovo dal sito'); return; }
@@ -105,6 +106,9 @@
       promessa.then(function (esito) {
         if (esito.codice !== 200) { errore(esito); return; }
         var dati = esito.dati || {};
+        var fatta = dati.difficolta || evento.difficolta;
+        if (cl.io && Number(dati.livello) > (Number(cl.io.migliori[fatta]) || 0)) { cl.io.migliori[fatta] = Number(dati.livello); }
+        if (cl.podio) { cl.podio.scordati(fatta); }
         if (cl.gioco && typeof cl.gioco.classifica === 'function') {
           try { cl.gioco.classifica({ posizione: dati.posizione, totale: dati.totale, migliore: dati.migliore === true, livello: dati.livello || evento.livello, difficolta: dati.difficolta || evento.difficolta }); } catch (e) { }
         }
@@ -134,6 +138,16 @@
         manda(aperta, evento);
       }
     };
+    var box = document.getElementById('mnt-audio-box');
+    if (box && window.PolloRunPodio && typeof window.PolloRunPodio.crea === 'function') {
+      cl.podio = window.PolloRunPodio.crea({
+        classeBottone: 'mnt__tondo podio-apri podio-apri--tondo',
+        invito: 'Collegati dal sito per comparire in classifica',
+        gioco: function () { return cl.gioco; },
+        io: function () { return cl.io; }
+      });
+      box.insertBefore(cl.podio.bottone, box.firstChild);
+    }
     normale();
     if (cl.collegato === null) {
       var chiesta = typeof fetch === 'function' ? chiama('GET', 'api/classifica/io', null) : null;
@@ -145,6 +159,7 @@
           if (esito.codice === 404) { cl.spenta = true; }
           cl.collegato = esito.codice === 200 && !!esito.dati && esito.dati.collegato === true;
           cl.nome = cl.collegato ? String(esito.dati.nome || esito.dati.login || '').slice(0, 40) : '';
+          cl.io = cl.collegato && typeof esito.dati.login === 'string' ? { login: esito.dati.login, migliori: esito.dati.migliori && typeof esito.dati.migliori === 'object' ? esito.dati.migliori : {} } : null;
           normale();
         });
       }

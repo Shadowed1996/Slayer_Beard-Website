@@ -1508,7 +1508,8 @@ function contestoManutenzione(contenuti, adesso, cache) {
   }
   const canzoni = canzoniPolloRun(config);
   const caduta = eFile(P.scriptCadutaPolloRun) ? fs.readFileSync(P.scriptCadutaPolloRun, 'utf8') + '\n' : '';
-  const script = '\n' + fs.readFileSync(P.scriptPolloRun, 'utf8') + '\n' + caduta + fs.readFileSync(P.scriptManutenzione, 'utf8');
+  const podio = eFile(P.scriptPodioPolloRun) ? fs.readFileSync(P.scriptPodioPolloRun, 'utf8') + '\n' : '';
+  const script = '\n' + fs.readFileSync(P.scriptPolloRun, 'utf8') + '\n' + caduta + podio + fs.readFileSync(P.scriptManutenzione, 'utf8');
   const impronta = 'sha256-' + crypto.createHash('sha256').update(script, 'utf8').digest('base64');
 
   const testoDi = (chiave) => (typeof testi[chiave] === 'string' && testi[chiave].trim()

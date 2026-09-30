@@ -886,7 +886,7 @@
   function crea(opzioni) {
     var tela = opzioni.tela;
     var ctx = tela && tela.getContext ? tela.getContext('2d') : null;
-    if (!ctx) { return { avvia: function () { }, ferma: function () { }, distruggi: function () { }, classifica: function () { return false; } }; }
+    if (!ctx) { return { avvia: function () { }, ferma: function () { }, distruggi: function () { }, classifica: function () { return false; }, difficolta: function () { return 'medio'; } }; }
     var sipario = !!opzioni.sipario;
     var gd = opzioni.stile === 'geometrydash';
     var ridotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2779,7 +2779,7 @@
       window.removeEventListener('resize', suRidimensiona);
     }
 
-    return { avvia: avvia, ferma: ferma, distruggi: ferma, classifica: classifica };
+    return { avvia: avvia, ferma: ferma, distruggi: ferma, classifica: classifica, difficolta: function () { return difficolta; } };
   }
 
   window.PolloRun.crea = crea;
