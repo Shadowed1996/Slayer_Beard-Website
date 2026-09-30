@@ -92,7 +92,7 @@
     r();
     r();
     if (r() >= CADUTA_PROBABILITA[nome]) { return null; }
-    var secondi = Math.round(((nome === 'estremo' ? 10 : 8) + 2 * r()) * 10) / 10;
+    var secondi = Math.round(((nome === 'estremo' ? 12 : 10) + 2 * r()) * 10) / 10;
     var x0 = Math.round(v * durata * (0.3 + 0.25 * r()));
     var largo = Math.round(v * 50) / 100;
     return { durata: secondi, x0: x0, x1: x0 + largo, seme: 1 + Math.floor(r() * 2000000000) };

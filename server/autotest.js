@@ -6181,7 +6181,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         if (!c) { continue; }
         viste++;
         const corsa = corsaDi(n);
-        esigi(c.durata >= (d === 'estremo' ? 10 : 8) && c.durata <= (d === 'estremo' ? 12 : 10), d + ' livello ' + n + ': la caduta dura ' + c.durata + ' s');
+        esigi(c.durata >= (d === 'estremo' ? 12 : 10) && c.durata <= (d === 'estremo' ? 14 : 12), d + ' livello ' + n + ': la caduta dura ' + c.durata + ' s');
         esigi(Math.abs(M.durata - corsa - c.durata) < 1e-9, d + ' livello ' + n + ': la durata non somma corsa e caduta');
         esigiUguale(M.lunghezza, Math.round(M.v * corsa) + (c.x1 - c.x0), d + ' livello ' + n + ': la corsa si accorcia');
         esigi(c.x0 >= M.lunghezza * 0.25 && c.x1 <= M.lunghezza * 0.6, d + ' livello ' + n + ': la buca e fuori posto');
@@ -6216,7 +6216,7 @@ async function proveGiocoPollo(costruisci, archivio) {
       }
       const r = (() => { let s = 12345; return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; })();
       for (let i = 0; i < 150; i++) {
-        prova1({ seme: 1 + Math.floor(r() * 2000000000), durata: (d === 'estremo' ? 10 : 8) + 2 * r() }, d, 3 + Math.floor(r() * 60));
+        prova1({ seme: 1 + Math.floor(r() * 2000000000), durata: (d === 'estremo' ? 12 : 10) + 2 * r() }, d, 3 + Math.floor(r() * 60));
       }
     }
     esigi(schemi > 400, 'pochi pozzi provati: ' + schemi);
