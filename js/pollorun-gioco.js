@@ -979,6 +979,11 @@
     var timerPrecalcolo = 0;
     var posto = null;
     var inclinazione = { attiva: false, angolo: 0, testo: '', colore: '', alfaTesto: 0, eta: 0, fp: 1, tratto: null };
+    var EVENTI_DA = 4;
+    var EVENTO_AVVISO = 1.8;
+    var EVENTO_DOPO = 0.4;
+    var terremoto = { x: -1, forza: 0, alfaTesto: 0, eta: 0, durata: 3.2, testo: 'Oh no ! Ma che succede !', seme: 37.719, difficolta: ['difficile', 'estremo'] };
+    var giramento = { x: -1, angolo: 0, alfaTesto: 0, eta: 0, durata: 5.4, testo: 'Mi gira la testa', seme: 91.417, difficolta: ['estremo'] };
     var caduta = window.PolloRun.caduta && window.PolloRun.caduta.crea ? window.PolloRun.caduta.crea(ambienteCaduta) : null;
 
     function creaMonti(picchi, seme) {
@@ -2214,6 +2219,8 @@
           ctx.globalAlpha = 1;
         }
         disegnaPendenza();
+        disegnaEvento(terremoto, ROSSO);
+        disegnaEvento(giramento, gd ? colori.accento : C.magenta);
         if (caduta) { caduta.disegnaTesti(); }
       }
       if (stato === 'vinto') { if (gd) { disegnaVittoriaGD(); } else { disegnaVittoriaSynth(fs); } }
@@ -2235,6 +2242,18 @@
       if (scossa > 0) {
         var forza = scossa / 0.35;
         ctx.translate((Math.random() - 0.5) * U * 0.25 * forza, (Math.random() - 0.5) * U * 0.18 * forza);
+      }
+      if (terremoto.forza > 0) {
+        var f = terremoto.forza;
+        ctx.translate(W / 2, H / 2);
+        ctx.rotate(Math.sin(t * 23) * 0.012 * f);
+        ctx.translate(-W / 2, -H / 2);
+        ctx.translate((Math.sin(t * 47) * 0.14 + (Math.random() - 0.5) * 0.1) * U * f, (Math.sin(t * 61 + 1) * 0.12 + (Math.random() - 0.5) * 0.08) * U * f);
+      }
+      if (giramento.angolo) {
+        ctx.translate(W / 2, H / 2);
+        ctx.rotate(giramento.angolo);
+        ctx.translate(-W / 2, -H / 2);
       }
       var giroMondo = -inclinazione.angolo;
       margine = 0;
@@ -2461,6 +2480,115 @@
       ctx.restore();
     }
 
+    function zonaLibera(x, durata, evita) {
+      var x0 = x - (EVENTO_AVVISO + 0.5) * M.v;
+      var x1 = x + (durata + 0.5) * M.v;
+      for (var p = x0; p <= x + EVENTO_DOPO * M.v; p += M.v * 0.25) {
+        if (Livelli.avviso(M, p)) { return false; }
+      }
+      if (M.caduta && x1 > M.caduta.x0 - M.v * 2 && x0 < M.caduta.x1 + M.v * 2) { return false; }
+      if (evita && evita.x >= 0) {
+        var e0 = evita.x - (EVENTO_AVVISO + 1) * M.v;
+        var e1 = evita.x + (evita.durata + 1) * M.v;
+        if (x1 > e0 && x0 < e1) { return false; }
+      }
+      return true;
+    }
+
+    function postoEvento(ev, evita) {
+      if (!M || livello < EVENTI_DA || ev.difficolta.indexOf(difficolta) === -1) { return -1; }
+      var seme = Math.sin(livello * 12.9898 + ev.seme + (difficolta === 'estremo' ? 40.5 : 0)) * 43758.5453;
+      var quota = seme - Math.floor(seme);
+      var da = M.lunghezza * 0.2;
+      var a = M.lunghezza * 0.85;
+      var ampiezza = a - da;
+      var partenza = da + ampiezza * quota;
+      for (var fatto = 0; fatto <= ampiezza; fatto += M.v * 0.5) {
+        var x = da + ((partenza - da + fatto) % ampiezza);
+        if (zonaLibera(x, ev.durata, evita)) { return x; }
+      }
+      return -1;
+    }
+
+    function preparaEventi() {
+      terremoto.forza = 0;
+      terremoto.alfaTesto = 0;
+      giramento.angolo = 0;
+      giramento.alfaTesto = 0;
+      terremoto.x = -1;
+      giramento.x = -1;
+      terremoto.x = postoEvento(terremoto, null);
+      giramento.x = postoEvento(giramento, terremoto);
+    }
+
+    function testoEvento(ev, d) {
+      if (d >= -EVENTO_AVVISO && d <= EVENTO_DOPO) {
+        ev.eta = d + EVENTO_AVVISO;
+        ev.alfaTesto = Math.max(0, Math.min(1, ev.eta / 0.25, (EVENTO_DOPO - d) / EVENTO_DOPO));
+      } else {
+        ev.alfaTesto = 0;
+      }
+    }
+
+    function curvaMorbida(q) {
+      var c = Math.max(0, Math.min(1, q));
+      return c * c * (3 - 2 * c);
+    }
+
+    function angoloGiramento(d) {
+      var giro = Math.PI * 2;
+      if (d < 1.4) { return giro * curvaMorbida(d / 1.4); }
+      if (d < 2) { return giro + Math.PI * curvaMorbida((d - 1.4) / 0.6); }
+      if (d < giramento.durata - 1) { return giro + Math.PI + Math.sin((d - 2) * 2.2) * 0.06; }
+      return giro + Math.PI + Math.PI * curvaMorbida((d - (giramento.durata - 1)) / 1);
+    }
+
+    function aggiornaEventi(dt) {
+      if (stato !== 'corsa' || !M || !S) {
+        terremoto.forza = Math.max(0, terremoto.forza - dt * 3);
+        terremoto.alfaTesto = Math.max(0, terremoto.alfaTesto - dt * 4);
+        giramento.alfaTesto = Math.max(0, giramento.alfaTesto - dt * 4);
+        giramento.angolo += -giramento.angolo * Math.min(1, dt * 6);
+        if (Math.abs(giramento.angolo) < 0.001) { giramento.angolo = 0; }
+        return;
+      }
+      if (terremoto.x >= 0) {
+        var d = (S.x - terremoto.x) / M.v;
+        testoEvento(terremoto, d);
+        if (d >= 0 && d <= terremoto.durata) {
+          var inviluppo = Math.max(0, Math.min(1, d / 0.3, (terremoto.durata - d) / 0.6));
+          terremoto.forza = inviluppo * (difficolta === 'estremo' ? 1 : 0.8) * (ridotto ? 0.2 : 1);
+        } else {
+          terremoto.forza = 0;
+        }
+      }
+      if (giramento.x >= 0) {
+        var g = (S.x - giramento.x) / M.v;
+        testoEvento(giramento, g);
+        giramento.angolo = !ridotto && g >= 0 && g <= giramento.durata ? angoloGiramento(g) : 0;
+      }
+    }
+
+    function disegnaEvento(ev, colore) {
+      if (ev.alfaTesto <= 0) { return; }
+      var y = gd ? suolo * 0.4 : orizzonte * 0.42;
+      var dim = stringi(ev.testo, Math.max(26, U * 0.85), '900', TITOLO, W - 32);
+      var entrata = ridotto ? 1 : 1 + 0.18 * Math.max(0, 1 - ev.eta / 0.3);
+      ctx.save();
+      ctx.globalAlpha = ev.alfaTesto;
+      ctx.translate(W / 2 + (ridotto ? 0 : (Math.random() - 0.5) * U * 0.06), y);
+      ctx.scale(entrata, entrata);
+      if (gd) {
+        scritta(ev.testo, 0, 0, dim, '900', TITOLO, colore, 'center', true);
+      } else {
+        ctx.shadowColor = colore;
+        ctx.shadowBlur = 14;
+        glitch(ev.testo, 0, 0, dim, ridotto ? 2 : 2 + (Math.random() < 0.2 ? U * 0.06 : 0));
+        ctx.shadowBlur = 0;
+      }
+      ctx.restore();
+    }
+
     function piediCaduta(x, giroMondo) {
       var prima = rientro.x;
       rientro.x = x - polloX - larghezzaGiocatore() / 2;
@@ -2509,6 +2637,7 @@
       onde = [];
       frasePagina = null;
       azzeraPendenza();
+      preparaEventi();
       rientro.da = 0;
       rientro.x = 0;
       if (caduta) { caduta.prepara(M); }
@@ -2543,6 +2672,8 @@
       scintille = [];
       onde = [];
       azzeraPendenza();
+      terremoto.x = -1;
+      giramento.x = -1;
       if (caduta) { caduta.azzera(); }
       if (eraInGioco) {
         suonaCanzone(null);
@@ -2625,6 +2756,7 @@
         if (gd) { colori = coloriDi(livello, M && S ? Math.max(0, Math.min(1, S.x / M.lunghezza)) : 0); }
       }
       aggiornaPendenza(dt);
+      aggiornaEventi(dt);
       if (stato === 'fine' && t - tStato > RITORNO_FINE) { torna(); }
       for (var k = scintille.length - 1; k >= 0; k--) {
         var s = scintille[k];
