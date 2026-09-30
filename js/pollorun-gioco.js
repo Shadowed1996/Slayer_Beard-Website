@@ -979,11 +979,10 @@
     var timerPrecalcolo = 0;
     var posto = null;
     var inclinazione = { attiva: false, angolo: 0, testo: '', colore: '', alfaTesto: 0, eta: 0, fp: 1, tratto: null };
-    var EVENTI_DA = 4;
     var EVENTO_AVVISO = 1.8;
     var EVENTO_DOPO = 0.4;
-    var terremoto = { x: -1, forza: 0, alfaTesto: 0, eta: 0, durata: 3.2, testo: 'Oh no ! Ma che succede !', seme: 37.719, difficolta: ['difficile', 'estremo'] };
-    var giramento = { x: -1, angolo: 0, alfaTesto: 0, eta: 0, durata: 5.4, testo: 'Mi gira la testa', seme: 91.417, difficolta: ['estremo'] };
+    var terremoto = { x: -1, da: 4, forza: 0, alfaTesto: 0, eta: 0, durata: 3.2, testo: 'Oh no ! Ma che succede !', seme: 37.719, difficolta: ['difficile', 'estremo'] };
+    var giramento = { x: -1, da: 5, pollo: 0, ribalta: 1, alfaTesto: 0, eta: 0, durata: 6, testo: 'Mi gira la testa', seme: 91.417, difficolta: ['estremo'] };
     var caduta = window.PolloRun.caduta && window.PolloRun.caduta.crea ? window.PolloRun.caduta.crea(ambienteCaduta) : null;
 
     function creaMonti(picchi, seme) {
@@ -1572,7 +1571,7 @@
         ctx.globalAlpha = 1;
       }
       ctx.translate(cx, piedi - lato / 2 + rimbalzo);
-      ctx.rotate(angolo);
+      ctx.rotate(angolo + giramento.pollo);
       var faccia = ctx.createLinearGradient(-lato / 2, -lato / 2, lato / 2, lato / 2);
       faccia.addColorStop(0, colori.cubo0);
       faccia.addColorStop(1, colori.cubo1);
@@ -1631,7 +1630,7 @@
       }
       ctx.globalAlpha = 1;
       ctx.translate(cx, piedi - h / 2 + sobbalzo);
-      ctx.rotate(rotazione);
+      ctx.rotate(rotazione + giramento.pollo);
       ctx.shadowColor = stato === 'fine' ? C.magenta : C.ciano;
       ctx.shadowBlur = 10;
       if (polloPronto) {
@@ -2250,10 +2249,10 @@
         ctx.translate(-W / 2, -H / 2);
         ctx.translate((Math.sin(t * 47) * 0.14 + (Math.random() - 0.5) * 0.1) * U * f, (Math.sin(t * 61 + 1) * 0.12 + (Math.random() - 0.5) * 0.08) * U * f);
       }
-      if (giramento.angolo) {
-        ctx.translate(W / 2, H / 2);
-        ctx.rotate(giramento.angolo);
-        ctx.translate(-W / 2, -H / 2);
+      if (giramento.ribalta !== 1) {
+        ctx.translate(0, H / 2);
+        ctx.scale(1, giramento.ribalta);
+        ctx.translate(0, -H / 2);
       }
       var giroMondo = -inclinazione.angolo;
       margine = 0;
@@ -2496,7 +2495,7 @@
     }
 
     function postoEvento(ev, evita) {
-      if (!M || livello < EVENTI_DA || ev.difficolta.indexOf(difficolta) === -1) { return -1; }
+      if (!M || livello < ev.da || ev.difficolta.indexOf(difficolta) === -1) { return -1; }
       var seme = Math.sin(livello * 12.9898 + ev.seme + (difficolta === 'estremo' ? 40.5 : 0)) * 43758.5453;
       var quota = seme - Math.floor(seme);
       var da = M.lunghezza * 0.2;
@@ -2513,7 +2512,8 @@
     function preparaEventi() {
       terremoto.forza = 0;
       terremoto.alfaTesto = 0;
-      giramento.angolo = 0;
+      giramento.pollo = 0;
+      giramento.ribalta = 1;
       giramento.alfaTesto = 0;
       terremoto.x = -1;
       giramento.x = -1;
@@ -2535,12 +2535,12 @@
       return c * c * (3 - 2 * c);
     }
 
-    function angoloGiramento(d) {
-      var giro = Math.PI * 2;
-      if (d < 1.4) { return giro * curvaMorbida(d / 1.4); }
-      if (d < 2) { return giro + Math.PI * curvaMorbida((d - 1.4) / 0.6); }
-      if (d < giramento.durata - 1) { return giro + Math.PI + Math.sin((d - 2) * 2.2) * 0.06; }
-      return giro + Math.PI + Math.PI * curvaMorbida((d - (giramento.durata - 1)) / 1);
+    function muoviGiramento(d) {
+      giramento.pollo = d < 1 ? Math.PI * 2 * curvaMorbida(d) : 0;
+      if (d < 1) { giramento.ribalta = 1; return; }
+      if (d < 1.6) { giramento.ribalta = Math.cos(Math.PI * curvaMorbida((d - 1) / 0.6)); return; }
+      if (d < giramento.durata - 0.8) { giramento.ribalta = -1; return; }
+      giramento.ribalta = -Math.cos(Math.PI * curvaMorbida((d - (giramento.durata - 0.8)) / 0.8));
     }
 
     function aggiornaEventi(dt) {
@@ -2548,8 +2548,9 @@
         terremoto.forza = Math.max(0, terremoto.forza - dt * 3);
         terremoto.alfaTesto = Math.max(0, terremoto.alfaTesto - dt * 4);
         giramento.alfaTesto = Math.max(0, giramento.alfaTesto - dt * 4);
-        giramento.angolo += -giramento.angolo * Math.min(1, dt * 6);
-        if (Math.abs(giramento.angolo) < 0.001) { giramento.angolo = 0; }
+        giramento.pollo = 0;
+        giramento.ribalta += (1 - giramento.ribalta) * Math.min(1, dt * 6);
+        if (giramento.ribalta > 0.999) { giramento.ribalta = 1; }
         return;
       }
       if (terremoto.x >= 0) {
@@ -2565,7 +2566,12 @@
       if (giramento.x >= 0) {
         var g = (S.x - giramento.x) / M.v;
         testoEvento(giramento, g);
-        giramento.angolo = !ridotto && g >= 0 && g <= giramento.durata ? angoloGiramento(g) : 0;
+        if (!ridotto && g >= 0 && g <= giramento.durata) {
+          muoviGiramento(g);
+        } else {
+          giramento.pollo = 0;
+          giramento.ribalta = 1;
+        }
       }
     }
 
