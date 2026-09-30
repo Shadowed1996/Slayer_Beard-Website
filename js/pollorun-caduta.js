@@ -10,7 +10,7 @@
   var TUFFO = 0.6;
   var INIZIO = 1.1;
   var ARRIVO = 1.4;
-  var MARGINE = 0.3;
+  var MARGINE = 0.9;
   var AVVISO = 2.6;
   var INGRESSO = 0.5;
   var SVANISCE = 0.2;
@@ -18,26 +18,21 @@
   var VENTO = 34;
   var PIUME = 6;
 
-  function casuale(seme) {
-    return function () {
-      seme = (seme * 16807) % 2147483647;
-      return (seme - 1) / 2147483646;
-    };
-  }
+  var casuale = window.PolloRun.livelli.casuale;
 
   function misure(difficolta, n) {
     var estremo = difficolta === 'estremo';
     var k = Math.max(0, (n || 3) - 3);
     return {
-      discesa: (estremo ? 6 : 5.2) + Math.min(1.4, 0.07 * k),
-      laterale: estremo ? 7.6 : 7,
-      pochi: 2,
-      tanti: estremo ? 4 : 3,
+      discesa: (estremo ? 5.4 : 4.6) + Math.min(1, 0.05 * k),
+      laterale: estremo ? 7.8 : 7.4,
+      pochi: estremo ? 2 : 1,
+      tanti: estremo ? 3 : 2,
       corto: 0.8,
-      lungo: estremo ? 2.3 : 2,
-      sparso: 1.2,
-      pausaMin: estremo ? 0.42 : 0.5,
-      pausaMax: estremo ? 0.72 : 0.85
+      lungo: estremo ? 2 : 1.7,
+      sparso: 1.6,
+      pausaMin: estremo ? 0.8 : 0.95,
+      pausaMax: estremo ? 1.15 : 1.35
     };
   }
 
@@ -576,7 +571,7 @@
       ctx.restore();
       if (st.fase === 'pozzo' && st.tp < 2.6) {
         var fs = Math.max(12, Math.min(22, a.U * 0.26));
-        var aiuto = a.tocco ? 'Tieni premuto a sinistra o a destra' : 'A / D oppure ← → per spostarti';
+        var aiuto = a.tocco ? 'Tieni premuto a sinistra o a destra' : 'A / D o le frecce per spostarti';
         ctx.save();
         ctx.textBaseline = 'alphabetic';
         ctx.globalAlpha = Math.max(0, Math.min(1, (2.6 - st.tp) / 0.5));

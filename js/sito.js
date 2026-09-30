@@ -95,7 +95,7 @@
 
   function binario() {
     const voci = document.querySelectorAll('.binario__voce[href^="#"]');
-    if (!voci.length || typeof IntersectionObserver !== 'function') { return; }
+    if (!voci.length) { return; }
 
     const mappa = new Map();
     const quote = new Map();
@@ -474,7 +474,6 @@
       if (!conto) { return; }
 
       if (inOnda) {
-
         if (conto.textContent !== statoLive) { conto.textContent = statoLive; }
         if (stato.prossima) {
           const iso = istanteIso(stato.prossima.ts);
@@ -484,7 +483,6 @@
       }
 
       if (!stato.prossima) {
-
         return;
       }
 
@@ -502,7 +500,7 @@
     });
     window.addEventListener('pagehide', function () { clearInterval(timer); }, { once: true });
 
-    if (window.Player && typeof window.Player.suStato === 'function') {
+    if (window.Player) {
       window.Player.suStato(function (stato) {
         inOnda = !!(stato && stato.inOnda);
         battito();
@@ -519,7 +517,7 @@
     if (!indirizzo) { return; }
 
     const testo = etichetta(bottone, 'js-etichetta');
-    const riposo = frase(TESTI.copiaBtn, testo.textContent) || 'Copia l’email';
+    const riposo = frase(TESTI.copiaBtn, testo.textContent) || "Copia l'email";
     const fatto = frase(TESTI.copiaFatto, 'Copiata');
     let ritorno = null;
 
@@ -547,7 +545,6 @@
         document.body.removeChild(ta);
         segnala(riuscito ? fatto : indirizzo);
       } catch (err) {
-
         segnala(indirizzo);
       }
     }
@@ -781,7 +778,7 @@
       serie++;
 
       const bonk = window.Bonk;
-      if (serie < BONK_CLIC || !bonk || typeof bonk.colpo !== 'function') { return false; }
+      if (serie < BONK_CLIC || !bonk) { return false; }
 
       serie = 0;
       conta = 0;
@@ -898,18 +895,11 @@
   }
 
   function avvia() {
-    [binario, tempo, copiaEmail, ritrattoParlante].forEach(function (blocco) {
-      try {
-        blocco();
-      } catch (err) {
-        console.warn('[sito] blocco non avviato:', err);
-      }
-    });
+    binario();
+    tempo();
+    copiaEmail();
+    ritrattoParlante();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

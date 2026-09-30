@@ -102,7 +102,7 @@
     try {
       fn(istantanea());
     } catch (err) {
-      console.warn('[account] un iscritto a suStato è andato in errore:', err);
+      console.warn('account: callback rotta', err);
     }
   }
 
@@ -114,8 +114,7 @@
   function attivo() {
     if (!CONF || CONF.attivo !== true) { return false; }
     if (!CLIENT_ID) { return false; }
-    if (typeof fetch !== 'function') { return false; }
-    if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') { return false; }
+    if (!window.crypto) { return false; }
     if (location.protocol === 'https:') { return true; }
     return inSviluppo();
   }
@@ -129,19 +128,15 @@
     if (!CONF || CONF.attivo !== true) {
       const m = String((CONF && CONF.motivo) || '');
       if (m === 'senzaClientId') {
-        return 'manca il Client ID dell’app Twitch, e senza quello non esiste nessuna applicazione '
-          + 'a cui Twitch possa chiedere il permesso: la schermata di collegamento non può proprio '
-          + 'comparire. Si registra su dev.twitch.tv/console/apps e si incolla nel pannello, gruppo '
-          + '«Profilo del sito» → «Client ID dell’app Twitch». Poi Pubblica.';
+        return 'manca client id';
       }
-      return 'è spento nel pannello, gruppo «Profilo del sito» → «Permetti di collegarsi con '
-        + 'Twitch». Poi Pubblica.';
+      return 'spento dal pannello';
     }
     if (location.protocol !== 'https:' && !inSviluppo()) {
-      return 'Twitch pretende https per il collegamento, e questa pagina è servita in http.';
+      return 'serve https';
     }
-    if (typeof fetch !== 'function' || !window.crypto || typeof window.crypto.getRandomValues !== 'function') {
-      return 'questo browser non ha quello che serve per fare il collegamento in sicurezza.';
+    if (!window.crypto) {
+      return 'niente crypto';
     }
     return '';
   }
@@ -355,7 +350,7 @@
 
     let dolce = false;
     try {
-      dolce = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      dolce = !(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     } catch (err) { dolce = false; }
     try {
       bersaglio.scrollIntoView({ behavior: dolce ? 'smooth' : 'auto', block: 'start' });
@@ -478,10 +473,10 @@
       if (r.ok) {
         avviso('Collegamento revocato su Twitch.');
       } else {
-        avviso('Twitch non ha revocato il token (errore ' + r.status + '): toglilo a mano da Impostazioni → Connessioni.');
+        avviso('Twitch non ha revocato il token (errore ' + r.status + '): toglilo a mano da Impostazioni, Connessioni.');
       }
     }, function () {
-      avviso('Non sono riuscito a contattare Twitch: il token resta valido finché non lo togli da Impostazioni → Connessioni.');
+      avviso('Non sono riuscito a contattare Twitch: il token resta valido finché non lo togli da Impostazioni, Connessioni.');
     }).then(function () {
       vivo.occupato = false;
       dimentica('');
@@ -597,9 +592,5 @@
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', avvia, { once: true });
-  } else {
-    avvia();
-  }
+  avvia();
 }());

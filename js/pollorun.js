@@ -135,7 +135,7 @@
     p.volume = volumeAttuale();
     try {
       var promessa = p.play();
-      if (promessa && typeof promessa.catch === 'function') { promessa.catch(function () { }); }
+      if (promessa) { promessa.catch(function () { }); }
     } catch (errore) { }
   }
 
@@ -147,7 +147,7 @@
   function musicaDelSito() {
     var suonava = false;
     var raccogli = true;
-    if (window.Musica && typeof window.Musica.suStato === 'function') {
+    if (window.Musica) {
       try {
         window.Musica.suStato(function (situazione) {
           if (raccogli) { suonava = !!(situazione && situazione.suona); }
@@ -155,7 +155,7 @@
       } catch (errore) { }
     }
     raccogli = false;
-    if (suonava && typeof window.Musica.ferma === 'function') { window.Musica.ferma(); }
+    if (suonava) { window.Musica.ferma(); }
     return suonava;
   }
 
@@ -178,11 +178,11 @@
   }
 
   function motorePronto() {
-    return !!(window.PolloRun && typeof window.PolloRun.crea === 'function');
+    return !!(window.PolloRun && window.PolloRun.crea);
   }
 
   function conMotore(fatto) {
-    if (motorePronto()) { fatto(true); return; }
+    if (motorePronto() && (!CLASSIFICA || window.PolloRunPodio)) { fatto(true); return; }
     if (attesaMotore) { attesaMotore.push(fatto); return; }
     attesaMotore = [fatto];
     function avvisa(ok) {
@@ -190,9 +190,16 @@
       attesaMotore = null;
       for (var i = 0; i < attesi.length; i++) { attesi[i](ok && motorePronto()); }
     }
+    if (motorePronto()) {
+      caricaScript('js/pollorun-podio.js', function () { avvisa(true); });
+      return;
+    }
     caricaScript('js/pollorun-gioco.js', function (ok) {
       if (!ok) { avvisa(false); return; }
-      caricaScript('js/pollorun-caduta.js', function () { avvisa(true); });
+      caricaScript('js/pollorun-caduta.js', function () {
+        if (!CLASSIFICA) { avvisa(true); return; }
+        caricaScript('js/pollorun-podio.js', function () { avvisa(true); });
+      });
     });
   }
 
@@ -299,7 +306,7 @@
     radice.appendChild(bottone);
     radice.appendChild(scena);
 
-    if (document.activeElement && typeof document.activeElement.blur === 'function') { document.activeElement.blur(); }
+    if (document.activeElement) { document.activeElement.blur(); }
     document.body.appendChild(radice);
     document.documentElement.classList.add(CLASSE);
     try { radice.focus({ preventScroll: true }); } catch (errore) { }
@@ -405,11 +412,12 @@
     if (!aperto) { return false; }
     var stato = aperto;
     aperto = null;
+    if (stato.podio) { stato.podio.togli(); }
     try { stato.gioco.ferma(); } catch (errore) { }
     if (stato.radice.parentNode) { stato.radice.parentNode.removeChild(stato.radice); }
     document.documentElement.classList.remove(CLASSE);
     fermaPista();
-    if (stato.musicaSuonava && window.Musica && typeof window.Musica.parti === 'function') { window.Musica.parti(); }
+    if (stato.musicaSuonava && window.Musica) { window.Musica.parti(); }
     return true;
   }
 
@@ -460,7 +468,7 @@
     v.valore.textContent = testo;
     v.scatola.className = 'pollorun__volume' + (muto ? ' is-muto' : '');
     v.muto.setAttribute('aria-pressed', muto ? 'true' : 'false');
-    v.muto.textContent = muto ? 'Riattiva l\u2019audio' : 'Muto';
+    v.muto.textContent = muto ? "Riattiva l'audio" : 'Muto';
     v.regola.setAttribute('aria-label', 'Regola il volume, ora ' + (muto ? 'muto' : testo));
   }
 
@@ -576,7 +584,7 @@
 
     var aiuto = document.createElement('p');
     aiuto.className = 'pollorun__aiuto';
-    aiuto.textContent = 'Tasti: \u2212 e + per il volume, M per il muto';
+    aiuto.textContent = 'Volume con - e +, M per il muto';
 
     pannello.appendChild(etichetta);
     pannello.appendChild(muto);
@@ -650,7 +658,7 @@
     if (esito.codice === 403) { return 'Non puoi entrare in classifica'; }
     if (esito.codice === 409) { return 'Per entrare in classifica completa prima il livello precedente a questa difficoltà'; }
     if (esito.codice === 422) { return 'Questo livello non entra in classifica'; }
-    if (esito.codice === 429) { return 'Troppe partite in poco tempo: riprova fra un po’'; }
+    if (esito.codice === 429) { return "Troppe partite di fila, riprova tra un po'"; }
     return 'La classifica ora non risponde: il gioco continua lo stesso';
   }
 
@@ -668,6 +676,7 @@
   function dipingiClassifica(stato) {
     var cl = stato.classifica;
     if (!cl) { return; }
+    if (stato.podio) { stato.podio.bottone.parentNode.hidden = cl.spenta; }
     if (cl.spenta) {
       cl.scatola.hidden = true;
       return;
@@ -683,7 +692,7 @@
       cl.scatola.hidden = false;
       cl.pillola.className = 'pollorun__pillola is-attesa';
       cl.pillola.disabled = true;
-      cl.pillola.textContent = 'Classifica…';
+      cl.pillola.textContent = 'Classifica...';
       return;
     }
     cl.scatola.hidden = !account();
@@ -697,7 +706,8 @@
     var token = leggiToken();
     cl.token = token;
     cl.partita = null;
-    if (!token || typeof fetch !== 'function') {
+    cl.io = null;
+    if (!token) {
       cl.collegato = false;
       dipingiClassifica(stato);
       return;
@@ -717,6 +727,7 @@
       var dati = esito.dati || {};
       cl.collegato = esito.codice === 200 && dati.collegato === true;
       cl.nome = cl.collegato ? String(dati.nome || dati.login || '').slice(0, 40) : '';
+      cl.io = cl.collegato && typeof dati.login === 'string' ? { login: dati.login, migliori: dati.migliori && typeof dati.migliori === 'object' ? dati.migliori : {} } : null;
       dipingiClassifica(stato);
     });
   }
@@ -726,6 +737,7 @@
     cl.collegato = false;
     cl.nome = '';
     cl.partita = null;
+    cl.io = null;
     dipingiClassifica(stato);
   }
 
@@ -747,6 +759,10 @@
       if (aperto !== stato) { return; }
       if (esito.codice !== 200) { gestisciErrore(stato, esito); return; }
       var dati = esito.dati || {};
+      var fatta = dati.difficolta || evento.difficolta;
+      var cl = stato.classifica;
+      if (cl.io && Number(dati.livello) > (Number(cl.io.migliori[fatta]) || 0)) { cl.io.migliori[fatta] = Number(dati.livello); }
+      if (stato.podio) { stato.podio.scordati(fatta); }
       if (stato.gioco && typeof stato.gioco.classifica === 'function') {
         try {
           stato.gioco.classifica({ posizione: dati.posizione, totale: dati.totale, migliore: dati.migliore === true, livello: dati.livello || evento.livello, difficolta: dati.difficolta || evento.difficolta });
@@ -758,7 +774,7 @@
   function suLivello(stato, evento) {
     var cl = stato.classifica;
     if (!cl || cl.spenta || !evento || aperto !== stato) { return; }
-    if (!cl.token || cl.collegato === false || typeof fetch !== 'function') { return; }
+    if (!cl.token || cl.collegato === false) { return; }
     var chiave = evento.livello + ':' + evento.difficolta;
     if (evento.tipo === 'inizio') {
       var partita = { chiave: chiave, gettone: '', fine: null, chiusa: false };
@@ -816,7 +832,7 @@
       try { a.entra(); } catch (errore) { }
       try { stato.radice.focus({ preventScroll: true }); } catch (errore) { }
     });
-    stato.classifica = { scatola: scatola, pillola: pillola, avviso: avviso, giro: 0, chiesto: 0, token: '', collegato: false, nome: '', partita: null, spenta: false };
+    stato.classifica = { scatola: scatola, pillola: pillola, avviso: avviso, giro: 0, chiesto: 0, token: '', collegato: false, nome: '', partita: null, spenta: false, io: null };
     var a = account();
     if (a && typeof a.suStato === 'function' && !ascoltoAccount) {
       ascoltoAccount = true;
@@ -831,6 +847,21 @@
       } catch (errore) { }
       pronto = true;
     }
+    return scatola;
+  }
+
+  function creaPodio(stato) {
+    if (!window.PolloRunPodio || typeof window.PolloRunPodio.crea !== 'function') { return null; }
+    var scatola = document.createElement('div');
+    scatola.className = 'pollorun__podio';
+    stato.podio = window.PolloRunPodio.crea({
+      dentro: stato.radice,
+      fuoco: stato.radice,
+      conTesto: true,
+      gioco: function () { return stato.gioco; },
+      io: function () { return stato.classifica ? stato.classifica.io : null; }
+    });
+    scatola.appendChild(stato.podio.bottone);
     return scatola;
   }
 
@@ -854,7 +885,7 @@
     tela.setAttribute('aria-hidden', 'true');
 
     var livello = limita(livelloSalvato());
-    var stato = { radice: radice, gioco: null, musicaSuonava: false, volume: null, livello: livello, udibile: livello > 0 ? livello : VOLUME_BASE, classifica: null };
+    var stato = { radice: radice, gioco: null, musicaSuonava: false, volume: null, livello: livello, udibile: livello > 0 ? livello : VOLUME_BASE, classifica: null, podio: null };
     var volume = creaVolume(stato);
 
     radice.appendChild(bottone);
@@ -864,13 +895,18 @@
 
     aperto = stato;
     if (CLASSIFICA) {
+      var podio = creaPodio(stato);
+      if (podio) {
+        radice.appendChild(podio);
+        ingombro.push(podio);
+      }
       var classifica = creaClassifica(stato);
       radice.appendChild(classifica);
       ingombro.push(classifica);
       chiediChiSei(stato);
     }
     mostraVolume(stato);
-    if (document.activeElement && typeof document.activeElement.blur === 'function') { document.activeElement.blur(); }
+    if (document.activeElement) { document.activeElement.blur(); }
     document.body.appendChild(radice);
     document.documentElement.classList.add(CLASSE);
     stato.musicaSuonava = musicaDelSito();
@@ -902,7 +938,10 @@
     carico = stato;
     stato.vista = mostraCarico();
 
-    caricaStile('css/pollorun.css', function () { avanza(stato, 'stile', 1); });
+    caricaStile('css/pollorun.css', function () {
+      if (!CLASSIFICA) { avanza(stato, 'stile', 1); return; }
+      caricaStile('css/pollorun-podio.css', function () { avanza(stato, 'stile', 1); });
+    });
 
     if (POLLO && typeof Image === 'function') {
       var immagine = new Image();

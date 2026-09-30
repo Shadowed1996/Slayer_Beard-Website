@@ -92,7 +92,7 @@
     r();
     r();
     if (r() >= CADUTA_PROBABILITA[nome]) { return null; }
-    var secondi = Math.round(((nome === 'estremo' ? 10 : 8) + 2 * r()) * 10) / 10;
+    var secondi = Math.round(((nome === 'estremo' ? 12 : 10) + 2 * r()) * 10) / 10;
     var x0 = Math.round(v * durata * (0.3 + 0.25 * r()));
     var largo = Math.round(v * 50) / 100;
     return { durata: secondi, x0: x0, x1: x0 + largo, seme: 1 + Math.floor(r() * 2000000000) };
@@ -799,6 +799,7 @@
     avviso: avvisoDi,
     parametri: parametri,
     crea: creaLivello,
+    casuale: casuale,
     difficolta: DIFFICOLTA.slice(),
     profili: PROFILI,
     nuovoStato: nuovoStato,
@@ -815,6 +816,7 @@
   'use strict';
 
   var Livelli = window.PolloRun.livelli;
+  var casuale = Livelli.casuale;
   var K = Livelli.costanti;
   var CHIAVE_LIVELLO = 'sb-pollo-livello';
   var CHIAVE_DIFFICOLTA = 'sb-pollo-difficolta';
@@ -881,21 +883,14 @@
     return m + ':' + (r < 10 ? '0' : '') + r;
   }
 
-  function casuale(seme) {
-    return function () {
-      seme = (seme * 16807) % 2147483647;
-      return (seme - 1) / 2147483646;
-    };
-  }
-
   function crea(opzioni) {
     var tela = opzioni.tela;
     var ctx = tela && tela.getContext ? tela.getContext('2d') : null;
-    if (!ctx) { return { avvia: function () { }, ferma: function () { }, distruggi: function () { }, classifica: function () { return false; } }; }
+    if (!ctx) { return { avvia: function () { }, ferma: function () { }, distruggi: function () { }, classifica: function () { return false; }, difficolta: function () { return 'medio'; } }; }
     var sipario = !!opzioni.sipario;
     var gd = opzioni.stile === 'geometrydash';
-    var ridotto = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    var tocco = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    var ridotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var tocco = window.matchMedia('(pointer: coarse)').matches;
 
     var stile = getComputedStyle(document.documentElement);
     function tinta(nome, ripiego) {
@@ -984,6 +979,10 @@
     var timerPrecalcolo = 0;
     var posto = null;
     var inclinazione = { attiva: false, angolo: 0, testo: '', colore: '', alfaTesto: 0, eta: 0, fp: 1, tratto: null };
+    var EVENTO_AVVISO = 1.8;
+    var EVENTO_DOPO = 0.4;
+    var terremoto = { x: -1, da: 4, forza: 0, alfaTesto: 0, eta: 0, durata: 3.2, testo: 'Oh no ! Ma che succede !', seme: 37.719, difficolta: ['difficile', 'estremo'] };
+    var giramento = { x: -1, da: 5, pollo: 0, ribalta: 1, alfaTesto: 0, eta: 0, durata: 6, testo: 'Mi gira la testa', seme: 91.417, difficolta: ['estremo'] };
     var caduta = window.PolloRun.caduta && window.PolloRun.caduta.crea ? window.PolloRun.caduta.crea(ambienteCaduta) : null;
 
     function creaMonti(picchi, seme) {
@@ -1572,7 +1571,7 @@
         ctx.globalAlpha = 1;
       }
       ctx.translate(cx, piedi - lato / 2 + rimbalzo);
-      ctx.rotate(angolo);
+      ctx.rotate(angolo + giramento.pollo);
       var faccia = ctx.createLinearGradient(-lato / 2, -lato / 2, lato / 2, lato / 2);
       faccia.addColorStop(0, colori.cubo0);
       faccia.addColorStop(1, colori.cubo1);
@@ -1631,7 +1630,7 @@
       }
       ctx.globalAlpha = 1;
       ctx.translate(cx, piedi - h / 2 + sobbalzo);
-      ctx.rotate(rotazione);
+      ctx.rotate(rotazione + giramento.pollo);
       ctx.shadowColor = stato === 'fine' ? C.magenta : C.ciano;
       ctx.shadowBlur = 10;
       if (polloPronto) {
@@ -1796,7 +1795,7 @@
     }
 
     function rigaDifficolta(x, fs, contorno) {
-      var separatore = ' · ';
+      var separatore = '  ';
       var fascia = Math.max(20, H - suolo);
       var dim = Math.min(fs, fascia * 0.5);
       var yy = suolo + fascia / 2 + dim * 0.35;
@@ -2196,11 +2195,11 @@
       if (gd) {
         scritta('GAME OVER', gx, gy, grande, '900', TITOLO, BIANCO, 'center', true);
         ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
-        scritta('SPAZIO per riprovare il livello ' + livello + ' · ESC per uscire', gx, gy + fs * 1.7, fs, '700', MONO, BIANCO, 'center', true);
+        scritta('SPAZIO per riprovare il livello ' + livello + ', ESC per uscire', gx, gy + fs * 1.7, fs, '700', MONO, BIANCO, 'center', true);
       } else {
         glitch('GAME OVER', gx, gy, grande, 2);
         ctx.globalAlpha = ridotto ? 1 : 0.6 + 0.4 * Math.sin(t * 4);
-        scritta('SPAZIO per riprovare il livello ' + livello + ' · ESC per uscire', gx, gy + fs * 1.6, fs, '500', MONO, C.testo, 'center', false);
+        scritta('SPAZIO per riprovare il livello ' + livello + ', ESC per uscire', gx, gy + fs * 1.6, fs, '500', MONO, C.testo, 'center', false);
       }
       ctx.globalAlpha = 1;
     }
@@ -2219,6 +2218,8 @@
           ctx.globalAlpha = 1;
         }
         disegnaPendenza();
+        disegnaEvento(terremoto, ROSSO);
+        disegnaEvento(giramento, gd ? colori.accento : C.magenta);
         if (caduta) { caduta.disegnaTesti(); }
       }
       if (stato === 'vinto') { if (gd) { disegnaVittoriaGD(); } else { disegnaVittoriaSynth(fs); } }
@@ -2240,6 +2241,18 @@
       if (scossa > 0) {
         var forza = scossa / 0.35;
         ctx.translate((Math.random() - 0.5) * U * 0.25 * forza, (Math.random() - 0.5) * U * 0.18 * forza);
+      }
+      if (terremoto.forza > 0) {
+        var f = terremoto.forza;
+        ctx.translate(W / 2, H / 2);
+        ctx.rotate(Math.sin(t * 23) * 0.012 * f);
+        ctx.translate(-W / 2, -H / 2);
+        ctx.translate((Math.sin(t * 47) * 0.14 + (Math.random() - 0.5) * 0.1) * U * f, (Math.sin(t * 61 + 1) * 0.12 + (Math.random() - 0.5) * 0.08) * U * f);
+      }
+      if (giramento.ribalta !== 1) {
+        ctx.translate(0, H / 2);
+        ctx.scale(1, giramento.ribalta);
+        ctx.translate(0, -H / 2);
       }
       var giroMondo = -inclinazione.angolo;
       margine = 0;
@@ -2399,7 +2412,7 @@
 
     function testoPosto() {
       if (!posto || stato !== 'vinto' || posto.livello !== livello || posto.difficolta !== difficolta) { return ''; }
-      return (posto.migliore ? 'NUOVO RECORD · ' : '') + posto.posizione + '° su ' + posto.totale + ' · ' + etichetta(posto.difficolta);
+      return (posto.migliore ? 'NUOVO RECORD! ' : '') + posto.posizione + '° su ' + posto.totale + ' (' + etichetta(posto.difficolta) + ')';
     }
 
     function azzeraPendenza() {
@@ -2466,6 +2479,122 @@
       ctx.restore();
     }
 
+    function zonaLibera(x, durata, evita) {
+      var x0 = x - (EVENTO_AVVISO + 0.5) * M.v;
+      var x1 = x + (durata + 0.5) * M.v;
+      for (var p = x0; p <= x + EVENTO_DOPO * M.v; p += M.v * 0.25) {
+        if (Livelli.avviso(M, p)) { return false; }
+      }
+      if (M.caduta && x1 > M.caduta.x0 - M.v * 2 && x0 < M.caduta.x1 + M.v * 2) { return false; }
+      if (evita && evita.x >= 0) {
+        var e0 = evita.x - (EVENTO_AVVISO + 1) * M.v;
+        var e1 = evita.x + (evita.durata + 1) * M.v;
+        if (x1 > e0 && x0 < e1) { return false; }
+      }
+      return true;
+    }
+
+    function postoEvento(ev, evita) {
+      if (!M || livello < ev.da || ev.difficolta.indexOf(difficolta) === -1) { return -1; }
+      var seme = Math.sin(livello * 12.9898 + ev.seme + (difficolta === 'estremo' ? 40.5 : 0)) * 43758.5453;
+      var quota = seme - Math.floor(seme);
+      var da = M.lunghezza * 0.2;
+      var a = M.lunghezza * 0.85;
+      var ampiezza = a - da;
+      var partenza = da + ampiezza * quota;
+      for (var fatto = 0; fatto <= ampiezza; fatto += M.v * 0.5) {
+        var x = da + ((partenza - da + fatto) % ampiezza);
+        if (zonaLibera(x, ev.durata, evita)) { return x; }
+      }
+      return -1;
+    }
+
+    function preparaEventi() {
+      terremoto.forza = 0;
+      terremoto.alfaTesto = 0;
+      giramento.pollo = 0;
+      giramento.ribalta = 1;
+      giramento.alfaTesto = 0;
+      terremoto.x = -1;
+      giramento.x = -1;
+      terremoto.x = postoEvento(terremoto, null);
+      giramento.x = postoEvento(giramento, terremoto);
+    }
+
+    function testoEvento(ev, d) {
+      if (d >= -EVENTO_AVVISO && d <= EVENTO_DOPO) {
+        ev.eta = d + EVENTO_AVVISO;
+        ev.alfaTesto = Math.max(0, Math.min(1, ev.eta / 0.25, (EVENTO_DOPO - d) / EVENTO_DOPO));
+      } else {
+        ev.alfaTesto = 0;
+      }
+    }
+
+    function curvaMorbida(q) {
+      var c = Math.max(0, Math.min(1, q));
+      return c * c * (3 - 2 * c);
+    }
+
+    function muoviGiramento(d) {
+      giramento.pollo = d < 1 ? Math.PI * 2 * curvaMorbida(d) : 0;
+      if (d < 1) { giramento.ribalta = 1; return; }
+      if (d < 1.6) { giramento.ribalta = Math.cos(Math.PI * curvaMorbida((d - 1) / 0.6)); return; }
+      if (d < giramento.durata - 0.8) { giramento.ribalta = -1; return; }
+      giramento.ribalta = -Math.cos(Math.PI * curvaMorbida((d - (giramento.durata - 0.8)) / 0.8));
+    }
+
+    function aggiornaEventi(dt) {
+      if (stato !== 'corsa' || !M || !S) {
+        terremoto.forza = Math.max(0, terremoto.forza - dt * 3);
+        terremoto.alfaTesto = Math.max(0, terremoto.alfaTesto - dt * 4);
+        giramento.alfaTesto = Math.max(0, giramento.alfaTesto - dt * 4);
+        giramento.pollo = 0;
+        giramento.ribalta += (1 - giramento.ribalta) * Math.min(1, dt * 6);
+        if (giramento.ribalta > 0.999) { giramento.ribalta = 1; }
+        return;
+      }
+      if (terremoto.x >= 0) {
+        var d = (S.x - terremoto.x) / M.v;
+        testoEvento(terremoto, d);
+        if (d >= 0 && d <= terremoto.durata) {
+          var inviluppo = Math.max(0, Math.min(1, d / 0.3, (terremoto.durata - d) / 0.6));
+          terremoto.forza = inviluppo * (difficolta === 'estremo' ? 1 : 0.8) * (ridotto ? 0.2 : 1);
+        } else {
+          terremoto.forza = 0;
+        }
+      }
+      if (giramento.x >= 0) {
+        var g = (S.x - giramento.x) / M.v;
+        testoEvento(giramento, g);
+        if (!ridotto && g >= 0 && g <= giramento.durata) {
+          muoviGiramento(g);
+        } else {
+          giramento.pollo = 0;
+          giramento.ribalta = 1;
+        }
+      }
+    }
+
+    function disegnaEvento(ev, colore) {
+      if (ev.alfaTesto <= 0) { return; }
+      var y = gd ? suolo * 0.4 : orizzonte * 0.42;
+      var dim = stringi(ev.testo, Math.max(26, U * 0.85), '900', TITOLO, W - 32);
+      var entrata = ridotto ? 1 : 1 + 0.18 * Math.max(0, 1 - ev.eta / 0.3);
+      ctx.save();
+      ctx.globalAlpha = ev.alfaTesto;
+      ctx.translate(W / 2 + (ridotto ? 0 : (Math.random() - 0.5) * U * 0.06), y);
+      ctx.scale(entrata, entrata);
+      if (gd) {
+        scritta(ev.testo, 0, 0, dim, '900', TITOLO, colore, 'center', true);
+      } else {
+        ctx.shadowColor = colore;
+        ctx.shadowBlur = 14;
+        glitch(ev.testo, 0, 0, dim, ridotto ? 2 : 2 + (Math.random() < 0.2 ? U * 0.06 : 0));
+        ctx.shadowBlur = 0;
+      }
+      ctx.restore();
+    }
+
     function piediCaduta(x, giroMondo) {
       var prima = rientro.x;
       rientro.x = x - polloX - larghezzaGiocatore() / 2;
@@ -2514,6 +2643,7 @@
       onde = [];
       frasePagina = null;
       azzeraPendenza();
+      preparaEventi();
       rientro.da = 0;
       rientro.x = 0;
       if (caduta) { caduta.prepara(M); }
@@ -2548,6 +2678,8 @@
       scintille = [];
       onde = [];
       azzeraPendenza();
+      terremoto.x = -1;
+      giramento.x = -1;
       if (caduta) { caduta.azzera(); }
       if (eraInGioco) {
         suonaCanzone(null);
@@ -2630,6 +2762,7 @@
         if (gd) { colori = coloriDi(livello, M && S ? Math.max(0, Math.min(1, S.x / M.lunghezza)) : 0); }
       }
       aggiornaPendenza(dt);
+      aggiornaEventi(dt);
       if (stato === 'fine' && t - tStato > RITORNO_FINE) { torna(); }
       for (var k = scintille.length - 1; k >= 0; k--) {
         var s = scintille[k];
@@ -2784,7 +2917,7 @@
       window.removeEventListener('resize', suRidimensiona);
     }
 
-    return { avvia: avvia, ferma: ferma, distruggi: ferma, classifica: classifica };
+    return { avvia: avvia, ferma: ferma, distruggi: ferma, classifica: classifica, difficolta: function () { return difficolta; } };
   }
 
   window.PolloRun.crea = crea;
