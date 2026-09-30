@@ -42,6 +42,8 @@
   }());
   const CADENZA_INVIO = MINUTI_INVIO * 60000;
   const RIPROVA_INVIO = 60000;
+  const STATO_FRESCO = 300000;
+  const RILEGGI_STATO = 30000;
 
   const TESTI = {};
   const RIPIEGHI = {
@@ -154,6 +156,7 @@
   let fraseProssima = '';
   let ultimoInvio = 0;
   let ultimoAutomatico = 0;
+  let ultimaRilettura = 0;
   let invioAutomatico = false;
   let erroreInvio = '';
   let mazzo = [];
@@ -643,8 +646,8 @@
     if (ora - ultimaPresenza >= oreMax() * 3600000) { chiediPresenza(); return; }
 
     if (ultimoAutomatico && ora - ultimoAutomatico >= CADENZA_INVIO
-        && bAttivo() && vivo.collegato && !fuoriOndaCerto()) {
-      mandaOra(true);
+        && bAttivo() && vivo.collegato) {
+      if (inOndaFresco()) { mandaOra(true); } else { rileggiStato(); }
     }
   }
 
@@ -849,6 +852,23 @@
     return letto.inOnda;
   }
 
+  function inOndaFresco() {
+    const C = window.Canale;
+    if (!C || typeof C.stato !== 'function') { return false; }
+    let letto = null;
+    try { letto = C.stato(); } catch (err) { return false; }
+    if (!letto || letto.inOnda !== true) { return false; }
+    return typeof letto.quando === 'number' && Date.now() - letto.quando < STATO_FRESCO;
+  }
+
+  function rileggiStato() {
+    const C = window.Canale;
+    if (!C || typeof C.aggiorna !== 'function') { return; }
+    if (Date.now() - ultimaRilettura < RILEGGI_STATO) { return; }
+    ultimaRilettura = Date.now();
+    try { C.aggiorna(); } catch (err) {}
+  }
+
   function fuoriOndaCerto() {
     const daTwitch = statoDaTwitch();
     if (daTwitch !== null) { return daTwitch === false; }
@@ -923,7 +943,7 @@
       return;
     }
 
-    if (automatico ? fuoriOndaCerto() : !canaleAcceso()) {
+    if (automatico ? !inOndaFresco() : !canaleAcceso()) {
       nonPartito(testo('statoAttesa'));
       return;
     }
@@ -1150,6 +1170,7 @@
       iscritti.push(fn);
       informa(fn);
     },
+    stato: istantanea,
     accendi: accendi,
     spegni: spegni
   };
