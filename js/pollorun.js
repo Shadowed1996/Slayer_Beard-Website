@@ -1056,6 +1056,7 @@
     }
   }
 
+  if (document.head && typeof document.querySelector === 'function') { caricaStile('css/pollorun-carica.css', function () { }); }
   document.addEventListener('keydown', suTasto);
   window.addEventListener('pagehide', function () { annulla(); chiudi(); });
 

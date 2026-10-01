@@ -82,6 +82,11 @@
     return { tau: c.tau * profilo.margine, quieteMin: c.quieteMin * profilo.quiete, quieteMax: c.quieteMax * profilo.quiete };
   }
 
+  var RISCALDO = 12;
+  var RISCALDO_QUIETE = 1.2;
+  var RISCALDO_MARGINE = 0.9;
+  var RISCALDO_FIGURE = 4;
+
   var CADUTA_DA = 3;
   var CADUTA_PROBABILITA = { difficile: 0.45, estremo: 0.55 };
 
@@ -729,8 +734,10 @@
       var oltreCaduta = false;
       var avanzamento = Math.max(0, Math.min(1, (fine - P.v * 1.7) / (limite - P.v * 1.7)));
       var nl = n + avanzamento;
-      var nf = sbloccoDi(profilo, nl);
+      var riscaldo = Math.min(1, profilo.spinta / PROFILI.estremo.spinta) * (1 - Math.max(0, Math.min(1, (fine - P.v * 1.7) / (P.v * RISCALDO))));
+      var nf = Math.max(1, sbloccoDi(profilo, nl) - (profilo.spinta + RISCALDO_FIGURE) * riscaldo);
       var locale = curvaDi(profilo, nl);
+      locale.tau *= 1 + RISCALDO_MARGINE * riscaldo;
       while (prossimoCambio < cambi.length && cambi[prossimoCambio] < fine) { prossimoCambio++; }
       var cambio = prossimoCambio < cambi.length ? cambi[prossimoCambio] : -1;
       var accettata = false;
@@ -740,7 +747,7 @@
         var molt = guardato ? (guardato.verso < 0 ? perVerso.giu : perVerso.su) : moltiplicatori;
         var f = ripeti ? ultima : scegli(nf, avanzamento, r, molt, ultima && ultima.nome);
         var seme = ripeti ? ultimaSeme : 1 + Math.floor(rSeme() * 2000000000);
-        var quiete = (locale.quieteMin + Math.pow(r(), 1 + nl / 8) * (locale.quieteMax - locale.quieteMin)) * (1.35 - 0.75 * avanzamento);
+        var quiete = (locale.quieteMin + Math.pow(r(), 1 + nl / 8) * (locale.quieteMax - locale.quieteMin)) * (1.35 - 0.75 * avanzamento) * (1 + RISCALDO_QUIETE * riscaldo);
         for (var t = 0; t < TENTATIVI && !accettata; t++) {
           var s = 1 + 0.25 * t;
           var x = fine + (0.36 + P.v * fattoreDi(M, fine) * quiete * (trattoDi(M, fine) ? quietePendenza : 1)) * s;
@@ -925,6 +932,10 @@
     var polloPronto = false;
     pollo.onload = function () { polloPronto = true; if (attivo) { disegna(); } };
     pollo.src = opzioni.pollo || '';
+    var mob = new Image();
+    var mobPronta = false;
+    mob.onload = function () { mobPronta = true; };
+    mob.src = opzioni.mob || 'img/mob-insegue.webp';
 
     var frasi = [];
     var lette = Array.isArray(opzioni.frasi) ? opzioni.frasi : [];
@@ -998,7 +1009,8 @@
     var EVENTO_AVVISO = 1.8;
     var EVENTO_DOPO = 0.4;
     var terremoto = { x: -1, da: 4, forza: 0, alfaTesto: 0, eta: 0, durata: 3.2, testo: 'Oh no ! Ma che succede !', seme: 37.719, difficolta: ['difficile', 'estremo'] };
-    var giramento = { x: -1, da: 5, pollo: 0, ribalta: 1, alfaTesto: 0, eta: 0, durata: 6, testo: 'Mi gira la testa', seme: 91.417, difficolta: ['estremo'] };
+    var giramento = { x: -1, da: 5, pollo: 0, ribalta: 1, alfaTesto: 0, eta: 0, durata: 6, testo: 'Mi gira la testa', seme: 91.417, difficolta: ['estremo'], liscio: 2 };
+    var inseguimento = { x: -1, da: 6, alfaTesto: 0, eta: 0, durata: 8, testo: 'Attento! Non farti prendere... Scappah!', seme: 64.183, difficolta: ['estremo'], comparsa: 0, spazio: 0, storia: [], dietro: 1.7, posti: [], parti: [[0.08, 0.4], [0.55, 0.85]] };
     var caduta = window.PolloRun.caduta && window.PolloRun.caduta.crea ? window.PolloRun.caduta.crea(ambienteCaduta) : null;
 
     function creaMonti(picchi, seme) {
@@ -1036,7 +1048,7 @@
 
     function latoCubo() { return U * LATO_CUBO; }
     function larghezzaGiocatore() { return gd ? latoCubo() : U * PROPORZIONE; }
-    function centroPollo() { return polloX + larghezzaGiocatore() / 2 + rientro.x; }
+    function centroPollo() { return polloX + larghezzaGiocatore() / 2 + rientro.x + inseguimento.spazio; }
     function sx(x) { return centroPollo() + (x - (S ? S.x : 0)) * U; }
     function sy(alt) { return suolo - alt * U; }
 
@@ -2236,6 +2248,7 @@
         disegnaPendenza();
         disegnaEvento(terremoto, ROSSO);
         disegnaEvento(giramento, gd ? colori.accento : C.magenta);
+        disegnaEvento(inseguimento, gd ? colori.accento : C.allerta);
         if (caduta) { caduta.disegnaTesti(); }
       }
       if (stato === 'vinto') { if (gd) { disegnaVittoriaGD(); } else { disegnaVittoriaSynth(fs); } }
@@ -2285,6 +2298,7 @@
       disegnaMondo();
       disegnaTraguardo();
       disegnaScintille();
+      disegnaMob();
       if (gd) { disegnaCubo(); } else { disegnaPollo(); }
       ctx.restore();
       if (caduta) { caduta.disegnaPozzo(); }
@@ -2554,32 +2568,35 @@
       ctx.restore();
     }
 
-    function zonaLibera(x, durata, evita) {
+    function zonaLibera(x, durata, evita, liscio) {
       var x0 = x - (EVENTO_AVVISO + 0.5) * M.v;
       var x1 = x + (durata + 0.5) * M.v;
-      for (var p = x0; p <= x + EVENTO_DOPO * M.v; p += M.v * 0.25) {
+      var fine = liscio ? x1 + 2 * M.v : x + EVENTO_DOPO * M.v;
+      for (var p = liscio > 1 ? x0 - 3 * M.v : x0; p <= fine; p += M.v * 0.25) {
         if (Livelli.avviso(M, p)) { return false; }
       }
       if (M.caduta && x1 > M.caduta.x0 - M.v * 2 && x0 < M.caduta.x1 + M.v * 2) { return false; }
-      if (evita && evita.x >= 0) {
-        var e0 = evita.x - (EVENTO_AVVISO + 1) * M.v;
-        var e1 = evita.x + (evita.durata + 1) * M.v;
+      var altri = Array.isArray(evita) ? evita : [evita];
+      for (var i = 0; i < altri.length; i++) {
+        if (!altri[i] || altri[i].x < 0) { continue; }
+        var e0 = altri[i].x - (EVENTO_AVVISO + 1) * M.v;
+        var e1 = altri[i].x + (altri[i].durata + 1) * M.v;
         if (x1 > e0 && x0 < e1) { return false; }
       }
       return true;
     }
 
-    function postoEvento(ev, evita) {
+    function postoEvento(ev, evita, parte, liscio) {
       if (!M || livello < ev.da || ev.difficolta.indexOf(difficolta) === -1) { return -1; }
-      var seme = Math.sin(livello * 12.9898 + ev.seme + (difficolta === 'estremo' ? 40.5 : 0)) * 43758.5453;
+      var seme = Math.sin(livello * 12.9898 + ev.seme + (parte ? parte[0] * 7.31 : 0) + (difficolta === 'estremo' ? 40.5 : 0)) * 43758.5453;
       var quota = seme - Math.floor(seme);
-      var da = M.lunghezza * 0.2;
-      var a = M.lunghezza * 0.85;
+      var da = M.lunghezza * (parte ? parte[0] : 0.2);
+      var a = M.lunghezza * (parte ? parte[1] : 0.85);
       var ampiezza = a - da;
       var partenza = da + ampiezza * quota;
       for (var fatto = 0; fatto <= ampiezza; fatto += M.v * 0.5) {
         var x = da + ((partenza - da + fatto) % ampiezza);
-        if (zonaLibera(x, ev.durata, evita)) { return x; }
+        if (zonaLibera(x, ev.durata, evita, liscio === undefined ? ev.liscio : liscio)) { return x; }
       }
       return -1;
     }
@@ -2592,8 +2609,24 @@
       giramento.alfaTesto = 0;
       terremoto.x = -1;
       giramento.x = -1;
-      terremoto.x = postoEvento(terremoto, null);
-      giramento.x = postoEvento(giramento, terremoto);
+      inseguimento.x = -1;
+      inseguimento.alfaTesto = 0;
+      inseguimento.comparsa = 0;
+      inseguimento.spazio = 0;
+      inseguimento.storia = [];
+      inseguimento.posti = [];
+      var occupati = [];
+      for (var i = 0; i < inseguimento.parti.length; i++) {
+        var posto = postoEvento(inseguimento, occupati, inseguimento.parti[i]);
+        if (posto >= 0) {
+          inseguimento.posti.push(posto);
+          occupati.push({ x: posto, durata: inseguimento.durata });
+        }
+      }
+      giramento.x = postoEvento(giramento, occupati);
+      if (giramento.x < 0) { giramento.x = postoEvento(giramento, occupati, null, 1); }
+      occupati.push(giramento);
+      terremoto.x = postoEvento(terremoto, occupati);
     }
 
     function testoEvento(ev, d) {
@@ -2626,8 +2659,12 @@
         giramento.pollo = 0;
         giramento.ribalta += (1 - giramento.ribalta) * Math.min(1, dt * 6);
         if (giramento.ribalta > 0.999) { giramento.ribalta = 1; }
+        inseguimento.alfaTesto = Math.max(0, inseguimento.alfaTesto - dt * 4);
+        if (stato !== 'fine') { inseguimento.comparsa = Math.max(0, inseguimento.comparsa - dt * 3); }
+        inseguimento.spazio = 0;
         return;
       }
+      aggiornaInseguimento(dt);
       if (terremoto.x >= 0) {
         var d = (S.x - terremoto.x) / M.v;
         testoEvento(terremoto, d);
@@ -2648,6 +2685,96 @@
           giramento.ribalta = 1;
         }
       }
+    }
+
+    function aggiornaInseguimento(dt) {
+      var ev = inseguimento;
+      ev.x = -1;
+      for (var i = 0; i < ev.posti.length; i++) {
+        var prova = (S.x - ev.posti[i]) / M.v;
+        if (prova >= -EVENTO_AVVISO - 1 && prova <= ev.durata + 1) { ev.x = ev.posti[i]; }
+      }
+      if (ev.x < 0) {
+        ev.alfaTesto = 0;
+        ev.comparsa = 0;
+        ev.spazio = 0;
+        return;
+      }
+      var d = (S.x - ev.x) / M.v;
+      testoEvento(ev, d);
+      if (d >= -1 && d <= ev.durata + 1) {
+        ev.storia.push({ x: S.x, alt: S.alt, aTerra: S.aTerra });
+        if (ev.storia.length > 900) { ev.storia.splice(0, ev.storia.length - 900); }
+      }
+      var bersaglio = d >= 0 && d <= ev.durata - 0.9 ? 1 : 0;
+      ev.comparsa += (bersaglio - ev.comparsa) * Math.min(1, dt * (bersaglio ? 3 : 2.2));
+      if (ev.comparsa < 0.002) { ev.comparsa = 0; }
+      var serve = Math.max(0, U * (ev.dietro + 0.9) - polloX - larghezzaGiocatore() / 2);
+      ev.spazio = serve * curvaMorbida(Math.min(1, ev.comparsa * 1.4));
+    }
+
+    function puntoMob(x) {
+      var st = inseguimento.storia;
+      if (!st.length || x <= st[0].x) { return { alt: 0, aTerra: true }; }
+      for (var i = st.length - 1; i > 0; i--) {
+        if (st[i - 1].x <= x) {
+          var a = st[i - 1];
+          var b = st[i];
+          var q = b.x > a.x ? (x - a.x) / (b.x - a.x) : 0;
+          return { alt: a.alt + (b.alt - a.alt) * q, aTerra: a.aTerra && b.aTerra };
+        }
+      }
+      return { alt: st[0].alt, aTerra: st[0].aTerra };
+    }
+
+    function disegnaMob() {
+      var ev = inseguimento;
+      if (ev.comparsa <= 0 || !S || !M) { return; }
+      var fuori = (1 - curvaMorbida(ev.comparsa)) * (ev.dietro + 4);
+      var x = S.x - ev.dietro - fuori;
+      var p = puntoMob(x);
+      var lato = U * 0.95;
+      var cx = sx(x);
+      var piedi = sy(p.alt);
+      var sobbalzo = 0;
+      var rotazione = 0;
+      if (p.aTerra && stato === 'corsa' && !ridotto) {
+        sobbalzo = -Math.abs(Math.sin(t * 15 + 1)) * U * 0.08;
+        rotazione = Math.sin(t * 15 + 1) * 0.1;
+      } else if (!p.aTerra) {
+        rotazione = -0.25;
+      }
+      ctx.save();
+      if (p.alt > -0.05) {
+        var altezzaSalto = Math.min(1, Math.max(0, p.alt) / 1.5);
+        ctx.globalAlpha = 0.4 * (1 - altezzaSalto * 0.6);
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.ellipse(cx, suolo, lato * 0.42 * (1 - altezzaSalto * 0.4), U * 0.06, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.translate(cx, piedi - lato / 2 + sobbalzo);
+      ctx.rotate(rotazione);
+      ctx.shadowColor = gd ? colori.accento : C.allerta;
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.arc(0, 0, lato / 2, 0, Math.PI * 2);
+      ctx.fillStyle = gd ? NERO : C.fondo;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      if (mobPronta) {
+        ctx.save();
+        ctx.clip();
+        ctx.drawImage(mob, -lato / 2, -lato / 2, lato, lato);
+        ctx.restore();
+      }
+      ctx.lineWidth = Math.max(2, U * 0.05);
+      ctx.strokeStyle = gd ? BIANCO : C.allerta;
+      ctx.beginPath();
+      ctx.arc(0, 0, lato / 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
 
     function disegnaEvento(ev, colore) {
@@ -2755,6 +2882,11 @@
       azzeraPendenza();
       terremoto.x = -1;
       giramento.x = -1;
+      inseguimento.x = -1;
+      inseguimento.comparsa = 0;
+      inseguimento.spazio = 0;
+      inseguimento.storia = [];
+      inseguimento.posti = [];
       if (caduta) { caduta.azzera(); }
       if (eraInGioco) {
         suonaCanzone(null);
