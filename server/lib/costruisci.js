@@ -868,31 +868,6 @@ function costruisciContesto(contenuti, opzioni) {
   return contesto;
 }
 
-const FRASI_POLLO = ['riposo', 'click', 'chat', 'scrive', 'live', 'lurk', 'offline'];
-
-function polloDi(config, testi) {
-  const pollo = (config.pollo && typeof config.pollo === 'object') ? config.pollo : {};
-  const sorgente = (pollo.frasi && typeof pollo.frasi === 'object') ? pollo.frasi : {};
-
-  const frasi = {};
-  for (const nome of FRASI_POLLO) {
-    frasi[nome] = (Array.isArray(sorgente[nome]) ? sorgente[nome] : [])
-      .map((f) => String(f == null ? '' : f).trim())
-      .filter((f) => f !== '');
-  }
-
-  return {
-    attivo: pollo.attivo === true,
-    chatVera: pollo.chatVera === true,
-    mostraMessaggi: pollo.mostraMessaggi === true,
-    frasi: frasi,
-    testi: {
-      etichetta: testi['pollo.etichetta'] || '',
-      nascondi: testi['pollo.nascondi'] || ''
-    }
-  };
-}
-
 const RE_ICONA = /\.(?:webp|png|gif|avif)$/i;
 const ICONA_PRINCIPALE = '1-anno-72x72.webp';
 
@@ -1238,7 +1213,6 @@ function oggettoDati(contenuti, opzioni) {
         voti: testi['sondaggio.voti'] || ''
       }
     },
-    pollo: polloDi(config, testi),
     chi: Object.assign(chiDi(config), { icona: icone.principale, icone: icone.tutte }),
     meteora: meteoraDi(config, icone),
 

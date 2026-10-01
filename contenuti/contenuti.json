@@ -70,8 +70,6 @@
     "lurk.invito": "Vuoi dire in chat che stai guardando? Dirò: «{frase}»",
     "lurk.manda": "Dillo in chat",
     "lurk.inviato": "Fatto: il messaggio è in chat.",
-    "pollo.etichetta": "Apri la chat del canale",
-    "pollo.nascondi": "Nascondi il pollo",
     "clip.occhiello": "ARCHIVIO",
     "clip.titolo": "I momenti migliori",
     "clip.testo": "Le clip più viste del canale, ritagliate da chi guardava. Si aggiornano da sole a ogni pubblicazione.",
@@ -517,56 +515,6 @@
         "In lurk dal sito. Coccodè."
       ],
       "notifica": true
-    },
-    "pollo": {
-      "attivo": true,
-      "chatVera": true,
-      "mostraMessaggi": false,
-      "frasi": {
-        "riposo": [
-          "Il pollaio è aperto.",
-          "Becco qualcosa e aspetto.",
-          "Tutto tranquillo, per ora.",
-          "Coccodè."
-        ],
-        "click": [
-          "Coccodè. Ti apro la chat.",
-          "Il pollaio è di qua.",
-          "Chat aperta: scrivi pure.",
-          "Beccato. Ecco la chat."
-        ],
-        "chat": [
-          "{nome} ha scritto in chat!",
-          "{nome} si è fatto sentire.",
-          "C'è {nome} nel pollaio.",
-          "Coccodè, parla {nome}.",
-          "Qualcuno ha scritto nel pollaio.",
-          "Si muove la chat. Coccodè."
-        ],
-        "scrive": [
-          "Ti ascolto...",
-          "Sto leggendo.",
-          "Dimmi pure, sono qui.",
-          "Orecchie dritte."
-        ],
-        "live": [
-          "Siamo in onda!",
-          "Luce accesa, si comincia.",
-          "In onda: il pollaio si riempie."
-        ],
-        "lurk": [
-          "Restiamo accesi, ci penso io.",
-          "Tengo la diretta viva. Coccodè.",
-          "Vai pure, il pollaio resta aperto.",
-          "Sorveglio io lo schermo."
-        ],
-        "offline": [
-          "Fuori onda. Il pollaio dorme.",
-          "Zzz.",
-          "Niente diretta adesso: la settimana è qui sotto.",
-          "Luce spenta. Si riparte la prossima serata."
-        ]
-      }
     },
     "chi": {
       "frasi": [],

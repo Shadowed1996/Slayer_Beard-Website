@@ -9,7 +9,7 @@ const SEZIONI = {
   },
   diretta: {
     nome: 'La diretta',
-    descrizione: 'Il player di Twitch con la chat, il profilo del sito, il pollo, la modalità lurk e la vetrina delle clip.'
+    descrizione: 'Il player di Twitch con la chat, il profilo del sito, la modalità lurk e la vetrina delle clip.'
   },
   sondaggio: {
     nome: 'Il sondaggio',
@@ -60,7 +60,7 @@ const PARTI = {
   },
   pollo: {
     nome: 'Il pollo',
-    descrizione: 'La mascotte accanto al player: cosa dice, quando lo dice e se ascolta davvero la chat del canale.'
+    descrizione: 'La sorpresa «slayer» con la pioggia di polletti e il gioco Pollo Run.'
   },
   lurk: {
     nome: 'Modalità lurk',

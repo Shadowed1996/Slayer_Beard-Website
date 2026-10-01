@@ -381,10 +381,10 @@ async function proveConvalida(contenutiVeri) {
   });
 
   await prova('interruttore: solo booleani veri, la stringa "true" no', () => {
-    esigiUguale(convalida.convalidaCampo('config.pollo.attivo', true).length, 0, 'acceso');
-    esigiUguale(convalida.convalidaCampo('config.pollo.attivo', false).length, 0, 'spento');
+    esigiUguale(convalida.convalidaCampo('config.lurk.attivo', true).length, 0, 'acceso');
+    esigiUguale(convalida.convalidaCampo('config.lurk.attivo', false).length, 0, 'spento');
     for (const storto of ['true', 'false', 1, 0, null]) {
-      esigi(convalida.convalidaCampo('config.pollo.attivo', storto).length === 1,
+      esigi(convalida.convalidaCampo('config.lurk.attivo', storto).length === 1,
         'doveva essere rifiutato: ' + JSON.stringify(storto));
     }
   });
@@ -762,32 +762,16 @@ async function proveGenerazione(radice, costruisci, archivio) {
     esigi(dati.twitch.domini.indexOf('127.0.0.1') !== -1, '127.0.0.1 non aggiunto ai domini');
   });
 
-  await prova('window.DATI.pollo c e, con le sette liste di frasi', () => {
+  await prova('window.DATI non ha piu il ramo del pollo accanto al player', () => {
     const testo = fs.readFileSync(P.datiJs, 'utf8');
     const dati = JSON.parse(testo.slice(testo.indexOf('{'), testo.lastIndexOf('}') + 1));
-    esigi(dati.pollo && typeof dati.pollo === 'object', 'manca il ramo pollo');
-    for (const chiave of ['attivo', 'chatVera', 'mostraMessaggi']) {
-      esigiUguale(typeof dati.pollo[chiave], 'boolean', 'pollo.' + chiave + ' deve essere un booleano');
-    }
-
-    for (const elenco of ['riposo', 'click', 'chat', 'scrive', 'live', 'lurk', 'offline']) {
-      esigi(Array.isArray(dati.pollo.frasi[elenco]), 'manca frasi.' + elenco);
-      esigi(dati.pollo.frasi[elenco].length > 0, 'frasi.' + elenco + ' e vuoto');
-      esigi(dati.pollo.frasi[elenco].every((f) => typeof f === 'string' && f.trim()), 'una frase vuota in ' + elenco);
-    }
-    esigiUguale(Object.keys(dati.pollo.frasi).length, 7, 'liste di frasi');
-    esigi(!!dati.pollo.testi.etichetta, 'manca l etichetta del bottone del pollo');
-    esigi(!!dati.pollo.testi.nascondi, 'manca l etichetta del «nascondi»');
-
-    for (const elenco of ['riposo', 'click', 'scrive', 'live', 'lurk', 'offline']) {
-      esigi(dati.pollo.frasi[elenco].every((f) => f.indexOf('{nome}') === -1), '{nome} usato in frasi.' + elenco);
-    }
+    esigi(!('pollo' in dati), 'il ramo pollo c e ancora');
   });
 
-  await prova('la pagina ha la sezione #diretta, il pollo e sei voci nel binario', () => {
+  await prova('la pagina ha la sezione #diretta, sei voci nel binario e niente pollo accanto al player', () => {
     const html = fs.readFileSync(P.indexHtml, 'utf8');
     esigiDentro(html, 'id="diretta"', 'la sezione della diretta');
-    esigiDentro(html, 'id="pollo"', 'il pollo');
+    esigi(html.indexOf('id="pollo"') === -1, 'il pollo accanto al player c e ancora');
     esigiDentro(html, 'id="twitch-embed"', 'il posto del player');
     esigiUguale((html.match(/class="binario__voce"/g) || []).length, 6, 'voci del binario');
 
@@ -1109,7 +1093,7 @@ async function proveLurk(contenutiVeri, costruisci, archivio) {
     esigi(coda.every((s) => facoltativi.indexOf(s) > -1),
       'gli script facoltativi non stanno in fondo: ' + soloNostri.join(','));
     esigiUguale(fissi.join(','),
-      'js/ritorno.js,js/dati.js,js/player.js,js/festa.js,js/sito.js,js/bonk.js,js/meteora.js,js/account.js,js/canale.js,js/spettatori.js,js/lurk.js,js/pollo.js,js/cima.js,js/guardia.js,js/sondaggio.js',
+      'js/ritorno.js,js/dati.js,js/player.js,js/festa.js,js/sito.js,js/bonk.js,js/meteora.js,js/account.js,js/canale.js,js/spettatori.js,js/lurk.js,js/cima.js,js/guardia.js,js/sondaggio.js',
       'ordine degli script del sito');
   });
 
@@ -9501,6 +9485,25 @@ async function proveGiochiDati() {
     esigiDentro(giochi.raccontaGiochi({ stato: 'fallito', motivo: 'rete' }), 'Tengo l elenco di prima', 'riga del fallimento');
     esigiDentro(giochi.raccontaGiochi({ stato: 'aggiornato', giochi: 3, clip: 7, generi: 'igdb' }), '3 giochi', 'riga del successo');
     esigiUguale(giochi.raccontaGiochi({ stato: 'boh' }), '', 'stato sconosciuto');
+  });
+
+  await prova('Pubblica riusa le clip lette da meno di un ora, poi le rilegge', () => {
+    const ora = Date.parse('2026-10-01T10:00:00Z');
+    const salvati = { clipIl: '2026-10-01T09:30:00Z', clipTotali: 42, clip: { 100: { quante: 3 } }, giochi: [] };
+    const fresche = giochi.clipRecenti(salvati, ora);
+    esigi(fresche && fresche.totale === 42 && fresche.clip[100].quante === 3, 'mezz ora fa: si riusano');
+    esigiUguale(giochi.clipRecenti(Object.assign({}, salvati, { clipIl: '2026-10-01T08:59:00Z' }), ora), null, 'piu di un ora: si rileggono');
+    esigiUguale(giochi.clipRecenti(Object.assign({}, salvati, { clipIl: '2026-10-01T11:00:00Z' }), ora), null, 'data nel futuro: si rileggono');
+    esigiUguale(giochi.clipRecenti({ giochi: [] }, ora), null, 'file di prima, senza clip salvate');
+    esigiUguale(giochi.clipRecenti(null, ora), null, 'nessun file');
+    esigiDentro(giochi.raccontaGiochi({ stato: 'aggiornato', giochi: 3, clip: 42, clipRiusate: true, generi: 'igdb' }), 'meno di un ora fa', 'il resoconto lo dice');
+  });
+
+  await prova('Pubblica chiede a Twitch e a YouTube tutto insieme, non uno dopo l altro', () => {
+    const codice = fs.readFileSync(path.join(__dirname, 'lib', 'api.js'), 'utf8');
+    const rotta = codice.slice(codice.indexOf('async function rottaPubblica'), codice.indexOf('function rottaAnteprima('));
+    esigiDentro(rotta, 'await Promise.all([', 'aggiornamenti in parallelo');
+    esigiUguale((rotta.match(/await /g) || []).length, 1, 'un solo await nella rotta');
   });
 }
 

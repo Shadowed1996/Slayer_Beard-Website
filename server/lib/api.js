@@ -204,16 +204,16 @@ async function rottaScriviContenuti(req, res) {
 async function rottaPubblica(req, res) {
 
   const daChiavi = chiavi.sincronizzaClientId();
-  const daTwitch = await twitch.aggiornaUltimaDiretta();
-  const iFollower = await twitch.aggiornaFollower();
-  const leClip = await twitch.aggiornaClip();
-  const iNumeri = await twitch.aggiornaNumeri();
-
-  const laCategoria = await twitch.aggiornaCategoria();
-
-  const leEmote = await twitch.aggiornaEmote();
-  const gliIscritti = await youtube.aggiornaIscritti();
-  const iGiochi = await giochi.aggiornaGiochi();
+  const [daTwitch, iFollower, leClip, iNumeri, laCategoria, leEmote, gliIscritti, iGiochi] = await Promise.all([
+    twitch.aggiornaUltimaDiretta(),
+    twitch.aggiornaFollower(),
+    twitch.aggiornaClip(),
+    twitch.aggiornaNumeri(),
+    twitch.aggiornaCategoria(),
+    twitch.aggiornaEmote(),
+    youtube.aggiornaIscritti(),
+    giochi.aggiornaGiochi()
+  ]);
   const esito = costruisci.genera();
 
   json(res, 200, {

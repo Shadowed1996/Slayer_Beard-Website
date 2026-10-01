@@ -238,35 +238,8 @@ const gruppi = [
   {
     id: 'pollo',
     titolo: 'Il pollo',
-    descrizione: 'La mascotte accanto al player: cosa dice, e se ascoltare davvero la chat del canale.',
+    descrizione: 'La sorpresa «slayer» con la pioggia di polletti e il gioco Pollo Run.',
     campi: [
-      { chiave: 'config.pollo.attivo', etichetta: 'Mostra il pollo', tipo: 'interruttore',
-        aiuto: 'Spento, la mascotte non compare per nessuno e il resto di questo gruppo non ha effetto.' },
-      { chiave: 'pollo.etichetta', etichetta: 'Cosa fa il pollo, per chi non lo vede', tipo: 'testo', max: 60,
-        aiuto: 'È l\'etichetta del bottone, letta dai lettori di schermo: descrivi l\'azione («Apri la chat del canale»), non l\'immagine.' },
-      { chiave: 'pollo.nascondi', etichetta: 'Etichetta del bottone «nascondi»', tipo: 'testo', max: 40,
-        aiuto: 'Chi lo usa non rivede il pollo: la scelta resta memorizzata nel suo browser.' },
-
-      { chiave: 'config.pollo.chatVera', etichetta: 'Ascolta la chat vera del canale', tipo: 'interruttore',
-        aiuto: 'Acceso, il sito si collega in sola lettura alla chat di Twitch e il pollo reagisce quando qualcuno scrive davvero. Spento, il pollo si limita a stato del canale e clic.' },
-      { chiave: 'config.pollo.mostraMessaggi', etichetta: 'Mostra il testo dei messaggi nel fumetto', tipo: 'interruttore',
-        aiuto: 'ATTENZIONE: acceso, sul sito finisce quello che la gente scrive in chat, insulti compresi, senza che nessuno lo abbia letto prima. Spento (consigliato) il pollo dice solo una frase tua con il nome di chi ha scritto.' },
-
-      { chiave: 'config.pollo.frasi.riposo', etichetta: 'Frasi — quando non succede niente', tipo: 'elencoTesti',
-        aiuto: 'Da tre a sei frasi brevi, nessuna vuota: il pollo ne pesca una a caso.' },
-      { chiave: 'config.pollo.frasi.click', etichetta: 'Frasi — quando gli si clicca sopra', tipo: 'elencoTesti',
-        aiuto: 'Il clic apre anche la chat: le frasi possono darlo per scontato.' },
-
-      { chiave: 'config.pollo.frasi.chat', etichetta: 'Frasi — quando qualcuno scrive in chat', tipo: 'elencoTesti',
-        aiuto: 'Qui, e solo qui, puoi scrivere {nome}: viene sostituito dal nome di chi ha scritto (negli altri elenchi resterebbe stampato così com\'è). Tienine almeno un paio SENZA {nome}: quando a scrivere sei tu nella chat qui sul sito, il nome non si sa e il pollo usa quelle.' },
-      { chiave: 'config.pollo.frasi.scrive', etichetta: 'Frasi — mentre il visitatore scrive nella chat', tipo: 'elencoTesti',
-        aiuto: 'Il sito non può leggere dentro la chat di Twitch: sa solo che il cursore è finito lì dentro. Evita frasi che diano per certo che il messaggio sia partito.' },
-      { chiave: 'config.pollo.frasi.live', etichetta: 'Frasi — quando il canale va in onda', tipo: 'elencoTesti' },
-      { chiave: 'config.pollo.frasi.lurk', etichetta: 'Frasi — quando si attiva la modalità lurk', tipo: 'elencoTesti',
-        aiuto: 'Le dice quando il visitatore accende il lurk qui sopra. Se la modalità lurk è spenta, questo elenco non viene mai usato.' },
-      { chiave: 'config.pollo.frasi.offline', etichetta: 'Frasi — quando il canale è spento', tipo: 'elencoTesti',
-        aiuto: 'Meglio non scriverci dentro giorni e orari fissi: se cambi le dirette qui sotto, queste frasi resterebbero indietro.' },
-
       { chiave: 'config.slayer.attivo', etichetta: 'Sorpresa «slayer»: canzone e polletti', tipo: 'interruttore', predefinito: true,
         aiuto: 'Chi scrive «slayer» con la tastiera, in qualunque pagina del sito, fa partire per 21 secondi la pioggia di polletti con la canzone «J (mp3cut.net).mp3» della cartella mp3. Non parte scrivendo dentro una casella di testo e si ferma con Esc. Spenta, la sorpresa non esiste: lo script non viene nemmeno caricato. Vale dalla prossima Pubblica, ed è indipendente dal pollo qui sopra.' },
       { chiave: 'config.pollorun.attivo', etichetta: 'Pollo Run sul sito: scrivi «pollorun»', tipo: 'interruttore', predefinito: true,
@@ -1048,6 +1021,9 @@ function scrivi(contenuti, chiave, valore) {
 }
 
 const SUPERATE = [
+  'config.pollo',
+  'pollo.etichetta',
+  'pollo.nascondi',
   'spotify.titolo',
   'spotify.ascolta',
   'spotify.passa',

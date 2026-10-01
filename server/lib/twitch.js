@@ -54,10 +54,20 @@ function chiedi(opzioni, corpo) {
   });
 }
 
-async function appToken() {
-  const ora = Date.now();
-  if (tokenInCache && tokenInCache.scadeIl - ANTICIPO_MS > ora) { return tokenInCache.valore; }
+let tokenInArrivo = null;
 
+async function appToken() {
+  if (tokenInCache && tokenInCache.scadeIl - ANTICIPO_MS > Date.now()) { return tokenInCache.valore; }
+  if (tokenInArrivo) { return tokenInArrivo; }
+  tokenInArrivo = chiediAppToken();
+  try {
+    return await tokenInArrivo;
+  } finally {
+    tokenInArrivo = null;
+  }
+}
+
+async function chiediAppToken() {
   const chiavi = credenziali();
   if (!chiavi) { throw new Error('Mancano le chiavi in ' + P.chiavi + ': lancia node server/imposta-twitch.js.'); }
 

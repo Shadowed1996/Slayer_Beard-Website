@@ -13,6 +13,7 @@ const FUSO = 'Europe/Rome';
 const MINUTI_SLOT = 10;
 const ORA_CAMBIO_GIORNATA = 6;
 const MAX_PAGINE_CLIP = 10;
+const CLIP_FRESCHE_MS = 60 * 60 * 1000;
 const MAX_ID_GIOCHI = 100;
 const MAX_ID_IGDB = 500;
 const MAX_GENERI = 3;
@@ -290,6 +291,13 @@ function giochiSalvati() {
   return dati;
 }
 
+function clipRecenti(salvati, ora) {
+  if (!salvati || !salvati.clip || typeof salvati.clip !== 'object' || Array.isArray(salvati.clip)) { return null; }
+  const quando = Date.parse(salvati.clipIl);
+  if (!Number.isFinite(quando) || ora - quando < 0 || ora - quando >= CLIP_FRESCHE_MS) { return null; }
+  return { clip: salvati.clip, totale: Number.isInteger(salvati.clipTotali) ? salvati.clipTotali : 0, il: salvati.clipIl };
+}
+
 function perId(elenco) {
   const mappa = {};
   for (const voce of Array.isArray(elenco) ? elenco : []) {
@@ -503,10 +511,22 @@ async function aggiornaGiochi() {
   try { inOnda = (await controllaDiretta(idUtente)).inOnda; } catch (e) { inOnda = false; }
 
   try {
-    const clipGrezze = await tutteLeClip(idUtente);
-    const clip = raggruppaClip(clipGrezze);
-    const seme = semeGiochi();
     const salvati = giochiSalvati();
+    const recenti = clipRecenti(salvati, Date.now());
+    let clip;
+    let clipTotali;
+    let clipIl;
+    if (recenti) {
+      clip = recenti.clip;
+      clipTotali = recenti.totale;
+      clipIl = recenti.il;
+    } else {
+      const clipGrezze = await tutteLeClip(idUtente);
+      clip = raggruppaClip(clipGrezze);
+      clipTotali = clipGrezze.length;
+      clipIl = new Date().toISOString();
+    }
+    const seme = semeGiochi();
     const registro = registroSalvato();
 
     const ids = [];
@@ -538,11 +558,12 @@ async function aggiornaGiochi() {
     });
 
     assicuraCartella(path.dirname(P.giochiTwitch));
-    scriviAtomico(P.giochiTwitch, JSON.stringify({ letteIl: new Date().toISOString(), giochi: giochi }, null, 2) + '\n');
+    scriviAtomico(P.giochiTwitch, JSON.stringify({ letteIl: new Date().toISOString(), clipIl: clipIl, clipTotali: clipTotali, clip: clip, giochi: giochi }, null, 2) + '\n');
     return {
       stato: 'aggiornato',
       giochi: giochi.length,
-      clip: clipGrezze.length,
+      clip: clipTotali,
+      clipRiusate: !!recenti,
       inOnda: inOnda,
       generi: generiIgdb ? 'igdb' : 'precedenti',
       motivoIgdb: motivoIgdb
@@ -560,7 +581,8 @@ function raccontaGiochi(esito) {
     case 'senzaCanale':
       return 'Giochi: manca l ID del canale (campo config.twitch.idUtente), non ho chiesto niente a Twitch.';
     case 'aggiornato':
-      return 'Giochi: ' + esito.giochi + (esito.giochi === 1 ? ' gioco' : ' giochi') + ' da ' + esito.clip + ' clip e dal registro delle dirette' +
+      return 'Giochi: ' + esito.giochi + (esito.giochi === 1 ? ' gioco' : ' giochi') + ' da ' + esito.clip + ' clip' +
+        (esito.clipRiusate ? ' (lette meno di un ora fa, non le ho richieste di nuovo)' : '') + ' e dal registro delle dirette' +
         (esito.generi === 'igdb' ? '.' : '; le tipologie restano quelle di prima (IGDB non ha risposto).');
     case 'fallito':
       return 'Giochi: non sono riuscito a chiederli a Twitch (' + esito.motivo + '). Tengo l elenco di prima.';
@@ -598,6 +620,6 @@ module.exports = {
   aggiornaGiochi, raccontaGiochi, avviaControllo, controllaDiretta, annotaSlot,
   slotDi, giornataDi, msAlProssimoSlot, traduciGeneri, generiDaRisposta, raggruppaClip, raggruppaRegistro,
   pulisciRegistro, fondiGiochi, giochiDaRisposta, copertinaDaTwitch, copertinaDaPezzo, copertinaValida,
-  corpoIgdb, semeGiochi, giochiSalvati, registroSalvato,
+  corpoIgdb, semeGiochi, giochiSalvati, registroSalvato, clipRecenti,
   MINUTI_SLOT, MAX_GENERI, MAX_PAGINE_CLIP
 };

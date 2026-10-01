@@ -15,7 +15,7 @@ const BLOCCATA = 'regia';
 const FISSA_IN_CIMA = 'binario';
 const FISSA_IN_FONDO = 'piede';
 
-const INTERRUTTORI_DIRETTA = ['config.account.attivo', 'config.lurk.attivo', 'config.pollo.attivo', 'config.clip.attivo'];
+const INTERRUTTORI_DIRETTA = ['config.account.attivo', 'config.lurk.attivo', 'config.clip.attivo'];
 
 const FRASI_BLOCCATE = {
   binario: 'Sempre presente: il menu laterale porta a tutte le altre sezioni, quindi non si spegne e non si sposta.',
@@ -1063,7 +1063,6 @@ export function disegnaNavigatore(contenitore) {
 const PARTE_DELL_INTERRUTTORE = {
   'config.account.attivo': 'account',
   'config.lurk.attivo': 'lurk',
-  'config.pollo.attivo': 'pollo',
   'config.clip.attivo': 'clip'
 };
 let ritorno = null;
