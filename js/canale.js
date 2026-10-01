@@ -148,9 +148,16 @@
     avvisa();
   }
 
+  function inLurk() {
+    const L = window.Lurk;
+    if (!L || typeof L.stato !== 'function') { return false; }
+    try { return L.stato().acceso === true; } catch (err) { return false; }
+  }
+
   function giro() {
     if (inVolo || !account() || !CANALE) { return; }
-    if (document.visibilityState !== 'visible') { return; }
+    const nascosta = document.visibilityState !== 'visible';
+    if (nascosta && !inLurk()) { return; }
     if (!window.Account.stato().collegato) { return; }
 
     inVolo = true;
@@ -160,7 +167,7 @@
       .then(function (ok) {
         if (!ok) { return null; }
         return chiediDiretta().then(function (andata) {
-          if (!andata) { return null; }
+          if (!andata || nascosta) { return null; }
           return chiediUltima().then(chiediFollower);
         });
       })
