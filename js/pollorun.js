@@ -5,6 +5,7 @@
   var PAUSA_MAX_MS = 2000;
   var MODI = ['fissa', 'ordine', 'caso'];
   var STILI = ['synthwave', 'geometrydash'];
+  var NOMI_DIFFICOLTA = { facile: 'Facile', medio: 'Medio', difficile: 'Difficile', estremo: 'Estremo' };
   var RIPIEGO = { titolo: 'Back On Track', autore: 'DJVI', file: 'mp3/DJVI%20-%20Back%20On%20Track.mp3' };
   var VOLUME_BASE = 30;
   var PASSO_VOLUME = 5;
@@ -411,6 +412,7 @@
   function chiudi() {
     if (!aperto) { return false; }
     var stato = aperto;
+    if (stato.classifica && stato.classifica.progressoInAttesa) { mandaProgresso(stato, null); }
     aperto = null;
     if (stato.podio) { stato.podio.togli(); }
     try { stato.gioco.ferma(); } catch (errore) { }
@@ -707,6 +709,8 @@
     cl.token = token;
     cl.partita = null;
     cl.io = null;
+    cl.inviati = '';
+    cl.confermate = [];
     if (!token) {
       cl.collegato = false;
       dipingiClassifica(stato);
@@ -729,7 +733,58 @@
       cl.nome = cl.collegato ? String(dati.nome || dati.login || '').slice(0, 40) : '';
       cl.io = cl.collegato && typeof dati.login === 'string' ? { login: dati.login, migliori: dati.migliori && typeof dati.migliori === 'object' ? dati.migliori : {} } : null;
       dipingiClassifica(stato);
+      if (cl.collegato) { sincronizzaLivelli(stato, dati.partenze); }
     });
+  }
+
+  function testoSpostato(cambiate) {
+    var pezzi = [];
+    for (var i = 0; i < cambiate.length; i++) {
+      pezzi.push('a ' + NOMI_DIFFICOLTA[cambiate[i].difficolta] + (i === 0 ? ' ora riparti dal livello ' : ' dal ') + cambiate[i].livello);
+    }
+    return 'Livello spostato: ' + pezzi.join(', ');
+  }
+
+  function sincronizzaLivelli(stato, partenze) {
+    var g = stato.gioco;
+    if (!g || typeof g.partenze !== 'function') { return; }
+    var esito = null;
+    try { esito = g.partenze(partenze); } catch (errore) { esito = null; }
+    if (!esito) { return; }
+    if (esito.cambiate && esito.cambiate.length) { avvisaClassifica(stato, testoSpostato(esito.cambiate)); }
+    mandaProgresso(stato, esito.applicate);
+  }
+
+  function mandaProgresso(stato, applicate) {
+    var cl = stato.classifica;
+    if (!cl) { return; }
+    cl.progressoInAttesa = false;
+    if (cl.spenta || !cl.token || cl.collegato !== true || aperto !== stato) { return; }
+    var g = stato.gioco;
+    var livelli = {};
+    try { livelli = g && typeof g.raggiunti === 'function' ? g.raggiunti() : {}; } catch (errore) { livelli = {}; }
+    var corpo = { livelli: livelli && typeof livelli === 'object' ? livelli : {} };
+    if (applicate && applicate.length) { corpo.applicate = applicate.slice(0, 8); }
+    if (!Object.keys(corpo.livelli).length && !corpo.applicate) { return; }
+    var nuove = (corpo.applicate || []).some(function (v) { return cl.confermate.indexOf(v) === -1; });
+    if (JSON.stringify(corpo.livelli) === cl.inviati && !nuove) { return; }
+    cl.inviati = JSON.stringify(corpo.livelli);
+    cl.confermate = cl.confermate.concat(corpo.applicate || []).slice(-20);
+    var promessa = chiamaApi('POST', 'api/classifica/progresso', cl.token, corpo);
+    if (!promessa) { cl.inviati = ''; cl.confermate = []; return; }
+    promessa.then(function (esito) {
+      if (esito.codice !== 200) { cl.inviati = ''; cl.confermate = []; }
+    });
+  }
+
+  function suRaggiunto(stato) {
+    var cl = stato.classifica;
+    if (!cl) { return; }
+    cl.progressoInAttesa = true;
+    var giro = ++cl.giroProgresso;
+    dopo(function () {
+      if (giro === cl.giroProgresso && cl.progressoInAttesa) { mandaProgresso(stato, null); }
+    }, 1500);
   }
 
   function scaduto(stato) {
@@ -832,7 +887,7 @@
       try { a.entra(); } catch (errore) { }
       try { stato.radice.focus({ preventScroll: true }); } catch (errore) { }
     });
-    stato.classifica = { scatola: scatola, pillola: pillola, avviso: avviso, giro: 0, chiesto: 0, token: '', collegato: false, nome: '', partita: null, spenta: false, io: null };
+    stato.classifica = { scatola: scatola, pillola: pillola, avviso: avviso, giro: 0, chiesto: 0, token: '', collegato: false, nome: '', partita: null, spenta: false, io: null, inviati: '', confermate: [], progressoInAttesa: false, giroProgresso: 0 };
     var a = account();
     if (a && typeof a.suStato === 'function' && !ascoltoAccount) {
       ascoltoAccount = true;
@@ -924,7 +979,8 @@
       suPartita: function () { },
       suChiudi: chiudi,
       ingombro: ingombro,
-      suLivello: CLASSIFICA ? function (evento) { suLivello(stato, evento); } : undefined
+      suLivello: CLASSIFICA ? function (evento) { suLivello(stato, evento); } : undefined,
+      suRaggiunto: CLASSIFICA ? function () { suRaggiunto(stato); } : undefined
     });
     stato.gioco.avvia();
     try { radice.focus({ preventScroll: true }); } catch (errore) { }

@@ -283,5 +283,6 @@ export const api = {
   classifica: () => richiesta('GET', '/api/classifica/gestione'),
   classificaTogli: (dati) => richiesta('POST', '/api/classifica/togli', dati),
   classificaBlocca: (dati) => richiesta('POST', '/api/classifica/blocca', dati),
-  classificaStagione: (dati) => richiesta('POST', '/api/classifica/stagione', dati)
+  classificaStagione: (dati) => richiesta('POST', '/api/classifica/stagione', dati),
+  classificaPartenza: (dati) => richiesta('POST', '/api/classifica/partenza', dati)
 };

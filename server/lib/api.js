@@ -30,7 +30,7 @@ const MAX_FILE = 4 * 1024 * 1024 + 64 * 1024;
 const MAX_FONT = font.MAX_BYTE + 64 * 1024;
 
 const SENZA_SESSIONE = new Set(['/api/sessione', '/api/entra', '/api/sondaggio', '/api/sondaggio/voto', '/api/meteora', '/api/pillola', '/api/spettatori',
-  '/api/classifica', '/api/classifica/io', '/api/classifica/partita', '/api/classifica/livello', '/api/classifica/obs']);
+  '/api/classifica', '/api/classifica/io', '/api/classifica/partita', '/api/classifica/livello', '/api/classifica/progresso', '/api/classifica/obs']);
 
 function leggiCorpo(req, massimo) {
   return new Promise((risolvi, rifiuta) => {
@@ -459,11 +459,15 @@ async function rottaClassifica(req, res, percorso, metodo) {
     if (metodo !== 'POST') { return metodoNonAmmesso(res, 'POST'); }
     return conCodice(res, async () => classifica.rottaLivello(req, res, await leggiJson(req)));
   }
+  if (percorso === '/api/classifica/progresso') {
+    if (metodo !== 'POST') { return metodoNonAmmesso(res, 'POST'); }
+    return conCodice(res, async () => classifica.rottaProgresso(req, res, await leggiJson(req)));
+  }
   if (percorso === '/api/classifica/gestione') {
     if (metodo !== 'GET') { return metodoNonAmmesso(res, 'GET'); }
     return json(res, 200, classifica.vistaGestione());
   }
-  const azioni = { '/api/classifica/togli': classifica.togli, '/api/classifica/blocca': classifica.blocca, '/api/classifica/stagione': classifica.nuovaStagione };
+  const azioni = { '/api/classifica/togli': classifica.togli, '/api/classifica/blocca': classifica.blocca, '/api/classifica/stagione': classifica.nuovaStagione, '/api/classifica/partenza': classifica.impostaLivello };
   if (Object.prototype.hasOwnProperty.call(azioni, percorso)) {
     if (metodo !== 'POST') { return metodoNonAmmesso(res, 'POST'); }
     return conCodice(res, async () => json(res, 200, azioni[percorso](await leggiJson(req))));

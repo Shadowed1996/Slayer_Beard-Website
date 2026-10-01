@@ -35,12 +35,17 @@ const AVATAR_PREFISSO = 'https://static-cdn.jtvnw.net/';
 const ID_RE = /^\d{1,20}$/;
 const LOGIN_RE = /^[a-z0-9_]{1,25}$/;
 const STAGIONE_RE = /^s\d{1,6}$/;
+const VERSIONE_RE = /^[0-9a-f]{16}$/;
+const MAX_GIOCATORI = 20000;
+const MAX_APPLICATE = 8;
 
 const LIMITI = {
   partitaUtente: { max: 40, finestra: FINESTRA_MS },
   partitaIp: { max: 80, finestra: FINESTRA_MS },
   livelloUtente: { max: 40, finestra: FINESTRA_MS },
-  livelloIp: { max: 80, finestra: FINESTRA_MS }
+  livelloIp: { max: 80, finestra: FINESTRA_MS },
+  progressoUtente: { max: 60, finestra: FINESTRA_MS },
+  progressoIp: { max: 120, finestra: FINESTRA_MS }
 };
 
 const PREDEFINITE = { attiva: false, titolo: 'Classifica di Pollo Run', righe: 10, difficoltaObs: 'medio', avatar: true, aggiornaSecondi: 15 };
@@ -177,7 +182,8 @@ function vuoto() {
     voci: vociVuote(),
     stagioni: [],
     bloccati: [],
-    usati: {}
+    usati: {},
+    giocatori: {}
   };
 }
 
@@ -209,6 +215,52 @@ function vociPulite(grezze) {
     }
   }
   return voci;
+}
+
+function dataPulita(v) {
+  return typeof v === 'string' && !isNaN(Date.parse(v)) ? v : '';
+}
+
+function livelliPuliti(grezzi) {
+  const livelli = {};
+  if (!oggetto(grezzi)) { return livelli; }
+  for (const x of DIFFICOLTA) {
+    const l = grezzi[x];
+    if (!oggetto(l)) { continue; }
+    const pulito = {
+      ora: intero(l.ora, 1, MAX_LIVELLO) ? l.ora : 0,
+      impostato: intero(l.impostato, 1, MAX_LIVELLO) ? l.impostato : 0,
+      versione: VERSIONE_RE.test(String(l.versione || '')) ? String(l.versione) : '',
+      quando: dataPulita(l.quando),
+      applicato: VERSIONE_RE.test(String(l.applicato || '')) ? String(l.applicato) : '',
+      applicatoIl: dataPulita(l.applicatoIl)
+    };
+    if (!pulito.impostato) {
+      pulito.versione = '';
+      pulito.applicato = '';
+      pulito.applicatoIl = '';
+    }
+    if (pulito.ora || pulito.impostato) { livelli[x] = pulito; }
+  }
+  return livelli;
+}
+
+function giocatoriPuliti(grezzi) {
+  const giocatori = {};
+  if (!oggetto(grezzi)) { return giocatori; }
+  for (const id of Object.keys(grezzi)) {
+    const g = grezzi[id];
+    if (!ID_RE.test(id) || !oggetto(g)) { continue; }
+    const login = String(g.login || '').toLowerCase();
+    giocatori[id] = {
+      login: LOGIN_RE.test(login) ? login : '',
+      nome: testoPulito(g.nome, 40),
+      avatar: avatarPulito(g.avatar),
+      visto: dataPulita(g.visto),
+      livelli: livelliPuliti(g.livelli)
+    };
+  }
+  return giocatori;
 }
 
 function normalizza(letto) {
@@ -243,6 +295,7 @@ function normalizza(letto) {
       if (/^[0-9a-f]{16}$/.test(k) && intero(letto.usati[k], 0, Number.MAX_SAFE_INTEGER)) { d.usati[k] = letto.usati[k]; }
     }
   }
+  d.giocatori = giocatoriPuliti(letto.giocatori);
   return d;
 }
 
@@ -460,6 +513,27 @@ function migliore(d, difficolta, id) {
   return voce ? voce.livello : 0;
 }
 
+function sblocco(d, difficolta, id) {
+  const g = d.giocatori[id];
+  const l = g && g.livelli[difficolta];
+  return l ? l.impostato : 0;
+}
+
+function serveIlPrecedente(d, difficolta, id, n) {
+  return n > 1 && migliore(d, difficolta, id) < n - 1 && n > sblocco(d, difficolta, id);
+}
+
+function partenzeDi(d, id) {
+  const g = d.giocatori[id];
+  const partenze = {};
+  if (!g) { return partenze; }
+  for (const x of DIFFICOLTA) {
+    const l = g.livelli[x];
+    if (l && l.impostato && l.versione && l.applicato !== l.versione) { partenze[x] = { livello: l.impostato, versione: l.versione }; }
+  }
+  return partenze;
+}
+
 function rigaPubblica(v, i) {
   return { pos: i + 1, nome: v.nome || v.login, login: v.login, avatar: v.avatar, livello: v.livello, quando: v.quando };
 }
@@ -537,7 +611,8 @@ async function rottaIo(req, res) {
   for (const x of DIFFICOLTA) { migliori[x] = migliore(d, x, u.id); }
   json(res, 200, {
     collegato: true, login: u.login, nome: u.nome, avatar: u.avatar,
-    migliori: migliori, bloccato: bloccato(d, u.id), attiva: impostazioni().attiva
+    migliori: migliori, bloccato: bloccato(d, u.id), attiva: impostazioni().attiva,
+    partenze: partenzeDi(d, u.id)
   });
 }
 
@@ -560,7 +635,7 @@ async function rottaPartita(req, res, corpo) {
     throw erroreHttp(400, 'Servono un livello (numero intero da 1) e una difficoltà valida.', { codice: 'DATI_NON_VALIDI' });
   }
   const n = corpo.livello;
-  if (n > 1 && migliore(d, difficolta, u.id) < n - 1) {
+  if (serveIlPrecedente(d, difficolta, u.id, n)) {
     throw erroreHttp(409, 'Per entrare in classifica col livello ' + n + ' devi prima completare il livello ' + (n - 1) + ' collegato.',
       { codice: 'SERVE_PRECEDENTE', serve: n - 1 });
   }
@@ -605,7 +680,7 @@ async function rottaLivello(req, res, corpo) {
     throw erroreHttp(422, 'Troppo veloce: il livello ' + g.n + ' non si può finire così presto.', { codice: 'TROPPO_VELOCE' });
   }
   d = carica();
-  if (g.n > 1 && migliore(d, g.d, u.id) < g.n - 1) {
+  if (serveIlPrecedente(d, g.d, u.id, g.n)) {
     throw erroreHttp(409, 'Per entrare in classifica col livello ' + g.n + ' devi prima completare il livello ' + (g.n - 1) + ' collegato.',
       { codice: 'SERVE_PRECEDENTE', serve: g.n - 1 });
   }
@@ -643,6 +718,66 @@ async function rottaLivello(req, res, corpo) {
     posizione: elenco.findIndex((v) => v.id === u.id) + 1,
     totale: elenco.length
   });
+}
+
+function livelloVuoto() {
+  return { ora: 0, impostato: 0, versione: '', quando: '', applicato: '', applicatoIl: '' };
+}
+
+function inAttesa(l) {
+  return !!(l && l.impostato && l.versione && l.applicato !== l.versione);
+}
+
+function potaGiocatori(d) {
+  const ids = Object.keys(d.giocatori);
+  if (ids.length <= MAX_GIOCATORI) { return; }
+  const togliibili = ids.filter((id) => !DIFFICOLTA.some((x) => inAttesa(d.giocatori[id].livelli[x])))
+    .sort((a, b) => (Date.parse(d.giocatori[a].visto) || 0) - (Date.parse(d.giocatori[b].visto) || 0));
+  for (const id of togliibili.slice(0, ids.length - MAX_GIOCATORI)) { delete d.giocatori[id]; }
+}
+
+function datiNonValidi(testo) {
+  return erroreHttp(400, testo, { codice: 'DATI_NON_VALIDI' });
+}
+
+async function rottaProgresso(req, res, corpo) {
+  const u = await giocatore(req, true);
+  freno(req, u.id, 'progressoUtente', 'progressoIp');
+  const livelli = corpo.livelli === undefined ? {} : corpo.livelli;
+  const applicate = corpo.applicate === undefined || corpo.applicate === null ? [] : corpo.applicate;
+  if (!oggetto(livelli)) { throw datiNonValidi('I livelli vanno mandati come { difficoltà: livello }.'); }
+  const chiaviLivelli = Object.keys(livelli);
+  if (chiaviLivelli.some((x) => DIFFICOLTA.indexOf(x) === -1 || !intero(livelli[x], 1, MAX_LIVELLO))) {
+    throw datiNonValidi('Ogni livello deve essere un intero da 1 a ' + MAX_LIVELLO + ', per facile, medio, difficile o estremo.');
+  }
+  if (!Array.isArray(applicate) || applicate.length > MAX_APPLICATE || !applicate.every((v) => typeof v === 'string' && VERSIONE_RE.test(v))) {
+    throw datiNonValidi('Le partenze applicate non sono valide.');
+  }
+  const d = carica();
+  const quando = new Date(adesso()).toISOString();
+  let g = d.giocatori[u.id];
+  if (!g) {
+    g = { login: '', nome: '', avatar: '', visto: '', livelli: {} };
+    d.giocatori[u.id] = g;
+  }
+  g.login = u.login;
+  g.nome = u.nome;
+  g.avatar = u.avatar;
+  g.visto = quando;
+  for (const x of chiaviLivelli) {
+    if (!g.livelli[x]) { g.livelli[x] = livelloVuoto(); }
+    g.livelli[x].ora = livelli[x];
+  }
+  for (const x of DIFFICOLTA) {
+    const l = g.livelli[x];
+    if (inAttesa(l) && applicate.indexOf(l.versione) !== -1) {
+      l.applicato = l.versione;
+      l.applicatoIl = quando;
+    }
+  }
+  potaGiocatori(d);
+  salva();
+  json(res, 200, { ok: true, partenze: partenzeDi(d, u.id) });
 }
 
 function rigaObs(v, conAvatar) {
@@ -706,6 +841,63 @@ function rottaObs(req, res, url) {
   res.end(buf);
 }
 
+function vocePerId(d, id) {
+  for (const x of DIFFICOLTA) {
+    const v = d.voci[x].find((w) => w.id === id);
+    if (v) { return v; }
+  }
+  const b = d.bloccati.find((w) => w.id === id);
+  if (b) { return b; }
+  for (let i = d.stagioni.length - 1; i >= 0; i--) {
+    for (const x of DIFFICOLTA) {
+      const v = d.stagioni[i].voci[x].find((w) => w.id === id);
+      if (v) { return v; }
+    }
+  }
+  return null;
+}
+
+function elencoGiocatori(d) {
+  const noti = new Map();
+  for (const id of Object.keys(d.giocatori)) {
+    const g = d.giocatori[id];
+    noti.set(id, { login: g.login, nome: g.nome, avatar: g.avatar });
+  }
+  for (const x of DIFFICOLTA) {
+    for (const v of d.voci[x]) {
+      if (!noti.has(v.id)) { noti.set(v.id, { login: v.login, nome: v.nome, avatar: v.avatar }); }
+    }
+  }
+  const elenco = [];
+  for (const [id, info] of noti) {
+    const scheda = d.giocatori[id];
+    const livelli = {};
+    for (const x of DIFFICOLTA) {
+      const l = scheda && scheda.livelli[x];
+      livelli[x] = {
+        ora: l ? l.ora : 0,
+        impostato: l ? l.impostato : 0,
+        quando: l ? l.quando : '',
+        inAttesa: inAttesa(l),
+        applicatoIl: l ? l.applicatoIl : '',
+        record: migliore(d, x, id)
+      };
+    }
+    elenco.push({
+      id: id, login: info.login, nome: info.nome, avatar: info.avatar,
+      visto: scheda ? scheda.visto : '', bloccato: bloccato(d, id), livelli: livelli
+    });
+  }
+  return elenco.sort((a, b) => {
+    const va = Date.parse(a.visto) || 0;
+    const vb = Date.parse(b.visto) || 0;
+    if (va !== vb) { return vb - va; }
+    const na = (a.nome || a.login || a.id).toLowerCase();
+    const nb = (b.nome || b.login || b.id).toLowerCase();
+    return na < nb ? -1 : (na > nb ? 1 : 0);
+  });
+}
+
 function vistaGestione() {
   const d = carica();
   const voci = {};
@@ -715,6 +907,8 @@ function vistaGestione() {
   return {
     impostazioni: impostazioni(),
     difficolta: DIFFICOLTA.slice(),
+    livelloMassimo: MAX_LIVELLO,
+    giocatori: elencoGiocatori(d),
     overlay: '/api/classifica/obs',
     versione: d.versione,
     aggiornata: d.aggiornata,
@@ -766,6 +960,30 @@ function blocca(corpo) {
   return vistaGestione();
 }
 
+function impostaLivello(corpo) {
+  const id = idDa(corpo.id);
+  const difficolta = leggiDifficolta(corpo.difficolta, false);
+  if (!difficolta) { throw datiNonValidi('Difficoltà sconosciuta: sono facile, medio, difficile o estremo.'); }
+  if (!intero(corpo.livello, 1, MAX_LIVELLO)) { throw datiNonValidi('Il livello deve essere un numero intero da 1 a ' + MAX_LIVELLO + '.'); }
+  const d = carica();
+  let g = d.giocatori[id];
+  if (!g) {
+    const noto = vocePerId(d, id);
+    if (!noto) { throw erroreHttp(404, 'Questo giocatore non è mai passato dal gioco collegato con Twitch.', { codice: 'DATI_NON_VALIDI' }); }
+    g = { login: noto.login || '', nome: noto.nome || '', avatar: noto.avatar || '', visto: '', livelli: {} };
+    d.giocatori[id] = g;
+  }
+  if (!g.livelli[difficolta]) { g.livelli[difficolta] = livelloVuoto(); }
+  const l = g.livelli[difficolta];
+  l.impostato = corpo.livello;
+  l.versione = crypto.randomBytes(8).toString('hex');
+  l.quando = new Date(adesso()).toISOString();
+  l.applicato = '';
+  l.applicatoIl = '';
+  salva();
+  return vistaGestione();
+}
+
 function nuovaStagione(corpo) {
   const d = carica();
   const ora = new Date(adesso()).toISOString();
@@ -791,9 +1009,9 @@ function dimentica() {
 }
 
 module.exports = {
-  rottaElenco, rottaIo, rottaPartita, rottaLivello, rottaObs,
-  vistaGestione, togli, blocca, nuovaStagione,
+  rottaElenco, rottaIo, rottaPartita, rottaLivello, rottaProgresso, rottaObs,
+  vistaGestione, togli, blocca, nuovaStagione, impostaLivello,
   durataLivello, impostazioni, verifica, firma,
   sostituisciOrologio, sostituisciProfilo, dimentica, percorsoDati, percorsoChiave,
-  DIFFICOLTA, GETTONE_MS, QUOTA_DURATA, LIMITI, CSP_OBS
+  DIFFICOLTA, GETTONE_MS, QUOTA_DURATA, LIMITI, CSP_OBS, MAX_LIVELLO
 };

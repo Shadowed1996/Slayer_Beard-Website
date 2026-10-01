@@ -563,6 +563,9 @@ body[data-sporco="1"] #btn-salva { border-color: var(--p-allerta); color: var(--
 .classifica__nome { font-size: 14px; font-weight: 600; color: var(--p-testo); overflow-wrap: anywhere; }
 .classifica__meta { font-family: var(--p-mono); font-size: 11px; color: var(--p-testo-tenue); overflow-wrap: anywhere; }
 .classifica__azioni { display: flex; gap: 4px; margin-left: auto; }
+.classifica__sposta { align-items: center; }
+.classifica__numero { width: 6.5em; min-width: 0; padding-block: 5px; font-family: var(--p-mono); font-size: 13px; text-align: center; }
+.classifica__attesa { color: var(--p-viola-chiaro); }
 
 .dialogo {
   border: 1px solid var(--p-linea-forte);
