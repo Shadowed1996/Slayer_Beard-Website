@@ -1817,6 +1817,108 @@ async function proveMeteora(costruisci, archivio) {
       for (const src of dati.meteora.icone) { esigi(/^icone_slayer\/[^/]+$/.test(src), 'icona ' + src); }
       for (const src of dati.meteora.suoni) { esigi(/^suoni_meteora\/[^/]+\.(mp3|wav|ogg|m4a)$/i.test(src), 'suono ' + src); }
       esigiUguale(dati.chi.icone.length, dati.meteora.icone.length, 'stesse icone per il ritratto');
+      esigi(!('halloween' in dati.meteora), 'halloween spento finisce nei dati della home');
+      contenuti.config.pollorun.halloween = true;
+      esigiUguale(costruisci.oggettoDati(contenuti, {}).meteora.halloween, true, 'halloween acceso non arriva alle meteore');
+    });
+
+    await prova('la pioggia di meteore: il lancio vuole la sessione, poi tutti la vedono come pioggia; la meteora singola resta singola', async () => {
+      fs.rmSync(percorsi.P.meteora, { force: true });
+      esigiUguale((await chiama(porta, 'POST', '/api/meteora/pioggia')).stato, 401, 'pioggia senza sessione');
+      const entra = await chiama(porta, 'POST', '/api/entra', { json: { password: PASSWORD_COLLAUDO } });
+      const biscotto = biscottoDa(entra);
+      const pioggia = await chiama(porta, 'POST', '/api/meteora/pioggia', { biscotto });
+      esigiUguale(pioggia.stato, 200, 'stato');
+      esigiUguale(pioggia.dati.tipo, 'pioggia', 'tipo del lancio');
+      const vista = await chiama(porta, 'GET', '/api/meteora');
+      esigiUguale(vista.dati.id, pioggia.dati.id, 'la vede chi visita');
+      esigiUguale(vista.dati.tipo, 'pioggia', 'chi visita sa che e una pioggia');
+      esigiUguale((await chiama(porta, 'POST', '/api/meteora/lancia', { biscotto })).dati.gia, true, 'subito dopo una pioggia la meteora non riparte');
+      fs.rmSync(percorsi.P.meteora, { force: true });
+      const singola = await chiama(porta, 'POST', '/api/meteora/lancia', { biscotto });
+      esigiUguale(singola.dati.tipo, 'meteora', 'la meteora singola');
+      esigiUguale((await chiama(porta, 'GET', '/api/meteora')).dati.tipo, 'meteora', 'chi visita vede la singola');
+      fs.writeFileSync(percorsi.P.meteora, JSON.stringify({ id: 'abcdefabcdef', inviataIl: new Date().toISOString() }) + '\n');
+      esigiUguale((await chiama(porta, 'GET', '/api/meteora')).dati.tipo, 'meteora', 'un meteora.json vecchio senza tipo vale come meteora singola');
+    });
+
+    await prova('meteora.js: la pioggia fa passare tante meteore, tutte cliccabili; con halloween zucche, teschi e polletti stregati, e chi le prende tutte ha la festa', async () => {
+      const monta = (halloween, tipo) => {
+        const timer = [];
+        let ora = 0;
+        const registro = { spruzzi: 0, esplosioni: 0, suoni: 0 };
+        const nodo = (tag) => {
+          const n = { tag: tag, children: [], attrs: {}, ascolta: {}, parentNode: null, className: '', style: { setProperty() {} },
+            setAttribute(k, v) { this.attrs[k] = String(v); if (k === 'class') { this.className = String(v); } },
+            getAttribute(k) { return k in this.attrs ? this.attrs[k] : null; },
+            appendChild(c) { c.parentNode = this; this.children.push(c); return c; },
+            removeChild(c) { this.children = this.children.filter((x) => x !== c); c.parentNode = null; return c; },
+            addEventListener(tipoEvento, fn) { this.ascolta[tipoEvento] = fn; } };
+          return n;
+        };
+        const corpo = nodo('body');
+        const risposta = { id: 'aaaaaaaaaaaa', inviataIl: new Date(1000).toISOString(), adesso: new Date(2000).toISOString(), tipo: tipo };
+        require('node:vm').runInNewContext(fs.readFileSync(path.join(RADICE_VERA, 'js', 'meteora.js'), 'utf8'), {
+          window: {
+            DATI: { meteora: Object.assign({ suoni: ['suoni_meteora/uno.mp3', 'suoni_meteora/due.mp3'] }, halloween ? { halloween: true } : {}) },
+            PolloFesta: { icona: 'icone_slayer/1-anno-72x72.webp', fermo: () => false, esplodi: () => { registro.esplosioni++; }, spruzzo: () => { registro.spruzzi++; } },
+            innerWidth: 1320, innerHeight: 800
+          },
+          document: { body: corpo, hidden: false, createElement: nodo, createElementNS: (ns, tag) => nodo(tag), querySelector: () => null, addEventListener() {}, removeEventListener() {} },
+          sessionStorage: { getItem: () => null, setItem() {} },
+          fetch: () => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(risposta) }),
+          setTimeout: (fn, ms) => { timer.push({ fn: fn, quando: ora + (ms || 0) }); return timer.length; },
+          clearTimeout() {},
+          requestAnimationFrame: () => 1,
+          performance: { now: () => ora },
+          Audio: function () { registro.suoni++; this.play = () => Promise.resolve(); },
+          Date: Date, Math: Math, Number: Number, Object: Object
+        });
+        const avanza = (ms) => {
+          const fine = ora + ms;
+          for (;;) {
+            const pronti = timer.filter((x) => x.quando <= fine).sort((a, b) => a.quando - b.quando);
+            if (!pronti.length) { break; }
+            const primo = pronti[0];
+            timer.splice(timer.indexOf(primo), 1);
+            ora = primo.quando;
+            primo.fn();
+          }
+          ora = fine;
+        };
+        return { corpo: corpo, registro: registro, avanza: avanza, meteore: () => corpo.children.filter((c) => /(^| )meteora( |$)/.test(c.className)) };
+      };
+      const attendiPromesse = () => new Promise((r) => setImmediate(r));
+
+      const h = monta(true, 'pioggia');
+      await attendiPromesse();
+      h.avanza(9000);
+      const volano = h.meteore();
+      esigi(volano.length >= 8 && volano.length <= 16, 'la pioggia ha ' + volano.length + ' meteore');
+      esigi(volano.every((m) => m.tag === 'button' && typeof m.ascolta.click === 'function' && typeof m.ascolta.pointerdown === 'function'), 'non tutte si possono cliccare');
+      const tipi = new Set(volano.map((m) => m.className.replace('meteora meteora--', '')));
+      esigiUguale([...tipi].sort().join(','), 'strega,teschio,zucca', 'i tipi di halloween');
+      esigi(volano.every((m) => m.children.some((c) => c.tag === 'svg')), 'le meteore di halloween non hanno il disegno');
+      esigi(volano.every((m) => /al volo!$/.test(m.getAttribute('aria-label'))), 'manca l etichetta per chi non vede');
+      const quante = volano.length;
+      volano.forEach((m) => { m.ascolta.click({ preventDefault() {} }); });
+      esigiUguale(h.meteore().length, 0, 'cliccate restano in pagina');
+      esigiUguale(h.registro.spruzzi, quante - 1, 'ogni meteora presa esplode');
+      esigiUguale(h.registro.esplosioni, 1, 'chi le prende tutte non ha la festa finale');
+      esigiUguale(h.registro.suoni, quante, 'ogni meteora presa deve avere il suo suono, anche uno sopra l altro');
+
+      const normale = monta(false, 'pioggia');
+      await attendiPromesse();
+      normale.avanza(9000);
+      const polletti = normale.meteore();
+      esigi(polletti.length >= 8, 'senza halloween la pioggia ha ' + polletti.length + ' meteore');
+      esigi(polletti.every((m) => m.className === 'meteora' && m.children.some((c) => c.tag === 'img')), 'senza halloween devono essere polletti normali');
+
+      const singola = monta(true, 'meteora');
+      await attendiPromesse();
+      singola.avanza(9000);
+      esigiUguale(singola.meteore().length, 1, 'la meteora singola deve restare una sola');
+      esigiUguale(singola.meteore()[0].className, 'meteora', 'la meteora singola resta il polletto di sempre');
     });
   } finally {
     fs.rmSync(percorsi.P.meteora, { force: true });

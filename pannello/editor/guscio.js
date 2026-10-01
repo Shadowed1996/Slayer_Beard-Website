@@ -846,30 +846,38 @@ function campiClassifica() {
 
 function lancioMeteora() {
   const esito = el('p', { classe: 'lancio-meteora__esito', 'aria-live': 'polite' });
-  const tasto = bottone({
-    testo: 'LANCIA METEORA', ico: 'meteora', classe: 'btn btn--primario lancio-meteora__tasto',
-    su: async () => {
-      tasto.disabled = true;
-      esito.textContent = 'Lancio…';
-      try {
-        const r = await api.lanciaMeteora();
-        esito.textContent = r && r.gia
-          ? 'Già lanciata un attimo fa: arriva a chi è sul sito entro 15 secondi.'
-          : 'Lanciata! Arriva sulla home di chi è sul sito entro 15 secondi.';
-      } catch (e) {
-        esito.textContent = rottaAssente(e)
-          ? 'Il server non ha ancora questa funzione: carica l\'aggiornamento su Plesk e riavvia l\'app.'
-          : (e instanceof ErroreApi ? e.message : 'Non sono riuscito a lanciarla.');
-      } finally {
-        setTimeout(() => { tasto.disabled = false; }, 3000);
+  const tasti = [];
+  const lancio = (testo, ico, chiama, fatto) => {
+    const tasto = bottone({
+      testo: testo, ico: ico, classe: 'btn btn--primario lancio-meteora__tasto',
+      su: async () => {
+        tasti.forEach((t) => { t.disabled = true; });
+        esito.textContent = 'Lancio…';
+        try {
+          const r = await chiama();
+          esito.textContent = r && r.gia
+            ? 'Già lanciata un attimo fa: arriva a chi è sul sito entro 15 secondi.'
+            : fatto;
+        } catch (e) {
+          esito.textContent = rottaAssente(e)
+            ? 'Il server non ha ancora questa funzione: carica l\'aggiornamento su Plesk e riavvia l\'app.'
+            : (e instanceof ErroreApi ? e.message : 'Non sono riuscito a lanciarla.');
+        } finally {
+          setTimeout(() => { tasti.forEach((t) => { t.disabled = false; }); }, 3000);
+        }
       }
-    }
-  });
+    });
+    tasti.push(tasto);
+    return tasto;
+  };
+  const singola = lancio('LANCIA METEORA', 'meteora', () => api.lanciaMeteora(), 'Lanciata! Arriva sulla home di chi è sul sito entro 15 secondi.');
+  const pioggia = lancio('PIOGGIA DI METEORE', 'meteora', () => api.lanciaPioggia(), 'Pioggia lanciata! Arriva sulla home di chi è sul sito entro 15 secondi.');
   return el('div', { classe: 'spiegazione' }, [
     icona('meteora'),
     el('div', {}, [
       el('p', { testo: 'La meteora passa sulla home di chi è sul sito in quel momento (entro 15 secondi). Chi la prende al volo la fa esplodere: pioggia di polletti e un suono a caso della cartella suoni_meteora.' }),
-      el('div', { classe: 'lato__azioni' }, [tasto]),
+      el('p', { testo: '«Pioggia di meteore» ne fa passare tante insieme, una dopo l\'altra, e si possono prendere tutte: chi le prende tutte si guadagna la festa finale. Con la grafica di Halloween accesa (nel gruppo «Modalità manutenzione») piovono zucche, teschi e polletti col cappello da strega.' }),
+      el('div', { classe: 'lato__azioni' }, [singola, pioggia]),
       esito
     ])
   ]);

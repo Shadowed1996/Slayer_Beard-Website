@@ -584,7 +584,10 @@ async function gestisci(req, res, percorso) {
     return metodo === 'GET' ? json(res, 200, await spettatori.stato()) : metodoNonAmmesso(res, 'GET');
   }
   if (percorso === '/api/meteora/lancia') {
-    return metodo === 'POST' ? json(res, 200, meteora.lancia()) : metodoNonAmmesso(res, 'POST');
+    return metodo === 'POST' ? json(res, 200, meteora.lancia('meteora')) : metodoNonAmmesso(res, 'POST');
+  }
+  if (percorso === '/api/meteora/pioggia') {
+    return metodo === 'POST' ? json(res, 200, meteora.lancia('pioggia')) : metodoNonAmmesso(res, 'POST');
   }
   if (percorso === '/api/pillola') {
     return metodo === 'GET' ? json(res, 200, pillola.stato()) : metodoNonAmmesso(res, 'GET');

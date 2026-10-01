@@ -907,7 +907,7 @@ function meteoraDi(config, icone) {
   let min = minutiDi(meteora.ogniMin, 'config.meteora.ogniMin');
   let max = minutiDi(meteora.ogniMax, 'config.meteora.ogniMax');
   if (min > max) { const scambio = min; min = max; max = scambio; }
-  return {
+  const esito = {
     timer: meteora.timer === true,
     ogniMin: min,
     ogniMax: max,
@@ -915,6 +915,8 @@ function meteoraDi(config, icone) {
     icone: icone.tutte,
     suoni: suoniMeteora()
   };
+  if (temaPolloRun(config) === 'halloween') { esito.halloween = true; }
+  return esito;
 }
 
 function chiDi(config) {

@@ -277,6 +277,7 @@ export const api = {
   creaSondaggio: (dati) => richiesta('POST', '/api/sondaggi', dati),
   chiudiSondaggio: () => richiesta('POST', '/api/sondaggi/chiudi'),
   lanciaMeteora: () => richiesta('POST', '/api/meteora/lancia'),
+  lanciaPioggia: () => richiesta('POST', '/api/meteora/pioggia'),
   lanciaPillola: () => richiesta('POST', '/api/pillola/lancia'),
   eliminaSondaggio: (id) => richiesta('DELETE', '/api/sondaggi/' + encodeURIComponent(id)),
 
