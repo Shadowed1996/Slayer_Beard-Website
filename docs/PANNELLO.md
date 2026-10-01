@@ -1108,6 +1108,19 @@ Non hanno una voce loro, ma è bene sapere come si comportano.
   riga, corte); lasciato vuoto usa quelle predefinite. Ricordati **Salva** e
   **Pubblica**.
 
+- **Il livello di un giocatore**: in **☰ → Classifica di Pollo Run**, parte
+  *Livello dei giocatori*, ci sono tutti quelli che hanno aperto il gioco
+  collegati con Twitch (con la classifica accesa) e chi è in classifica. Si
+  sceglie la difficoltà, poi per ogni persona si vede a che livello è e il suo
+  record; con le frecce la si porta un livello avanti o indietro, oppure si
+  scrive il livello (da 1 a 9999) e si preme **Imposta**. Non serve Salva né
+  Pubblica: il cambio arriva la prossima volta che quella persona apre il gioco
+  collegata, che le dice «Livello spostato» e le fa riprendere da lì con INVIO;
+  da quel momento continua a giocare come sempre e il cambio non torna più.
+  La classifica e i record **non cambiano**: chi viene portato avanti entra in
+  classifica dal livello nuovo appena lo finisce, chi viene portato indietro
+  tiene il suo record.
+
 - **Pollo Run anche sul sito normale**: chi scrive **pollorun** con la
   tastiera, in qualunque pagina e senza che il sito sia in manutenzione, apre il
   gioco a tutto schermo; **Esc** (o la x in alto a destra) lo chiude. Non parte
