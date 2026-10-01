@@ -256,7 +256,7 @@
 
     const botta = document.createElement('div');
     botta.className = 'bonk__botta';
-    botta.textContent = 'BONK!';
+    botta.textContent = 'MENAH!';
 
     const carnefice = document.createElement('div');
     carnefice.className = 'bonk__carnefice';

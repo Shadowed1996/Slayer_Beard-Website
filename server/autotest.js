@@ -6717,6 +6717,66 @@ async function proveGiocoPollo(costruisci, archivio) {
     }
   });
 
+  await prova('gioco: il livello spostato dal pannello si applica una volta sola, poi giocando il progresso continua come sempre', () => {
+    const h = rendiFinta();
+    h.registro.memoria['sb-pollo-livello'] = '5';
+    h.registro.memoria['sb-pollo-livello-facile'] = '3';
+    const annunci = [];
+    const gioco = h.crea({ suRaggiunto: (e) => { annunci.push(e.difficolta + ':' + e.livello); } });
+    gioco.avvia();
+    esigiDentro(h.testiUltimo(), 'INVIO: riprendi dal livello 5', 'prima dello spostamento');
+    esigiUguale(JSON.stringify(gioco.raggiunti()), JSON.stringify({ facile: 3, medio: 5 }), 'livelli salvati');
+    esigiUguale(JSON.stringify(gioco.partenze(null)), JSON.stringify({ applicate: [], cambiate: [] }), 'senza partenze');
+    const v1 = 'a1b2c3d4e5f60718';
+    const v2 = '0123456789abcdef';
+    const primo = gioco.partenze({
+      medio: { livello: 2, versione: v1 }, estremo: { livello: 99999, versione: v2 }, boh: { livello: 4, versione: 'ffffffffffffffff' },
+      difficile: { livello: 0, versione: 'eeeeeeeeeeeeeeee' }, facile: { livello: 7, versione: 'corta' }
+    });
+    esigiUguale(JSON.stringify(primo.cambiate), JSON.stringify([{ difficolta: 'medio', livello: 2 }, { difficolta: 'estremo', livello: 9999 }]), 'cambiate');
+    esigiUguale(primo.applicate.join(), [v1, v2].join(), 'applicate');
+    esigiUguale(h.registro.memoria['sb-pollo-livello'], '2', 'medio torna indietro');
+    esigiUguale(h.registro.memoria['sb-pollo-livello-estremo'], '9999', 'estremo al massimo');
+    esigiUguale(h.registro.memoria['sb-pollo-livello-facile'], '3', 'facile toccato');
+    esigiUguale(h.registro.memoria['sb-pollo-livello-difficile'], undefined, 'un livello 0 viene applicato');
+    esigiUguale(JSON.parse(h.registro.memoria['sb-pollo-pannello']).join(), [v1, v2].join(), 'le partenze applicate si ricordano');
+    esigiUguale(annunci.length, 0, 'lo spostamento dal pannello passa per un progresso del giocatore');
+    const schermata = h.testiUltimo();
+    esigiDentro(schermata, 'INVIO: riprendi dal livello 2', 'la schermata iniziale non mostra il livello nuovo');
+    esigiDentro(schermata, 'MIGLIORE LIVELLO 2', 'in alto resta il livello vecchio');
+    const ancora = gioco.partenze({ medio: { livello: 8, versione: v1 } });
+    esigiUguale(ancora.cambiate.length, 0, 'la stessa partenza si applica due volte');
+    esigiUguale(ancora.applicate.join(), v1, 'una partenza gia applicata va confermata di nuovo');
+    esigiUguale(h.registro.memoria['sb-pollo-livello'], '2', 'riapplicata');
+    const M = creaDi(2, 'medio');
+    const p = percorsoGiocatore(M, M.mx * 0.5, 2, true);
+    h.tasto('Enter', 'Enter');
+    esigiDentro(h.testiUltimo(), 'LIVELLO 2', 'INVIO non parte dal livello spostato');
+    esigiUguale(giocaSchedule(h, p.secondi, 1000 / 60, 200).esito, 'vinto', 'il livello 2 non si finisce');
+    esigiUguale(h.registro.memoria['sb-pollo-livello'], '3', 'dopo il livello il progresso non va avanti');
+    esigiUguale(annunci.join(), 'medio:3', 'il progresso nuovo non arriva all ospite');
+    esigiUguale(gioco.raggiunti().medio, 3, 'raggiunti dopo il livello');
+    h.attendi(1);
+    h.tasto(' ', 'Space');
+    esigiDentro(h.testiUltimo(), 'LIVELLO 3', 'SPAZIO non porta al livello dopo');
+    const altro = rendiFinta();
+    altro.registro.memoria['sb-pollo-livello'] = '6';
+    altro.registro.memoria['sb-pollo-pannello'] = JSON.stringify([v1]);
+    const secondo = altro.crea();
+    secondo.avvia();
+    esigiUguale(secondo.partenze({ medio: { livello: 2, versione: v1 } }).cambiate.length, 0, 'un browser che l ha gia applicata la riapplica');
+    esigiUguale(altro.registro.memoria['sb-pollo-livello'], '6', 'un browser che l ha gia applicata cambia livello');
+    const rotto = rendiFinta();
+    rotto.registro.memoria['sb-pollo-pannello'] = '{non json';
+    const terzo = rotto.crea({ suRaggiunto: () => { throw new Error('ospite rotto'); } });
+    terzo.avvia();
+    esigiUguale(terzo.partenze({ medio: { livello: 4, versione: v2 } }).cambiate.length, 1, 'una memoria rovinata blocca lo spostamento');
+    esigiUguale(terzo.impostaLivello('boh', 3), 0, 'difficolta inventata');
+    esigiUguale(terzo.impostaLivello('facile', 'x'), 0, 'livello non numerico');
+    rotto.tasto('Enter', 'Enter');
+    esigiDentro(rotto.testiUltimo(), 'LIVELLO 4', 'un ospite rotto ferma il gioco');
+  });
+
   await prova('gioco: fermarlo toglie tutti gli ascoltatori, e avviarlo due volte non li raddoppia', () => {
     const h = rendiFinta();
     const gioco = h.crea();
@@ -6772,7 +6832,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         parti: () => { registro.musicaParti++; }
       };
     }
-    const controllerFinto = () => ({ avvia: () => { registro.avvia++; }, ferma: () => { registro.ferma++; }, classifica: (d) => { registro.classifica.push(d); return true; } });
+    const controllerFinto = () => Object.assign({ avvia: () => { registro.avvia++; }, ferma: () => { registro.ferma++; }, classifica: (d) => { registro.classifica.push(d); return true; } }, o.controller ? o.controller() : {});
     if (o.motoreCaricato) { finestra.PolloRun = { crea: (op) => { registro.crea.push(op); return controllerFinto(); } }; }
     function Audio(src) {
       const a = { src: src, loop: false, volume: 1, currentTime: 0, preload: '', play() { registro.play++; return Promise.resolve(); }, pause() { registro.pause++; } };
@@ -7470,6 +7530,60 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigiUguale(nonCollegato.chiamate.length, 1, 'token non valido: parte la partita lo stesso');
   });
 
+  await prova('pollorun.js: il livello spostato dal pannello arriva al motore con un avviso, e il progresso torna al server senza doppioni', async () => {
+    const V = 'a1b2c3d4e5f60718';
+    const conPartenza = { status: 200, dati: Object.assign({}, IO_MARIO.dati, { partenze: { medio: { livello: 7, versione: V } } }) };
+    const rete = reteFinta({ 'GET api/classifica/io': conPartenza, 'POST api/classifica/progresso': { status: 200, dati: { ok: true, partenze: {} } } });
+    const ricevute = [];
+    let livelli = { medio: 3, facile: 2 };
+    const controller = () => ({
+      partenze: (d) => {
+        ricevute.push(d);
+        if (!d || !d.medio) { return { applicate: [], cambiate: [] }; }
+        livelli.medio = d.medio.livello;
+        return { applicate: [d.medio.versione], cambiate: [{ difficolta: 'medio', livello: d.medio.livello }] };
+      },
+      raggiunti: () => Object.assign({}, livelli)
+    });
+    const p = apriGioco({ classifica: true, token: 'tok', fetch: rete.fetch, account: accountFinto(true), controller: controller });
+    await aspettaRete();
+    esigiUguale(JSON.stringify(ricevute), JSON.stringify([{ medio: { livello: 7, versione: V } }]), 'le partenze non arrivano al motore');
+    esigiUguale(testoAvviso(p), 'Livello spostato: a Medio ora riparti dal livello 7', 'avviso');
+    const progressi = () => rete.chiamate.filter((c) => c.url === 'api/classifica/progresso');
+    esigiUguale(progressi().length, 1, 'dopo chi sei parte un progresso');
+    esigiUguale(progressi()[0].metodo + ' ' + progressi()[0].autorizzazione, 'POST Bearer tok', 'metodo e token');
+    esigiUguale(JSON.stringify(progressi()[0].corpo), JSON.stringify({ livelli: { medio: 7, facile: 2 }, applicate: [V] }), 'corpo');
+    const op = p.registro.crea[0];
+    esigiUguale(typeof op.suRaggiunto, 'function', 'il motore non riceve suRaggiunto');
+    op.suRaggiunto({ difficolta: 'medio', livello: 7 });
+    await aspettaRete();
+    esigiUguale(progressi().length, 1, 'lo stesso progresso parte due volte');
+    livelli.medio = 8;
+    op.suRaggiunto({ difficolta: 'medio', livello: 8 });
+    await aspettaRete();
+    esigiUguale(progressi().length, 2, 'un livello nuovo non torna al server');
+    esigiUguale(JSON.stringify(progressi()[1].corpo), JSON.stringify({ livelli: { medio: 8, facile: 2 } }), 'corpo del livello nuovo');
+
+    const muta = reteFinta({ 'GET api/classifica/io': IO_MARIO, 'POST api/classifica/progresso': { status: 200, dati: { ok: true } } });
+    const q = apriGioco({ classifica: true, token: 'tok', fetch: muta.fetch, account: accountFinto(true), controller: () => ({ partenze: () => ({ applicate: [], cambiate: [] }), raggiunti: () => ({}) }) });
+    await aspettaRete();
+    esigiUguale(muta.chiamate.map((c) => c.url).join(), 'api/classifica/io', 'senza niente da dire parte un progresso');
+    esigiUguale(testoAvviso(q), '', 'senza spostamenti compare un avviso');
+
+    const spenta = reteFinta({ 'GET api/classifica/io': conPartenza });
+    const s = apriGioco({ token: 'tok', fetch: spenta.fetch, account: accountFinto(true), controller: controller });
+    await aspettaRete();
+    esigiUguale(s.registro.crea[0].suRaggiunto, undefined, 'a classifica spenta il motore riceve suRaggiunto');
+    esigiUguale(spenta.chiamate.length, 0, 'a classifica spenta parte una chiamata');
+
+    const ospite = reteFinta({ 'GET api/classifica/io': { status: 200, dati: { collegato: false } } });
+    const o = apriGioco({ classifica: true, token: 'vecchio', fetch: ospite.fetch, account: accountFinto(true), controller: controller });
+    await aspettaRete();
+    o.registro.crea[0].suRaggiunto({ difficolta: 'medio', livello: 9 });
+    await aspettaRete();
+    esigiUguale(ospite.chiamate.map((c) => c.url).join(), 'api/classifica/io', 'da scollegati parte un progresso');
+  });
+
   await prova('pollorun.js: dopo l accesso con Twitch in una finestrella la pillola si aggiorna da sola', async () => {
     const rete = reteFinta({ 'GET api/classifica/io': IO_MARIO });
     const account = accountFinto(true);
@@ -7844,7 +7958,7 @@ async function proveCanzoniPollo(costruisci, archivio) {
 
   const jsMnt = fs.readFileSync(path.join(RADICE_VERA, 'modelli', 'manutenzione-conto.js'), 'utf8');
   const manutenzione = (opzioni) => {
-    const o = Object.assign({ spenta: false, canzoni: pacchetto, classifica: undefined, token: null, fetch: undefined }, opzioni || {});
+    const o = Object.assign({ spenta: false, canzoni: pacchetto, classifica: undefined, token: null, fetch: undefined, controller: null }, opzioni || {});
     const ascolta = {};
     const crea = [];
     const note = [];
@@ -7880,7 +7994,7 @@ async function proveCanzoniPollo(costruisci, archivio) {
       dispatchEvent: (evento) => { for (const fn of ascolta[evento.type] || []) { fn(evento); } return true; }
     };
     const Evento = function (tipo, op) { this.type = tipo; this.detail = op && op.detail; };
-    const finestra = { addEventListener: () => {}, PolloRun: { crea: (op) => { crea.push(op); return { avvia() {}, classifica: (d) => { posti.push(d); return true; } }; } } };
+    const finestra = { addEventListener: () => {}, PolloRun: { crea: (op) => { crea.push(op); return Object.assign({ avvia() {}, classifica: (d) => { posti.push(d); return true; } }, o.controller ? o.controller() : {}); } } };
     const memoria = o.spenta ? { 'sb-manutenzione-musica': 'no' } : {};
     if (o.token !== null) { memoria['sb-account-token'] = o.token; }
     new Function('window', 'document', 'location', 'sessionStorage', 'localStorage', 'CustomEvent', 'fetch', 'setInterval', 'setTimeout', jsMnt)(
@@ -8037,6 +8151,45 @@ async function proveCanzoniPollo(costruisci, archivio) {
     const t = manutenzione({ classifica: '1', token: 'tok', fetch: spenta.fetch });
     await aspettaMnt();
     esigiUguale(t.note[0].hidden, true, 'classifica spenta sul server: la nota resta');
+  });
+
+  await prova('manutenzione: il livello spostato dal pannello arriva al motore con una nota, e il progresso torna al server', async () => {
+    const V = '0123456789abcdef';
+    const rete = reteMnt({
+      'GET api/classifica/io': { status: 200, dati: { collegato: true, login: 'mario', nome: 'Mario', partenze: { difficile: { livello: 4, versione: V } } } },
+      'POST api/classifica/progresso': { status: 200, dati: { ok: true } }
+    });
+    const livelli = { difficile: 9 };
+    const ricevute = [];
+    const m = manutenzione({
+      classifica: '1', token: 'tok', fetch: rete.fetch,
+      controller: () => ({
+        partenze: (d) => { ricevute.push(d); livelli.difficile = d.difficile.livello; return { applicate: [V], cambiate: [{ difficolta: 'difficile', livello: 4 }] }; },
+        raggiunti: () => Object.assign({}, livelli)
+      })
+    });
+    await aspettaMnt();
+    esigiUguale(ricevute.length, 1, 'le partenze non arrivano al motore');
+    esigiUguale(m.note[0].textContent, 'Livello spostato: a Difficile ora riparti dal livello 4', 'nota');
+    esigiUguale(m.note[0].style.borderColor, 'var(--linea-viva)', 'la nota dello spostamento sembra un errore');
+    esigiUguale(rete.chiamate.map((c) => c.metodo + ' ' + c.url + ' ' + c.autorizzazione).join(','), 'GET api/classifica/io Bearer tok,POST api/classifica/progresso Bearer tok', 'chiamate');
+    esigiUguale(JSON.stringify(rete.chiamate[1].corpo), JSON.stringify({ livelli: { difficile: 4 }, applicate: [V] }), 'corpo');
+    esigiUguale(typeof m.op.suRaggiunto, 'function', 'il motore non riceve suRaggiunto');
+    livelli.difficile = 5;
+    m.op.suRaggiunto({ difficolta: 'difficile', livello: 5 });
+    await aspettaMnt();
+    esigiUguale(rete.chiamate.length, 2, 'il progresso non aspetta un attimo');
+    m.timer.forEach((fn) => fn());
+    await aspettaMnt();
+    esigiUguale(rete.chiamate.length, 3, 'il progresso non parte');
+    esigiUguale(JSON.stringify(rete.chiamate[2].corpo), JSON.stringify({ livelli: { difficile: 5 } }), 'corpo del progresso');
+    esigiUguale(m.note[0].textContent, 'Classifica: giochi come Mario', 'la nota non torna com era');
+
+    const spenta = reteMnt({ 'GET api/classifica/io': { status: 200, dati: { collegato: true, nome: 'Mario' } } });
+    const s = manutenzione({ classifica: '0', token: 'tok', fetch: spenta.fetch, controller: () => ({ partenze: () => ({ applicate: [], cambiate: [] }), raggiunti: () => ({ medio: 3 }) }) });
+    await aspettaMnt();
+    esigiUguale(s.op.suRaggiunto, undefined, 'a classifica spenta il motore riceve suRaggiunto');
+    esigiUguale(spenta.chiamate.length, 0, 'a classifica spenta parte una chiamata');
   });
 
   await prova('manutenzione: una canzone che non si carica ripiega sulla musica d attesa solo finche quel brano e in errore', () => {
@@ -8567,6 +8720,87 @@ async function proveClassifica(costruisci, archivio) {
       const letto = JSON.parse(fs.readFileSync(dati, 'utf8'));
       esigi(letto.versione > 0 && letto.stagione.id === 's3', 'contenuto');
       esigi(!fs.readdirSync(percorsi.P.dati).some((n) => n.endsWith('.tmp')), 'restano file temporanei');
+    });
+
+    await prova('livello dei giocatori: il pannello sposta la partenza, il gioco la riceve una volta sola, la classifica non cambia', async () => {
+      const progresso = (token, corpo) => chiama(porta, 'POST', '/api/classifica/progresso', { intestazioni: conToken(token), json: corpo });
+      const io = async (token) => (await chiama(porta, 'GET', '/api/classifica/io', { intestazioni: conToken(token) })).dati;
+      const gestione = async () => (await chiama(porta, 'GET', '/api/classifica/gestione', { biscotto })).dati;
+      const riga = (g, id) => g.giocatori.find((x) => x.id === id);
+      esigiUguale(JSON.stringify((await io('tokenanna0000001')).partenze), '{}', 'nessuna partenza di serie');
+      esigiUguale((await progresso('', { livelli: { medio: 2 } })).stato, 401, 'progresso senza token');
+      esigiUguale((await chiama(porta, 'GET', '/api/classifica/progresso')).stato, 405, 'GET progresso');
+      for (const corpo of [{ livelli: { medio: 0 } }, { livelli: { medio: 10000 } }, { livelli: { boh: 2 } }, { livelli: { medio: '3' } }, { livelli: [] },
+        { livelli: {}, applicate: ['corta'] }, { livelli: {}, applicate: 'x' }, { livelli: {}, applicate: new Array(9).fill('0123456789abcdef') }]) {
+        esigiUguale((await progresso('tokenanna0000001', corpo)).stato, 400, 'progresso ' + JSON.stringify(corpo).slice(0, 60));
+      }
+      esigiUguale((await progresso('tokenanna0000001', { livelli: { medio: 5, difficile: 2 } })).stato, 200, 'progresso');
+      let g = await gestione();
+      esigiUguale(g.livelloMassimo, 9999, 'massimo');
+      const anna = riga(g, '101');
+      esigi(anna, 'anna non compare fra i giocatori');
+      esigiUguale(anna.livelli.medio.ora + ':' + anna.livelli.difficile.ora + ':' + anna.livelli.facile.ora, '5:2:0', 'livelli visti');
+      esigiUguale(anna.nome + '|' + anna.login, 'Anna <b>la Pazza</b>|anna', 'nome da Twitch');
+      esigi(anna.visto, 'manca quando e stata vista');
+      esigiUguale(anna.livelli.medio.inAttesa, false, 'in attesa senza spostamenti');
+      esigiUguale(g.giocatori[0].id, '101', 'chi e stato visto per ultimo sta in cima');
+
+      esigiUguale((await chiama(porta, 'POST', '/api/classifica/partenza', { json: { id: '101', difficolta: 'medio', livello: 3 } })).stato, 401, 'partenza senza sessione');
+      esigiUguale((await chiama(porta, 'POST', '/api/classifica/partenza', { intestazioni: conToken('tokenanna0000001'), json: { id: '101', difficolta: 'medio', livello: 3 } })).stato, 401, 'partenza col token Twitch');
+      for (const corpo of [{ id: 'anna', difficolta: 'medio', livello: 3 }, { id: '101', difficolta: 'boh', livello: 3 }, { id: '101', difficolta: 'medio', livello: 0 },
+        { id: '101', difficolta: 'medio', livello: 10000 }, { id: '101', difficolta: 'medio', livello: 2.5 }, { id: '101', difficolta: 'medio', livello: '3' }]) {
+        esigiUguale((await gestisci('/api/classifica/partenza', corpo)).stato, 400, 'partenza ' + JSON.stringify(corpo));
+      }
+      esigiUguale((await gestisci('/api/classifica/partenza', { id: '777', difficolta: 'medio', livello: 3 })).stato, 404, 'giocatore mai visto');
+      const prima = JSON.parse(fs.readFileSync(classifica.percorsoDati(), 'utf8'));
+      const avanti = await gestisci('/api/classifica/partenza', { id: '101', difficolta: 'medio', livello: 8 });
+      esigiUguale(avanti.stato, 200, 'sposta avanti');
+      const l = riga(avanti.dati, '101').livelli.medio;
+      esigiUguale(l.impostato + ':' + l.inAttesa + ':' + l.ora, '8:true:5', 'in attesa del gioco');
+      const dopo = JSON.parse(fs.readFileSync(classifica.percorsoDati(), 'utf8'));
+      esigiUguale(JSON.stringify(dopo.voci), JSON.stringify(prima.voci), 'spostare il livello cambia la classifica');
+      esigiUguale(JSON.stringify(dopo.stagioni), JSON.stringify(prima.stagioni), 'spostare il livello cambia le stagioni');
+      const chi = await io('tokenanna0000001');
+      esigiUguale(Object.keys(chi.partenze).join(), 'medio', 'partenze');
+      esigiUguale(chi.partenze.medio.livello, 8, 'livello della partenza');
+      const V = chi.partenze.medio.versione;
+      esigi(/^[0-9a-f]{16}$/.test(V), 'versione');
+      esigiUguale(JSON.stringify((await io('tokenbruno000002')).partenze), '{}', 'la partenza di anna arriva a bruno');
+
+      const salto = await partita('tokenanna0000001', { livello: 8, difficolta: 'medio' });
+      esigiUguale(salto.stato, 200, 'chi e spostato avanti non entra in classifica dal livello nuovo');
+      esigiUguale((await partita('tokenanna0000001', { livello: 9, difficolta: 'medio' })).dati.serve, 8, 'ma non oltre');
+      esigiUguale((await partita('tokenanna0000001', { livello: 3, difficolta: 'difficile' })).dati.serve, 2, 'lo spostamento vale solo per la sua difficolta');
+      ora += attesa(8, 'medio');
+      const fatto = await livello('tokenanna0000001', { partita: salto.dati.partita });
+      esigiUguale(fatto.stato, 200, 'livello 8 registrato');
+      esigiUguale(fatto.dati.record, 8, 'record');
+
+      const conferma = await progresso('tokenanna0000001', { livelli: { medio: 9 }, applicate: [V] });
+      esigiUguale(JSON.stringify(conferma.dati.partenze), '{}', 'la partenza confermata torna');
+      esigiUguale(JSON.stringify((await io('tokenanna0000001')).partenze), '{}', 'io dopo la conferma');
+      g = await gestione();
+      const confermato = riga(g, '101').livelli.medio;
+      esigiUguale(confermato.inAttesa + ':' + confermato.ora + ':' + confermato.record, 'false:9:8', 'dopo la conferma');
+      esigi(confermato.applicatoIl, 'manca quando e arrivata');
+
+      const indietro = await gestisci('/api/classifica/partenza', { id: '101', difficolta: 'medio', livello: 3 });
+      esigiUguale(riga(indietro.dati, '101').livelli.medio.impostato, 3, 'indietro');
+      const V2 = (await io('tokenanna0000001')).partenze.medio.versione;
+      esigi(V2 && V2 !== V, 'ogni spostamento ha una versione nuova');
+      esigiUguale((await progresso('tokenanna0000001', { applicate: [V] })).dati.partenze.medio.livello, 3, 'una conferma vecchia chiude la partenza nuova');
+      esigiUguale((await pubblica('medio')).righe.find((r) => r.login === 'anna').livello, 8, 'tornare indietro toglie il record');
+
+      const archiviato = await gestisci('/api/classifica/partenza', { id: '202', difficolta: 'facile', livello: 4 });
+      esigiUguale(archiviato.stato, 200, 'chi e solo in una stagione passata non si sposta');
+      esigiUguale(riga(archiviato.dati, '202').login, 'bruno', 'login dall archivio');
+
+      classifica.dimentica();
+      g = await gestione();
+      esigiUguale(riga(g, '101').livelli.medio.impostato, 3, 'dopo un riavvio lo spostamento sparisce');
+      const nuova = await gestisci('/api/classifica/stagione', { nome: 'Prova livelli' });
+      const dopoStagione = riga(nuova.dati, '101').livelli.medio;
+      esigiUguale(dopoStagione.impostato + ':' + dopoStagione.inAttesa + ':' + dopoStagione.record, '3:true:0', 'una stagione nuova cancella gli spostamenti');
     });
 
     await prova('data-classifica nelle pagine generate: sul gioco del sito solo se accesa, sul canvas della manutenzione 1 o 0', () => {

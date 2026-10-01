@@ -270,6 +270,13 @@
   50%      { rotate: 2deg; scale: 1.06; }
 }
 
+@media (max-width: 600px) {
+  .bonk__botta {
+    inset-inline-start: min(calc(72% + var(--sposta, 0%)), calc(100% - 2.3em));
+    font-size: min(calc(clamp(1.8rem, 1rem + 5vw, 3.6rem) * (1 + var(--foga) * 0.8)), 12vw);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bonk.is-esploso .bonk__vittima { visibility: hidden; }
   .bonk__frase { opacity: 1; }

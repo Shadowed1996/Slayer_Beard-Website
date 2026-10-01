@@ -6,6 +6,7 @@ export const DIFFICOLTA = ['facile', 'medio', 'difficile', 'estremo'];
 const NOMI = { facile: 'Facile', medio: 'Medio', difficile: 'Difficile', estremo: 'Estremo', tutte: 'Tutte e quattro' };
 const RIGA_OBS = 46;
 const TESTA_OBS = 96;
+const MASSIMO_LIVELLO = 9999;
 
 function messaggio(errore, ripiego) {
   return errore instanceof ErroreApi ? errore.message : ripiego;
@@ -21,6 +22,14 @@ export function misuraObs(difficolta, righe) {
   return difficolta === 'tutte' ? { largo: 1280, alto: alto } : { largo: 480, alto: alto };
 }
 
+export function partenzaDi(livello) {
+  const l = livello || {};
+  if (l.inAttesa && l.impostato >= 1) return l.impostato;
+  if (l.ora >= 1) return l.ora;
+  if (l.record >= 1) return l.record + 1;
+  return 1;
+}
+
 function nomeDi(voce) {
   return String(voce.nome || voce.login || voce.id || '');
 }
@@ -29,13 +38,16 @@ export function creaClassifica({ impostazioni = null } = {}) {
   const stato = el('p', { classe: 'campo__aiuto', testo: 'Carico la classifica…' });
   const obs = el('div', { classe: 'classifica__blocco' });
   const elenchi = el('div', { classe: 'classifica__blocco' });
+  const livelli = el('div', { classe: 'classifica__blocco' });
   const bloccati = el('div', { classe: 'classifica__blocco' });
   const stagione = el('div', { classe: 'classifica__blocco' });
   const archivio = el('div', { classe: 'classifica__blocco' });
-  const nodo = el('div', { classe: 'lavoro__corpo classifica' }, [impostazioni, stato, obs, elenchi, bloccati, stagione, archivio]);
+  const nodo = el('div', { classe: 'lavoro__corpo classifica' }, [impostazioni, stato, obs, elenchi, livelli, bloccati, stagione, archivio]);
   let dati = null;
   let sceltaObs = '';
   let schedaAperta = 'medio';
+  let schedaLivelli = 'medio';
+  let cercaLivelli = '';
 
   function disegnaObs() {
     const imp = (dati && dati.impostazioni) || {};
@@ -243,6 +255,115 @@ export function creaClassifica({ impostazioni = null } = {}) {
     elenchi.append(el('h3', { classe: 'lato__occhiello', testo: 'Chi è in classifica' + (dati && dati.stagione && dati.stagione.nome ? ' · ' + dati.stagione.nome : '') }), schede, corpo);
   }
 
+  function massimo() {
+    const n = Number(dati && dati.livelloMassimo);
+    return Number.isInteger(n) && n >= 1 ? n : MASSIMO_LIVELLO;
+  }
+
+  async function sposta(giocatore, d, livello, pulsanti) {
+    const n = Math.max(1, Math.min(massimo(), Math.floor(Number(livello))));
+    if (!Number.isFinite(n)) return;
+    for (const p of pulsanti) p.disabled = true;
+    try {
+      mostraTutto(await api.classificaPartenza({ id: giocatore.id, difficolta: d, livello: n }));
+      avviso(nomeDi(giocatore) + ' a ' + NOMI[d] + ' ripartirà dal livello ' + n + '.', { tipo: 'ok', titolo: 'Livello spostato' });
+    } catch (e) {
+      for (const p of pulsanti) p.disabled = false;
+      avviso(messaggio(e, 'Non sono riuscito a spostare il livello.'), { tipo: 'errore' });
+    }
+  }
+
+  function rigaLivello(giocatore, d) {
+    const l = (giocatore.livelli && giocatore.livelli[d]) || {};
+    const attuale = partenzaDi(l);
+    const alto = massimo();
+    const campo = el('input', {
+      type: 'number', classe: 'campo__input classifica__numero', min: '1', max: String(alto), step: '1', value: String(attuale),
+      inputmode: 'numeric', 'aria-label': 'Livello da cui riparte ' + nomeDi(giocatore) + ' a ' + NOMI[d]
+    });
+    const pulsanti = [];
+    const giu = bottone({ testo: 'Un livello indietro', ico: 'giu', classe: 'btn btn--minimo', soloIcona: true, disabilitato: attuale <= 1, su: () => sposta(giocatore, d, attuale - 1, pulsanti) });
+    const su = bottone({ testo: 'Un livello avanti', ico: 'su', classe: 'btn btn--minimo', soloIcona: true, disabilitato: attuale >= alto, su: () => sposta(giocatore, d, attuale + 1, pulsanti) });
+    const imposta = bottone({
+      testo: 'Imposta', ico: 'ok', classe: 'btn btn--minimo',
+      su: () => {
+        const n = Number(campo.value);
+        if (!Number.isInteger(n) || n < 1 || n > alto) {
+          avviso('Il livello va da 1 a ' + alto + '.', { tipo: 'errore' });
+          campo.focus();
+          return;
+        }
+        sposta(giocatore, d, n, pulsanti);
+      }
+    });
+    pulsanti.push(giu, su, imposta, campo);
+    campo.addEventListener('keydown', (evento) => {
+      if (evento.key === 'Enter') { evento.preventDefault(); imposta.click(); }
+    });
+    const stato = [
+      l.ora ? 'è al livello ' + l.ora : 'livello non ancora visto',
+      l.record ? 'record in classifica ' + l.record : '',
+      giocatore.visto ? 'visto ' + formattaData(giocatore.visto) : ''
+    ].filter(Boolean).join(' · ');
+    let nota = null;
+    if (l.inAttesa) {
+      nota = el('span', { classe: 'classifica__meta classifica__attesa', testo: 'Spostato al livello ' + l.impostato + ': lo trova la prossima volta che apre il gioco collegato' });
+    } else if (l.impostato && l.applicatoIl) {
+      nota = el('span', { classe: 'classifica__meta', testo: 'Spostato al livello ' + l.impostato + ', arrivato il ' + formattaData(l.applicatoIl) });
+    }
+    return el('li', { classe: 'classifica__voce' + (giocatore.bloccato ? ' is-bloccato' : ''), dati: { id: giocatore.id } }, [
+      giocatore.avatar ? el('img', { classe: 'classifica__avatar', src: giocatore.avatar, alt: '', width: '28', height: '28', loading: 'lazy', referrerpolicy: 'no-referrer' }) : el('span', { classe: 'classifica__avatar', 'aria-hidden': 'true' }),
+      el('span', { classe: 'classifica__chi' }, [
+        el('span', { classe: 'classifica__nome', testo: nomeDi(giocatore) + (giocatore.bloccato ? ' · bloccato' : '') }),
+        el('span', { classe: 'classifica__meta', testo: stato }),
+        nota
+      ]),
+      el('span', { classe: 'classifica__azioni classifica__sposta' }, [giu, campo, su, imposta])
+    ]);
+  }
+
+  function disegnaLivelli() {
+    svuota(livelli);
+    const tutti = (dati && Array.isArray(dati.giocatori)) ? dati.giocatori : [];
+    const schede = el('div', { classe: 'classifica__schede', role: 'tablist', 'aria-label': 'Difficoltà dei livelli' });
+    const corpo = el('div', { classe: 'classifica__elenco', role: 'tabpanel' });
+    const cerca = el('input', { type: 'search', classe: 'campo__input', id: 'classifica-livelli-cerca', placeholder: 'Cerca per nome', value: cercaLivelli, spellcheck: 'false', autocomplete: 'off' });
+    function riempi() {
+      svuota(corpo);
+      const filtro = cercaLivelli.trim().toLowerCase();
+      const scelti = filtro ? tutti.filter((g) => (String(g.nome || '') + ' ' + String(g.login || '')).toLowerCase().indexOf(filtro) !== -1) : tutti;
+      if (!tutti.length) {
+        corpo.append(el('p', { classe: 'vuoto', testo: 'Ancora nessuno: qui compare chi apre Pollo Run collegato con Twitch.' }));
+        return;
+      }
+      if (!scelti.length) {
+        corpo.append(el('p', { classe: 'vuoto', testo: 'Nessun giocatore con questo nome.' }));
+        return;
+      }
+      corpo.append(el('ul', { classe: 'classifica__voci' }, scelti.map((g) => rigaLivello(g, schedaLivelli))));
+    }
+    function apri(d) {
+      schedaLivelli = d;
+      for (const b of schede.children) b.setAttribute('aria-selected', String(b.dataset.difficolta === d));
+      riempi();
+    }
+    for (const d of DIFFICOLTA) {
+      schede.append(el('button', {
+        type: 'button', role: 'tab', classe: 'classifica__scheda', dati: { difficolta: d },
+        su: { click: () => apri(d) }
+      }, [el('span', { testo: NOMI[d] })]));
+    }
+    cerca.addEventListener('input', () => { cercaLivelli = cerca.value; riempi(); });
+    livelli.append(...[
+      el('h3', { classe: 'lato__occhiello', testo: 'Livello dei giocatori' }),
+      el('p', { classe: 'campo__aiuto', testo: 'Scegli da che livello riparte un giocatore: con le frecce lo porti avanti o indietro di uno, oppure scrivi il livello (da 1 a ' + massimo() + ') e premi Imposta. Il cambio arriva la prossima volta che apre il gioco collegato con Twitch, con la classifica accesa; poi continua da lì come sempre. La classifica e i record non cambiano.' }),
+      schede,
+      tutti.length > 6 ? el('div', { classe: 'campo' }, [el('label', { classe: 'sr-only', for: 'classifica-livelli-cerca', testo: 'Cerca un giocatore' }), cerca]) : null,
+      corpo
+    ].filter(Boolean));
+    apri(schedaLivelli);
+  }
+
   function disegnaBloccati() {
     svuota(bloccati);
     const elenco = (dati && Array.isArray(dati.bloccati)) ? dati.bloccati : [];
@@ -323,6 +444,7 @@ export function creaClassifica({ impostazioni = null } = {}) {
     stato.hidden = true;
     disegnaObs();
     disegnaElenchi();
+    disegnaLivelli();
     disegnaBloccati();
     disegnaStagione();
     disegnaArchivio();

@@ -55,7 +55,7 @@ const MENU = [
   { vista: 'bugiardino', nome: 'Bugiardino del sito', nota: 'La pillolina che apre il foglio illustrativo: falla apparire, ogni quanto compare, testi', ico: 'info' },
   { vista: 'ingresso', nome: 'Ingresso del sito (PolloFlare)', nota: 'La schermata d\'ingresso col pollo di guardia: accendila e cambia i testi', ico: 'chiave' },
   { vista: 'sondaggi', nome: 'Sondaggi', nota: 'Crea un sondaggio per chi è collegato con Twitch e guarda i risultati', ico: 'sondaggio' },
-  { vista: 'classifica', nome: 'Classifica di Pollo Run', nota: 'Impostazioni, overlay per OBS, chi è in classifica e nuova stagione', ico: 'coppa' },
+  { vista: 'classifica', nome: 'Classifica di Pollo Run', nota: 'Impostazioni, overlay per OBS, chi è in classifica, livello dei giocatori e nuova stagione', ico: 'coppa' },
   { vista: 'immagini', nome: 'Immagini', nota: 'Carica e gestisci i file', ico: 'immagine' },
   { vista: 'backup', nome: 'Copie di sicurezza', nota: 'Torna a com\'era il sito prima di una pubblicazione', ico: 'backup' },
   { vista: 'password', nome: 'Password', nota: 'Cambia la password del pannello', ico: 'chiave' },

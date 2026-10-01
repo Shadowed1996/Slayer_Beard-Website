@@ -52,7 +52,8 @@
     s.textOverflow = 'ellipsis';
     s.pointerEvents = 'none';
     document.body.appendChild(nota);
-    var cl = { nota: nota, token: token, collegato: token ? null : false, nome: '', partita: null, spenta: false, giro: 0, gioco: null, io: null, podio: null };
+    var cl = { nota: nota, token: token, collegato: token ? null : false, nome: '', partita: null, spenta: false, giro: 0, gioco: null, io: null, podio: null, inviati: '', confermate: [], inAttesa: false, giroProgresso: 0 };
+    var NOMI = { facile: 'Facile', medio: 'Medio', difficile: 'Difficile', estremo: 'Estremo' };
     function dipingi(testo, allerta) {
       if (cl.podio) { cl.podio.bottone.hidden = cl.spenta; }
       if (cl.spenta) { nota.hidden = true; return; }
@@ -67,6 +68,11 @@
       if (cl.collegato === true) { dipingi('Classifica: giochi come ' + (cl.nome || 'te'), false); return; }
       if (cl.collegato === null) { dipingi('Classifica…', false); return; }
       dipingi('Collegati dal sito per entrare in classifica', false);
+    }
+    function informa(testo) {
+      dipingi(testo, false);
+      var giro = ++cl.giro;
+      setTimeout(function () { if (giro === cl.giro) { normale(); } }, 4200);
     }
     function avvisa(testo) {
       dipingi(testo, true);
@@ -114,6 +120,42 @@
         }
       });
     }
+    function mandaProgresso(applicate) {
+      cl.inAttesa = false;
+      if (cl.spenta || !cl.token || cl.collegato !== true || typeof fetch !== 'function') { return; }
+      var livelli = {};
+      try { livelli = cl.gioco && typeof cl.gioco.raggiunti === 'function' ? cl.gioco.raggiunti() : {}; } catch (e) { livelli = {}; }
+      var corpo = { livelli: livelli && typeof livelli === 'object' ? livelli : {} };
+      if (applicate && applicate.length) { corpo.applicate = applicate.slice(0, 8); }
+      if (!Object.keys(corpo.livelli).length && !corpo.applicate) { return; }
+      var nuove = (corpo.applicate || []).some(function (v) { return cl.confermate.indexOf(v) === -1; });
+      if (JSON.stringify(corpo.livelli) === cl.inviati && !nuove) { return; }
+      cl.inviati = JSON.stringify(corpo.livelli);
+      cl.confermate = cl.confermate.concat(corpo.applicate || []).slice(-20);
+      var promessa = chiama('POST', 'api/classifica/progresso', corpo);
+      if (!promessa) { cl.inviati = ''; cl.confermate = []; return; }
+      promessa.then(function (esito) { if (esito.codice !== 200) { cl.inviati = ''; cl.confermate = []; } });
+    }
+    function sincronizza(partenze) {
+      var g = cl.gioco;
+      if (!g || typeof g.partenze !== 'function') { return; }
+      var esito = null;
+      try { esito = g.partenze(partenze); } catch (e) { esito = null; }
+      if (!esito) { return; }
+      if (esito.cambiate && esito.cambiate.length) {
+        var pezzi = [];
+        for (var i = 0; i < esito.cambiate.length; i++) {
+          pezzi.push('a ' + NOMI[esito.cambiate[i].difficolta] + (i === 0 ? ' ora riparti dal livello ' : ' dal ') + esito.cambiate[i].livello);
+        }
+        informa('Livello spostato: ' + pezzi.join(', '));
+      }
+      mandaProgresso(esito.applicate);
+    }
+    cl.suRaggiunto = function () {
+      cl.inAttesa = true;
+      var giro = ++cl.giroProgresso;
+      setTimeout(function () { if (giro === cl.giroProgresso && cl.inAttesa) { mandaProgresso(null); } }, 1500);
+    };
     cl.suLivello = function (evento) {
       if (cl.spenta || !evento || !cl.token || cl.collegato === false || typeof fetch !== 'function') { return; }
       var chiave = evento.livello + ':' + evento.difficolta;
@@ -161,6 +203,7 @@
           cl.nome = cl.collegato ? String(esito.dati.nome || esito.dati.login || '').slice(0, 40) : '';
           cl.io = cl.collegato && typeof esito.dati.login === 'string' ? { login: esito.dati.login, migliori: esito.dati.migliori && typeof esito.dati.migliori === 'object' ? esito.dati.migliori : {} } : null;
           normale();
+          if (cl.collegato) { sincronizza(esito.dati.partenze); }
         });
       }
     }
@@ -176,6 +219,7 @@
     stile: stile,
     ingombro: [document.getElementById('mnt-audio-box'), typeof document.querySelector === 'function' ? document.querySelector('.mnt__monitor') : null, classifica ? classifica.nota : null],
     suLivello: classifica ? function (evento) { classifica.suLivello(evento); } : undefined,
+    suRaggiunto: classifica ? function () { classifica.suRaggiunto(); } : undefined,
     suCanzone: function (voce) {
       var file = voce && typeof voce.file === 'string' && voce.file.indexOf('mp3/') === 0 ? voce.file : '';
       try { document.dispatchEvent(new CustomEvent('sb:canzone', { detail: { file: file } })); } catch (e) { }

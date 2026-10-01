@@ -820,6 +820,9 @@
   var K = Livelli.costanti;
   var CHIAVE_LIVELLO = 'sb-pollo-livello';
   var CHIAVE_DIFFICOLTA = 'sb-pollo-difficolta';
+  var CHIAVE_PANNELLO = 'sb-pollo-pannello';
+  var LIVELLO_MAX = 9999;
+  var MAX_RICORDATE = 20;
   var DIFFICOLTA = Livelli.difficolta || ['facile', 'medio', 'difficile', 'estremo'];
   var ROSSO = '#ff3b4f';
   var PROPORZIONE = 386 / 556;
@@ -952,15 +955,28 @@
     } catch (e) { difficolta = 'medio'; }
     var zone = [];
 
+    function chiaveDi(d) {
+      return d === 'medio' ? CHIAVE_LIVELLO : CHIAVE_LIVELLO + '-' + d;
+    }
+
     function chiaveLivello() {
-      return difficolta === 'medio' ? CHIAVE_LIVELLO : CHIAVE_LIVELLO + '-' + difficolta;
+      return chiaveDi(difficolta);
+    }
+
+    function livelloSalvato(d) {
+      var letto = null;
+      try { letto = localStorage.getItem(chiaveDi(d)); } catch (e) { letto = null; }
+      var n = parseInt(letto, 10);
+      return n >= 1 ? Math.min(LIVELLO_MAX, n) : 0;
     }
 
     function leggiRaggiunto() {
-      try { return Math.max(1, parseInt(localStorage.getItem(chiaveLivello()), 10) || 1); } catch (e) { return 1; }
+      return livelloSalvato(difficolta) || 1;
     }
 
     var raggiunto = leggiRaggiunto();
+    var annunciati = {};
+    annunciati[difficolta] = raggiunto;
 
     var W = 0, H = 0, dpr = 1, U = 40, orizzonte = 0, suolo = 0, polloX = 0;
     var rientro = { da: 0, x: 0, t: 0 };
@@ -2349,12 +2365,71 @@
 
     function ricorda() {
       try { localStorage.setItem(chiaveLivello(), String(raggiunto)); } catch (e) { }
+      annuncia(difficolta, raggiunto);
+    }
+
+    function annuncia(d, n) {
+      if (annunciati[d] === n) { return; }
+      annunciati[d] = n;
+      if (typeof opzioni.suRaggiunto !== 'function') { return; }
+      try { opzioni.suRaggiunto({ difficolta: d, livello: n }); } catch (e) { }
+    }
+
+    function raggiunti() {
+      var tutti = {};
+      for (var i = 0; i < DIFFICOLTA.length; i++) {
+        var d = DIFFICOLTA[i];
+        var n = d === difficolta && raggiunto > 1 ? raggiunto : livelloSalvato(d);
+        if (n >= 1) { tutti[d] = n; }
+      }
+      return tutti;
+    }
+
+    function impostaLivello(d, n) {
+      var livelloNuovo = Math.floor(Number(n));
+      if (DIFFICOLTA.indexOf(d) === -1 || !(livelloNuovo >= 1)) { return 0; }
+      livelloNuovo = Math.min(LIVELLO_MAX, livelloNuovo);
+      try { localStorage.setItem(chiaveDi(d), String(livelloNuovo)); } catch (e) { }
+      annunciati[d] = livelloNuovo;
+      if (d === difficolta) { raggiunto = livelloNuovo; }
+      chiedi();
+      return livelloNuovo;
+    }
+
+    function ricordate() {
+      var lette = [];
+      try { lette = JSON.parse(localStorage.getItem(CHIAVE_PANNELLO) || '[]'); } catch (e) { lette = []; }
+      return Array.isArray(lette) ? lette.filter(function (v) { return typeof v === 'string'; }) : [];
+    }
+
+    function partenze(dati) {
+      var esito = { applicate: [], cambiate: [] };
+      if (!dati || typeof dati !== 'object') { return esito; }
+      var gia = ricordate();
+      var nuove = false;
+      for (var i = 0; i < DIFFICOLTA.length; i++) {
+        var d = DIFFICOLTA[i];
+        var p = dati[d];
+        if (!p || typeof p !== 'object' || typeof p.versione !== 'string' || !/^[0-9a-f]{16}$/.test(p.versione) || !(Math.floor(Number(p.livello)) >= 1)) { continue; }
+        esito.applicate.push(p.versione);
+        if (gia.indexOf(p.versione) !== -1) { continue; }
+        var messo = impostaLivello(d, p.livello);
+        if (!messo) { continue; }
+        gia.push(p.versione);
+        nuove = true;
+        esito.cambiate.push({ difficolta: d, livello: messo });
+      }
+      if (nuove) {
+        try { localStorage.setItem(CHIAVE_PANNELLO, JSON.stringify(gia.slice(-MAX_RICORDATE))); } catch (e) { }
+      }
+      return esito;
     }
 
     function scegliDifficolta(nuova) {
       if (stato !== 'fermo' || DIFFICOLTA.indexOf(nuova) === -1 || nuova === difficolta) { return; }
       difficolta = nuova;
       raggiunto = leggiRaggiunto();
+      if (!(annunciati[difficolta] >= 1)) { annunciati[difficolta] = raggiunto; }
       try { localStorage.setItem(CHIAVE_DIFFICOLTA, difficolta); } catch (e) { }
       if (timerPrecalcolo) { clearTimeout(timerPrecalcolo); }
       timerPrecalcolo = setTimeout(function () { precalcola(1); }, 400);
@@ -2917,7 +2992,11 @@
       window.removeEventListener('resize', suRidimensiona);
     }
 
-    return { avvia: avvia, ferma: ferma, distruggi: ferma, classifica: classifica, difficolta: function () { return difficolta; } };
+    return {
+      avvia: avvia, ferma: ferma, distruggi: ferma, classifica: classifica,
+      difficolta: function () { return difficolta; },
+      raggiunti: raggiunti, impostaLivello: impostaLivello, partenze: partenze
+    };
   }
 
   window.PolloRun.crea = crea;
