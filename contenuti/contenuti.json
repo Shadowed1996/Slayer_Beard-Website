@@ -316,7 +316,8 @@
       ],
       "modo": "ordine",
       "canzoneFissa": 2,
-      "stile": "synthwave"
+      "stile": "synthwave",
+      "halloween": false
     },
     "classifica": {
       "attiva": false,

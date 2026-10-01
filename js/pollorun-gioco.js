@@ -899,6 +899,8 @@
     if (!ctx) { return { avvia: function () { }, ferma: function () { }, distruggi: function () { }, classifica: function () { return false; }, difficolta: function () { return 'medio'; } }; }
     var sipario = !!opzioni.sipario;
     var gd = opzioni.stile === 'geometrydash';
+    var hw = opzioni.tema === 'halloween';
+    var HW = { zucca: '#ff7a1a', zuccaScura: '#a8400a', fuoco: '#ffd23f', osso: '#efe6d2', veleno: '#8dff5a', notte: '#0b0712', gambo: '#4f8a2e', cappello: '#1d1030' };
     var ridotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var tocco = window.matchMedia('(pointer: coarse)').matches;
 
@@ -1025,6 +1027,11 @@
 
     var montiLontani = creaMonti(9, 7919);
     var montiVicini = creaMonti(5, 104729);
+    var pipistrelli = [];
+    var casoPipistrelli = casuale(6661);
+    for (var bp = 0; bp < 6; bp++) {
+      pipistrelli.push({ f: casoPipistrelli(), y: 0.14 + 0.26 * casoPipistrelli(), v: 0.7 + 0.9 * casoPipistrelli(), s: 0.34 + 0.24 * casoPipistrelli() });
+    }
 
     function misura() {
       var r = tela.getBoundingClientRect();
@@ -1364,8 +1371,8 @@
     }
 
     function punta(x, base, largo, alto) {
-      var bordo = gd ? BIANCO : C.ciano;
-      var alone = gd ? colori.accento : C.ciano;
+      var bordo = hw ? HW.osso : (gd ? BIANCO : C.ciano);
+      var alone = hw ? HW.zucca : (gd ? colori.accento : C.ciano);
       ctx.beginPath();
       ctx.moveTo(x, base);
       ctx.lineTo(x + largo / 2, base - alto);
@@ -1381,7 +1388,7 @@
       ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.globalAlpha = gd ? 0.55 : 0.5;
-      ctx.strokeStyle = gd ? colori.accento : bordo;
+      ctx.strokeStyle = hw ? HW.zucca : (gd ? colori.accento : bordo);
       ctx.beginPath();
       ctx.moveTo(x + largo * (gd ? 0.28 : 0.3), base - (gd ? 3 : 2));
       ctx.lineTo(x + largo / 2, base - alto * (gd ? 0.56 : 0.55));
@@ -1391,8 +1398,8 @@
     }
 
     function blocco(x, cimaY, largo, alto) {
-      var bordo = gd ? BIANCO : C.allerta;
-      var alone = gd ? colori.accento : C.allerta;
+      var bordo = hw ? HW.zucca : (gd ? BIANCO : C.allerta);
+      var alone = hw ? HW.zucca : (gd ? colori.accento : C.allerta);
       ctx.fillStyle = gd ? 'rgba(4,6,26,0.92)' : C.fondo;
       ctx.fillRect(x, cimaY, largo, alto);
       if (gd) {
@@ -1405,8 +1412,8 @@
       ctx.shadowBlur = gd ? 10 : 12;
       ctx.strokeRect(x + 1, cimaY + 1, largo - 2, alto - 2);
       ctx.shadowBlur = 0;
-      ctx.strokeStyle = gd ? colori.accento : bordo;
-      ctx.globalAlpha = gd ? 0.6 : 0.45;
+      ctx.strokeStyle = hw ? HW.zuccaScura : (gd ? colori.accento : bordo);
+      ctx.globalAlpha = hw ? 0.7 : (gd ? 0.6 : 0.45);
       var lato = K.TESSERA * U;
       var colonne = Math.max(1, Math.round(largo / lato));
       var righe = Math.max(1, Math.round(alto / lato));
@@ -1419,6 +1426,9 @@
         }
       }
       ctx.globalAlpha = 1;
+      if (hw && Math.min(cw, rh) > 10) {
+        for (var fc = 0; fc < colonne; fc++) { faccia(x + fc * cw + cw / 2, cimaY + rh * 0.5, Math.min(cw, rh) * 0.34); }
+      }
     }
 
     function sega(cx, cy, raggio) {
@@ -1438,10 +1448,14 @@
       ctx.strokeStyle = BIANCO;
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
-      ctx.shadowColor = '#ff3b5c';
+      ctx.shadowColor = hw ? HW.zucca : '#ff3b5c';
       ctx.shadowBlur = 12;
       ctx.stroke();
       ctx.shadowBlur = 0;
+      if (hw) {
+        teschio(cx, cy - raggio * 0.08, raggio * 0.36, HW.zucca);
+        return;
+      }
       ctx.beginPath();
       ctx.arc(cx, cy, raggio * 0.34, 0, Math.PI * 2);
       ctx.fillStyle = '#ff3b5c';
@@ -1449,6 +1463,11 @@
     }
 
     function rombo(cx, cy, largo, alto, colore) {
+      if (hw) {
+        var ondeggia = ridotto ? 0 : Math.sin(t * 3 + cx * 0.01) * alto * 0.06;
+        teschio(cx, cy + ondeggia, Math.min(largo, alto) * 0.44, HW.veleno);
+        return;
+      }
       ctx.beginPath();
       ctx.moveTo(cx, cy - alto / 2);
       ctx.lineTo(cx + largo / 2, cy);
@@ -1474,6 +1493,319 @@
       ctx.fillStyle = colore;
       ctx.fill();
       ctx.globalAlpha = 1;
+    }
+
+    function fiamma(seme) {
+      return ridotto ? 1 : 0.78 + 0.22 * Math.sin(t * 11 + seme * 0.07) * Math.sin(t * 4.3 + seme * 0.13);
+    }
+
+    function faccia(cx, cy, r) {
+      ctx.save();
+      ctx.globalAlpha *= fiamma(cx + cy);
+      ctx.fillStyle = HW.fuoco;
+      ctx.shadowColor = HW.zucca;
+      ctx.shadowBlur = Math.max(4, r * 0.7);
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.62, cy - r * 0.08);
+      ctx.lineTo(cx - r * 0.38, cy - r * 0.52);
+      ctx.lineTo(cx - r * 0.14, cy - r * 0.08);
+      ctx.closePath();
+      ctx.moveTo(cx + r * 0.14, cy - r * 0.08);
+      ctx.lineTo(cx + r * 0.38, cy - r * 0.52);
+      ctx.lineTo(cx + r * 0.62, cy - r * 0.08);
+      ctx.closePath();
+      ctx.moveTo(cx - r * 0.7, cy + r * 0.16);
+      ctx.lineTo(cx - r * 0.4, cy + r * 0.3);
+      ctx.lineTo(cx - r * 0.22, cy + r * 0.18);
+      ctx.lineTo(cx, cy + r * 0.32);
+      ctx.lineTo(cx + r * 0.22, cy + r * 0.18);
+      ctx.lineTo(cx + r * 0.4, cy + r * 0.3);
+      ctx.lineTo(cx + r * 0.7, cy + r * 0.16);
+      ctx.quadraticCurveTo(cx + r * 0.5, cy + r * 0.66, cx, cy + r * 0.68);
+      ctx.quadraticCurveTo(cx - r * 0.5, cy + r * 0.66, cx - r * 0.7, cy + r * 0.16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function zucca(cx, base, r, sagoma) {
+      var cy = base - r * 0.8;
+      ctx.save();
+      ctx.fillStyle = HW.gambo;
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.1, cy - r * 0.68);
+      ctx.quadraticCurveTo(cx - r * 0.06, cy - r * 1.02, cx + r * 0.16, cy - r * 1.08);
+      ctx.lineTo(cx + r * 0.1, cy - r * 0.68);
+      ctx.closePath();
+      ctx.fill();
+      var lobi = [[-0.46, 0.6, HW.zuccaScura], [0.46, 0.6, HW.zuccaScura], [0, 0.66, HW.zucca]];
+      for (var i = 0; i < lobi.length; i++) {
+        ctx.beginPath();
+        ctx.ellipse(cx + lobi[i][0] * r, cy, lobi[i][1] * r, r * 0.8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = sagoma ? 'rgba(8,4,14,0.92)' : lobi[i][2];
+        ctx.fill();
+        if (!sagoma) {
+          ctx.strokeStyle = 'rgba(70,20,0,0.55)';
+          ctx.lineWidth = Math.max(1, r * 0.06);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+      faccia(cx, cy, r * 0.82);
+    }
+
+    function teschio(cx, cy, r, luce) {
+      ctx.save();
+      ctx.fillStyle = HW.osso;
+      ctx.shadowColor = luce;
+      ctx.shadowBlur = r * 0.5;
+      ctx.beginPath();
+      ctx.arc(cx, cy - r * 0.12, r, 0, Math.PI * 2);
+      ctx.fill();
+      rettangoloTondo(cx - r * 0.55, cy + r * 0.42, r * 1.1, r * 0.62, r * 0.16);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = HW.notte;
+      ctx.beginPath();
+      ctx.ellipse(cx - r * 0.4, cy + r * 0.02, r * 0.27, r * 0.31, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx + r * 0.4, cy + r * 0.02, r * 0.27, r * 0.31, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + r * 0.3);
+      ctx.lineTo(cx - r * 0.12, cy + r * 0.5);
+      ctx.lineTo(cx + r * 0.12, cy + r * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = HW.notte;
+      ctx.lineWidth = Math.max(1, r * 0.08);
+      ctx.beginPath();
+      for (var d = -2; d <= 2; d++) {
+        ctx.moveTo(cx + d * r * 0.2, cy + r * 0.66);
+        ctx.lineTo(cx + d * r * 0.2, cy + r * 1.0);
+      }
+      ctx.stroke();
+      ctx.globalAlpha *= fiamma(cx * 3 + cy);
+      ctx.fillStyle = luce;
+      ctx.shadowColor = luce;
+      ctx.shadowBlur = r * 0.6;
+      ctx.beginPath();
+      ctx.arc(cx - r * 0.4, cy + r * 0.05, r * 0.1, 0, Math.PI * 2);
+      ctx.arc(cx + r * 0.4, cy + r * 0.05, r * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function lapide(cx, base, largo, alto, sagoma) {
+      var x = cx - largo / 2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x, base);
+      ctx.lineTo(x, base - alto + largo / 2);
+      ctx.arc(cx, base - alto + largo / 2, largo / 2, Math.PI, 0);
+      ctx.lineTo(x + largo, base);
+      ctx.closePath();
+      ctx.fillStyle = sagoma ? 'rgba(8,4,14,0.92)' : '#1a1326';
+      ctx.fill();
+      if (!sagoma) {
+        ctx.strokeStyle = C.violaChiaro;
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = Math.max(1, largo * 0.05);
+        ctx.shadowColor = C.viola;
+        ctx.shadowBlur = largo * 0.3;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 0.45;
+        ctx.lineWidth = Math.max(1, largo * 0.07);
+        ctx.beginPath();
+        ctx.moveTo(cx, base - alto * 0.78);
+        ctx.lineTo(cx, base - alto * 0.38);
+        ctx.moveTo(cx - largo * 0.2, base - alto * 0.64);
+        ctx.lineTo(cx + largo * 0.2, base - alto * 0.64);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function croce(cx, base, alto, sagoma) {
+      var spessore = alto * 0.14;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(cx - spessore / 2, base - alto, spessore, alto);
+      ctx.rect(cx - alto * 0.32, base - alto * 0.76, alto * 0.64, spessore);
+      ctx.fillStyle = sagoma ? 'rgba(8,4,14,0.92)' : '#1a1326';
+      ctx.fill();
+      if (!sagoma) {
+        ctx.strokeStyle = C.violaChiaro;
+        ctx.globalAlpha = 0.6;
+        ctx.lineWidth = Math.max(1, alto * 0.03);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function alaPipistrello(x, y, s, a, d) {
+      ctx.moveTo(x + d * s * 0.12, y - s * 0.06);
+      ctx.quadraticCurveTo(x + d * s * 0.55, y - s * 0.3 - a, x + d * s, y - s * 0.12 - a * 0.7);
+      ctx.quadraticCurveTo(x + d * s * 0.86, y + s * 0.02 - a * 0.3, x + d * s * 0.72, y + s * 0.14 - a * 0.2);
+      ctx.quadraticCurveTo(x + d * s * 0.6, y + s * 0.02, x + d * s * 0.45, y + s * 0.14);
+      ctx.quadraticCurveTo(x + d * s * 0.32, y + s * 0.03, x + d * s * 0.12, y + s * 0.1);
+      ctx.closePath();
+    }
+
+    function pipistrello(x, y, s, ali) {
+      var a = ali * s * 0.45;
+      ctx.beginPath();
+      alaPipistrello(x, y, s, a, 1);
+      alaPipistrello(x, y, s, a, -1);
+      ctx.moveTo(x + s * 0.13, y);
+      ctx.ellipse(x, y, s * 0.13, s * 0.19, 0, 0, Math.PI * 2);
+      ctx.moveTo(x - s * 0.1, y - s * 0.14);
+      ctx.lineTo(x - s * 0.06, y - s * 0.3);
+      ctx.lineTo(x - s * 0.01, y - s * 0.16);
+      ctx.lineTo(x + s * 0.04, y - s * 0.3);
+      ctx.lineTo(x + s * 0.1, y - s * 0.14);
+      ctx.closePath();
+      ctx.fillStyle = '#0a0610';
+      ctx.fill();
+      if (!gd) {
+        ctx.globalAlpha = 0.55;
+        ctx.strokeStyle = C.violaChiaro;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = HW.fuoco;
+      ctx.fillRect(x - s * 0.07, y - s * 0.06, Math.max(1, s * 0.04), Math.max(1, s * 0.04));
+      ctx.fillRect(x + s * 0.03, y - s * 0.06, Math.max(1, s * 0.04), Math.max(1, s * 0.04));
+    }
+
+    function volaPipistrelli() {
+      var giro = W + 2 * margine + U * 4;
+      ctx.save();
+      for (var i = 0; i < pipistrelli.length; i++) {
+        var b = pipistrelli[i];
+        var corsa = (b.f * giro + (ridotto ? 0 : t * b.v * U)) % giro;
+        var x = W + margine + U * 2 - corsa;
+        var y = H * b.y + (ridotto ? 0 : Math.sin(t * 1.7 + b.f * 9) * U * 0.2);
+        pipistrello(x, y, U * b.s, ridotto ? 0.3 : Math.sin(t * 13 + b.f * 20));
+      }
+      ctx.restore();
+    }
+
+    function mucchioTeschi(cx, base, r) {
+      teschio(cx - r * 1.05, base - r * 1.0, r, HW.veleno);
+      teschio(cx + r * 1.05, base - r * 1.0, r, HW.veleno);
+      teschio(cx, base - r * 2.6, r, HW.veleno);
+    }
+
+    function filaHalloween(base, scala, scorre, alfa, seme, sagoma) {
+      var passo = scala * 3.6;
+      var spostato = deriva * scorre;
+      var primo = Math.floor((spostato - margine - passo) / passo);
+      var ultimo = Math.ceil((spostato + W + margine + passo) / passo);
+      ctx.save();
+      ctx.globalAlpha = alfa;
+      for (var i = primo; i <= ultimo; i++) {
+        if (disordine(i, seme) < 0.38) { continue; }
+        var tipo = disordine(i, seme + 1);
+        var x = i * passo - spostato + (disordine(i, seme + 2) - 0.5) * passo * 0.5;
+        var s = scala * (0.75 + 0.5 * disordine(i, seme + 3));
+        if (tipo < 0.36) {
+          zucca(x, base, s * 0.5, sagoma);
+        } else if (tipo < 0.64) {
+          lapide(x, base, s * 0.62, s * 0.95, sagoma);
+        } else if (tipo < 0.84) {
+          croce(x, base, s * 1.05, sagoma);
+        } else {
+          mucchioTeschi(x, base, s * 0.2);
+        }
+      }
+      ctx.restore();
+    }
+
+    function scenaHalloween() {
+      volaPipistrelli();
+      if (gd) {
+        if (fondo > 0.01) { filaHalloween(suolo, U * 0.85, 0.35, 0.4 * fondo, 401, true); }
+        return;
+      }
+      filaHalloween(orizzonte, U * 0.5, 0.2, 0.9, 211, false);
+      filaHalloween(orizzonte + (suolo - orizzonte) * 0.5, U * 0.78, 0.55, 1, 307, false);
+    }
+
+    function ragnatela(x, y, r, dx, dy) {
+      var raggi = 6;
+      var anelli = 5;
+      ctx.beginPath();
+      for (var i = 0; i <= raggi; i++) {
+        var a = (i / raggi) * Math.PI / 2;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + dx * Math.cos(a) * r, y + dy * Math.sin(a) * r);
+      }
+      for (var k = 1; k <= anelli; k++) {
+        var rr = r * k / (anelli + 0.5);
+        for (var j = 0; j < raggi; j++) {
+          var a0 = (j / raggi) * Math.PI / 2;
+          var a1 = ((j + 1) / raggi) * Math.PI / 2;
+          var am = (a0 + a1) / 2;
+          var x0 = x + dx * Math.cos(a0) * rr;
+          var y0 = y + dy * Math.sin(a0) * rr;
+          if (j === 0) { ctx.moveTo(x0, y0); }
+          ctx.quadraticCurveTo(x + dx * Math.cos(am) * rr * 0.82, y + dy * Math.sin(am) * rr * 0.82, x + dx * Math.cos(a1) * rr, y + dy * Math.sin(a1) * rr);
+        }
+      }
+      ctx.stroke();
+    }
+
+    function ragnatele() {
+      var r = Math.max(60, Math.min(W, H) * 0.2);
+      ctx.save();
+      ctx.globalAlpha = 0.2;
+      ctx.strokeStyle = HW.osso;
+      ctx.lineWidth = 1;
+      ragnatela(0, 0, r, 1, 1);
+      ragnatela(W, 0, r * 0.8, -1, 1);
+      ctx.restore();
+    }
+
+    function cappello(cx, tesaY, largo, inclina) {
+      var L = largo;
+      ctx.save();
+      ctx.shadowBlur = 0;
+      ctx.translate(cx, tesaY);
+      ctx.rotate(inclina);
+      ctx.fillStyle = HW.cappello;
+      ctx.strokeStyle = C.viola;
+      ctx.lineWidth = Math.max(1, L * 0.025);
+      ctx.beginPath();
+      ctx.moveTo(-L * 0.27, 0);
+      ctx.quadraticCurveTo(-L * 0.2, -L * 0.3, -L * 0.06, -L * 0.6);
+      ctx.quadraticCurveTo(-L * 0.14, -L * 0.8, -L * 0.4, -L * 0.82);
+      ctx.quadraticCurveTo(-L * 0.06, -L * 0.74, L * 0.06, -L * 0.54);
+      ctx.quadraticCurveTo(L * 0.14, -L * 0.26, L * 0.27, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-L * 0.235, -L * 0.09);
+      ctx.lineTo(L * 0.235, -L * 0.09);
+      ctx.lineTo(L * 0.2, -L * 0.21);
+      ctx.lineTo(-L * 0.2, -L * 0.21);
+      ctx.closePath();
+      ctx.fillStyle = HW.zucca;
+      ctx.fill();
+      ctx.fillStyle = HW.fuoco;
+      ctx.fillRect(-L * 0.05, -L * 0.2, L * 0.1, L * 0.1);
+      ctx.fillStyle = HW.cappello;
+      ctx.fillRect(-L * 0.025, -L * 0.175, L * 0.05, L * 0.05);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, L / 2, L * 0.11, 0, 0, Math.PI * 2);
+      ctx.fillStyle = HW.cappello;
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
     }
 
     function disegnaMondo() {
@@ -1556,6 +1888,10 @@
         ctx.strokeRect(x - larg / 2, suolo - alto - quadro * 2 + 1, larg, quadro * 2);
       }
       ctx.restore();
+      if (hw) {
+        zucca(x - larg / 2 - U * 0.42, suolo, U * 0.32, false);
+        zucca(x + larg / 2 + U * 0.42, suolo, U * 0.32, false);
+      }
     }
 
     function disegnaScintille() {
@@ -1601,9 +1937,9 @@
       ctx.translate(cx, piedi - lato / 2 + rimbalzo);
       ctx.rotate(angolo + giramento.pollo);
       var faccia = ctx.createLinearGradient(-lato / 2, -lato / 2, lato / 2, lato / 2);
-      faccia.addColorStop(0, colori.cubo0);
-      faccia.addColorStop(1, colori.cubo1);
-      ctx.shadowColor = colori.accento;
+      faccia.addColorStop(0, hw ? '#ffa13d' : colori.cubo0);
+      faccia.addColorStop(1, hw ? HW.zuccaScura : colori.cubo1);
+      ctx.shadowColor = hw ? HW.zucca : colori.accento;
       ctx.shadowBlur = 14;
       rettangoloTondo(-lato / 2, -lato / 2, lato, lato, lato * 0.14);
       ctx.fillStyle = faccia;
@@ -1621,6 +1957,7 @@
       if (polloPronto) {
         ctx.drawImage(pollo, -altezzaFaccia * PROPORZIONE / 2, -altezzaFaccia / 2, altezzaFaccia * PROPORZIONE, altezzaFaccia);
       }
+      if (hw) { cappello(-lato * 0.04, -lato * 0.48, lato * 0.95, -0.12); }
       ctx.restore();
     }
 
@@ -1667,6 +2004,7 @@
         ctx.fillStyle = C.allerta;
         ctx.fillRect(-w / 2, -h / 2, w, h);
       }
+      if (hw) { cappello(-w * 0.02, -h * 0.37, w * 0.95, -0.14); }
       ctx.restore();
     }
 
@@ -1939,14 +2277,14 @@
       if (gd) {
         x = Math.min(polloX, 20);
         righe = [
-          { testo: 'POLLO RUN', y: suolo - U * 2.35, dim: fs * 1.9, peso: '900', famiglia: TITOLO, colore: BIANCO, alone: '#35e6ff', bagliore: 12 },
+          { testo: 'POLLO RUN', y: suolo - U * 2.35, dim: fs * 1.9, peso: '900', famiglia: TITOLO, colore: hw ? HW.zucca : BIANCO, alone: hw ? HW.fuoco : '#35e6ff', bagliore: 12 },
           { testo: (tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', y: suolo - U * 1.75, dim: fs, peso: '700', famiglia: MONO, colore: BIANCO, pulsa: 0.6 }
         ];
         if (raggiunto > 1) { righe.push({ testo: 'INVIO: riprendi dal livello ' + raggiunto, y: suolo - U * 1.3, dim: fs * 0.9, peso: '600', famiglia: MONO, colore: GIALLO }); }
       } else {
         x = polloX + larghezzaGiocatore() + U * 0.35;
         righe = [
-          { testo: 'POLLO RUN', y: suolo - U * 0.95, dim: fs * 1.15, peso: '700', famiglia: MONO, colore: C.magenta, alone: C.magenta, bagliore: 10 },
+          { testo: 'POLLO RUN', y: suolo - U * 0.95, dim: fs * 1.15, peso: '700', famiglia: MONO, colore: hw ? HW.zucca : C.magenta, alone: hw ? HW.zucca : C.magenta, bagliore: 10 },
           { testo: (tocco ? 'Dal computer: ' : '') + 'SPAZIO per correre', y: suolo - U * 0.55, dim: fs, peso: '500', famiglia: MONO, colore: C.testo, pulsa: 0.55 }
         ];
         if (raggiunto > 1) { righe.push({ testo: 'INVIO: riprendi dal livello ' + raggiunto, y: suolo - U * 0.2, dim: fs * 0.9, peso: '500', famiglia: MONO, colore: C.violaChiaro }); }
@@ -2293,6 +2631,7 @@
         ctx.translate(-centroPollo(), -suolo);
       }
       sfondo();
+      if (hw) { scenaHalloween(); }
       disegnaSuolo();
       if (caduta) { caduta.disegnaBuca(); }
       disegnaMondo();
@@ -2302,6 +2641,7 @@
       if (gd) { disegnaCubo(); } else { disegnaPollo(); }
       ctx.restore();
       if (caduta) { caduta.disegnaPozzo(); }
+      if (hw) { ragnatele(); }
       hud();
       messaggi();
       if (lampo > 0) {
@@ -2351,7 +2691,7 @@
       var cy = sy(Math.max(S.alt, -0.4)) - (gd ? latoCubo() : U) / 2;
       var nelPozzo = caduta ? caduta.punto() : null;
       if (nelPozzo) { cx = nelPozzo.x; cy = nelPozzo.y; }
-      var pezzi = gd ? [colori.cubo0, colori.cubo1, BIANCO, colori.accento] : [C.allerta, C.ciano, C.magenta];
+      var pezzi = hw ? [HW.zucca, HW.fuoco, HW.veleno, HW.osso] : (gd ? [colori.cubo0, colori.cubo1, BIANCO, colori.accento] : [C.allerta, C.ciano, C.magenta]);
       for (var i = 0; i < 26; i++) {
         var a = Math.random() * Math.PI * 2;
         var forza = U * (2 + Math.random() * 5);

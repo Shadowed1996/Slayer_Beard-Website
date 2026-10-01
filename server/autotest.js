@@ -5785,7 +5785,7 @@ async function proveGiocoPollo(costruisci, archivio) {
   });
 
   const rendiFinta = (casuale, forma) => {
-    const registro = { testi: [], scritte: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [], eventi: [], voci: [], ordine: [], contorni: 0 };
+    const registro = { testi: [], scritte: [], suPartita: [], suChiudi: 0, ascoltatori: {}, memoria: {}, timer: [], eventi: [], voci: [], ordine: [], contorni: 0, riempimenti: {} };
     let inAttesa = null;
     let ora = 1000;
     const larghezzaDi = (t, testo) => {
@@ -5801,7 +5801,7 @@ async function proveGiocoPollo(costruisci, archivio) {
         if (nome in t) { return t[nome]; }
         return () => {};
       },
-      set(t, nome, valore) { t[nome] = valore; return true; }
+      set(t, nome, valore) { if (nome === 'fillStyle' && typeof valore === 'string') { registro.riempimenti[valore] = (registro.riempimenti[valore] || 0) + 1; } t[nome] = valore; return true; }
     });
     const tela = { getContext: () => contesto, getBoundingClientRect: () => ({ width: forma ? forma.largo : 1200, height: forma ? forma.alto : 380 }), width: 0, height: 0 };
     const finestra = {
@@ -5966,6 +5966,31 @@ async function proveGiocoPollo(costruisci, archivio) {
     senza.tasto(' ', 'Space');
     esigiUguale(senza.registro.eventi.length, 1, 'senza canzoni l ospite deve ricevere un solo evento');
     esigiUguale(senza.registro.eventi[0], null, 'senza canzoni l evento e uno stop');
+  });
+
+  await prova('gioco: con halloween zucche, teschi e cappello in tutti e due gli stili, senza non compaiono, e il livello 1 si finisce uguale', () => {
+    const M1 = creaLivello(1);
+    const p1 = percorsoGiocatore(M1, M1.mx * 0.5, 2, true);
+    esigi(p1, 'nessun percorso per il livello 1');
+    for (const nomeStile of ['synthwave', 'geometrydash']) {
+      for (const tema of ['halloween', 'normale', undefined]) {
+        const h = rendiFinta();
+        h.crea({ stile: nomeStile, tema: tema }).avvia();
+        h.tasto(' ', 'Space');
+        esigiUguale(giocaSchedule(h, p1.secondi, 1000 / 60, 200).esito, 'vinto', nomeStile + ' ' + tema + ': il livello 1 non si finisce');
+        const usati = h.registro.riempimenti;
+        const zucche = usati['#ff7a1a'] || 0;
+        const ossa = usati['#efe6d2'] || 0;
+        const cappelli = usati['#1d1030'] || 0;
+        if (tema === 'halloween') {
+          esigi(zucche > 0, nomeStile + ': niente zucche');
+          esigi(ossa > 0, nomeStile + ': niente teschi');
+          esigi(cappelli > 0, nomeStile + ': niente cappello');
+        } else {
+          esigiUguale(zucche + ossa + cappelli, 0, nomeStile + ' ' + tema + ': la grafica di Halloween compare da spenta');
+        }
+      }
+    }
   });
 
   await prova('gioco: lo stile di partenza e synthwave, geometrydash si sceglie a parte e un valore sconosciuto vale synthwave; entrambi finiscono un livello', () => {
@@ -6905,7 +6930,7 @@ async function proveGiocoPollo(costruisci, archivio) {
   await prova('pollorun.js: scrivendo pollorun carica stile e motore, monta il gioco a tutto schermo e lo avvia', () => {
     const p = montaSito();
     p.scrivi('pollorun');
-    esigiUguale(p.registro.appesi.length, 2, 'devono partire due caricamenti: stile e motore');
+    esigiUguale(p.registro.appesi.filter((n) => n.href !== 'css/pollorun-carica.css').length, 2, 'devono partire due caricamenti: stile e motore');
     esigi(p.registro.appesi.some((n) => n.tag === 'link' && n.href === 'css/pollorun.css' && n.rel === 'stylesheet'), 'manca lo stile');
     esigi(p.registro.appesi.some((n) => n.tag === 'script' && n.src === 'js/pollorun-gioco.js'), 'manca il motore');
     esigiUguale(p.corpo.children.length, 1, 'durante il caricamento deve esserci solo il preloader');
@@ -7012,7 +7037,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     const p = montaSito();
     p.scrivi('pollorun');
     p.scrivi('pollorun');
-    esigiUguale(p.registro.appesi.length, 2, 'ha caricato due volte mentre aspettava');
+    esigiUguale(p.registro.appesi.filter((n) => n.href !== 'css/pollorun-carica.css').length, 2, 'ha caricato due volte mentre aspettava');
     p.carica();
     esigiUguale(p.corpo.children.length, 1, 'due giochi aperti');
     esigi(p.registro.crea[0].suChiudi, 'manca suChiudi');
@@ -7021,7 +7046,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     esigi(!p.classi.has('is-pollorun'), 'la pagina resta bloccata');
     esigiUguale(p.registro.ferma, 1, 'il gioco non viene fermato');
     p.scrivi('pollorun');
-    esigiUguale(p.registro.appesi.filter((n) => n.src !== 'js/pollorun-caduta.js').length, 2, 'la seconda volta ricarica stile o motore');
+    esigiUguale(p.registro.appesi.filter((n) => n.src !== 'js/pollorun-caduta.js' && n.href !== 'css/pollorun-carica.css').length, 2, 'la seconda volta ricarica stile o motore');
     p.carica();
     esigiUguale(p.corpo.children.length, 1, 'non si riapre');
     esigiUguale(p.registro.crea.length, 2, 'non ricrea il gioco');
@@ -7300,7 +7325,7 @@ async function proveGiocoPollo(costruisci, archivio) {
     }
     const documento = archivio.leggi();
     const pagine = costruisci.rendi(documento);
-    const trovato = /<script src="js\/pollorun\.js" data-pollo="([^"]*)" data-frasi="([^"]*)" data-canzoni="[^"]*" data-stile="[^"]*" defer><\/script>/.exec(pagine.html);
+    const trovato = /<script src="js\/pollorun\.js" data-pollo="([^"]*)" data-frasi="([^"]*)" data-canzoni="[^"]*" data-stile="[^"]*" data-tema="[^"]*" defer><\/script>/.exec(pagine.html);
     esigi(trovato, 'la home generata non ha lo script');
     esigiUguale(trovato[1], documento.config.immagini.mascotte, 'immagine del pollo nella home');
     const frasi = JSON.parse(trovato[2].replace(/&quot;/g, '"').replace(/&#39;/g, '\'').replace(/&amp;/g, '&'));
@@ -7766,7 +7791,7 @@ async function proveCanzoniPollo(costruisci, archivio) {
     await prova('il sito: data-canzoni nelle pagine, protetto; la manutenzione ha canvas e audio sulla prima canzone disponibile', () => {
       for (const nome of ['index', 'clip', 'giochi']) {
         const testo = fs.readFileSync(path.join(RADICE_VERA, 'modelli', nome + '.html'), 'utf8');
-        esigiDentro(testo, 'data-frasi="{{sito.pollorun.frasi}}" data-canzoni="{{sito.pollorun.canzoni}}" data-stile="{{sito.pollorun.stile}}" defer>', 'modelli/' + nome + '.html');
+        esigiDentro(testo, 'data-frasi="{{sito.pollorun.frasi}}" data-canzoni="{{sito.pollorun.canzoni}}" data-stile="{{sito.pollorun.stile}}" data-tema="{{sito.pollorun.tema}}" defer>', 'modelli/' + nome + '.html');
       }
       const modelloMnt = fs.readFileSync(path.join(RADICE_VERA, 'modelli', 'manutenzione.html'), 'utf8');
       esigiDentro(modelloMnt, 'data-canzoni="{{manutenzione.canzoniPollo}}"', 'canvas della manutenzione');
@@ -7816,7 +7841,7 @@ async function proveCanzoniPollo(costruisci, archivio) {
   }
 
   const jsSito = fs.readFileSync(path.join(RADICE_VERA, 'js', 'pollorun.js'), 'utf8');
-  const sito = (attributo, volume, stile) => {
+  const sito = (attributo, volume, stile, tema) => {
     const r = { crea: [], audio: [], play: 0, pause: 0, cambi: 0 };
     const ascolta = {};
     const appesi = [];
@@ -7838,6 +7863,7 @@ async function proveCanzoniPollo(costruisci, archivio) {
     const script = nodo('script');
     if (attributo !== null) { script.setAttribute('data-canzoni', attributo); }
     if (stile !== undefined) { script.setAttribute('data-stile', stile); }
+    if (tema !== undefined) { script.setAttribute('data-tema', tema); }
     const finestra = { addEventListener: () => {}, PolloRun: { crea: (op) => { r.crea.push(op); return { avvia() {}, ferma() {} }; } } };
     const classi = new Set();
     vm.runInNewContext(jsSito, {
@@ -7902,6 +7928,16 @@ async function proveCanzoniPollo(costruisci, archivio) {
     }
   });
 
+  await prova('pollorun.js: data-tema halloween arriva al motore; assente o sconosciuto vale normale', () => {
+    esigiUguale(sito(pacchetto, undefined, 'synthwave', 'halloween').op.tema, 'halloween', 'halloween');
+    esigiUguale(sito(pacchetto, undefined, 'geometrydash', 'halloween').op.tema, 'halloween', 'halloween con geometrydash');
+    esigiUguale(sito(pacchetto, undefined, 'geometrydash', 'halloween').op.stile, 'geometrydash', 'lo stile resta quello scelto');
+    esigiUguale(sito(pacchetto).op.tema, 'normale', 'senza attributo');
+    for (const brutto of ['', 'normale', 'Halloween', ' halloween', '<b>']) {
+      esigiUguale(sito(pacchetto, undefined, undefined, brutto).op.tema, 'normale', 'con ' + JSON.stringify(brutto));
+    }
+  });
+
   await prova('pollorun.js: suCanzone suona la voce scelta dall inizio, cambia src solo se serve, con null mette in pausa', () => {
     const p = sito(pacchetto, 70);
     p.op.suPartita(true);
@@ -7963,7 +7999,7 @@ async function proveCanzoniPollo(costruisci, archivio) {
     };
     const el = {
       'mnt-gioco': elemento('tela', Object.assign({ 'data-frasi': '[]', 'data-pollo': '' },
-        o.canzoni === null ? {} : { 'data-canzoni': o.canzoni }, o.stile === undefined ? {} : { 'data-stile': o.stile }, o.classifica === undefined ? {} : { 'data-classifica': o.classifica })),
+        o.canzoni === null ? {} : { 'data-canzoni': o.canzoni }, o.stile === undefined ? {} : { 'data-stile': o.stile }, o.tema === undefined ? {} : { 'data-tema': o.tema }, o.classifica === undefined ? {} : { 'data-classifica': o.classifica })),
       'mnt-audio': elemento('attesa', { src: 'mp3/ElevatorMaintenance.mp3' }),
       'mnt-audio-gioco': elemento('brano', { src: 'mp3/Uno.mp3' }),
       'mnt-musica': elemento('tasto')
@@ -8011,6 +8047,15 @@ async function proveCanzoniPollo(costruisci, archivio) {
     esigiUguale(manutenzione().op.stile, 'synthwave', 'senza attributo');
     for (const brutto of ['', 'GEOMETRYDASH', 'boh', '<b>']) {
       esigiUguale(manutenzione({ stile: brutto }).op.stile, 'synthwave', 'con ' + JSON.stringify(brutto));
+    }
+  });
+
+  await prova('manutenzione: data-tema halloween arriva al motore; assente o sconosciuto vale normale', () => {
+    esigiUguale(manutenzione({ tema: 'halloween' }).op.tema, 'halloween', 'halloween');
+    esigiUguale(manutenzione({ tema: 'halloween', stile: 'geometrydash' }).op.stile, 'geometrydash', 'lo stile resta quello scelto');
+    esigiUguale(manutenzione().op.tema, 'normale', 'senza attributo');
+    for (const brutto of ['', 'HALLOWEEN', 'boh', '<b>']) {
+      esigiUguale(manutenzione({ tema: brutto }).op.tema, 'normale', 'con ' + JSON.stringify(brutto));
     }
   });
 
@@ -8235,7 +8280,7 @@ async function proveStilePollo(costruisci, archivio) {
   await prova('il sito: data-stile nei 3 modelli e sul canvas della manutenzione, sempre uno dei due valori', () => {
     for (const nome of ['index', 'clip', 'giochi']) {
       const testo = fs.readFileSync(path.join(RADICE_VERA, 'modelli', nome + '.html'), 'utf8');
-      esigiDentro(testo, 'data-canzoni="{{sito.pollorun.canzoni}}" data-stile="{{sito.pollorun.stile}}" defer>', 'modelli/' + nome + '.html');
+      esigiDentro(testo, 'data-canzoni="{{sito.pollorun.canzoni}}" data-stile="{{sito.pollorun.stile}}" data-tema="{{sito.pollorun.tema}}" defer>', 'modelli/' + nome + '.html');
     }
     esigiDentro(fs.readFileSync(path.join(RADICE_VERA, 'modelli', 'manutenzione.html'), 'utf8'),
       'data-canzoni="{{manutenzione.canzoniPollo}}" data-stile="{{manutenzione.stilePollo}}"', 'modelli/manutenzione.html');
@@ -8267,6 +8312,56 @@ async function proveStilePollo(costruisci, archivio) {
     const spento = documento('geometrydash');
     spento.config.pollorun.attivo = false;
     esigi(costruisci.rendi(spento).html.indexOf('data-stile') === -1, 'spento: data-stile resta nella home');
+  });
+}
+
+async function proveHalloweenPollo(costruisci, archivio) {
+  apriSezione('11h2. Pollo Run: la grafica di Halloween dal pannello');
+
+  await prova('schema: la grafica di Halloween e un interruttore spento dopo lo stile grafico', () => {
+    const campo = schema.campo('config.pollorun.halloween');
+    esigi(campo, 'manca il campo');
+    esigiUguale(campo.tipo, 'interruttore', 'tipo');
+    esigiUguale(campo.predefinito, false, 'predefinito');
+    esigi(campo.etichetta.indexOf(String.fromCharCode(8212)) === -1, 'etichetta con il trattino lungo');
+    esigiDentro(campo.aiuto, 'pollorun', 'l aiuto dice che vale anche per il gioco sul sito');
+    esigiDentro(campo.aiuto, 'manutenzione', 'l aiuto dice che vale per la manutenzione');
+    const chiavi = schema.gruppi.find((g) => g.id === 'manutenzione').campi.map((c) => c.chiave);
+    esigiUguale(chiavi.indexOf('config.pollorun.halloween'), chiavi.indexOf('config.pollorun.stile') + 1, 'posizione dopo lo stile');
+    const veri = JSON.parse(fs.readFileSync(path.join(RADICE_VERA, 'contenuti', 'contenuti.json'), 'utf8'));
+    esigiUguale(veri.config.pollorun.halloween, false, 'contenuti.json');
+    esigiUguale(schema.verificaCopertura(veri).length, 0, 'copertura');
+    esigiUguale(convalida.convalidaCampo('config.pollorun.halloween', true).length, 0, 'acceso valido');
+    esigi(convalida.convalidaCampo('config.pollorun.halloween', 'si').length > 0, 'una parola passa');
+    const vecchi = JSON.parse(JSON.stringify(veri));
+    delete vecchi.config.pollorun.halloween;
+    schema.completa(vecchi);
+    esigiUguale(vecchi.config.pollorun.halloween, false, 'un contenuti.json del sito online riceve la grafica spenta');
+  });
+
+  await prova('temaPolloRun: solo true accende halloween, il resto vale normale', () => {
+    esigiUguale(costruisci.temaPolloRun({ pollorun: { halloween: true } }), 'halloween', 'acceso');
+    for (const brutto of [false, 'true', 1, null, undefined, ['true']]) {
+      esigiUguale(costruisci.temaPolloRun({ pollorun: { halloween: brutto } }), 'normale', 'con ' + JSON.stringify(brutto));
+    }
+    esigiUguale(costruisci.temaPolloRun({}), 'normale', 'senza ramo');
+    esigiUguale(costruisci.temaPolloRun(null), 'normale', 'senza config');
+  });
+
+  await prova('il sito: data-tema nelle pagine e sul canvas della manutenzione, si accende e si rispegne', () => {
+    esigiDentro(fs.readFileSync(path.join(RADICE_VERA, 'modelli', 'manutenzione.html'), 'utf8'),
+      'data-stile="{{manutenzione.stilePollo}}" data-tema="{{manutenzione.temaPollo}}"', 'modelli/manutenzione.html');
+    const temaDi = (html) => { const m = /js\/pollorun\.js"[^>]*data-tema="([^"]*)"/.exec(html || ''); return m ? m[1] : null; };
+    for (const [acceso, atteso] of [[true, 'halloween'], [false, 'normale'], [true, 'halloween'], [false, 'normale']]) {
+      const d = archivio.leggi();
+      d.config.pollorun.halloween = acceso;
+      esigiUguale(temaDi(costruisci.rendi(d).html), atteso, 'home con ' + acceso);
+      d.config.manutenzione = Object.assign({}, d.config.manutenzione, { attiva: true, fine: '' });
+      const pagina = costruisci.rendi(d, { adesso: Date.UTC(2026, 9, 1, 9, 0, 0) }).manutenzione;
+      const tela = /<canvas[^>]*id="mnt-gioco"[^>]*data-tema="([^"]*)"/.exec(pagina || '');
+      esigi(tela, 'il canvas non ha data-tema');
+      esigiUguale(tela[1], atteso, 'canvas con ' + acceso);
+    }
   });
 }
 
@@ -9664,6 +9759,7 @@ async function esegui() {
     await proveGiocoPollo(costruisci, archivio);
     await proveCanzoniPollo(costruisci, archivio);
     await proveStilePollo(costruisci, archivio);
+    await proveHalloweenPollo(costruisci, archivio);
     await proveClassifica(costruisci, archivio);
     await proveManutenzione(contenutiVeri, costruisci, archivio);
     await proveGiochiDati();

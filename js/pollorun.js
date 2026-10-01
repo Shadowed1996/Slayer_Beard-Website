@@ -60,6 +60,7 @@
   var FRASI = leggiFrasi(ORIGINE ? ORIGINE.getAttribute('data-frasi') : '');
   var MUSICA = leggiCanzoni(ORIGINE ? ORIGINE.getAttribute('data-canzoni') : '');
   var STILE = leggiStile(ORIGINE ? ORIGINE.getAttribute('data-stile') : '');
+  var TEMA = ORIGINE && ORIGINE.getAttribute('data-tema') === 'halloween' ? 'halloween' : 'normale';
   var CLASSIFICA = !!ORIGINE && ORIGINE.getAttribute('data-classifica') === '1';
 
   var PESI = { stile: 5, pollo: 5, motore: 20, musica: 70 };
@@ -974,6 +975,7 @@
       fissa: MUSICA.fissa,
       primaCanzone: typeof primo === 'number' ? primo : -1,
       stile: STILE,
+      tema: TEMA,
       sipario: true,
       suCanzone: suCanzone,
       suPartita: function () { },

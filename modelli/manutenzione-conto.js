@@ -24,6 +24,7 @@
     fissa = 0;
   }
   var stile = tela.getAttribute('data-stile') === 'geometrydash' ? 'geometrydash' : 'synthwave';
+  var tema = tela.getAttribute('data-tema') === 'halloween' ? 'halloween' : 'normale';
   var classifica = tela.getAttribute('data-classifica') === '1' ? creaClassifica() : null;
   function creaClassifica() {
     var token = '';
@@ -217,6 +218,7 @@
     modo: modo,
     fissa: fissa,
     stile: stile,
+    tema: tema,
     ingombro: [document.getElementById('mnt-audio-box'), typeof document.querySelector === 'function' ? document.querySelector('.mnt__monitor') : null, classifica ? classifica.nota : null],
     suLivello: classifica ? function (evento) { classifica.suLivello(evento); } : undefined,
     suRaggiunto: classifica ? function () { classifica.suRaggiunto(); } : undefined,

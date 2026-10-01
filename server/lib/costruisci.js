@@ -833,6 +833,7 @@ function costruisciContesto(contenuti, opzioni) {
     frasi: frasiPolloRun(config),
     canzoni: JSON.stringify(canzoniPolloRun(config)),
     stile: stilePolloRun(config),
+    tema: temaPolloRun(config),
     classifica: classificaAttiva(config)
   };
   contesto.sito.ingresso = ingressoDi(config, testi);
@@ -1427,6 +1428,11 @@ function stilePolloRun(config) {
   return STILI_POLLORUN.indexOf(ramo.stile) !== -1 ? ramo.stile : 'synthwave';
 }
 
+function temaPolloRun(config) {
+  const ramo = (config && config.pollorun && typeof config.pollorun === 'object') ? config.pollorun : {};
+  return ramo.halloween === true ? 'halloween' : 'normale';
+}
+
 function classificaAttiva(config) {
   return !!(config && config.classifica && typeof config.classifica === 'object' && config.classifica.attiva === true);
 }
@@ -1510,6 +1516,7 @@ function contestoManutenzione(contenuti, adesso, cache) {
     canzoniPollo: JSON.stringify(canzoni),
     canzoneGioco: canzoni.canzoni[0].file,
     stilePollo: stilePolloRun(config),
+    temaPollo: temaPolloRun(config),
     classifica: classificaAttiva(config) ? '1' : '0',
     og: String(immagini.og || ''),
     favicon: String(immagini.favicon || ''),
@@ -1882,7 +1889,7 @@ module.exports = {
   fineManutenzione, istanteItaliano, rendi, costruisciContesto,
   pulisciEditor, opzioniStili, blocchiPresenti, perEditor,
   oggettoDati, orariTesto, settimanaDi, clipDi, clipPaginaDi, sponsorDi, giochiDi, jsonSicuro, chiaviRicche,
-  orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta, canzoniPolloRun, stilePolloRun, classificaAttiva,
+  orariDi, orariDati, eventiDi, sfondoDi, categoriaDiretta, canzoniPolloRun, stilePolloRun, temaPolloRun, classificaAttiva,
 
   togliCommenti
 };
